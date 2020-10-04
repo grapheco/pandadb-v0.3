@@ -10,9 +10,10 @@ trait LogRecord {
 trait SequenceStore[T] {
   def list(): Stream[T]
 
-  def save(t: Stream[T])
+  def save(ts: Stream[T])
+  def append(t: T)
 
-  def append(t: Iterable[T])
+  def append(ts: Iterable[T])
 
   def clear()
 }
@@ -29,7 +30,6 @@ trait FileBasedSequenceStore[T] extends SequenceStore[T] {
   private def createStream(dis: DataInputStream): Stream[T] = {
     try {
       val len = dis.readInt()
-
       val bytes = new Array[Byte](len)
       dis.read(bytes)
       val buf = Unpooled.wrappedBuffer(bytes)
@@ -59,29 +59,33 @@ trait FileBasedSequenceStore[T] extends SequenceStore[T] {
   def writeObject(buf: ByteBuf, t: T)
 
   protected def writeObjectBlock(buf: ByteBuf, t: T): Unit = {
-    buf.writeInt(0) //length
-    writeObject(buf, t)
-    val len = buf.readableBytes()
-    buf.setInt(1, len - 4)
+    val buf0 = Unpooled.buffer()
+    writeObject(buf0, t)
+    val len = buf0.readableBytes()
+
+    buf.writeInt(len) //length
+    buf.writeBytes(buf0)
   }
 
-  def save(t: Stream[T]): Unit = {
+  def save(ts: Stream[T]): Unit = {
     val appender = new FileOutputStream(getFile, false)
-    val buf = Unpooled.buffer()
-    t.foreach(writeObjectBlock(buf, _))
-    appender.write(buf.array().slice(0, buf.readableBytes()))
+    ts.foreach{t=>
+      val buf = Unpooled.buffer()
+      writeObjectBlock(buf, t)
+        appender.write(buf.array().slice(0, buf.readableBytes()))
+    }
     appender.close()
   }
 
   lazy val appender = new FileOutputStream(getFile, true)
 
-  def append(t: T) = {
+  def append(t: T) {
     append(Some(t))
   }
 
-  def append(t: Iterable[T]) = {
+  def append(ts: Iterable[T]) {
     val buf = Unpooled.buffer()
-    t.foreach(writeObjectBlock(buf, _))
+    ts.foreach(writeObjectBlock(buf, _))
     appender.write(buf.array().slice(0, buf.readableBytes()))
     appender.flush()
   }
