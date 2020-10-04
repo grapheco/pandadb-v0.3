@@ -7,6 +7,10 @@ import io.netty.buffer.ByteBuf
 class DataInputStreamEx(dis: DataInputStream) {
   def readString(): String = {
     val len = dis.readInt()
+    readString(len)
+  }
+
+  def readString(len: Int): String = {
     val bs = new Array[Byte](len)
     dis.readFully(bs)
     new String(bs, "utf-8")
@@ -16,20 +20,26 @@ class DataInputStreamEx(dis: DataInputStream) {
 class ByteBufEx(buf: ByteBuf) {
   def readString(): String = {
     val len = buf.readInt()
+    readString(len)
+  }
+
+  def readString(len: Int): String = {
     val bs = new Array[Byte](len)
     buf.readBytes(bs)
     new String(bs, "utf-8")
   }
 
-  def writeString(s:String)={
-    buf.writeInt(s.length)
+  def writeString(s: String, writeLengthFirst: Boolean = true) = {
+    if (writeLengthFirst)
+      buf.writeInt(s.length)
     buf.writeBytes(s.getBytes("utf-8"))
   }
 }
 
 class DataOutputStreamEx(dos: DataOutputStream) {
-  def writeString(s: String) = {
-    dos.writeInt(s.length)
+  def writeString(s: String, writeLengthFirst: Boolean = true) = {
+    if (writeLengthFirst)
+      dos.writeInt(s.length)
     dos.write(s.getBytes("utf-8"))
   }
 }

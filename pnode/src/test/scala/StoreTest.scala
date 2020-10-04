@@ -1,6 +1,6 @@
 import java.io.File
 
-import cn.pandadb.pnode.store.{CreateNode, CreateRelation, FileBasedLogStore, FileBasedNodeStore, FileBasedRelationStore, Node, Relation}
+import cn.pandadb.pnode.store.{CreateNode, CreateRelation, FileBasedLogStore, FileBasedNodeStore, FileBasedRelationStore, FileBasedLogStore, Node, NodeStore, Relation, RelationStore}
 import org.apache.commons.io.FileUtils
 import org.junit.{Assert, Before, Test}
 
