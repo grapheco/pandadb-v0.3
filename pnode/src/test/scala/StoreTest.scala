@@ -8,18 +8,18 @@ import org.junit.{Assert, Before, Test}
 class StoreTest {
   @Before
   def setup(): Unit = {
-    FileUtils.deleteDirectory(new File("./testoutput"))
-    new File("./testoutput").mkdir()
-    new File("./testoutput/nodes").createNewFile()
-    new File("./testoutput/rels").createNewFile()
-    new File("./testoutput/logs").createNewFile()
+    FileUtils.deleteDirectory(new File("./testdata/output"))
+    new File("./testdata/output").mkdirs()
+    new File("./testdata/output/nodes").createNewFile()
+    new File("./testdata/output/rels").createNewFile()
+    new File("./testdata/output/logs").createNewFile()
   }
 
   @Test
   def test1(): Unit = {
-    val nodes = new FileBasedNodeStore(new File("./testoutput/nodes"))
-    val rels = new FileBasedRelationStore(new File("./testoutput/rels"))
-    val logs = new FileBasedLogStore(new File("./testoutput/logs"))
+    val nodes = new FileBasedNodeStore(new File("./testdata/output/nodes"))
+    val rels = new FileBasedRelationStore(new File("./testdata/output/rels"))
+    val logs = new FileBasedLogStore(new File("./testdata/output/logs"))
     val memGraph = new MemGraph(nodes, rels, logs)
 
     Assert.assertEquals(0, nodes.list().size)
