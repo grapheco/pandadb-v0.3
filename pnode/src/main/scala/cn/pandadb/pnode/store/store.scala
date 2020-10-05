@@ -11,6 +11,7 @@ trait SequenceStore[T] {
   def list(): Stream[T]
 
   def save(ts: Stream[T])
+
   def append(t: T)
 
   def append(ts: Iterable[T])
@@ -69,10 +70,10 @@ trait FileBasedSequenceStore[T] extends SequenceStore[T] {
 
   def save(ts: Stream[T]): Unit = {
     val appender = new FileOutputStream(getFile, false)
-    ts.foreach{t=>
+    ts.foreach { t =>
       val buf = Unpooled.buffer()
       writeObjectBlock(buf, t)
-        appender.write(buf.array().slice(0, buf.readableBytes()))
+      appender.write(buf.array().slice(0, buf.readableBytes()))
     }
     appender.close()
   }
@@ -102,7 +103,7 @@ class FileBasedLogStore(val file: File) extends FileBasedSequenceStore[LogRecord
         DeleteNode(buf.readLong())
 
       case 2 =>
-        CreateRelation(Relation(buf.readLong(), buf.readLong(), buf.readLong()))
+        CreateRelation(Relation(buf.readLong(), buf.readLong(), buf.readLong(), buf.readString()))
 
       case 12 =>
         DeleteRelation(buf.readLong())
@@ -119,7 +120,7 @@ class FileBasedLogStore(val file: File) extends FileBasedSequenceStore[LogRecord
 
       case CreateRelation(t) =>
         buf.writeByte(2)
-        buf.writeLong(t.id).writeLong(t.from).writeLong(t.to)
+        buf.writeLong(t.id).writeLong(t.from).writeLong(t.to).writeString(t.label)
 
       case DeleteNode(id) =>
         buf.writeByte(11)
@@ -152,7 +153,7 @@ case class Node(id: Long, labels: String*) {
 
 }
 
-case class Relation(id: Long, from: Long, to: Long, labels: String*) {
+case class Relation(id: Long, from: Long, to: Long, label: String) {
 
 }
 
@@ -170,8 +171,8 @@ class FileBasedNodeStore(seqFile: File) extends FileBasedSequenceStore[Node] {
 class FileBasedRelationStore(seqFile: File) extends FileBasedSequenceStore[Relation] {
   override def getFile: File = seqFile
 
-  override def readObject(buf: ByteBuf): Relation = Relation(buf.readLong(), buf.readLong(), buf.readLong())
+  override def readObject(buf: ByteBuf): Relation = Relation(buf.readLong(), buf.readLong(), buf.readLong(), buf.readString())
 
   override def writeObject(buf: ByteBuf, t: Relation): Unit =
-    buf.writeLong(t.id).writeLong(t.from).writeLong(t.to).writeString(t.labels.mkString(";"))
+    buf.writeLong(t.id).writeLong(t.from).writeLong(t.to).writeString(t.label)
 }
