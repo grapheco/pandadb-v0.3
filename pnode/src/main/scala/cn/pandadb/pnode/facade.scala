@@ -10,6 +10,7 @@ class GraphFacade(nodeStore: FileBasedNodeStore,
                   gop: GraphOp,
                   pop: PropertiesOp) {
 
+  //FIXME: expensive time cost
   def loadAll(): Unit = {
     gop.addNodes(nodeStore.list())
     gop.addRelations(relStore.list())
@@ -32,6 +33,7 @@ class GraphFacade(nodeStore: FileBasedNodeStore,
   def addNode(props: Map[String, Any], labels: String*): this.type = {
     val nid = nodeIdGen.nextId()
     val node = Node(nid, labels: _*)
+    //TODO: transaction safe
     logStore.append(CreateNode(node))
     pop.create(NodeId(nid), props)
     gop.addNode(node)
@@ -41,6 +43,7 @@ class GraphFacade(nodeStore: FileBasedNodeStore,
   def addRelation(label: String, from: Long, to: Long, props: Map[String, Any]): this.type = {
     val rid = relIdGen.nextId()
     val rel = Relation(rid, from, to, label)
+    //TODO: transaction safe
     logStore.append(CreateRelation(rel))
     pop.create(RelationId(rid), props)
     gop.addRelation(rel)
