@@ -16,6 +16,8 @@ trait SequenceStore[T] {
   def append(ts: Iterable[T])
 
   def clear()
+
+  def close()
 }
 
 /**
@@ -26,6 +28,10 @@ trait FileBasedSequenceStore[T] extends SequenceStore[T] {
   def getFile: File
 
   def readObject(buf: ByteBuf): T
+
+  def close(): Unit = {
+    appender.close()
+  }
 
   private def createStream(dis: DataInputStream): Stream[T] = {
     try {
@@ -58,8 +64,11 @@ trait FileBasedSequenceStore[T] extends SequenceStore[T] {
 
   def writeObject(buf: ByteBuf, t: T)
 
+  val OBJECT_BLOCK_BUF = new Array[Byte](1024)
+
   protected def writeObjectBlock(buf: ByteBuf, t: T): Unit = {
-    val buf0 = Unpooled.buffer()
+    val buf0 = Unpooled.wrappedBuffer(OBJECT_BLOCK_BUF)
+    buf0.resetWriterIndex()
     writeObject(buf0, t)
     val len = buf0.readableBytes()
 
@@ -68,12 +77,19 @@ trait FileBasedSequenceStore[T] extends SequenceStore[T] {
   }
 
   def save(ts: Stream[T]): Unit = {
-    val appender = new FileOutputStream(getFile, false)
+    val appender = new FileOutputStream(getFile, false).getChannel
+    val buf = Unpooled.buffer()
     ts.foreach { t =>
-      val buf = Unpooled.buffer()
       writeObjectBlock(buf, t)
-      appender.write(buf.array().slice(0, buf.readableBytes()))
+      if (buf.readableBytes() > 10240) {
+        appender.write(buf.nioBuffer())
+        buf.clear()
+      }
     }
+
+    if (buf.readableBytes() > 0)
+      appender.write(buf.nioBuffer())
+
     appender.close()
   }
 

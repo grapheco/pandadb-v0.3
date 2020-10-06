@@ -36,6 +36,11 @@ class StoreTest {
         override def delete(id: TypedId): Unit = propStore -= id
 
         override def lookup(id: TypedId): Option[Map[String, Any]] = propStore.get(id).map(_.toMap)
+
+        override def close(): Unit = {
+        }
+      }, {
+
       }
     )
 
@@ -59,5 +64,7 @@ class StoreTest {
     Assert.assertEquals(1, nodes.list()(0).id)
     Assert.assertEquals(2, nodes.list()(1).id)
     Assert.assertEquals(1, rels.list()(0).id)
+
+    memGraph.close()
   }
 }

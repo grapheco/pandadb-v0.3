@@ -8,7 +8,19 @@ class GraphFacade(nodeStore: FileBasedNodeStore,
                   nodeIdGen: FileBasedIdGen,
                   relIdGen: FileBasedIdGen,
                   gop: GraphOp,
-                  pop: PropertiesOp) {
+                  pop: PropertiesOp,
+                  onClose: => Unit) {
+  def close(): Unit = {
+    nodeStore.close
+    relStore.close
+    logStore.close
+    nodeIdGen.flush()
+    relIdGen.flush()
+    gop.close
+    pop.close
+
+    onClose
+  }
 
   //FIXME: expensive time cost
   def loadAll(): Unit = {

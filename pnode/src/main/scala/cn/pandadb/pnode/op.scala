@@ -18,6 +18,8 @@ trait GraphOp {
   def nodes(): Stream[Node]
 
   def rels(): Stream[Relation]
+
+  def close()
 }
 
 trait Properties {
@@ -40,4 +42,6 @@ trait PropertiesOp {
   def delete(id: TypedId)
 
   def lookup(id: TypedId): Option[Map[String, Any]]
+
+  def close()
 }

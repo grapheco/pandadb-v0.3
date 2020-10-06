@@ -27,5 +27,10 @@ class MemGraphOp extends GraphOp {
   override def nodes(): Stream[Node] = mapNodes.values.toStream
 
   override def rels(): Stream[Relation] = mapRels.values.toStream
+
+  override def close(): Unit = {
+    mapNodes.clear()
+    mapRels.clear()
+  }
 }
 
