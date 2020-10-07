@@ -1,3 +1,5 @@
+package cn.pandadb
+
 import java.io.File
 
 import cn.pandadb.pnode.store.{FileBasedNodeStore, Node}
@@ -17,6 +19,13 @@ class PerfTest {
     val nodes = new FileBasedNodeStore(new File("./testdata/output/nodes"))
     timing {
       nodes.save((1 to 100000000).toStream.map(Node(_)))
+    }
+  }
+
+  @Test
+  def testPrintLargeGraph(): Unit = {
+    timing {
+      (1 to 100000000).toStream.map(Node(_)).foreach(println(_))
     }
   }
 }

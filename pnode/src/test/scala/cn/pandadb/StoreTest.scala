@@ -1,7 +1,9 @@
+package cn.pandadb
+
 import java.io.File
 
-import cn.pandadb.pnode.{GraphFacade, MemGraphOp, Properties, PropertiesOp, TypedId}
-import cn.pandadb.pnode.store.{CreateNode, CreateRelation, FileBasedIdGen, FileBasedLogStore, FileBasedNodeStore, FileBasedRelationStore, Node, Relation}
+import cn.pandadb.pnode.store.{FileBasedIdGen, FileBasedLogStore, FileBasedNodeStore, FileBasedRelationStore}
+import cn.pandadb.pnode.{GraphFacade, MemGraphOp, PropertiesOp, TypedId}
 import org.apache.commons.io.FileUtils
 import org.junit.{Assert, Before, Test}
 

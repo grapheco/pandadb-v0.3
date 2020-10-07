@@ -1,3 +1,5 @@
+package cn.pandadb
+
 import java.io.File
 
 import cn.pandadb.pnode.store.FileBasedIdGen
