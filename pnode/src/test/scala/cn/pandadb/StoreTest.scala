@@ -2,7 +2,7 @@ package cn.pandadb
 
 import java.io.File
 
-import cn.pandadb.pnode.store.{FileBasedIdGen, FileBasedLogStore, FileBasedNodeStore, FileBasedRelationStore}
+import cn.pandadb.pnode.store.{FileBasedIdGen, FileBasedLabelStore, FileBasedLogStore, FileBasedNodeStore, FileBasedRelationStore}
 import cn.pandadb.pnode.{GraphFacade, MemGraphOp, PropertiesOp, TypedId}
 import org.apache.commons.io.FileUtils
 import org.junit.{Assert, Before, Test}
@@ -15,6 +15,8 @@ class StoreTest {
     FileUtils.deleteDirectory(new File("./testdata/output"))
     new File("./testdata/output").mkdirs()
     new File("./testdata/output/nodes").createNewFile()
+    new File("./testdata/output/nodelabels").createNewFile()
+    new File("./testdata/output/rellabels").createNewFile()
     new File("./testdata/output/rels").createNewFile()
     new File("./testdata/output/logs").createNewFile()
   }
@@ -26,6 +28,8 @@ class StoreTest {
     val logs = new FileBasedLogStore(new File("./testdata/output/logs"))
 
     val memGraph = new GraphFacade(nodes, rels, logs,
+      new FileBasedLabelStore(new File("./testdata/output/nodelabels")),
+      new FileBasedLabelStore(new File("./testdata/output/rellabels")),
       new FileBasedIdGen(new File("./testdata/output/nodeid"), 100),
       new FileBasedIdGen(new File("./testdata/output/relid"), 100),
       new MemGraphOp(),
@@ -46,26 +50,26 @@ class StoreTest {
       }
     )
 
-    Assert.assertEquals(0, nodes.list().size)
-    Assert.assertEquals(0, rels.list().size)
-    Assert.assertEquals(0, logs.list().size)
+    Assert.assertEquals(0, nodes.load().size)
+    Assert.assertEquals(0, rels.load().size)
+    Assert.assertEquals(0, logs.load().size)
 
     memGraph.addNode(Map("name" -> "bluejoe")).addNode(Map("name" -> "alex")).addRelation("knows", 1, 2, Map())
 
-    Assert.assertEquals(3, logs.list().size)
-    Assert.assertEquals(0, nodes.list().size)
-    Assert.assertEquals(0, rels.list().size)
+    Assert.assertEquals(3, logs.load().size)
+    Assert.assertEquals(0, nodes.load().size)
+    Assert.assertEquals(0, rels.load().size)
 
     //flush now
     memGraph.dumpAll()
 
-    Assert.assertEquals(0, logs.list().size)
-    Assert.assertEquals(2, nodes.list().size)
-    Assert.assertEquals(1, rels.list().size)
+    Assert.assertEquals(0, logs.load().size)
+    Assert.assertEquals(2, nodes.load().size)
+    Assert.assertEquals(1, rels.load().size)
 
-    Assert.assertEquals(1, nodes.list()(0).id)
-    Assert.assertEquals(2, nodes.list()(1).id)
-    Assert.assertEquals(1, rels.list()(0).id)
+    Assert.assertEquals(1, nodes.load()(0).id)
+    Assert.assertEquals(2, nodes.load()(1).id)
+    Assert.assertEquals(1, rels.load()(0).id)
 
     memGraph.close()
   }

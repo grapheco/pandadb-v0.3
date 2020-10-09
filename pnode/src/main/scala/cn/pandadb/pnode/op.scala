@@ -1,23 +1,23 @@
 package cn.pandadb.pnode
 
-import cn.pandadb.pnode.store.{Node, Relation}
+import cn.pandadb.pnode.store.{StoredNode, StoredRelation}
 
 trait GraphOp {
-  def addNode(t: Node)
+  def addNode(t: StoredNode)
 
   def deleteNode(id: Long)
 
-  def addRelation(t: Relation)
+  def addRelation(t: StoredRelation)
 
   def deleteRelation(id: Long)
 
-  def addNodes(ts: Stream[Node])
+  def addNodes(ts: Stream[StoredNode])
 
-  def addRelations(ts: Stream[Relation])
+  def addRelations(ts: Stream[StoredRelation])
 
-  def nodes(): Stream[Node]
+  def nodes(): Stream[StoredNode]
 
-  def rels(): Stream[Relation]
+  def rels(): Stream[StoredRelation]
 
   def close()
 }

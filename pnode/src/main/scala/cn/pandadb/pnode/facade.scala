@@ -2,9 +2,13 @@ package cn.pandadb.pnode
 
 import cn.pandadb.pnode.store._
 
+import scala.collection.mutable
+
 class GraphFacade(nodeStore: FileBasedNodeStore,
                   relStore: FileBasedRelationStore,
                   logStore: FileBasedLogStore,
+                  nodeLabelStore: FileBasedLabelStore,
+                  relLabelStore: FileBasedLabelStore,
                   nodeIdGen: FileBasedIdGen,
                   relIdGen: FileBasedIdGen,
                   gop: GraphOp,
@@ -24,11 +28,11 @@ class GraphFacade(nodeStore: FileBasedNodeStore,
 
   //FIXME: expensive time cost
   def loadAll(): Unit = {
-    gop.addNodes(nodeStore.list())
-    gop.addRelations(relStore.list())
+    gop.addNodes(nodeStore.load())
+    gop.addRelations(relStore.load())
 
     //load logs
-    logStore.list().foreach {
+    logStore.load().foreach {
       _ match {
         case CreateNode(t) =>
           gop.addNode(t)
@@ -43,18 +47,20 @@ class GraphFacade(nodeStore: FileBasedNodeStore,
   }
 
   def addNode(props: Map[String, Any], labels: String*): this.type = {
-    val nid = nodeIdGen.nextId()
-    val node = Node(nid, labels: _*)
+    val nodeId = nodeIdGen.nextId()
+    val labelIds = (Map(0 -> 0, 1 -> 0, 2 -> 0, 3 -> 0) ++ nodeLabelStore.ids(labels.toSet).zipWithIndex).values.toArray
+    val node = StoredNode(nodeId, labelIds(0), labelIds(1), labelIds(2), labelIds(3))
     //TODO: transaction safe
     logStore.append(CreateNode(node))
-    pop.create(NodeId(nid), props)
+    pop.create(NodeId(nodeId), props)
     gop.addNode(node)
     this
   }
 
   def addRelation(label: String, from: Long, to: Long, props: Map[String, Any]): this.type = {
     val rid = relIdGen.nextId()
-    val rel = Relation(rid, from, to, label)
+    val labelId = relLabelStore.id(label)
+    val rel = StoredRelation(rid, from, to, labelId)
     //TODO: transaction safe
     logStore.append(CreateRelation(rel))
     pop.create(RelationId(rid), props)

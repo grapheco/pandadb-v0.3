@@ -2,7 +2,7 @@ package cn.pandadb.pnode
 
 import java.io.{File, FileNotFoundException}
 
-import cn.pandadb.pnode.store.{FileBasedIdGen, FileBasedLogStore, FileBasedNodeStore, FileBasedRelationStore}
+import cn.pandadb.pnode.store.{FileBasedIdGen, FileBasedLabelStore, FileBasedLogStore, FileBasedNodeStore, FileBasedRelationStore}
 import cn.pandadb.pnode.util.LockFile
 
 import scala.collection.mutable
@@ -17,11 +17,14 @@ object PandaDB {
     val nodes = new FileBasedNodeStore(new File(root, "nodes"))
     val rels = new FileBasedRelationStore(new File(root, "rels"))
     val logs = new FileBasedLogStore(new File(root, "logs"))
+    val nodelabels = new FileBasedLabelStore(new File(root, "nodelabels"))
+    val rellabels = new FileBasedLabelStore(new File(root, "rellabels"))
+
     val lockFile = new LockFile(new File(root, ".lock"))
     lockFile.assertUnlocked()
     lockFile.lock()
 
-    val facade = new GraphFacade(nodes, rels, logs,
+    val facade = new GraphFacade(nodes, rels, logs, nodelabels, rellabels,
       new FileBasedIdGen(new File(root, "nodeid"), 100),
       new FileBasedIdGen(new File(root, "relid"), 100),
       new MemGraphOp(),
