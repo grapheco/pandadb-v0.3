@@ -50,26 +50,26 @@ class StoreTest {
       }
     )
 
-    Assert.assertEquals(0, nodes.load().size)
-    Assert.assertEquals(0, rels.load().size)
-    Assert.assertEquals(0, logs.load().size)
+    Assert.assertEquals(0, nodes.loadAll().size)
+    Assert.assertEquals(0, rels.loadAll().size)
+    Assert.assertEquals(0, logs.loadAll().size)
 
     memGraph.addNode(Map("name" -> "bluejoe")).addNode(Map("name" -> "alex")).addRelation("knows", 1, 2, Map())
 
-    Assert.assertEquals(3, logs.load().size)
-    Assert.assertEquals(0, nodes.load().size)
-    Assert.assertEquals(0, rels.load().size)
+    Assert.assertEquals(3, logs.loadAll().size)
+    Assert.assertEquals(0, nodes.loadAll().size)
+    Assert.assertEquals(0, rels.loadAll().size)
 
     //flush now
     memGraph.dumpAll()
 
-    Assert.assertEquals(0, logs.load().size)
-    Assert.assertEquals(2, nodes.load().size)
-    Assert.assertEquals(1, rels.load().size)
+    Assert.assertEquals(0, logs.loadAll().size)
+    Assert.assertEquals(2, nodes.loadAll().size)
+    Assert.assertEquals(1, rels.loadAll().size)
 
-    Assert.assertEquals(1, nodes.load()(0).id)
-    Assert.assertEquals(2, nodes.load()(1).id)
-    Assert.assertEquals(1, rels.load()(0).id)
+    Assert.assertEquals(1, nodes.loadAll()(0).id)
+    Assert.assertEquals(2, nodes.loadAll()(1).id)
+    Assert.assertEquals(1, rels.loadAll()(0).id)
 
     memGraph.close()
   }

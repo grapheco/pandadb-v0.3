@@ -18,7 +18,7 @@ object PandaDB {
     val rels = new FileBasedRelationStore(new File(root, "rels"))
     val logs = new FileBasedLogStore(new File(root, "logs"))
     val nodelabels = new FileBasedLabelStore(new File(root, "nodelabels"))
-    val rellabels = new FileBasedLabelStore(new File(root, "rellabels"))
+    val rellabels = new FileBasedLabelStore(new File(root, "rellabels"), Int.MaxValue)
 
     val lockFile = new LockFile(new File(root, ".lock"))
     lockFile.assertUnlocked()

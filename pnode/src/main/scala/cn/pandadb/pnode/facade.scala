@@ -2,8 +2,6 @@ package cn.pandadb.pnode
 
 import cn.pandadb.pnode.store._
 
-import scala.collection.mutable
-
 class GraphFacade(nodeStore: FileBasedNodeStore,
                   relStore: FileBasedRelationStore,
                   logStore: FileBasedLogStore,
@@ -28,11 +26,11 @@ class GraphFacade(nodeStore: FileBasedNodeStore,
 
   //FIXME: expensive time cost
   def loadAll(): Unit = {
-    gop.addNodes(nodeStore.load())
-    gop.addRelations(relStore.load())
+    gop.addNodes(nodeStore.loadAll())
+    gop.addRelations(relStore.loadAll())
 
     //load logs
-    logStore.load().foreach {
+    logStore.loadAll().foreach {
       _ match {
         case CreateNode(t) =>
           gop.addNode(t)
@@ -84,8 +82,8 @@ class GraphFacade(nodeStore: FileBasedNodeStore,
 
   def dumpAll(): Unit = {
     //TODO: transaction safe
-    nodeStore.save(gop.nodes())
-    relStore.save(gop.rels())
+    nodeStore.saveAll(gop.nodes())
+    relStore.saveAll(gop.rels())
     logStore.clear()
   }
 }

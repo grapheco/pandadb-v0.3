@@ -4,16 +4,12 @@ import java.io._
 
 import io.netty.buffer.{ByteBuf, PooledByteBufAllocator, Unpooled}
 
-trait LogRecord {
-}
-
 trait SequenceStore[Position, T] {
-  def load(): Stream[T]
+  def loadAll(): Stream[T]
 
-  def loadWithPosition(): Stream[(Position, T)]
+  def loadAllWithPosition(): Stream[(Position, T)]
 
-  def save(ts: Stream[T])
-
+  def saveAll(ts: Stream[T])
 }
 
 trait Appendable[T] {
@@ -38,65 +34,64 @@ trait ObjectSerializer[T] {
   def writeObject(buf: ByteBuf, t: T)
 }
 
-trait ObjectBlockSerializationStrategy[T] {
+trait ObjectBlockSerializer[T] {
   def readObjectBlock(dis: DataInputStream): (T, Int)
 
   def writeObjectBlock(buf: ByteBuf, t: T): Int
 }
 
-trait VariantSizedObjectBlockSerializationStrategy[T] extends ObjectBlockSerializationStrategy[T] {
-  val orw: ObjectSerializer[T]
+trait VariantSizedObjectBlockSerializer[T] extends ObjectBlockSerializer[T] {
+  val objectSerializer: ObjectSerializer[T]
 
+  //[length][object]
   def readObjectBlock(dis: DataInputStream): (T, Int) = {
     val len = dis.readInt()
     val bytes = new Array[Byte](len)
     dis.read(bytes)
     val buf = Unpooled.wrappedBuffer(bytes)
-    val t = orw.readObject(buf)
+    val t = objectSerializer.readObject(buf)
     t -> (len + 4)
   }
 
-  val OBJECT_BLOCK_BUF = new Array[Byte](1024)
-
   def writeObjectBlock(buf: ByteBuf, t: T): Int = {
-    val buf0 = Unpooled.wrappedBuffer(OBJECT_BLOCK_BUF)
-    orw.writeObject(buf0, t)
-    val len = buf0.readableBytes()
+    val obuf = Unpooled.buffer()
+    objectSerializer.writeObject(obuf, t)
+    val len = obuf.readableBytes()
 
     buf.writeInt(len) //length
-    buf.writeBytes(buf0)
+    buf.writeBytes(obuf)
     len + 4
   }
 }
 
-trait FixedSizedObjectBlockSerializationStrategy[T] extends ObjectBlockSerializationStrategy[T] {
-  val orw: ObjectSerializer[T]
+trait FixedSizedObjectBlockSerializer[T] extends ObjectBlockSerializer[T] {
+  val objectSerializer: ObjectSerializer[T]
   val fixedSize: Int
+  lazy val bytes = new Array[Byte](fixedSize)
 
   def readObjectBlock(dis: DataInputStream): (T, Int) = {
-    val bytes = new Array[Byte](fixedSize)
     dis.readFully(bytes)
     val buf = Unpooled.wrappedBuffer(bytes)
-    val t = orw.readObject(buf)
+    val t = objectSerializer.readObject(buf)
     t -> fixedSize
   }
 
   def writeObjectBlock(buf: ByteBuf, t: T): Int = {
-    orw.writeObject(buf, t)
+    objectSerializer.writeObject(buf, t)
     fixedSize
   }
 }
 
-trait FileBasedSequenceStore[T] {
+trait FileBasedSequenceStore[T] extends SequenceStore[Long, T] {
   val file: File
 
-  val obss: ObjectBlockSerializationStrategy[T]
+  val blockSerializer: ObjectBlockSerializer[T]
 
-  def save(ts: Stream[T]): Unit = {
+  override final def saveAll(ts: Stream[T]): Unit = {
     val appender = new FileOutputStream(file, false).getChannel
     val buf = PooledByteBufAllocator.DEFAULT.buffer()
     ts.foreach { t =>
-      obss.writeObjectBlock(buf, t)
+      blockSerializer.writeObjectBlock(buf, t)
       if (buf.readableBytes() > 10240) {
         appender.write(buf.nioBuffer())
         buf.clear()
@@ -109,14 +104,14 @@ trait FileBasedSequenceStore[T] {
     appender.close()
   }
 
-  def load(): Stream[T] = {
-    loadWithPosition().map(_._2)
+  override final def loadAll(): Stream[T] = {
+    loadAllWithPosition().map(_._2)
   }
 
-  def loadWithPosition(): Stream[(Long, T)] = {
+  override final def loadAllWithPosition(): Stream[(Long, T)] = {
     def createStream(dis: DataInputStream, offset: Long): Stream[(Long, T)] = {
       try {
-        val t = obss.readObjectBlock(dis)
+        val t = blockSerializer.readObjectBlock(dis)
         Stream.cons(offset -> t._1, {
           createStream(dis, offset + t._2)
         })
@@ -136,57 +131,56 @@ trait FileBasedSequenceStore[T] {
 }
 
 trait AppendingFileBasedSequenceStore[T] extends FileBasedSequenceStore[T] with Appendable[T] with Closable {
-  lazy val appender = new FileOutputStream(file, true)
+  lazy val ptr = new FileOutputStream(file, true).getChannel
 
   def close(): Unit = {
-    appender.close()
+    ptr.close()
   }
 
   def clear(): Unit = {
-    appender.getChannel.truncate(0)
+    ptr.truncate(0)
   }
 
   def append(ts: Iterable[T]) {
     val buf = Unpooled.buffer()
-    ts.foreach(obss.writeObjectBlock(buf, _))
-    appender.write(buf.array().slice(0, buf.readableBytes()))
-    appender.flush()
+    ts.foreach(blockSerializer.writeObjectBlock(buf, _))
+    ptr.write(buf.nioBuffer())
   }
 }
 
-trait RemovableFileBasedSequenceStore[T] extends FileBasedSequenceStore[T] with Appendable[T] with Removable[Long] with Closable with FixedSizedObjectBlockSerializationStrategy[T] {
-  final val obss: ObjectBlockSerializationStrategy[T] = this
+trait RemovableFileBasedSequenceStore[T] extends FileBasedSequenceStore[T] with Appendable[T] with Removable[Long] with Closable with FixedSizedObjectBlockSerializer[T] {
+  final val blockSerializer: ObjectBlockSerializer[T] = this
 
-  lazy val appender = new RandomAccessFile(file, "rw").getChannel
+  lazy val ptr = new RandomAccessFile(file, "rw").getChannel
 
   def close(): Unit = {
-    appender.close()
+    ptr.close()
   }
 
   def clear(): Unit = {
-    appender.truncate(0)
+    ptr.truncate(0)
   }
 
   def append(ts: Iterable[T]) {
     val buf = Unpooled.buffer()
-    ts.foreach(obss.writeObjectBlock(buf, _))
-    appender.position(appender.size())
-    appender.write(buf.nioBuffer())
+    ts.foreach(blockSerializer.writeObjectBlock(buf, _))
+    ptr.position(ptr.size())
+    ptr.write(buf.nioBuffer())
   }
 
   def remove(ps: Iterable[Long]): Unit = {
     val set = Set() ++ ps
-    var total = appender.size()
+    var total = ptr.size()
     set.foreach { pos =>
       if (pos < 0 || pos >= total || pos % fixedSize != 0)
         throw new InvalidPositionException(pos)
 
-      appender.position(pos)
-      appender.transferFrom(appender, total - fixedSize, fixedSize)
+      ptr.position(pos)
+      ptr.transferFrom(ptr, total - fixedSize, fixedSize)
       total -= fixedSize
     }
 
-    appender.truncate(total)
+    ptr.truncate(total)
   }
 }
 

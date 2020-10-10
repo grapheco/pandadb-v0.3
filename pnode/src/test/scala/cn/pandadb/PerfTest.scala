@@ -18,7 +18,7 @@ class PerfTest {
   def testWriteLargeGraph(): Unit = {
     val nodes = new FileBasedNodeStore(new File("./testdata/output/nodes"))
     timing {
-      nodes.save((1 to 100000000).toStream.map(StoredNode(_)))
+      nodes.saveAll((1 to 100000000).toStream.map(StoredNode(_)))
     }
   }
 
