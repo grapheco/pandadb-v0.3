@@ -4,17 +4,9 @@ import cn.pandadb.pnode.store.{StoredNode, StoredRelation}
 
 import scala.collection.mutable
 
-class MemGraphOp extends GraphOp {
+class GraphRAMImpl extends GraphRAM {
   val mapNodes = mutable.LinkedHashMap[Long, StoredNode]()
   val mapRels = mutable.LinkedHashMap[Long, StoredRelation]()
-
-  def addNodes(ts: Stream[StoredNode]): Unit = {
-    mapNodes ++= ts.map(x => x.id -> x)
-  }
-
-  def addRelations(ts: Stream[StoredRelation]): Unit = {
-    mapRels ++= ts.map(x => x.id -> x)
-  }
 
   override def addNode(t: StoredNode): Unit = mapNodes += t.id -> t
 
@@ -29,8 +21,26 @@ class MemGraphOp extends GraphOp {
   override def rels(): Stream[StoredRelation] = mapRels.values.toStream
 
   override def close(): Unit = {
+    clear()
+  }
+
+  override def clear(): Unit = {
     mapNodes.clear()
     mapRels.clear()
   }
+
+  override def updateNodePosition(pos1: Long, pos2: Long): Unit = ???
+
+  override def updateRelationPosition(pos1: Long, pos2: Long): Unit = ???
+
+  override def updateNodePosition(t: StoredNode, pos2: Long): Unit = ???
+
+  override def updateRelationPosition(t: StoredRelation, pos2: Long): Unit = ???
+
+  override def init(nodes: Stream[(Long, StoredNode)], rels: Stream[(Long, StoredRelation)]): Unit = ???
+
+  override def nodePosition(id: Long): Option[Long] = ???
+
+  override def relationPosition(id: Long): Option[Long] = ???
 }
 

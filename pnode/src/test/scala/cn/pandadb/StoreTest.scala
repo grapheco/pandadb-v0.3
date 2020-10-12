@@ -3,7 +3,7 @@ package cn.pandadb
 import java.io.File
 
 import cn.pandadb.pnode.store.{FileBasedIdGen, FileBasedLabelStore, FileBasedLogStore, FileBasedNodeStore, FileBasedRelationStore}
-import cn.pandadb.pnode.{GraphFacade, MemGraphOp, PropertiesOp, TypedId}
+import cn.pandadb.pnode.{GraphFacade, GraphRAMImpl, PropertiesOp, TypedId}
 import org.apache.commons.io.FileUtils
 import org.junit.{Assert, Before, Test}
 
@@ -32,7 +32,7 @@ class StoreTest {
       new FileBasedLabelStore(new File("./testdata/output/rellabels")),
       new FileBasedIdGen(new File("./testdata/output/nodeid"), 100),
       new FileBasedIdGen(new File("./testdata/output/relid"), 100),
-      new MemGraphOp(),
+      new GraphRAMImpl(),
       new PropertiesOp {
         val propStore = mutable.Map[TypedId, mutable.Map[String, Any]]()
 
@@ -52,18 +52,18 @@ class StoreTest {
 
     Assert.assertEquals(0, nodes.loadAll().size)
     Assert.assertEquals(0, rels.loadAll().size)
-    Assert.assertEquals(0, logs.loadAll().size)
+    Assert.assertEquals(0, logs._store.loadAll().size)
 
     memGraph.addNode(Map("name" -> "bluejoe")).addNode(Map("name" -> "alex")).addRelation("knows", 1, 2, Map())
 
-    Assert.assertEquals(3, logs.loadAll().size)
+    Assert.assertEquals(3, logs._store.loadAll().size)
     Assert.assertEquals(0, nodes.loadAll().size)
     Assert.assertEquals(0, rels.loadAll().size)
 
     //flush now
-    memGraph.dumpAll()
+    memGraph.snapshot()
 
-    Assert.assertEquals(0, logs.loadAll().size)
+    Assert.assertEquals(0, logs._store.loadAll().size)
     Assert.assertEquals(2, nodes.loadAll().size)
     Assert.assertEquals(1, rels.loadAll().size)
 

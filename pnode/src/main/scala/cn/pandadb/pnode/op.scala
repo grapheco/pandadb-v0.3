@@ -2,7 +2,15 @@ package cn.pandadb.pnode
 
 import cn.pandadb.pnode.store.{StoredNode, StoredRelation}
 
-trait GraphOp {
+trait GraphRAM {
+  def updateNodePosition(pos1: Long, pos2: Long)
+
+  def updateRelationPosition(pos1: Long, pos2: Long)
+
+  def updateNodePosition(t: StoredNode, pos2: Long)
+
+  def updateRelationPosition(t: StoredRelation, pos2: Long)
+
   def addNode(t: StoredNode)
 
   def deleteNode(id: Long)
@@ -11,15 +19,19 @@ trait GraphOp {
 
   def deleteRelation(id: Long)
 
-  def addNodes(ts: Stream[StoredNode])
-
-  def addRelations(ts: Stream[StoredRelation])
+  def init(nodes: Stream[(Long, StoredNode)], rels: Stream[(Long, StoredRelation)])
 
   def nodes(): Stream[StoredNode]
 
   def rels(): Stream[StoredRelation]
 
-  def close()
+  def clear(): Unit
+
+  def nodePosition(id: Long): Option[Long]
+
+  def relationPosition(id: Long): Option[Long]
+
+  def close(): Unit
 }
 
 trait Properties {

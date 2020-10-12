@@ -1,6 +1,7 @@
 package cn.pandadb.pnode
 
-import cn.pandadb.pnode.store._
+import cn.pandadb.pnode.store.{MergedGraphLogs, _}
+import org.apache.logging.log4j.scala.Logging
 
 class GraphFacade(nodeStore: FileBasedNodeStore,
                   relStore: FileBasedRelationStore,
@@ -9,39 +10,68 @@ class GraphFacade(nodeStore: FileBasedNodeStore,
                   relLabelStore: FileBasedLabelStore,
                   nodeIdGen: FileBasedIdGen,
                   relIdGen: FileBasedIdGen,
-                  gop: GraphOp,
+                  mem: GraphRAM,
                   pop: PropertiesOp,
-                  onClose: => Unit) {
+                  onClose: => Unit) extends Logging {
   def close(): Unit = {
     nodeStore.close
     relStore.close
     logStore.close
     nodeIdGen.flush()
     relIdGen.flush()
-    gop.close
+    mem.close
     pop.close
 
     onClose
   }
 
-  //FIXME: expensive time cost
-  def loadAll(): Unit = {
-    gop.addNodes(nodeStore.loadAll())
-    gop.addRelations(relStore.loadAll())
-
-    //load logs
-    logStore.loadAll().foreach {
-      _ match {
-        case CreateNode(t) =>
-          gop.addNode(t)
-        case CreateRelation(t) =>
-          gop.addRelation(t)
-        case DeleteNode(id) =>
-          gop.deleteNode(id)
-        case DeleteRelation(id) =>
-          gop.deleteRelation(id)
+  val thread = new Thread(new Runnable {
+    override def run(): Unit = {
+      while (true) {
+        Thread.sleep(600000)
+        if (logStore.length > 102400) {
+          logger.debug(s"starting log merging...")
+          mergeLogs2Store(true)
+          logger.debug(s"completed log merging...")
+        }
       }
     }
+  })
+
+  def mergeLogs2Store(updateMem: Boolean): Unit = {
+    logStore.offer {
+      (logs: MergedGraphLogs) =>
+        //mem should be appended before creating logs
+        nodeStore.append(logs.nodes.toAdd)
+
+        nodeStore.replace(logs.nodes.toReplace)
+        if (updateMem) {
+          logs.nodes.toReplace.foreach { x =>
+            mem.updateNodePosition(x._2, x._1)
+          }
+        }
+
+        nodeStore.remove(logs.nodes.toDelete, (pos1: Long, pos2: Long) => {
+          if (updateMem) {
+            mem.updateNodePosition(pos1, pos2)
+          }
+        })
+
+        relStore.append(logs.rels.toAdd)
+        relStore.replace(logs.rels.toReplace)
+        relStore.remove(logs.rels.toDelete, (pos1: Long, pos2: Long) => {
+          if (updateMem) {
+            mem.updateRelationPosition(pos1, pos2)
+          }
+        })
+    }
+  }
+
+  //FIXME: expensive time cost
+  def init(): Unit = {
+    mergeLogs2Store(false)
+    mem.init(nodeStore.loadAllWithPosition(), relStore.loadAllWithPosition())
+    thread.start()
   }
 
   def addNode(props: Map[String, Any], labels: String*): this.type = {
@@ -51,7 +81,7 @@ class GraphFacade(nodeStore: FileBasedNodeStore,
     //TODO: transaction safe
     logStore.append(CreateNode(node))
     pop.create(NodeId(nodeId), props)
-    gop.addNode(node)
+    mem.addNode(node)
     this
   }
 
@@ -62,28 +92,28 @@ class GraphFacade(nodeStore: FileBasedNodeStore,
     //TODO: transaction safe
     logStore.append(CreateRelation(rel))
     pop.create(RelationId(rid), props)
-    gop.addRelation(rel)
+    mem.addRelation(rel)
     this
   }
 
   def deleteNode(id: Long): this.type = {
-    logStore.append(DeleteNode(id))
+    logStore.append(DeleteNode(id, mem.nodePosition(id).getOrElse(-1)))
     pop.delete(NodeId(id))
-    gop.deleteNode(id)
+    mem.deleteNode(id)
     this
   }
 
   def deleteRelation(id: Long): this.type = {
-    logStore.append(DeleteRelation(id))
+    logStore.append(DeleteRelation(id, mem.relationPosition(id).getOrElse(-1)))
     pop.delete(RelationId(id))
-    gop.deleteRelation(id)
+    mem.deleteRelation(id)
     this
   }
 
-  def dumpAll(): Unit = {
+  def snapshot(): Unit = {
     //TODO: transaction safe
-    nodeStore.saveAll(gop.nodes())
-    relStore.saveAll(gop.rels())
+    nodeStore.saveAll(mem.nodes())
+    relStore.saveAll(mem.rels())
     logStore.clear()
   }
 }
