@@ -3,23 +3,22 @@ package cn.pandadb.pnode
 import cn.pandadb.pnode.store.{StoredNode, StoredRelation}
 
 trait GraphRAM {
-  def updateNodePosition(pos1: Long, pos2: Long)
+  type Id = Long
+  type Position = Long
 
-  def updateRelationPosition(pos1: Long, pos2: Long)
+  def updateNodePosition(t: StoredNode, pos2: Position)
 
-  def updateNodePosition(t: StoredNode, pos2: Long)
-
-  def updateRelationPosition(t: StoredRelation, pos2: Long)
+  def updateRelationPosition(t: StoredRelation, pos2: Position)
 
   def addNode(t: StoredNode)
 
-  def deleteNode(id: Long)
+  def deleteNode(id: Id)
 
   def addRelation(t: StoredRelation)
 
-  def deleteRelation(id: Long)
+  def deleteRelation(id: Id)
 
-  def init(nodes: Stream[(Long, StoredNode)], rels: Stream[(Long, StoredRelation)])
+  def init(nodes: Stream[(Position, StoredNode)], rels: Stream[(Position, StoredRelation)])
 
   def nodes(): Stream[StoredNode]
 
@@ -27,9 +26,9 @@ trait GraphRAM {
 
   def clear(): Unit
 
-  def nodePosition(id: Long): Option[Long]
+  def nodePosition(id: Id): Option[Position]
 
-  def relationPosition(id: Long): Option[Long]
+  def relationPosition(id: Id): Option[Position]
 
   def close(): Unit
 }

@@ -13,6 +13,9 @@ class GraphFacade(nodeStore: FileBasedNodeStore,
                   mem: GraphRAM,
                   pop: PropertiesOp,
                   onClose: => Unit) extends Logging {
+  type Id = Long
+  type Position = Long
+
   def close(): Unit = {
     nodeStore.close
     relStore.close
@@ -42,28 +45,32 @@ class GraphFacade(nodeStore: FileBasedNodeStore,
     logStore.offer {
       (logs: MergedGraphLogs) =>
         //mem should be appended before creating logs
-        nodeStore.append(logs.nodes.toAdd)
-
-        nodeStore.replace(logs.nodes.toReplace)
-        if (updateMem) {
-          logs.nodes.toReplace.foreach { x =>
-            mem.updateNodePosition(x._2, x._1)
+        val positNode = (t: StoredNode, pos: Position) => {
+          if (updateMem) {
+            mem.updateNodePosition(t, pos)
           }
         }
 
-        nodeStore.remove(logs.nodes.toDelete, (pos1: Long, pos2: Long) => {
-          if (updateMem) {
-            mem.updateNodePosition(pos1, pos2)
-          }
-        })
+        if (logs.nodes.toAdd.nonEmpty)
+          nodeStore.append(logs.nodes.toAdd, positNode)
+        if (logs.nodes.toReplace.nonEmpty)
+          nodeStore.overwrite(logs.nodes.toReplace, positNode)
+        if (logs.nodes.toDelete.nonEmpty) {
+          nodeStore.remove(logs.nodes.toDelete, positNode)
+        }
 
-        relStore.append(logs.rels.toAdd)
-        relStore.replace(logs.rels.toReplace)
-        relStore.remove(logs.rels.toDelete, (pos1: Long, pos2: Long) => {
+        val positRelation = (t: StoredRelation, pos: Position) => {
           if (updateMem) {
-            mem.updateRelationPosition(pos1, pos2)
+            mem.updateRelationPosition(t, pos)
           }
-        })
+        }
+
+        if (logs.rels.toAdd.nonEmpty)
+          relStore.append(logs.rels.toAdd, positRelation)
+        if (logs.rels.toReplace.nonEmpty)
+          relStore.overwrite(logs.rels.toReplace, positRelation)
+        if (logs.rels.toDelete.nonEmpty)
+          relStore.remove(logs.rels.toDelete, positRelation)
     }
   }
 
@@ -96,14 +103,14 @@ class GraphFacade(nodeStore: FileBasedNodeStore,
     this
   }
 
-  def deleteNode(id: Long): this.type = {
+  def deleteNode(id: Id): this.type = {
     logStore.append(DeleteNode(id, mem.nodePosition(id).getOrElse(-1)))
     pop.delete(NodeId(id))
     mem.deleteNode(id)
     this
   }
 
-  def deleteRelation(id: Long): this.type = {
+  def deleteRelation(id: Id): this.type = {
     logStore.append(DeleteRelation(id, mem.relationPosition(id).getOrElse(-1)))
     pop.delete(RelationId(id))
     mem.deleteRelation(id)

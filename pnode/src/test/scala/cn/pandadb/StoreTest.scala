@@ -54,22 +54,41 @@ class StoreTest {
     Assert.assertEquals(0, rels.loadAll().size)
     Assert.assertEquals(0, logs._store.loadAll().size)
 
-    memGraph.addNode(Map("name" -> "bluejoe")).addNode(Map("name" -> "alex")).addRelation("knows", 1, 2, Map())
+    memGraph.addNode(Map("name" -> "1")).addNode(Map("name" -> "2")).addRelation("1->2", 1, 2, Map())
 
+    //nodes: {1,2}
+    //rels: {1}
     Assert.assertEquals(3, logs._store.loadAll().size)
     Assert.assertEquals(0, nodes.loadAll().size)
     Assert.assertEquals(0, rels.loadAll().size)
 
-    //flush now
-    memGraph.snapshot()
+    memGraph.mergeLogs2Store(true)
 
     Assert.assertEquals(0, logs._store.loadAll().size)
-    Assert.assertEquals(2, nodes.loadAll().size)
-    Assert.assertEquals(1, rels.loadAll().size)
+    Assert.assertEquals(List(1, 2), nodes.loadAll().map(_.id).sorted)
+    Assert.assertEquals(List(1), rels.loadAll().map(_.id).sorted)
 
-    Assert.assertEquals(1, nodes.loadAll()(0).id)
-    Assert.assertEquals(2, nodes.loadAll()(1).id)
-    Assert.assertEquals(1, rels.loadAll()(0).id)
+    memGraph.addNode(Map("name" -> "3"))
+    //nodes: {1,2,3}
+    memGraph.mergeLogs2Store(true)
+
+    Assert.assertEquals(0, logs._store.loadAll().size)
+    Assert.assertEquals(List(1, 2, 3), nodes.loadAll().map(_.id).sorted)
+
+    memGraph.deleteNode(2)
+    //nodes: {1,3}
+    memGraph.mergeLogs2Store(true)
+    Assert.assertEquals(List(1, 3), nodes.loadAll().map(_.id).sorted)
+
+    memGraph.addNode(Map("name" -> "4")).deleteNode(1L)
+    //nodes: {3,4}
+    memGraph.mergeLogs2Store(true)
+    Assert.assertEquals(List(3, 4), nodes.loadAll().map(_.id).sorted)
+
+    memGraph.addNode(Map("name" -> "5")).addNode(Map("name" -> "6")).deleteNode(5L).deleteNode(3L)
+    //nodes: {4,6}
+    memGraph.mergeLogs2Store(true)
+    Assert.assertEquals(List(4, 6), nodes.loadAll().map(_.id).sorted)
 
     memGraph.close()
   }
