@@ -53,7 +53,7 @@ case class MergedGraphLogs
   rels: MergedLogs[StoredRelation, Long]
 )
 
-class FileBasedLogStore(logFile: File) {
+class LogStore(logFile: File) {
   def length() = logFile.length()
 
   def offer[T](consume: (MergedGraphLogs => T)): T = {

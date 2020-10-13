@@ -3,16 +3,18 @@ package cn.pandadb.pnode
 import cn.pandadb.pnode.store.{MergedGraphLogs, _}
 import org.apache.logging.log4j.scala.Logging
 
-class GraphFacade(nodeStore: FileBasedNodeStore,
-                  relStore: FileBasedRelationStore,
-                  logStore: FileBasedLogStore,
-                  nodeLabelStore: FileBasedLabelStore,
-                  relLabelStore: FileBasedLabelStore,
-                  nodeIdGen: FileBasedIdGen,
-                  relIdGen: FileBasedIdGen,
-                  mem: GraphRAM,
-                  pop: PropertiesOp,
-                  onClose: => Unit) extends Logging {
+class GraphFacade(
+                   nodeStore: NodeStore,
+                   relStore: RelationStore,
+                   logStore: LogStore,
+                   nodeLabelStore: LabelStore,
+                   relLabelStore: LabelStore,
+                   nodeIdGen: FileBasedIdGen,
+                   relIdGen: FileBasedIdGen,
+                   mem: GraphRAM,
+                   pop: PropertiesOp,
+                   onClose: => Unit
+                 ) extends Logging {
   type Id = Long
   type Position = Long
 
@@ -47,7 +49,7 @@ class GraphFacade(nodeStore: FileBasedNodeStore,
         //mem should be appended before creating logs
         val positNode = (t: StoredNode, pos: Position) => {
           if (updateMem) {
-            mem.updateNodePosition(t, pos)
+            mem.updateNodePosition(t.id, pos)
           }
         }
 
@@ -61,7 +63,7 @@ class GraphFacade(nodeStore: FileBasedNodeStore,
 
         val positRelation = (t: StoredRelation, pos: Position) => {
           if (updateMem) {
-            mem.updateRelationPosition(t, pos)
+            mem.updateRelationPosition(t.id, pos)
           }
         }
 

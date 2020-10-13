@@ -2,7 +2,7 @@ package cn.pandadb
 
 import java.io.File
 
-import cn.pandadb.pnode.store.{FileBasedNodeStore, StoredNode}
+import cn.pandadb.pnode.store.{NodeStore, StoredNode}
 import cn.pandadb.pnode.util.Profiler.timing
 import org.apache.commons.io.FileUtils
 import org.junit.{Before, Test}
@@ -16,7 +16,7 @@ class PerfTest {
 
   @Test
   def testWriteLargeGraph(): Unit = {
-    val nodes = new FileBasedNodeStore(new File("./testdata/output/nodes"))
+    val nodes = new NodeStore(new File("./testdata/output/nodes"))
     timing {
       nodes.saveAll((1 to 100000000).toStream.map(StoredNode(_)))
     }

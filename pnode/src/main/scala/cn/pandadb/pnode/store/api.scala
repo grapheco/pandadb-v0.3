@@ -16,9 +16,9 @@ trait SequenceStore[T, Position] {
 }
 
 trait Appendable[T, Position] {
-  def append(t: T, posit: (T, Position) => Unit): Position = append(Some(t), posit).head
+  def append(t: T, posit: (T, Position) => Unit): Unit = append(Some(t), posit)
 
-  def append(ts: Iterable[T], posit: (T, Position) => Unit): Iterable[Position]
+  def append(ts: Iterable[T], posit: (T, Position) => Unit): Unit
 }
 
 trait RandomAccessible[T, Position] extends Appendable[T, Position] {
@@ -149,22 +149,19 @@ trait AppendingFileBasedSequenceStore[T] extends FileBasedSequenceStore[T] with 
     ptr.truncate(0)
   }
 
-  override def append(ts: Iterable[T], posit: (T, Position) => Unit): Iterable[Position] = {
+  override def append(ts: Iterable[T], posit: (T, Position) => Unit): Unit = {
     val offset0 = ptr.size()
     var offset = offset0
     val buf = Unpooled.buffer()
-    val offsets = ArrayBuffer[Position]()
     ts.foreach { t =>
       val buf0 = Unpooled.buffer()
       blockSerializer.writeObjectBlock(buf0, t)
       posit(t, offset)
-      offsets += offset
       offset += buf0.readableBytes()
       buf.writeBytes(buf0)
     }
 
     ptr.write(buf.nioBuffer())
-    offsets
   }
 }
 
@@ -182,22 +179,19 @@ trait RandomAccessibleFileBasedSequenceStore[T] extends FileBasedSequenceStore[T
     ptr.truncate(0)
   }
 
-  override def append(ts: Iterable[T], posit: (T, Position) => Unit): Iterable[Position] = {
+  override def append(ts: Iterable[T], posit: (T, Position) => Unit): Unit = {
     val buf = Unpooled.buffer()
     val offset0 = ptr.size()
     var offset = offset0
-    val offsets = ArrayBuffer[Position]()
     ts.foreach { t =>
       val buf0 = Unpooled.buffer()
       blockSerializer.writeObjectBlock(buf0, t)
-      offsets += offset
       posit(t, offset)
       offset += buf0.readableBytes()
       buf.writeBytes(buf0)
     }
 
     ptr.write(buf.nioBuffer(), offset0)
-    offsets
   }
 
   override def remove(poss: Iterable[Position], posit: (T, Position) => Unit): Unit = {

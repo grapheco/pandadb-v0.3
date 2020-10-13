@@ -6,9 +6,9 @@ trait GraphRAM {
   type Id = Long
   type Position = Long
 
-  def updateNodePosition(t: StoredNode, pos2: Position)
+  def updateNodePosition(id: Id, pos2: Position)
 
-  def updateRelationPosition(t: StoredRelation, pos2: Position)
+  def updateRelationPosition(id: Id, pos2: Position)
 
   def addNode(t: StoredNode)
 

@@ -2,7 +2,7 @@ package cn.pandadb.pnode
 
 import java.io.{File, FileNotFoundException}
 
-import cn.pandadb.pnode.store.{FileBasedIdGen, FileBasedLabelStore, FileBasedLogStore, FileBasedNodeStore, FileBasedRelationStore}
+import cn.pandadb.pnode.store.{FileBasedIdGen, LabelStore, LogStore, NodeStore, RelationStore}
 import cn.pandadb.pnode.util.LockFile
 
 import scala.collection.mutable
@@ -14,11 +14,11 @@ object PandaDB {
     if (!dir.exists())
       throw new FileNotFoundException(root.getPath)
 
-    val nodes = new FileBasedNodeStore(new File(root, "nodes"))
-    val rels = new FileBasedRelationStore(new File(root, "rels"))
-    val logs = new FileBasedLogStore(new File(root, "logs"))
-    val nodelabels = new FileBasedLabelStore(new File(root, "nodelabels"))
-    val rellabels = new FileBasedLabelStore(new File(root, "rellabels"), Int.MaxValue)
+    val nodes = new NodeStore(new File(root, "nodes"))
+    val rels = new RelationStore(new File(root, "rels"))
+    val logs = new LogStore(new File(root, "logs"))
+    val nodelabels = new LabelStore(new File(root, "nodelabels"))
+    val rellabels = new LabelStore(new File(root, "rellabels"), Int.MaxValue)
 
     val lockFile = new LockFile(new File(root, ".lock"))
     lockFile.assertUnlocked()

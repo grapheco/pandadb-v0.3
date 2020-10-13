@@ -2,7 +2,7 @@ package cn.pandadb
 
 import java.io.File
 
-import cn.pandadb.pnode.store.{FileBasedIdGen, FileBasedLabelStore, FileBasedLogStore, FileBasedNodeStore, FileBasedRelationStore}
+import cn.pandadb.pnode.store.{FileBasedIdGen, LabelStore, LogStore, NodeStore, RelationStore}
 import cn.pandadb.pnode.{GraphFacade, GraphRAMImpl, PropertiesOp, TypedId}
 import org.apache.commons.io.FileUtils
 import org.junit.{Assert, Before, Test}
@@ -23,13 +23,13 @@ class StoreTest {
 
   @Test
   def test1(): Unit = {
-    val nodes = new FileBasedNodeStore(new File("./testdata/output/nodes"))
-    val rels = new FileBasedRelationStore(new File("./testdata/output/rels"))
-    val logs = new FileBasedLogStore(new File("./testdata/output/logs"))
+    val nodes = new NodeStore(new File("./testdata/output/nodes"))
+    val rels = new RelationStore(new File("./testdata/output/rels"))
+    val logs = new LogStore(new File("./testdata/output/logs"))
 
     val memGraph = new GraphFacade(nodes, rels, logs,
-      new FileBasedLabelStore(new File("./testdata/output/nodelabels")),
-      new FileBasedLabelStore(new File("./testdata/output/rellabels")),
+      new LabelStore(new File("./testdata/output/nodelabels")),
+      new LabelStore(new File("./testdata/output/rellabels")),
       new FileBasedIdGen(new File("./testdata/output/nodeid"), 100),
       new FileBasedIdGen(new File("./testdata/output/relid"), 100),
       new GraphRAMImpl(),

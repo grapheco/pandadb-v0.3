@@ -29,7 +29,7 @@ object RelationSerializer extends ObjectSerializer[StoredRelation] {
  * @param file
  * @param max max value for id
  */
-class FileBasedLabelStore(file: File, max: Int = Byte.MaxValue) {
+class LabelStore(file: File, max: Int = Byte.MaxValue) {
   val map: mutable.Map[String, Int] = {
     val props = new Properties()
     val is = new FileInputStream(file)
@@ -79,12 +79,12 @@ case class StoredRelation(id: Long, from: Long, to: Long, labelId: Int) {
 
 }
 
-class FileBasedNodeStore(val file: File) extends RandomAccessibleFileBasedSequenceStore[StoredNode] {
-  override val objectSerializer: ObjectSerializer[StoredNode] = NodeSerializer
-  override val fixedSize: Int = 8 + 4
+class NodeStore(val file: File)  extends RandomAccessibleFileBasedSequenceStore[StoredNode] {
+    override val objectSerializer: ObjectSerializer[StoredNode] = NodeSerializer
+    override val fixedSize: Int = 8 + 4
 }
 
-class FileBasedRelationStore(val file: File) extends RandomAccessibleFileBasedSequenceStore[StoredRelation] {
+class RelationStore(val file: File) extends RandomAccessibleFileBasedSequenceStore[StoredRelation] {
   override val objectSerializer: ObjectSerializer[StoredRelation] = RelationSerializer
   override val fixedSize: Int = 8 * 3 + 4
 }
