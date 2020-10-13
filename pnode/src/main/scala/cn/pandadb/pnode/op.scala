@@ -4,11 +4,6 @@ import cn.pandadb.pnode.store.{StoredNode, StoredRelation}
 
 trait GraphRAM {
   type Id = Long
-  type Position = Long
-
-  def updateNodePosition(id: Id, pos2: Position)
-
-  def updateRelationPosition(id: Id, pos2: Position)
 
   def addNode(t: StoredNode)
 
@@ -18,17 +13,11 @@ trait GraphRAM {
 
   def deleteRelation(id: Id)
 
-  def init(nodes: Stream[(Position, StoredNode)], rels: Stream[(Position, StoredRelation)])
-
   def nodes(): Stream[StoredNode]
 
   def rels(): Stream[StoredRelation]
 
   def clear(): Unit
-
-  def nodePosition(id: Id): Option[Position]
-
-  def relationPosition(id: Id): Option[Position]
 
   def close(): Unit
 }

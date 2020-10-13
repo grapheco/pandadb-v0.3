@@ -5,8 +5,6 @@ import java.nio.ByteBuffer
 
 import io.netty.buffer.{ByteBuf, PooledByteBufAllocator, Unpooled}
 
-import scala.collection.mutable.ArrayBuffer
-
 trait SequenceStore[T, Position] {
   def loadAll(): Stream[T]
 

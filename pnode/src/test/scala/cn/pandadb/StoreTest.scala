@@ -3,7 +3,7 @@ package cn.pandadb
 import java.io.File
 
 import cn.pandadb.pnode.store.{FileBasedIdGen, LabelStore, LogStore, NodeStore, RelationStore}
-import cn.pandadb.pnode.{GraphFacade, GraphRAMImpl, PropertiesOp, TypedId}
+import cn.pandadb.pnode.{GraphFacade, SimpleGraphRAM, PropertiesOp, TypedId}
 import org.apache.commons.io.FileUtils
 import org.junit.{Assert, Before, Test}
 
@@ -32,7 +32,7 @@ class StoreTest {
       new LabelStore(new File("./testdata/output/rellabels")),
       new FileBasedIdGen(new File("./testdata/output/nodeid"), 100),
       new FileBasedIdGen(new File("./testdata/output/relid"), 100),
-      new GraphRAMImpl(),
+      new SimpleGraphRAM(),
       new PropertiesOp {
         val propStore = mutable.Map[TypedId, mutable.Map[String, Any]]()
 

@@ -27,7 +27,7 @@ object PandaDB {
     val facade = new GraphFacade(nodes, rels, logs, nodelabels, rellabels,
       new FileBasedIdGen(new File(root, "nodeid"), 100),
       new FileBasedIdGen(new File(root, "relid"), 100),
-      new GraphRAMImpl(),
+      new SimpleGraphRAM(),
       new PropertiesOp {
         val propStore = mutable.Map[TypedId, mutable.Map[String, Any]]()
 

@@ -15,8 +15,11 @@ class GraphFacade(
                    pop: PropertiesOp,
                    onClose: => Unit
                  ) extends Logging {
+
   type Id = Long
   type Position = Long
+
+  val (posNodes, posRels) = (new SimplePositionMap(), new SimplePositionMap())
 
   def close(): Unit = {
     nodeStore.close
@@ -49,7 +52,7 @@ class GraphFacade(
         //mem should be appended before creating logs
         val positNode = (t: StoredNode, pos: Position) => {
           if (updateMem) {
-            mem.updateNodePosition(t.id, pos)
+            posNodes.update(t.id, pos)
           }
         }
 
@@ -63,7 +66,7 @@ class GraphFacade(
 
         val positRelation = (t: StoredRelation, pos: Position) => {
           if (updateMem) {
-            mem.updateRelationPosition(t.id, pos)
+            posRels.update(t.id, pos)
           }
         }
 
@@ -79,7 +82,19 @@ class GraphFacade(
   //FIXME: expensive time cost
   def init(): Unit = {
     mergeLogs2Store(false)
-    mem.init(nodeStore.loadAllWithPosition(), relStore.loadAllWithPosition())
+    mem.clear()
+    posNodes.clear()
+    posRels.clear()
+    nodeStore.loadAllWithPosition().foreach { tp =>
+      mem.addNode(tp._2)
+      posNodes.update(tp._2.id, tp._1)
+    }
+
+    relStore.loadAllWithPosition().foreach { tp =>
+      mem.addRelation(tp._2)
+      posRels.update(tp._2.id, tp._1)
+    }
+
     thread.start()
   }
 
@@ -106,14 +121,14 @@ class GraphFacade(
   }
 
   def deleteNode(id: Id): this.type = {
-    logStore.append(DeleteNode(id, mem.nodePosition(id).getOrElse(-1)))
+    logStore.append(DeleteNode(id, posNodes.position(id).getOrElse(-1)))
     pop.delete(NodeId(id))
     mem.deleteNode(id)
     this
   }
 
   def deleteRelation(id: Id): this.type = {
-    logStore.append(DeleteRelation(id, mem.relationPosition(id).getOrElse(-1)))
+    logStore.append(DeleteRelation(id, posRels.position(id).getOrElse(-1)))
     pop.delete(RelationId(id))
     mem.deleteRelation(id)
     this
