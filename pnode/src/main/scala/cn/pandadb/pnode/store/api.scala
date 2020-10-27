@@ -6,11 +6,11 @@ import java.nio.ByteBuffer
 import io.netty.buffer.{ByteBuf, PooledByteBufAllocator, Unpooled}
 
 trait SequenceStore[T, Position] {
-  def loadAll(): Stream[T]
+  def loadAll(): Seq[T]
 
-  def loadAllWithPosition(): Stream[(Position, T)]
+  def loadAllWithPosition(): Seq[(Position, T)]
 
-  def saveAll(ts: Stream[T])
+  def saveAll(ts: Seq[T])
 }
 
 trait Appendable[T, Position] {
@@ -93,7 +93,7 @@ trait FileBasedSequenceStore[T] extends SequenceStore[T, Long] {
 
   val blockSerializer: ObjectBlockSerializer[T]
 
-  override final def saveAll(ts: Stream[T]): Unit = {
+  override final def saveAll(ts: Seq[T]): Unit = {
     val appender = new FileOutputStream(file, false).getChannel
     val buf = PooledByteBufAllocator.DEFAULT.buffer()
     ts.foreach { t =>
@@ -110,11 +110,11 @@ trait FileBasedSequenceStore[T] extends SequenceStore[T, Long] {
     appender.close()
   }
 
-  override final def loadAll(): Stream[T] = {
+  override final def loadAll(): Seq[T] = {
     loadAllWithPosition().map(_._2)
   }
 
-  override final def loadAllWithPosition(): Stream[(Position, T)] = {
+  override final def loadAllWithPosition(): Seq[(Position, T)] = {
     def createStream(dis: DataInputStream, offset: Position): Stream[(Long, T)] = {
       try {
         val t = blockSerializer.readObjectBlock(dis)
