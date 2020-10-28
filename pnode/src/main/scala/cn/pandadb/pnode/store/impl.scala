@@ -38,6 +38,8 @@ class LabelStore(file: File, max: Int = Byte.MaxValue) {
     mutable.Map[String, Int]() ++ JavaConversions.propertiesAsScalaMap(props).map(x => x._1 -> x._2.toInt)
   }
 
+  def key(id: Int) = map.find(_._2 == id).map(_._1)
+
   def id(key: String): Int = {
     ids(Set(key)).head
   }
@@ -79,9 +81,9 @@ case class StoredRelation(id: Long, from: Long, to: Long, labelId: Int) {
 
 }
 
-class NodeStore(val file: File)  extends RandomAccessibleFileBasedSequenceStore[StoredNode] {
-    override val objectSerializer: ObjectSerializer[StoredNode] = NodeSerializer
-    override val fixedSize: Int = 8 + 4
+class NodeStore(val file: File) extends RandomAccessibleFileBasedSequenceStore[StoredNode] {
+  override val objectSerializer: ObjectSerializer[StoredNode] = NodeSerializer
+  override val fixedSize: Int = 8 + 4
 }
 
 class RelationStore(val file: File) extends RandomAccessibleFileBasedSequenceStore[StoredRelation] {

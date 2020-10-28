@@ -7,6 +7,10 @@ trait GraphRAM {
 
   def addNode(t: StoredNode)
 
+  def nodeAt(id: Id): StoredNode
+
+  def relationAt(id: Id): StoredRelation
+
   def deleteNode(id: Id)
 
   def addRelation(t: StoredRelation)

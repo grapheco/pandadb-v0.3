@@ -2,6 +2,10 @@ package cn.pandadb.pnode
 
 import cn.pandadb.pnode.store.{MergedGraphLogs, _}
 import org.apache.logging.log4j.scala.Logging
+import org.opencypher.lynx.{LynxSession, PropertyGraphScan}
+import org.opencypher.okapi.api.graph.CypherResult
+import org.opencypher.okapi.api.value.CypherValue
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship}
 
 class GraphFacade(
                    nodeStore: NodeStore,
@@ -19,7 +23,51 @@ class GraphFacade(
   type Id = Long
   type Position = Long
 
-  val (posNodes, posRels) = (new SimplePositionMap(), new SimplePositionMap())
+  private val (posNodes, posRels) = (new SimplePositionMap(), new SimplePositionMap())
+
+  private val graphService = new LynxSession().createPropertyGraph(new PropertyGraphScan[Long] {
+    def mapNode(node: StoredNode): Node[Id] = {
+      new Node[Id] {
+        override type I = this.type
+
+        override def id: Id = node.id
+
+        override def labels: Set[String] = Set(node.labelId1, node.labelId2, node.labelId3, node.labelId4).filter(_ > 0).map(nodeLabelStore.key(_).get)
+
+        override def copy(id: Long, labels: Set[String], properties: CypherValue.CypherMap): this.type = ???
+
+        override def properties: CypherValue.CypherMap = CypherMap(pop.lookup(NodeId(node.id)).get.toSeq: _*)
+      }
+    }
+
+    override def nodeAt(id: Long): CypherValue.Node[Long] = mapNode(mem.nodeAt(id))
+
+    override def allNodes(): Seq[Node[Id]] = mem.nodes().map { node =>
+      mapNode(node)
+    }
+
+    override def allRelationships(): Seq[CypherValue.Relationship[Id]] = mem.rels().map { rel =>
+      new Relationship[Id] {
+        override type I = this.type
+
+        override def id: Id = rel.id
+
+        override def startId: Id = rel.from
+
+        override def endId: Id = rel.to
+
+        override def relType: String = relLabelStore.key(rel.labelId).get
+
+        override def copy(id: Id, source: Id, target: Id, relType: String, properties: CypherMap): this.type = ???
+
+        override def properties: CypherMap = CypherMap(pop.lookup(RelationId(rel.id)).get.toSeq: _*)
+      }
+    }
+  })
+
+  def cypher(query: String, parameters: Map[String, Any] = Map.empty): CypherResult = {
+    graphService.cypher(query, CypherMap(parameters.toSeq: _*))
+  }
 
   def close(): Unit = {
     nodeStore.close

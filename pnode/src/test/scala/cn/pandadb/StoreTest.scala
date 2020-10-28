@@ -92,4 +92,39 @@ class StoreTest {
 
     memGraph.close()
   }
+
+  @Test
+  def testQuery(): Unit = {
+    val nodes = new NodeStore(new File("./testdata/output/nodes"))
+    val rels = new RelationStore(new File("./testdata/output/rels"))
+    val logs = new LogStore(new File("./testdata/output/logs"))
+
+    val memGraph = new GraphFacade(nodes, rels, logs,
+      new LabelStore(new File("./testdata/output/nodelabels")),
+      new LabelStore(new File("./testdata/output/rellabels")),
+      new FileBasedIdGen(new File("./testdata/output/nodeid"), 100),
+      new FileBasedIdGen(new File("./testdata/output/relid"), 100),
+      new SimpleGraphRAM(),
+      new PropertiesOp {
+        val propStore = mutable.Map[TypedId, mutable.Map[String, Any]]()
+
+        override def create(id: TypedId, props: Map[String, Any]): Unit =
+          propStore += id -> (mutable.Map[String, Any]() ++ props)
+
+        override def delete(id: TypedId): Unit = propStore -= id
+
+        override def lookup(id: TypedId): Option[Map[String, Any]] = propStore.get(id).map(_.toMap)
+
+        override def close(): Unit = {
+        }
+      }, {
+
+      }
+    )
+
+    val res = memGraph.cypher("match (n) return n")
+    res.show
+
+    memGraph.close()
+  }
 }

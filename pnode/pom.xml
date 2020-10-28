@@ -12,6 +12,16 @@
     <artifactId>pnode</artifactId>
     <dependencies>
         <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>2.11.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api-scala_2.12</artifactId>
+            <version>11.0</version>
+        </dependency>
+        <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-buffer</artifactId>
             <version>4.1.22.Final</version>
@@ -28,19 +38,19 @@
             <version>2.6</version>
         </dependency>
         <dependency>
+            <groupId>org.grapheco</groupId>
+            <artifactId>lynx-framework</artifactId>
+            <version>0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.grapheco</groupId>
+            <version>0.1-SNAPSHOT</version>
+            <artifactId>blob-extension</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
             <version>2.11.2</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-scala</artifactId>
-            <version>11.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-api-scala_2.11</artifactId>
-            <version>11.0</version>
         </dependency>
     </dependencies>
 </project>

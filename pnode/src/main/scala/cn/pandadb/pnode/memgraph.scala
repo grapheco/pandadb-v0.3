@@ -28,5 +28,9 @@ class SimpleGraphRAM extends GraphRAM {
     mapNodes.clear()
     mapRelations.clear()
   }
+
+  override def nodeAt(id: Id): StoredNode = mapNodes(id)
+
+  override def relationAt(id: Id): StoredRelation = mapRelations(id)
 }
 
