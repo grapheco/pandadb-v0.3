@@ -104,8 +104,10 @@ trait FileBasedSequenceStore[T] extends SequenceStore[T, Long] {
       }
     }
 
-    if (buf.readableBytes() > 0)
+    if (buf.readableBytes() > 0) {
       appender.write(buf.nioBuffer())
+      buf.release()
+    }
 
     appender.close()
   }

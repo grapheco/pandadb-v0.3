@@ -1,8 +1,10 @@
 package cn.pandadb.pnode.store
 
-import java.io.{File, FileInputStream, FileOutputStream}
-import java.util.Properties
+import java.io.File
+import java.nio.charset.StandardCharsets
+
 import io.netty.buffer.ByteBuf
+
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{JavaConversions, mutable}
 
@@ -23,20 +25,41 @@ object RelationSerializer extends ObjectSerializer[StoredRelation] {
     buf.writeLong(t.id).writeLong(t.from).writeLong(t.to).writeInt(t.labelId)
 }
 
+object LabelSerializer extends ObjectSerializer[StoredLabel]{
+  override def readObject(buf: ByteBuf): StoredLabel = {
+    val length = buf.readInt()
+    val key = buf.readCharSequence(length, StandardCharsets.UTF_8).toString
+    val value = buf.readInt()
+    StoredLabel(key, value)
+  }
+
+  override def writeObject(buf: ByteBuf, t: StoredLabel): Unit = {
+    buf.writeInt(t.key.toCharArray.length)
+    buf.writeCharSequence(t.key.toCharArray, StandardCharsets.UTF_8)
+    buf.writeInt(t.value)
+  }
+}
+
 /**
  * stores labels in format: id=label
  *
- * @param file
+ * @param labelFile
  * @param max max value for id
  */
-class LabelStore(file: File, max: Int = Byte.MaxValue) {
-  val map: mutable.Map[String, Int] = {
-    val props = new Properties()
-    val is = new FileInputStream(file)
-    props.load(is)
-    is.close()
-    mutable.Map[String, Int]() ++ JavaConversions.propertiesAsScalaMap(props).map(x => x._1 -> x._2.toInt)
+class LabelStore(labelFile: File, max: Int = Byte.MaxValue) {
+  val _store = new AppendingFileBasedSequenceStore[StoredLabel] {
+    override val file: File = labelFile
+    override val blockSerializer: ObjectBlockSerializer[StoredLabel] = new VariantSizedObjectBlockSerializer[StoredLabel] {
+      override val objectSerializer: ObjectSerializer[StoredLabel] = new ObjectSerializer[StoredLabel] {
+        override def readObject(buf: ByteBuf): StoredLabel = LabelSerializer.readObject(buf)
+
+        override def writeObject(buf: ByteBuf, t: StoredLabel): Unit = LabelSerializer.writeObject(buf, t)
+      }
+    }
   }
+
+  val map: mutable.Map[String, Int] = mutable.Map()
+  _store.loadAll().toArray.foreach(f=>map.put(f.key, f.value))
 
   def key(id: Int) = map.find(_._2 == id).map(_._1)
 
@@ -60,16 +83,8 @@ class LabelStore(file: File, max: Int = Byte.MaxValue) {
       }
     }
 
-    flush()
+    _store.saveAll(map.map(f=>StoredLabel(f._1, f._2)).toSeq)
     newIds
-  }
-
-  private def flush() = {
-    val props = new Properties()
-    props.putAll(JavaConversions.mapAsJavaMap(map.map(x => x._1 -> x._2.toString)))
-    val os = new FileOutputStream(file)
-    props.save(os, "")
-    os.close()
   }
 }
 
@@ -78,6 +93,10 @@ case class StoredNode(id: Long, labelId1: Int = 0, labelId2: Int = 0, labelId3: 
 }
 
 case class StoredRelation(id: Long, from: Long, to: Long, labelId: Int) {
+
+}
+
+case class StoredLabel(key:String, value: Int){
 
 }
 
