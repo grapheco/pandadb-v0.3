@@ -3,13 +3,22 @@ package cn.pandadb
 import java.io.File
 
 import cn.pandadb.pnode.store.{FileBasedIdGen, LabelStore, LogStore, NodeStore, RelationStore}
-import cn.pandadb.pnode.{GraphFacade, SimpleGraphRAM, PropertiesOp, TypedId}
+import cn.pandadb.pnode.{GraphFacade, PropertiesOp, SimpleGraphRAM, TypedId}
 import org.apache.commons.io.FileUtils
 import org.junit.{Assert, Before, Test}
+import org.opencypher.okapi.api.graph.CypherResult
+import org.opencypher.okapi.api.value.CypherValue.{Node, Relationship}
 
 import scala.collection.mutable
 
 class StoreTest {
+  var nodes: NodeStore = _
+  var rels: RelationStore = _
+  var logs: LogStore = _
+  var nodeLabelStore: LabelStore = _
+  var relLabelStore: LabelStore = _
+  var memGraph: GraphFacade = _
+
   @Before
   def setup(): Unit = {
     FileUtils.deleteDirectory(new File("./testdata/output"))
@@ -19,17 +28,14 @@ class StoreTest {
     new File("./testdata/output/rellabels").createNewFile()
     new File("./testdata/output/rels").createNewFile()
     new File("./testdata/output/logs").createNewFile()
-  }
 
-  @Test
-  def test1(): Unit = {
-    val nodes = new NodeStore(new File("./testdata/output/nodes"))
-    val rels = new RelationStore(new File("./testdata/output/rels"))
-    val logs = new LogStore(new File("./testdata/output/logs"))
+    nodes = new NodeStore(new File("./testdata/output/nodes"))
+    rels = new RelationStore(new File("./testdata/output/rels"))
+    logs = new LogStore(new File("./testdata/output/logs"))
+    nodeLabelStore = new LabelStore(new File("./testdata/output/nodelabels"))
+    relLabelStore = new LabelStore(new File("./testdata/output/rellabels"))
 
-    val memGraph = new GraphFacade(nodes, rels, logs,
-      new LabelStore(new File("./testdata/output/nodelabels")),
-      new LabelStore(new File("./testdata/output/rellabels")),
+    memGraph = new GraphFacade(nodes, rels, logs, nodeLabelStore, relLabelStore,
       new FileBasedIdGen(new File("./testdata/output/nodeid"), 100),
       new FileBasedIdGen(new File("./testdata/output/relid"), 100),
       new SimpleGraphRAM(),
@@ -50,6 +56,10 @@ class StoreTest {
       }
     )
 
+  }
+
+  @Test
+  def test1(): Unit = {
     Assert.assertEquals(0, nodes.loadAll().size)
     Assert.assertEquals(0, rels.loadAll().size)
     Assert.assertEquals(0, logs._store.loadAll().size)
@@ -95,71 +105,40 @@ class StoreTest {
 
   @Test
   def testQuery(): Unit = {
-    val nodes = new NodeStore(new File("./testdata/output/nodes"))
-    val rels = new RelationStore(new File("./testdata/output/rels"))
-    val logs = new LogStore(new File("./testdata/output/logs"))
+    memGraph.addNode(Map("Name" -> "bluejoe", "age" -> 40), "person")
+    memGraph.addNode(Map("Name" -> "alex", "age" -> 20), "person")
+    memGraph.addNode(Map("Name" -> "simba", "age" -> 10), "person")
+    memGraph.addRelation("knows", 1L, 2L, Map())
+    memGraph.addRelation("knows", 2L, 3L, Map())
 
-    val memGraph = new GraphFacade(nodes, rels, logs,
-      new LabelStore(new File("./testdata/output/nodelabels")),
-      new LabelStore(new File("./testdata/output/rellabels")),
-      new FileBasedIdGen(new File("./testdata/output/nodeid"), 100),
-      new FileBasedIdGen(new File("./testdata/output/relid"), 100),
-      new SimpleGraphRAM(),
-      new PropertiesOp {
-        val propStore = mutable.Map[TypedId, mutable.Map[String, Any]]()
-
-        override def create(id: TypedId, props: Map[String, Any]): Unit =
-          propStore += id -> (mutable.Map[String, Any]() ++ props)
-
-        override def delete(id: TypedId): Unit = propStore -= id
-
-        override def lookup(id: TypedId): Option[Map[String, Any]] = propStore.get(id).map(_.toMap)
-
-        override def close(): Unit = {
-        }
-      }, {
-
-      }
-    )
-
-    val res = memGraph.cypher("match (n) return n")
+    var res: CypherResult = null
+    res = memGraph.cypher("match (n) return n")
     res.show
+    Assert.assertEquals(3, res.records.size)
+
+    res = memGraph.cypher("match (m)-[r]->(n) return m,r,n")
+    res.show
+    val rec = res.records.collect
+    Assert.assertEquals(2, rec.size)
+
+    Assert.assertEquals(1, rec.apply(0).apply("m").cast[Node[Long]].id)
+    Assert.assertEquals(2, rec.apply(0).apply("n").cast[Node[Long]].id)
+    Assert.assertEquals(1, rec.apply(0).apply("r").cast[Relationship[Long]].id)
+
+    Assert.assertEquals(2, rec.apply(1).apply("m").cast[Node[Long]].id)
+    Assert.assertEquals(3, rec.apply(1).apply("n").cast[Node[Long]].id)
+    Assert.assertEquals(2, rec.apply(1).apply("r").cast[Relationship[Long]].id)
 
     memGraph.close()
   }
 
   @Test
-  def testLabelStore(): Unit ={
-    val nodes = new NodeStore(new File("./testdata/output/nodes"))
-    val rels = new RelationStore(new File("./testdata/output/rels"))
-    val logs = new LogStore(new File("./testdata/output/logs"))
-    val nodeLabelStore = new LabelStore(new File("./testdata/output/nodelabels"))
-    val relLabelStore = new LabelStore(new File("./testdata/output/rellabels"))
-    val memGraph = new GraphFacade(nodes, rels, logs, nodeLabelStore, relLabelStore,
-      new FileBasedIdGen(new File("./testdata/output/nodeid"), 100),
-      new FileBasedIdGen(new File("./testdata/output/relid"), 100),
-      new SimpleGraphRAM(),
-      new PropertiesOp {
-        val propStore = mutable.Map[TypedId, mutable.Map[String, Any]]()
+  def testLabelStore(): Unit = {
 
-        override def create(id: TypedId, props: Map[String, Any]): Unit =
-          propStore += id -> (mutable.Map[String, Any]() ++ props)
-
-        override def delete(id: TypedId): Unit = propStore -= id
-
-        override def lookup(id: TypedId): Option[Map[String, Any]] = propStore.get(id).map(_.toMap)
-
-        override def close(): Unit = {
-        }
-      }, {
-
-      }
-    )
-
-    memGraph.addNode(Map("Name"->"google"), "Person1")
-    memGraph.addNode(Map("Name"->"baidu"), "Person2")
-    memGraph.addNode(Map("Name"->"android"), "Person3")
-    memGraph.addNode(Map("Name"->"ios"), "Person4")
+    memGraph.addNode(Map("Name" -> "google"), "Person1")
+    memGraph.addNode(Map("Name" -> "baidu"), "Person2")
+    memGraph.addNode(Map("Name" -> "android"), "Person3")
+    memGraph.addNode(Map("Name" -> "ios"), "Person4")
     memGraph.addRelation("relation1", 1L, 2L, Map())
     memGraph.addRelation("relation2", 2L, 3L, Map())
 

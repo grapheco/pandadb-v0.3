@@ -17,9 +17,9 @@ trait GraphRAM {
 
   def deleteRelation(id: Id)
 
-  def nodes(): Stream[StoredNode]
+  def nodes(): Seq[StoredNode]
 
-  def rels(): Stream[StoredRelation]
+  def rels(): Seq[StoredRelation]
 
   def clear(): Unit
 
