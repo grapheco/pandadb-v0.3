@@ -35,7 +35,6 @@ class ByteBufferArray(memorySize: Int) extends BasicOp {
           directBuffer = tmp
           directBuffer.putLong(relationId).putLong(typeId).putLong(from).putLong(to)
           bufPos = directBuffer.position()
-          directBuffer.getChar()
         }
         catch {
           case e: Exception => e.printStackTrace()
