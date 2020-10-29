@@ -122,7 +122,15 @@ class StoreTest {
       }
     )
 
-    val res = memGraph.cypher("match (n) return n")
+    memGraph.addNode(Map("name" -> "testNode1"), "Test")
+    memGraph.addNode(Map("name" -> "testNode2"), "Test")
+    memGraph.addNode(Map("name" -> "testNode3"), "Test")
+    memGraph.addNode(Map("name" -> "testNode4"), "Test")
+
+    memGraph.addRelation("friend1", 1L, 2L, Map())
+    memGraph.addRelation("friend2", 1L, 2L, Map())
+
+    val res = memGraph.cypher("match (n)-[r]->(m) return n,r,m")
     res.show
 
     memGraph.close()
