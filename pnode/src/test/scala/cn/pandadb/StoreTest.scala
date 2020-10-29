@@ -127,4 +127,56 @@ class StoreTest {
 
     memGraph.close()
   }
+
+  @Test
+  def testLabelStore(): Unit ={
+    val nodes = new NodeStore(new File("./testdata/output/nodes"))
+    val rels = new RelationStore(new File("./testdata/output/rels"))
+    val logs = new LogStore(new File("./testdata/output/logs"))
+    val nodeLabelStore = new LabelStore(new File("./testdata/output/nodelabels"))
+    val relLabelStore = new LabelStore(new File("./testdata/output/rellabels"))
+    val memGraph = new GraphFacade(nodes, rels, logs, nodeLabelStore, relLabelStore,
+      new FileBasedIdGen(new File("./testdata/output/nodeid"), 100),
+      new FileBasedIdGen(new File("./testdata/output/relid"), 100),
+      new SimpleGraphRAM(),
+      new PropertiesOp {
+        val propStore = mutable.Map[TypedId, mutable.Map[String, Any]]()
+
+        override def create(id: TypedId, props: Map[String, Any]): Unit =
+          propStore += id -> (mutable.Map[String, Any]() ++ props)
+
+        override def delete(id: TypedId): Unit = propStore -= id
+
+        override def lookup(id: TypedId): Option[Map[String, Any]] = propStore.get(id).map(_.toMap)
+
+        override def close(): Unit = {
+        }
+      }, {
+
+      }
+    )
+
+    memGraph.addNode(Map("Name"->"google"), "Person1")
+    memGraph.addNode(Map("Name"->"baidu"), "Person2")
+    memGraph.addNode(Map("Name"->"android"), "Person3")
+    memGraph.addNode(Map("Name"->"ios"), "Person4")
+    memGraph.addRelation("relation1", 1L, 2L, Map())
+    memGraph.addRelation("relation2", 2L, 3L, Map())
+
+    Assert.assertEquals(4, nodeLabelStore.map.seq.size)
+    Assert.assertEquals(2, relLabelStore.map.seq.size)
+    Assert.assertEquals(6, logs._store.loadAll().size)
+
+    memGraph.mergeLogs2Store(true)
+    Assert.assertEquals(0, logs._store.loadAll().size)
+
+    memGraph.close()
+
+    val nodeLabelStore2 = new LabelStore(new File("./testdata/output/nodelabels"))
+    val relLabelStore2 = new LabelStore(new File("./testdata/output/rellabels"))
+
+    Assert.assertEquals(4, nodeLabelStore2._store.loadAll().size)
+    Assert.assertEquals(2, relLabelStore2._store.loadAll().size)
+
+  }
 }
