@@ -4,7 +4,7 @@ import cn.pandadb.kernel.impl.{DirectBufferArray}
 import cn.pandadb.kernel.store.StoredRelation
 import org.junit.{Assert, Test}
 
-class ArrayTest {
+class DirectBufferArrayTest {
 
   @Test
   def putAndGetTest(): Unit ={
