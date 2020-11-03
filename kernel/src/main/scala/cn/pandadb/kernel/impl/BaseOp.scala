@@ -1,12 +1,12 @@
 package cn.pandadb.kernel.impl
 
-import java.nio.ByteBuffer
+import cn.pandadb.kernel.store.StoredRelation
 
 trait BasicOp {
-  def get(relationId: Long): (Int, (Long, Long, Long, Long))
+  def get(relationId: Long): StoredRelation
   def delete(relationId: Long): Unit
-  def update(relationId: Long, typeId: Long, from: Long, to: Long): Unit
-  def put(relationId: Long, typeId: Long, from: Long, to: Long): Unit
+  def update(r:StoredRelation): Unit
+  def put(r:StoredRelation): Unit
   def size(): Int
   def capacity(): Int
 }

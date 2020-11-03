@@ -1,27 +1,38 @@
 package scala.cn.pandadb.kernel.impl
 
 import cn.pandadb.kernel.GraphRAM
+import cn.pandadb.kernel.impl.{DirectBufferArray}
 import cn.pandadb.kernel.store.{StoredNode, StoredRelation}
+
+import scala.collection.mutable
 
 class GraphRAMImpl extends GraphRAM {
 
-  override def addNode(t: StoredNode): Unit = ???
+  val mapNodes = mutable.LinkedHashMap[Id, StoredNode]()
+  val relationsStorage = new DirectBufferArray(1024, 8 * 3 + 4)
 
-  override def nodeAt(id: Id): StoredNode = ???
+  override def addNode(t: StoredNode): Unit = mapNodes += t.id -> t
 
-  override def relationAt(id: Id): StoredRelation = ???
+  override def deleteNode(id: Id): Unit = mapNodes -= id
 
-  override def deleteNode(id: Id): Unit = ???
+  override def addRelation(t: StoredRelation): Unit = relationsStorage.put(t)
 
-  override def addRelation(t: StoredRelation): Unit = ???
+  override def deleteRelation(id: Id): Unit = relationsStorage.delete(id)
 
-  override def deleteRelation(id: Id): Unit = ???
+  override def nodes(): Seq[StoredNode] = mapNodes.map(_._2).toSeq
 
-  override def nodes(): Stream[StoredNode] = ???
+  override def rels(): Seq[StoredRelation] = relationsStorage.iterator.toSeq
 
-  override def rels(): Stream[StoredRelation] = ???
+  override def close(): Unit = {
+    clear()
+  }
 
-  override def clear(): Unit = ???
+  override def clear(): Unit = {
+    mapNodes.clear()
+    relationsStorage.clear()
+  }
 
-  override def close(): Unit = ???
+  override def nodeAt(id: Id): StoredNode = mapNodes(id)
+
+  override def relationAt(id: Id): StoredRelation = relationsStorage.get(id)
 }

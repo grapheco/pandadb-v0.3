@@ -2,15 +2,15 @@ package cn.pandadb
 
 import java.io.File
 
-import cn.pandadb.kernel.impl.{SimpleGraphRAM, SimplePropertyStore}
+import cn.pandadb.kernel.impl.{SimplePropertyStore}
 import cn.pandadb.kernel.store.{FileBasedIdGen, LabelStore, LogStore, NodeStore, RelationStore}
-import cn.pandadb.kernel.{GraphFacade}
+import cn.pandadb.kernel.GraphFacade
 import org.apache.commons.io.FileUtils
 import org.junit.{Assert, Before, Test}
 import org.opencypher.okapi.api.graph.CypherResult
 import org.opencypher.okapi.api.value.CypherValue.{Node, Relationship}
 
-import scala.collection.mutable
+import scala.cn.pandadb.kernel.impl.GraphRAMImpl
 
 class StoreTest {
   var nodes: NodeStore = _
@@ -39,7 +39,8 @@ class StoreTest {
     memGraph = new GraphFacade(nodes, rels, logs, nodeLabelStore, relLabelStore,
       new FileBasedIdGen(new File("./testdata/output/nodeid"), 100),
       new FileBasedIdGen(new File("./testdata/output/relid"), 100),
-      new SimpleGraphRAM(),
+      new GraphRAMImpl(),
+//      new SimpleGraphRAM(),
       new SimplePropertyStore {
 
       }, {
@@ -148,5 +149,25 @@ class StoreTest {
     Assert.assertEquals(4, nodeLabelStore2._store.loadAll().size)
     Assert.assertEquals(2, relLabelStore2._store.loadAll().size)
 
+  }
+
+  @Test
+  def testRelationStore(): Unit = {
+
+    memGraph.addNode(Map("Name" -> "google"), "Person1")
+    memGraph.addNode(Map("Name" -> "baidu"), "Person2")
+    memGraph.addNode(Map("Name" -> "android"), "Person3")
+    memGraph.addNode(Map("Name" -> "ios"), "Person4")
+    memGraph.addRelation("relation1", 1L, 2L, Map())
+    memGraph.addRelation("relation2", 2L, 3L, Map())
+    memGraph.addRelation("relation3", 3L, 4L, Map())
+
+    memGraph.mergeLogs2Store(true)
+    Assert.assertEquals(3, rels.loadAll().size)
+
+    memGraph.deleteRelation(1)
+    memGraph.mergeLogs2Store(true)
+
+    Assert.assertEquals(2, rels.loadAll().size)
   }
 }
