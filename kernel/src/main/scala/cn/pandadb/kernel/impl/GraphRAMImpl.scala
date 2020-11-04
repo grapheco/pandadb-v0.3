@@ -1,7 +1,7 @@
 package scala.cn.pandadb.kernel.impl
 
 import cn.pandadb.kernel.GraphRAM
-import cn.pandadb.kernel.impl.{DirectBufferArray}
+import cn.pandadb.kernel.direct.DirectBufferArray
 import cn.pandadb.kernel.store.{StoredNode, StoredRelation}
 
 import scala.collection.mutable

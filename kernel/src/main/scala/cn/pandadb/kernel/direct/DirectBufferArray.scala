@@ -1,4 +1,4 @@
-package cn.pandadb.kernel.impl
+package cn.pandadb.kernel.direct
 
 import java.nio.ByteBuffer
 
@@ -88,28 +88,30 @@ class DirectBufferArray(memorySize: Int, dataSize: Int) extends BasicOp with mut
   override def iterator: Iterator[StoredRelation] = {
     new RelationIterator(directBuffer, bufPos, DATA_SIZE)
   }
-  def clear(): Unit ={
+
+  def clear(): Unit = {
     bufPos = 0
   }
 }
-  class RelationIterator(buffer: ByteBuffer, bufPos: Int, dataSize: Int) extends Iterator[StoredRelation] {
-    var index = 0
-    var position = 0
 
-    override def hasNext: Boolean = {
-      if (index < bufPos) {
-        index += dataSize
-        true
-      } else false
-    }
+class RelationIterator(buffer: ByteBuffer, bufPos: Int, dataSize: Int) extends Iterator[StoredRelation] {
+  var index = 0
+  var position = 0
 
-    override def next(): StoredRelation = {
-      if (position < bufPos) {
-        buffer.position(position)
-        val res = StoredRelation(buffer.getLong(), buffer.getLong(), buffer.getLong(), buffer.getInt())
-        position += dataSize
-        res
-      } else null
-    }
+  override def hasNext: Boolean = {
+    if (index < bufPos) {
+      index += dataSize
+      true
+    } else false
   }
+
+  override def next(): StoredRelation = {
+    if (position < bufPos) {
+      buffer.position(position)
+      val res = StoredRelation(buffer.getLong(), buffer.getLong(), buffer.getLong(), buffer.getInt())
+      position += dataSize
+      res
+    } else null
+  }
+}
 

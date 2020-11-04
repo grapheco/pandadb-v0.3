@@ -1,4 +1,4 @@
-package cn.pandadb.kernel.impl
+package cn.pandadb.kernel.direct
 
 import cn.pandadb.kernel.store.StoredRelation
 

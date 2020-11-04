@@ -1,6 +1,6 @@
-package scala.cn.pandadb
+package scala.cn.pandadb.direct
 
-import cn.pandadb.kernel.impl.{BlockManager, DataBlock, Relation}
+import cn.pandadb.kernel.direct.{BlockManager, DataBlock, Relation}
 import org.junit.Test
 
 import scala.collection.mutable.ArrayBuffer

@@ -1,4 +1,4 @@
-package cn.pandadb.kernel.impl
+package cn.pandadb.kernel.direct
 
 import scala.collection.mutable.ArrayBuffer
 

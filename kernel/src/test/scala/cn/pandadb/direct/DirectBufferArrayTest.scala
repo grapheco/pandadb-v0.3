@@ -1,6 +1,6 @@
-package cn.pandadb
+package scala.cn.pandadb.direct
 
-import cn.pandadb.kernel.impl.{DirectBufferArray}
+import cn.pandadb.kernel.direct.DirectBufferArray
 import cn.pandadb.kernel.store.StoredRelation
 import org.junit.{Assert, Test}
 
