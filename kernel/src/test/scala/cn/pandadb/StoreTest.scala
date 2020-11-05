@@ -2,7 +2,7 @@ package cn.pandadb
 
 import java.io.File
 
-import cn.pandadb.kernel.impl.{SimplePropertyStore}
+import cn.pandadb.kernel.impl.{SimpleGraphRAM, SimplePropertyStore}
 import cn.pandadb.kernel.store.{FileBasedIdGen, LabelStore, LogStore, NodeStore, RelationStore}
 import cn.pandadb.kernel.GraphFacade
 import org.apache.commons.io.FileUtils
@@ -169,5 +169,6 @@ class StoreTest {
     memGraph.mergeLogs2Store(true)
 
     Assert.assertEquals(2, rels.loadAll().size)
+    memGraph.close()
   }
 }

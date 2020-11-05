@@ -3,6 +3,7 @@ package cn.pandadb.kernel.direct
 import java.nio.ByteBuffer
 
 import cn.pandadb.kernel.store.StoredRelation
+import sun.nio.ch.DirectBuffer
 
 import scala.collection.mutable
 
@@ -31,9 +32,10 @@ class DirectBufferArray(memorySize: Int, dataSize: Int) extends BasicOp with mut
       else {
         MEMORY_SIZE *= 2
         try {
-          val tmp = ByteBuffer.allocate(MEMORY_SIZE)
+          val tmp = ByteBuffer.allocateDirect(MEMORY_SIZE)
           directBuffer.flip()
           tmp.put(directBuffer)
+          directBuffer.asInstanceOf[DirectBuffer].cleaner().clean()
           directBuffer = tmp
           directBuffer.putLong(r.id).putLong(r.from).putLong(r.to).putInt(r.labelId)
           bufPos = directBuffer.position()
@@ -90,7 +92,7 @@ class DirectBufferArray(memorySize: Int, dataSize: Int) extends BasicOp with mut
   }
 
   def clear(): Unit = {
-    bufPos = 0
+    directBuffer.asInstanceOf[DirectBuffer].cleaner().clean()
   }
 }
 
