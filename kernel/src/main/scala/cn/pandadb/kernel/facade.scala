@@ -25,6 +25,8 @@ class GraphFacade(
 
   private val (posNodes, posRels) = (new SimplePositionMap(), new SimplePositionMap())
 
+  mem.init(nodeStore.loadAll(), relStore.loadAll())
+
   private val graphService = new LynxSession().createPropertyGraph(new PropertyGraphScan[Long] {
     def mapNode(node: StoredNode): Node[Id] = {
       new Node[Id] {

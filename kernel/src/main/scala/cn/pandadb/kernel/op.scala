@@ -5,6 +5,11 @@ import cn.pandadb.kernel.store.{StoredNode, StoredRelation}
 trait GraphRAM {
   type Id = Long
 
+  def init(nodes: Seq[StoredNode], rels: Seq[StoredRelation]) = {
+    nodes.foreach(addNode(_))
+    rels.foreach(addRelation(_))
+  }
+
   def addNode(t: StoredNode)
 
   def nodeAt(id: Id): StoredNode
