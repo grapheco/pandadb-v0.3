@@ -1,12 +1,9 @@
-package scala.cn.pandadb.kernel.impl
+package cn.pandadb.kernel.direct
 
 import cn.pandadb.kernel.GraphRAM
-import cn.pandadb.kernel.direct.{DirectBufferArray, DirectBufferArrayForNode}
 import cn.pandadb.kernel.store.{StoredNode, StoredRelation}
 
-import scala.collection.mutable
-
-class GraphRAMImpl extends GraphRAM {
+class DirectGraphRAMImpl extends GraphRAM {
 
   val nodeStorage = new DirectBufferArrayForNode(1024 * 1024 * 1024 * 4, 8)
   val relationsStorage = new DirectBufferArray(1024 * 1024 * 1024 * 4, 8 * 3 + 4)
