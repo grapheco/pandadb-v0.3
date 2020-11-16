@@ -402,20 +402,18 @@ class OutGoingEdgeBlockManager(initBlockId: BlockId = BlockId()) {
   def isExist(endNodeId: Int): Boolean = {
     var block = DirectMemoryManager.getBlock(beginBlockId)
     var flag = true
-    var isFound = true
+    var isFound = false
     while (flag) {
-      if (!block.isExist(endNodeId)) {
-        if (block.thisBlockNextBlockId != BlockId()) {
+      val res = block.isExist(endNodeId)
+      if (!res){
+        if (block.thisBlockNextBlockId != BlockId()){
           block = DirectMemoryManager.getBlock(block.thisBlockNextBlockId)
         }
-        else {
-          flag = false
-          isFound = false
-        }
+        else flag = false
       }
       else {
+        isFound = true
         flag = false
-        isFound = false
       }
     }
     isFound

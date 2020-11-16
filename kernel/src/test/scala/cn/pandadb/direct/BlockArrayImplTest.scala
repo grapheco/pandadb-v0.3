@@ -257,10 +257,38 @@ class BlockArrayTest {
     manager1.put(333)
 
     val iter = manager1.getAll()
+    var count = 0
     while (iter.hasNext){
-      val block = iter.next()
-      block.nodeIdArray.foreach(println)
+      count += 1
     }
+    Assert.assertEquals(4, count)
   }
 
+  def testIsExist(): Unit ={
+    val manager1 = new OutGoingEdgeBlockManager()
+
+    manager1.put(10)
+    manager1.put(20)
+    manager1.put(30)
+    manager1.put(40)
+    manager1.put(50)
+
+    manager1.put(60)
+    manager1.put(70)
+    manager1.put(80)
+    manager1.put(90)
+    manager1.put(100)
+
+    manager1.put(110)
+    manager1.put(210)
+    manager1.put(310)
+    manager1.put(410)
+    manager1.put(510)
+
+    manager1.put(333)
+
+    Assert.assertEquals(true, manager1.isExist(110))
+    Assert.assertEquals(false, manager1.isExist(1110))
+
+  }
 }
