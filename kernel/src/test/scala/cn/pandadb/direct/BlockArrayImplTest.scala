@@ -1,9 +1,7 @@
 package scala.cn.pandadb.direct
 
-import cn.pandadb.kernel.direct.{DirectMemoryManager, OutGoingEdgeBlockManager}
-import org.junit.{After, Assert, Test}
-
-import scala.util.Random
+import cn.pandadb.kernel.direct.{BlockId, DirectMemoryManager, OutGoingEdgeBlockManager}
+import org.junit.{Assert, Test}
 
 class BlockArrayTest {
 
@@ -19,12 +17,13 @@ class BlockArrayTest {
 
     manager1.put(5)
 
-    val blockHead = DirectMemoryManager.getBlock((0, DirectMemoryManager.BLOCK_SIZE))
-    val blockNext = DirectMemoryManager.getBlock((0, 0))
+    val blockHead = DirectMemoryManager.getBlock(manager1.getBeginBlockId)
+    val blockNext = DirectMemoryManager.getBlock(blockHead.thisBlockNextBlockId)
 
     Assert.assertArrayEquals(Array[Long](5,0,0,0,0), blockHead.nodeIdArray)
     Assert.assertArrayEquals(Array[Long](10,20,30,40,50), blockNext.nodeIdArray)
   }
+
   @Test
   def test1BlockInsertToMiddle(): Unit ={
     val manager1 = new OutGoingEdgeBlockManager()
@@ -37,12 +36,13 @@ class BlockArrayTest {
 
     manager1.put(25)
 
-    val blockHead = DirectMemoryManager.getBlock((0, DirectMemoryManager.BLOCK_SIZE))
-    val blockNext = DirectMemoryManager.getBlock((0, DirectMemoryManager.BLOCK_SIZE * 2))
+    val blockHead = DirectMemoryManager.getBlock(manager1.getBeginBlockId)
+    val blockNext = DirectMemoryManager.getBlock(blockHead.thisBlockNextBlockId)
 
     Assert.assertArrayEquals(Array[Long](10,20,25,0,0), blockHead.nodeIdArray)
     Assert.assertArrayEquals(Array[Long](30,40,50,0,0), blockNext.nodeIdArray)
   }
+
   @Test
   def test1BlockInsertToTail(): Unit ={
     val manager1 = new OutGoingEdgeBlockManager()
@@ -55,12 +55,13 @@ class BlockArrayTest {
 
     manager1.put(60)
 
-    val blockHead = DirectMemoryManager.getBlock((0, 0))
-    val blockNext = DirectMemoryManager.getBlock((0, DirectMemoryManager.BLOCK_SIZE))
+    val blockHead = DirectMemoryManager.getBlock(manager1.getBeginBlockId)
+    val blockNext = DirectMemoryManager.getBlock(blockHead.thisBlockNextBlockId)
 
     Assert.assertArrayEquals(Array[Long](10,20,30,40,50), blockHead.nodeIdArray)
     Assert.assertArrayEquals(Array[Long](60,0,0,0,0), blockNext.nodeIdArray)
   }
+
   @Test
   def test1BlockDeleteAll(): Unit ={
     val manager1 = new OutGoingEdgeBlockManager()
@@ -75,9 +76,9 @@ class BlockArrayTest {
       manager1.delete(i * 10)
     }
 
-    val blockHead = DirectMemoryManager.getBlock((0, 0))
-    Assert.assertArrayEquals(Array[Long](0,0,0,0,0), blockHead.nodeIdArray)
+    Assert.assertEquals(BlockId(), manager1.getBeginBlockId)
   }
+
   @Test
   def test1BlockDeleteOneData(): Unit ={
     val manager1 = new OutGoingEdgeBlockManager()
@@ -90,7 +91,7 @@ class BlockArrayTest {
 
     manager1.delete(30)
 
-    val blockHead = DirectMemoryManager.getBlock((0, 0))
+    val blockHead = DirectMemoryManager.getBlock(manager1.getBeginBlockId)
     Assert.assertArrayEquals(Array[Long](10,20,40,50,0), blockHead.nodeIdArray)
   }
 
@@ -118,9 +119,15 @@ class BlockArrayTest {
 
     manager1.put(25)
 
-    val blockHead = DirectMemoryManager.getBlock((0, DirectMemoryManager.BLOCK_SIZE * 3))
+    val blockHead = DirectMemoryManager.getBlock(manager1.getBeginBlockId)
+    val blockNext1 = DirectMemoryManager.getBlock(blockHead.thisBlockNextBlockId)
+    val blockNext2 = DirectMemoryManager.getBlock(blockNext1.thisBlockNextBlockId)
+    val blockNext3 = DirectMemoryManager.getBlock(blockNext2.thisBlockNextBlockId)
+
     Assert.assertArrayEquals(Array[Long](10,20,25,0,0), blockHead.nodeIdArray)
-    manager1.queryByLink(manager1.getBeginBlockId)
+    Assert.assertArrayEquals(Array[Long](30,40,50,0,0), blockNext1.nodeIdArray)
+    Assert.assertArrayEquals(Array[Long](60,70,80,90,100), blockNext2.nodeIdArray)
+    Assert.assertArrayEquals(Array[Long](110,210,310,410,510), blockNext3.nodeIdArray)
   }
   @Test
   def test3BlocksInsert2Middle(): Unit ={
@@ -146,9 +153,15 @@ class BlockArrayTest {
 
     manager1.put(66)
 
-    val blockHead = DirectMemoryManager.getBlock((0, DirectMemoryManager.BLOCK_SIZE * 3))
-    Assert.assertArrayEquals(Array[Long](60,66,70,0,0), blockHead.nodeIdArray)
-    manager1.queryByLink(manager1.getBeginBlockId)
+    val blockHead = DirectMemoryManager.getBlock(manager1.getBeginBlockId)
+    val blockNext1 = DirectMemoryManager.getBlock(blockHead.thisBlockNextBlockId)
+    val blockNext2 = DirectMemoryManager.getBlock(blockNext1.thisBlockNextBlockId)
+    val blockNext3 = DirectMemoryManager.getBlock(blockNext2.thisBlockNextBlockId)
+
+    Assert.assertArrayEquals(Array[Long](10,20,30,40,50), blockHead.nodeIdArray)
+    Assert.assertArrayEquals(Array[Long](60,66,70,0,0), blockNext1.nodeIdArray)
+    Assert.assertArrayEquals(Array[Long](80,90,100,0,0), blockNext2.nodeIdArray)
+    Assert.assertArrayEquals(Array[Long](110,210,310,410,510), blockNext3.nodeIdArray)
   }
   @Test
   def test3BlocksInsert2Last(): Unit ={
@@ -173,9 +186,15 @@ class BlockArrayTest {
 
     manager1.put(444)
 
-    val blockHead = DirectMemoryManager.getBlock((0, DirectMemoryManager.BLOCK_SIZE * 4))
-    Assert.assertArrayEquals(Array[Long](410, 444,510,0,0), blockHead.nodeIdArray)
-    manager1.queryByLink(manager1.getBeginBlockId)
+    val blockHead = DirectMemoryManager.getBlock(manager1.getBeginBlockId)
+    val blockNext1 = DirectMemoryManager.getBlock(blockHead.thisBlockNextBlockId)
+    val blockNext2 = DirectMemoryManager.getBlock(blockNext1.thisBlockNextBlockId)
+    val blockNext3 = DirectMemoryManager.getBlock(blockNext2.thisBlockNextBlockId)
+
+    Assert.assertArrayEquals(Array[Long](10,20,30,40,50), blockHead.nodeIdArray)
+    Assert.assertArrayEquals(Array[Long](60,70,80,90,100), blockNext1.nodeIdArray)
+    Assert.assertArrayEquals(Array[Long](110,210,310,0,0), blockNext2.nodeIdArray)
+    Assert.assertArrayEquals(Array[Long](410,444,510,0,0), blockNext3.nodeIdArray)
   }
 
   @Test
@@ -201,28 +220,47 @@ class BlockArrayTest {
 
     manager1.put(444)
     manager1.put(445)
-    //    val blockHead = DirectMemoryManager.getBlock((0, DirectMemoryManager.BLOCK_SIZE * 4))
-    //    Assert.assertArrayEquals(Array[Long](410, 444,445,510,0), blockHead.nodeIdArray)
-    manager1.queryByLink(manager1.getBeginBlockId)
+
+    val blockHead = DirectMemoryManager.getBlock(manager1.getBeginBlockId)
+    val blockNext1 = DirectMemoryManager.getBlock(blockHead.thisBlockNextBlockId)
+    val blockNext2 = DirectMemoryManager.getBlock(blockNext1.thisBlockNextBlockId)
+    val blockNext3 = DirectMemoryManager.getBlock(blockNext2.thisBlockNextBlockId)
+
+    Assert.assertArrayEquals(Array[Long](10,20,30,40,50), blockHead.nodeIdArray)
+    Assert.assertArrayEquals(Array[Long](60,70,80,90,100), blockNext1.nodeIdArray)
+    Assert.assertArrayEquals(Array[Long](110,210,310,0,0), blockNext2.nodeIdArray)
+    Assert.assertArrayEquals(Array[Long](410,444,445,510,0), blockNext3.nodeIdArray)
   }
 
   @Test
-  def testRandomData(): Unit ={
-    var dataSet = Set[Int]()
-    for (i <- 1 to 1000){
-      dataSet += Random.nextInt(10000)
+  def testIterator(){
+    val manager1 = new OutGoingEdgeBlockManager()
+
+    manager1.put(10)
+    manager1.put(20)
+    manager1.put(30)
+    manager1.put(40)
+    manager1.put(50)
+
+    manager1.put(60)
+    manager1.put(70)
+    manager1.put(80)
+    manager1.put(90)
+    manager1.put(100)
+
+    manager1.put(110)
+    manager1.put(210)
+    manager1.put(310)
+    manager1.put(410)
+    manager1.put(510)
+
+    manager1.put(333)
+
+    val iter = manager1.getAll()
+    while (iter.hasNext){
+      val block = iter.next()
+      block.nodeIdArray.foreach(println)
     }
-    val manager = new OutGoingEdgeBlockManager()
-    dataSet.foreach(f=>manager.put(f))
-    manager.queryByLink(manager.getBeginBlockId)
   }
 
-  @After
-  def clear(): Unit ={
-    Thread.sleep(100)
-    DirectMemoryManager.directBufferPageArray.foreach(f=>f.release())
-    DirectMemoryManager.directBufferPageArray.clear()
-    DirectMemoryManager.pageId = -1
-    DirectMemoryManager.currentPageBlockId = 0
-  }
 }
