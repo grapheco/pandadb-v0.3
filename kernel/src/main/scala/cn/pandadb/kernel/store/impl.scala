@@ -115,11 +115,11 @@ trait WithPositions[Id, Long, T] {
 }
 
 ///////////////////////////////
-class PositionMappedNodeStore(val file: File) extends NodeStore {
+class PositionMappedNodeStore(val nodeFile: File) extends NodeStore {
   val _store = new FileBasedPositionMappedArrayStore[StoredNode]() {
     override val objectSerializer: ObjectSerializer[StoredNode] = NodeSerializer2
     override val fixedSize: Int = 4
-    override val file: File = file
+    override val file: File = nodeFile
   }
 
   override def loadAll(): Seq[StoredNode] = _store.loadAll().map(x => StoredNode(x._1, x._2.labelId1, x._2.labelId2, x._2.labelId3, x._2.labelId4))
@@ -133,11 +133,11 @@ class PositionMappedNodeStore(val file: File) extends NodeStore {
   override def delete(id: Long): Unit = _store.markDeleted(id)
 }
 
-class PositionMappedRelationStore(val file: File) extends RelationStore {
+class PositionMappedRelationStore(val relationFile: File) extends RelationStore {
   val _store = new FileBasedPositionMappedArrayStore[StoredRelation]() {
     override val objectSerializer: ObjectSerializer[StoredRelation] = RelationSerializer2
     override val fixedSize: Int = 4 * 2 + 1
-    override val file: File = file
+    override val file: File = relationFile
   }
 
   override def loadAll(): Seq[StoredRelation] = _store.loadAll().map(x => StoredRelation(x._1, x._2.from, x._2.to, x._2.labelId))
