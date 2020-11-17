@@ -2,7 +2,7 @@ package cn.pandadb.kernel.util
 
 import java.io._
 import java.nio.ByteBuffer
-
+import io.netty.buffer.ByteBufAllocator
 import io.netty.buffer.{ByteBuf, Unpooled}
 
 trait PositionMappedArrayStore[T] {
@@ -69,11 +69,14 @@ trait FileBasedPositionMappedArrayStore[T] extends PositionMappedArrayStore[T] {
     ptr.write(ByteBuffer.wrap(Array[Byte](0)))
   }
 
+  val allocator: ByteBufAllocator = ByteBufAllocator.DEFAULT
+
   override def update(id: Long, t: T) = {
     ptr.position(positionOf(id))
-    val buf = Unpooled.buffer()
+    val buf = allocator.buffer()
     blockSerializer.writeObjectBlock(buf, t)
     ptr.write(buf.nioBuffer())
+    buf.release()
   }
 
   override def saveAll(ts: Seq[(Long, T)]) = {
