@@ -5,31 +5,23 @@ import cn.pandadb.kernel.store.{StoredNode, StoredRelation}
 
 class DirectGraphRAMImpl extends GraphRAM {
 
-  val nodeStorage = new DirectBufferArrayForNode(1024 * 1024 * 1024 * 4, 8)
-  val relationsStorage = new DirectBufferArray(1024 * 1024 * 1024 * 4, 8 * 3 + 4)
+  override def addNode(t: StoredNode): Unit = ???
 
-  override def addNode(t: StoredNode): Unit = nodeStorage.put(t)
+  override def nodeAt(id: Id): StoredNode = ???
 
-  override def deleteNode(id: Id): Unit = nodeStorage.delete(id)
+  override def relationAt(id: Id): StoredRelation = ???
 
-  override def addRelation(t: StoredRelation): Unit = relationsStorage.put(t)
+  override def deleteNode(id: Id): Unit = ???
 
-  override def deleteRelation(id: Id): Unit = relationsStorage.delete(id)
+  override def addRelation(t: StoredRelation): Unit = ???
 
-  override def nodes(): Seq[StoredNode] = nodeStorage.iterator.toSeq
+  override def deleteRelation(id: Id): Unit = ???
 
-  override def rels(): Seq[StoredRelation] = relationsStorage.iterator.toSeq
+  override def nodes(): Seq[StoredNode] = ???
 
-  override def close(): Unit = {
-    clear()
-  }
+  override def rels(): Seq[StoredRelation] = ???
 
-  override def clear(): Unit = {
-    nodeStorage.clear()
-    relationsStorage.clear()
-  }
+  override def clear(): Unit = ???
 
-  override def nodeAt(id: Id): StoredNode = nodeStorage.get(id)
-
-  override def relationAt(id: Id): StoredRelation = relationsStorage.get(id)
+  override def close(): Unit = ???
 }

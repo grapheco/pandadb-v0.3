@@ -10,8 +10,6 @@ import org.junit.{Assert, Before, Test}
 import org.opencypher.okapi.api.graph.CypherResult
 import org.opencypher.okapi.api.value.CypherValue.{Node, Relationship}
 
-import scala.cn.pandadb.kernel.impl.GraphRAMImpl
-
 class StoreTest {
   var nodes: NodeStore = _
   var rels: RelationStore = _
@@ -39,8 +37,8 @@ class StoreTest {
     memGraph = new GraphFacade(nodes, rels, logs, nodeLabelStore, relLabelStore,
       new FileBasedIdGen(new File("./testdata/output/nodeid"), 100),
       new FileBasedIdGen(new File("./testdata/output/relid"), 100),
-      new GraphRAMImpl(),
-//      new SimpleGraphRAM(),
+//      new DirectGraphRAMImpl(),
+      new SimpleGraphRAM(),
       new SimplePropertyStore {
 
       }, {
