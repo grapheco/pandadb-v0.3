@@ -23,10 +23,6 @@ class GraphFacade(
   type Id = Long
   type Position = Long
 
-  private val (posNodes, posRels) = (new SimplePositionMap(), new SimplePositionMap())
-
-  mem.init(nodeStore.loadAll(), relStore.loadAll())
-
   private val graphService = new LynxSession().createPropertyGraph(new PropertyGraphScan[Long] {
     def mapNode(node: StoredNode): Node[Id] = {
       new Node[Id] {
@@ -100,32 +96,21 @@ class GraphFacade(
     logStore.offer {
       (logs: MergedGraphLogs) =>
         //mem should be appended before creating logs
-        val positNode = (t: StoredNode, pos: Position) => {
-          if (updateMem) {
-            posNodes.update(t.id, pos)
-          }
-        }
 
         if (logs.nodes.toAdd.nonEmpty)
-          nodeStore.append(logs.nodes.toAdd, positNode)
+          nodeStore.updateAll(logs.nodes.toAdd)
         if (logs.nodes.toReplace.nonEmpty)
-          nodeStore.overwrite(logs.nodes.toReplace, positNode)
+          nodeStore.updateAll(logs.nodes.toReplace.map(_._2))
         if (logs.nodes.toDelete.nonEmpty) {
-          nodeStore.remove(logs.nodes.toDelete, positNode)
-        }
-
-        val positRelation = (t: StoredRelation, pos: Position) => {
-          if (updateMem) {
-            posRels.update(t.id, pos)
-          }
+          nodeStore.deleteAll(logs.nodes.toDelete)
         }
 
         if (logs.rels.toAdd.nonEmpty)
-          relStore.append(logs.rels.toAdd, positRelation)
+          relStore.updateAll(logs.rels.toAdd)
         if (logs.rels.toReplace.nonEmpty)
-          relStore.overwrite(logs.rels.toReplace, positRelation)
+          relStore.updateAll(logs.rels.toReplace.map(_._2))
         if (logs.rels.toDelete.nonEmpty)
-          relStore.remove(logs.rels.toDelete, positRelation)
+          relStore.deleteAll(logs.rels.toDelete)
     }
   }
 
@@ -133,18 +118,7 @@ class GraphFacade(
   def init(): Unit = {
     mergeLogs2Store(false)
     mem.clear()
-    posNodes.clear()
-    posRels.clear()
-    nodeStore.loadAllWithPosition().foreach { tp =>
-      mem.addNode(tp._2)
-      posNodes.update(tp._2.id, tp._1)
-    }
-
-    relStore.loadAllWithPosition().foreach { tp =>
-      mem.addRelation(tp._2)
-      posRels.update(tp._2.id, tp._1)
-    }
-
+    mem.init(nodeStore.loadAll(), relStore.loadAll())
     thread.start()
   }
 
@@ -171,14 +145,14 @@ class GraphFacade(
   }
 
   def deleteNode(id: Id): this.type = {
-    logStore.append(DeleteNode(id, posNodes.position(id).getOrElse(-1)))
+    logStore.append(DeleteNode(id))
     props.delete(NodeId(id))
     mem.deleteNode(id)
     this
   }
 
   def deleteRelation(id: Id): this.type = {
-    logStore.append(DeleteRelation(id, posRels.position(id).getOrElse(-1)))
+    logStore.append(DeleteRelation(id))
     props.delete(RelationId(id))
     mem.deleteRelation(id)
     this

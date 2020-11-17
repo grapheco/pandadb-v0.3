@@ -1,37 +1,8 @@
-package cn.pandadb.kernel.store
+package cn.pandadb.kernel.util
 
 import java.io._
 import java.nio.ByteBuffer
-
 import io.netty.buffer.{ByteBuf, PooledByteBufAllocator, Unpooled}
-
-trait SequenceStore[T, Position] {
-  def loadAll(): Seq[T]
-
-  def loadAllWithPosition(): Seq[(Position, T)]
-
-  def saveAll(ts: Seq[T])
-}
-
-trait Appendable[T, Position] {
-  def append(t: T, posit: (T, Position) => Unit): Unit = append(Some(t), posit)
-
-  def append(ts: Iterable[T], posit: (T, Position) => Unit): Unit
-}
-
-trait RandomAccessible[T, Position] extends Appendable[T, Position] {
-  def remove(pos: Position, posit: (T, Position) => Unit): Unit = remove(Some(pos), posit)
-
-  def remove(poss: Iterable[Position], posit: (T, Position) => Unit): Unit
-
-  def replace(pos: Position, t: T, posit: (T, Position) => Unit): Unit = overwrite(Some(pos -> t), posit)
-
-  def overwrite(ts: Iterable[(Position, T)], posit: (T, Position) => Unit): Unit
-}
-
-trait Closable {
-  def close()
-}
 
 trait ObjectSerializer[T] {
   def readObject(buf: ByteBuf): T
@@ -87,13 +58,13 @@ trait FixedSizedObjectBlockSerializer[T] extends ObjectBlockSerializer[T] {
   }
 }
 
-trait FileBasedSequenceStore[T] extends SequenceStore[T, Long] {
+trait FileBasedArrayStore[T] {
   val file: File
   type Position = Long
 
   val blockSerializer: ObjectBlockSerializer[T]
 
-  override final def saveAll(ts: Seq[T]): Unit = {
+  def saveAll(ts: Seq[T]): Unit = {
     val appender = new FileOutputStream(file, false).getChannel
     val buf = PooledByteBufAllocator.DEFAULT.buffer()
     ts.foreach { t =>
@@ -111,11 +82,11 @@ trait FileBasedSequenceStore[T] extends SequenceStore[T, Long] {
     appender.close()
   }
 
-  override final def loadAll(): Seq[T] = {
+  def loadAll(): Seq[T] = {
     loadAllWithPosition().map(_._2)
   }
 
-  override final def loadAllWithPosition(): Seq[(Position, T)] = {
+  def loadAllWithPosition(): Seq[(Position, T)] = {
     def createStream(dis: DataInputStream, offset: Position): Stream[(Long, T)] = {
       try {
         val t = blockSerializer.readObjectBlock(dis)
@@ -137,10 +108,10 @@ trait FileBasedSequenceStore[T] extends SequenceStore[T, Long] {
   }
 }
 
-trait AppendingFileBasedSequenceStore[T] extends FileBasedSequenceStore[T] with Appendable[T, Long] with Closable {
+trait AppendingFileBasedArrayStore[T] extends FileBasedArrayStore[T] {
   lazy val ptr = new FileOutputStream(file, true).getChannel
 
-  override def close(): Unit = {
+  def close(): Unit = {
     ptr.close()
   }
 
@@ -148,7 +119,7 @@ trait AppendingFileBasedSequenceStore[T] extends FileBasedSequenceStore[T] with 
     ptr.truncate(0)
   }
 
-  override def append(ts: Iterable[T], posit: (T, Position) => Unit): Unit = {
+  def append(ts: Iterable[T], posit: (T, Position) => Unit): Unit = {
     val offset0 = ptr.size()
     var offset = offset0
     val buf = Unpooled.buffer()
@@ -165,13 +136,11 @@ trait AppendingFileBasedSequenceStore[T] extends FileBasedSequenceStore[T] with 
   }
 }
 
-trait RandomAccessibleFileBasedSequenceStore[T] extends FileBasedSequenceStore[T] with Appendable[T, Long]
-  with RandomAccessible[T, Long] with Closable with FixedSizedObjectBlockSerializer[T] {
+trait RandomAccessibleFileBasedArrayStore[T] extends FileBasedArrayStore[T] with FixedSizedObjectBlockSerializer[T] {
   final val blockSerializer: ObjectBlockSerializer[T] = this
-
   lazy val ptr = new RandomAccessFile(file, "rw").getChannel
 
-  override def close(): Unit = {
+  def close(): Unit = {
     ptr.close()
   }
 
@@ -179,7 +148,7 @@ trait RandomAccessibleFileBasedSequenceStore[T] extends FileBasedSequenceStore[T
     ptr.truncate(0)
   }
 
-  override def append(ts: Iterable[T], posit: (T, Position) => Unit): Unit = {
+  def append(ts: Iterable[T], posit: (T, Position) => Unit): Unit = {
     val buf = Unpooled.buffer()
     val offset0 = ptr.size()
     var offset = offset0
@@ -194,7 +163,7 @@ trait RandomAccessibleFileBasedSequenceStore[T] extends FileBasedSequenceStore[T
     ptr.write(buf.nioBuffer(), offset0)
   }
 
-  override def remove(poss: Iterable[Position], posit: (T, Position) => Unit): Unit = {
+  def remove(poss: Iterable[Position], posit: (T, Position) => Unit): Unit = {
     val set = Set() ++ poss
     var total = ptr.size()
     set.foreach { pos: Position =>
@@ -213,7 +182,7 @@ trait RandomAccessibleFileBasedSequenceStore[T] extends FileBasedSequenceStore[T
     ptr.truncate(total)
   }
 
-  override def overwrite(ts: Iterable[(Position, T)], posit: (T, Position) => Unit): Unit = {
+  def overwrite(ts: Iterable[(Position, T)], posit: (T, Position) => Unit): Unit = {
     val total = ptr.size()
     ts.foreach { x =>
       val (pos: Position, t: T) = x
