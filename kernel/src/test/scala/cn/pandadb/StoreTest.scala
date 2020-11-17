@@ -10,8 +10,6 @@ import org.junit.{Assert, Before, Test}
 import org.opencypher.okapi.api.graph.CypherResult
 import org.opencypher.okapi.api.value.CypherValue.{Node, Relationship}
 
-import scala.cn.pandadb.kernel.impl.GraphRAMImpl
-
 class StoreTest {
   var nodes: NodeStore = _
   var rels: RelationStore = _
