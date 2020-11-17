@@ -3,7 +3,7 @@ package cn.pandadb
 import java.io.File
 
 import cn.pandadb.kernel.impl.{SimpleGraphRAM, SimplePropertyStore}
-import cn.pandadb.kernel.store.{FileBasedIdGen, LabelStore, LogStore, NodeStore, PositionMappedNodeStore, PositionMappedRelationStore, RelationStore}
+import cn.pandadb.kernel.store.{FileBasedIdGen, LabelStore, LogStore, NodeStore, RelationStore}
 import cn.pandadb.kernel.GraphFacade
 import org.apache.commons.io.FileUtils
 import org.junit.{Assert, Before, Test}
@@ -30,8 +30,8 @@ class StoreTest {
     new File("./testdata/output/rels").createNewFile()
     new File("./testdata/output/logs").createNewFile()
 
-    nodes = new PositionMappedNodeStore(new File("./testdata/output/nodes"))
-    rels = new PositionMappedRelationStore(new File("./testdata/output/rels"))
+    nodes = new NodeStore(new File("./testdata/output/nodes"))
+    rels = new RelationStore(new File("./testdata/output/rels"))
     logs = new LogStore(new File("./testdata/output/logs"))
     nodeLabelStore = new LabelStore(new File("./testdata/output/nodelabels"))
     relLabelStore = new LabelStore(new File("./testdata/output/rellabels"))
@@ -39,7 +39,8 @@ class StoreTest {
     memGraph = new GraphFacade(nodes, rels, logs, nodeLabelStore, relLabelStore,
       new FileBasedIdGen(new File("./testdata/output/nodeid"), 100),
       new FileBasedIdGen(new File("./testdata/output/relid"), 100),
-      new GraphRAMImpl(),
+//      new DirectGraphRAMImpl(),
+      new SimpleGraphRAM(),
       new SimplePropertyStore {
 
       }, {
