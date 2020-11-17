@@ -256,7 +256,7 @@ class BlockArrayTest {
 
     manager1.put(333)
 
-    val iter = manager1.getAll()
+    val iter = manager1.getAllBlocks()
     var count = 0
     while (iter.hasNext){
       count += 1
@@ -290,5 +290,22 @@ class BlockArrayTest {
     Assert.assertEquals(true, manager1.isExist(110))
     Assert.assertEquals(false, manager1.isExist(1110))
 
+  }
+  @Test
+  def testGetAllBlockNodeIds(): Unit ={
+    val manager1 = new OutGoingEdgeBlockManager()
+
+    manager1.put(10)
+    manager1.put(20)
+    manager1.put(30)
+    manager1.put(40)
+    manager1.put(50)
+
+    manager1.put(60)
+    manager1.put(70)
+    val iter = manager1.getAllBlockNodeIds()
+    while (iter.hasNext){
+      println(iter.next())
+    }
   }
 }

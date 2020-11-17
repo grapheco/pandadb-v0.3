@@ -126,7 +126,7 @@ object DirectMemoryManager {
   def getBlock(id: BlockId): EndNodesBlock = {
     this.synchronized {
       if (id == BlockId()) {
-        throw new Exception("no such block...")
+        throw new NoSuchBlockException
       }
       else {
         val directBuffer = directBufferPageArray(id.pageId - 1)
@@ -186,12 +186,7 @@ class OutGoingEdgeBlockManager(initBlockId: BlockId = BlockId()) {
       while (!foundToPut) {
         val isFound = queryBlockToInsertStrategy(queryBlock, nodeId)
         if (!isFound) {
-          if (queryBlock.thisBlockNextBlockId != BlockId()) {
-            queryBlock = DirectMemoryManager.getBlock(queryBlock.thisBlockNextBlockId)
-          }
-          else {
-            throw new Exception("Not found position to put...")
-          }
+          queryBlock = DirectMemoryManager.getBlock(queryBlock.thisBlockNextBlockId)
         }
         else foundToPut = true
       }
@@ -211,7 +206,7 @@ class OutGoingEdgeBlockManager(initBlockId: BlockId = BlockId()) {
       if (res._1) {
         DirectMemoryManager.updateBlockData(queryBlock)
       }
-      else{
+      else {
         if (res._2 != BlockId()) beginBlockId = res._2
         if (preBlock != null) {
           preBlock.thisBlockNextBlockId = res._3
@@ -399,8 +394,8 @@ class OutGoingEdgeBlockManager(initBlockId: BlockId = BlockId()) {
     var isFound = false
     while (flag) {
       val res = block.isExist(endNodeId)
-      if (!res){
-        if (block.thisBlockNextBlockId != BlockId()){
+      if (!res) {
+        if (block.thisBlockNextBlockId != BlockId()) {
           block = DirectMemoryManager.getBlock(block.thisBlockNextBlockId)
         }
         else flag = false
@@ -413,8 +408,11 @@ class OutGoingEdgeBlockManager(initBlockId: BlockId = BlockId()) {
     isFound
   }
 
-  def getAll(): Iterator[EndNodesBlock] = {
+  def getAllBlocks(): Iterator[EndNodesBlock] = {
     new GetAllBlockNodes(this)
+  }
+  def getAllBlockNodeIds(): Iterator[Long] = {
+    new GetAllBlockNodesId(this)
   }
 }
 
@@ -582,9 +580,43 @@ class GetAllBlockNodes(manager: OutGoingEdgeBlockManager) extends Iterator[EndNo
 
   override def next(): EndNodesBlock = {
     val block = DirectMemoryManager.getBlock(id)
-    if (block.thisBlockNextBlockId != BlockId()){
+    if (block.thisBlockNextBlockId != BlockId()) {
       id = block.thisBlockNextBlockId
     }
     block
   }
+}
+
+class GetAllBlockNodesId(manager: OutGoingEdgeBlockManager) extends Iterator[Long] {
+  var block = DirectMemoryManager.getBlock(manager.getBeginBlockId)
+  var nextBlockId = block.thisBlockNextBlockId
+  var arrayUsedSize = block.arrayUsedSize
+  var count = 0
+  override def hasNext: Boolean = {
+
+    if (count < arrayUsedSize) {
+      count += 1
+      true
+    }
+    else {
+      if (nextBlockId != BlockId()){
+        block = DirectMemoryManager.getBlock(nextBlockId)
+        nextBlockId = block.thisBlockNextBlockId
+        arrayUsedSize = block.arrayUsedSize
+        count = 1
+        true
+      }
+      else{
+        false
+      }
+    }
+  }
+
+  override def next(): Long = {
+    block.nodeIdArray(count - 1)
+  }
+}
+
+class NoSuchBlockException extends Exception {
+  override def getMessage: String = "No such block to put"
 }
