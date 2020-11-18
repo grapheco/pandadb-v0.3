@@ -588,13 +588,24 @@ class GetAllBlockNodes(manager: OutGoingEdgeBlockManager) extends Iterator[EndNo
 }
 
 class GetAllBlockNodesId(manager: OutGoingEdgeBlockManager) extends Iterator[Long] {
-  var block = DirectMemoryManager.getBlock(manager.getBeginBlockId)
-  var nextBlockId = block.thisBlockNextBlockId
-  var arrayUsedSize = block.arrayUsedSize
+  var block: EndNodesBlock = _
+  var nextBlockId: BlockId = _
+  var arrayUsedSize:Short = _
   var count = 0
   var isFinish = false
+
+  if (manager.getBeginBlockId != BlockId()){
+    block = DirectMemoryManager.getBlock(manager.getBeginBlockId)
+    nextBlockId = block.thisBlockNextBlockId
+    arrayUsedSize = block.arrayUsedSize
+  }
+
   override def hasNext: Boolean = {
-    if (count < arrayUsedSize) {
+    if (manager.getBeginBlockId == BlockId()){
+      isFinish = true
+      false
+    }
+    else if (count < arrayUsedSize) {
       count += 1
       true
     }
