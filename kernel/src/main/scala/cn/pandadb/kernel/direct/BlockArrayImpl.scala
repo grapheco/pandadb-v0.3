@@ -126,7 +126,7 @@ object DirectMemoryManager {
   def getBlock(id: BlockId): EndNodesBlock = {
     this.synchronized {
       if (id == BlockId()) {
-        throw new NoSuchBlockException
+        throw new NoBlockToGetException
       }
       else {
         val directBuffer = directBufferPageArray(id.pageId - 1)
@@ -592,8 +592,8 @@ class GetAllBlockNodesId(manager: OutGoingEdgeBlockManager) extends Iterator[Lon
   var nextBlockId = block.thisBlockNextBlockId
   var arrayUsedSize = block.arrayUsedSize
   var count = 0
+  var isFinish = false
   override def hasNext: Boolean = {
-
     if (count < arrayUsedSize) {
       count += 1
       true
@@ -607,16 +607,23 @@ class GetAllBlockNodesId(manager: OutGoingEdgeBlockManager) extends Iterator[Lon
         true
       }
       else{
+        isFinish = true
         false
       }
     }
   }
 
   override def next(): Long = {
-    block.nodeIdArray(count - 1)
+    if (!isFinish) block.nodeIdArray(count - 1)
+    else throw new NoNextNodeIdException
   }
 }
 
-class NoSuchBlockException extends Exception {
-  override def getMessage: String = "No such block to put"
+class NoBlockToGetException extends Exception {
+  override def getMessage: String = "No such block to get"
+}
+
+class NoNextNodeIdException extends Exception{
+  override def getMessage: String = "next on empty iterator"
+
 }
