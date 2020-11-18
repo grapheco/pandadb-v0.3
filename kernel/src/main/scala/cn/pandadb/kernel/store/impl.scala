@@ -122,11 +122,11 @@ class PositionMappedNodeStore(val nodeFile: File) extends NodeStore {
     override val file: File = nodeFile
   }
 
-  override def loadAll(): Seq[StoredNode] = _store.loadAll().map(x => StoredNode(x._1, x._2.labelId1, x._2.labelId2, x._2.labelId3, x._2.labelId4))
+  override def loadAll(): Iterator[StoredNode] = _store.loadAll().map(x => StoredNode(x._1, x._2.labelId1, x._2.labelId2, x._2.labelId3, x._2.labelId4))
 
   override def update(t: StoredNode): Unit = _store.update(t.id, t)
 
-  override def saveAll(ts: Seq[StoredNode]): Unit = _store.saveAll(ts.map(x => x.id -> x))
+  override def saveAll(ts: Iterator[StoredNode]): Unit = _store.saveAll(ts.map(x => x.id -> x))
 
   override def close(): Unit = _store.close()
 
@@ -140,11 +140,11 @@ class PositionMappedRelationStore(val relationFile: File) extends RelationStore 
     override val file: File = relationFile
   }
 
-  override def loadAll(): Seq[StoredRelation] = _store.loadAll().map(x => StoredRelation(x._1, x._2.from, x._2.to, x._2.labelId))
+  override def loadAll(): Iterator[StoredRelation] = _store.loadAll().map(x => StoredRelation(x._1, x._2.from, x._2.to, x._2.labelId))
 
   override def update(t: StoredRelation): Unit = _store.update(t.id, t)
 
-  override def saveAll(ts: Seq[StoredRelation]): Unit = _store.saveAll(ts.map(x => x.id -> x))
+  override def saveAll(ts: Iterator[StoredRelation]): Unit = _store.saveAll(ts.map(x => x.id -> x))
 
   override def close(): Unit = _store.close()
 

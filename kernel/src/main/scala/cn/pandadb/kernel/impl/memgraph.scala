@@ -17,9 +17,9 @@ class SimpleGraphRAM extends GraphRAM {
 
   override def deleteRelation(id: Id): Unit = mapRelations -= id
 
-  override def nodes(): Seq[StoredNode] = mapNodes.map(_._2).toSeq
+  override def nodes(): Iterator[StoredNode] = mapNodes.map(_._2).iterator
 
-  override def rels(): Seq[StoredRelation] = mapRelations.map(_._2).toSeq
+  override def rels(): Iterator[StoredRelation] = mapRelations.map(_._2).iterator
 
   override def close(): Unit = {
     clear()

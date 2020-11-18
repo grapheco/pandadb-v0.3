@@ -17,9 +17,9 @@ class DirectGraphRAMImpl extends GraphRAM {
 
   override def deleteRelation(id: Id): Unit = ???
 
-  override def nodes(): Seq[StoredNode] = ???
+  override def nodes(): Iterator[StoredNode] = ???
 
-  override def rels(): Seq[StoredRelation] = ???
+  override def rels(): Iterator[StoredRelation] = ???
 
   override def clear(): Unit = ???
 

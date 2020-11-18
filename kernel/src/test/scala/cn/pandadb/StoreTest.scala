@@ -65,30 +65,30 @@ class StoreTest {
     memGraph.mergeLogs2Store(true)
 
     Assert.assertEquals(0, logs._store.loadAll().size)
-    Assert.assertEquals(List(1, 2), nodes.loadAll().map(_.id).sorted)
-    Assert.assertEquals(List(1), rels.loadAll().map(_.id).sorted)
+    Assert.assertEquals(List(1, 2), nodes.loadAll().toSeq.map(_.id).sorted)
+    Assert.assertEquals(List(1), rels.loadAll().toSeq.map(_.id).sorted)
 
     memGraph.addNode(Map("name" -> "3"))
     //nodes: {1,2,3}
     memGraph.mergeLogs2Store(true)
 
     Assert.assertEquals(0, logs._store.loadAll().size)
-    Assert.assertEquals(List(1, 2, 3), nodes.loadAll().map(_.id).sorted)
+    Assert.assertEquals(List(1, 2, 3), nodes.loadAll().toSeq.map(_.id).sorted)
 
     memGraph.deleteNode(2)
     //nodes: {1,3}
     memGraph.mergeLogs2Store(true)
-    Assert.assertEquals(List(1, 3), nodes.loadAll().map(_.id).sorted)
+    Assert.assertEquals(List(1, 3), nodes.loadAll().toSeq.map(_.id).sorted)
 
     memGraph.addNode(Map("name" -> "4")).deleteNode(1L)
     //nodes: {3,4}
     memGraph.mergeLogs2Store(true)
-    Assert.assertEquals(List(3, 4), nodes.loadAll().map(_.id).sorted)
+    Assert.assertEquals(List(3, 4), nodes.loadAll().toSeq.map(_.id).sorted)
 
     memGraph.addNode(Map("name" -> "5")).addNode(Map("name" -> "6")).deleteNode(5L).deleteNode(3L)
     //nodes: {4,6}
     memGraph.mergeLogs2Store(true)
-    Assert.assertEquals(List(4, 6), nodes.loadAll().map(_.id).sorted)
+    Assert.assertEquals(List(4, 6), nodes.loadAll().toSeq.map(_.id).sorted)
 
     memGraph.close()
   }

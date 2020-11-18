@@ -23,7 +23,7 @@ class GraphFacade(
   type Id = Long
   type Position = Long
 
-  private val graphService = new LynxSession().createPropertyGraph(new PropertyGraphScan[Long] {
+  private val propertyGraph = new LynxSession().createPropertyGraph(new PropertyGraphScan[Long] {
     def mapNode(node: StoredNode): Node[Id] = {
       new Node[Id] {
         override type I = this.type
@@ -40,11 +40,11 @@ class GraphFacade(
 
     override def nodeAt(id: Long): CypherValue.Node[Long] = mapNode(mem.nodeAt(id))
 
-    override def allNodes(): Seq[Node[Id]] = mem.nodes().map { node =>
+    override def allNodes(): Iterator[Node[Id]] = mem.nodes().map { node =>
       mapNode(node)
     }
 
-    override def allRelationships(): Seq[CypherValue.Relationship[Id]] = mem.rels().map { rel =>
+    override def allRelationships(): Iterator[CypherValue.Relationship[Id]] = mem.rels().map { rel =>
       new Relationship[Id] {
         override type I = this.type
 
@@ -64,7 +64,7 @@ class GraphFacade(
   })
 
   def cypher(query: String, parameters: Map[String, Any] = Map.empty): CypherResult = {
-    graphService.cypher(query, CypherMap(parameters.toSeq: _*))
+    propertyGraph.cypher(query, CypherMap(parameters.toSeq: _*))
   }
 
   def close(): Unit = {

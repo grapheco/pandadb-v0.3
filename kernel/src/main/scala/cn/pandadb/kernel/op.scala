@@ -5,7 +5,7 @@ import cn.pandadb.kernel.store.{StoredNode, StoredRelation}
 trait GraphRAM {
   type Id = Long
 
-  def init(nodes: Seq[StoredNode], rels: Seq[StoredRelation]) = {
+  def init(nodes: Iterator[StoredNode], rels: Iterator[StoredRelation]) = {
     nodes.foreach(addNode(_))
     rels.foreach(addRelation(_))
   }
@@ -22,9 +22,9 @@ trait GraphRAM {
 
   def deleteRelation(id: Id)
 
-  def nodes(): Seq[StoredNode]
+  def nodes(): Iterator[StoredNode]
 
-  def rels(): Seq[StoredRelation]
+  def rels(): Iterator[StoredRelation]
 
   def clear(): Unit
 

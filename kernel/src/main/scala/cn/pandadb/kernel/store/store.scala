@@ -3,7 +3,7 @@ package cn.pandadb.kernel.store
 trait XStore[Id, T] {
   def close(): Unit
 
-  def loadAll(): Seq[T]
+  def loadAll(): Iterator[T]
 
   def update(t: T): Unit
 
@@ -13,7 +13,7 @@ trait XStore[Id, T] {
 
   def deleteAll(ts: Seq[Id]): Unit = ts.foreach(delete(_))
 
-  def saveAll(ts: Seq[T])
+  def saveAll(ts: Iterator[T])
 }
 
 trait NodeStore extends XStore[Long, StoredNode] {

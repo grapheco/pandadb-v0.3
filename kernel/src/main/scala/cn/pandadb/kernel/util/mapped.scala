@@ -2,17 +2,22 @@ package cn.pandadb.kernel.util
 
 import java.io._
 import java.nio.ByteBuffer
+import java.util.concurrent.atomic.AtomicLong
+
 import io.netty.buffer.ByteBufAllocator
 import io.netty.buffer.{ByteBuf, Unpooled}
 
+import scala.collection.AbstractIterator
+import scala.collection.mutable.ArrayBuffer
+
 trait PositionMappedArrayStore[T] {
-  def loadAll(): Seq[(Long, T)]
+  def loadAll(): Iterator[(Long, T)]
 
   def markDeleted(id: Long)
 
   def update(id: Long, t: T)
 
-  def saveAll(ts: Seq[(Long, T)])
+  def saveAll(ts: Iterator[(Long, T)])
 }
 
 trait FileBasedPositionMappedArrayStore[T] extends PositionMappedArrayStore[T] {
@@ -40,28 +45,45 @@ trait FileBasedPositionMappedArrayStore[T] extends PositionMappedArrayStore[T] {
     objectSerializer.writeObject(buf, t)
   }
 
-  override def loadAll(): Seq[(Long, T)] = {
-    def createStream(dis: DataInputStream, id: Long): Stream[(Long, T)] = {
-      try {
-        val opt = blockSerializer.readObjectBlock(dis)
-        if (opt.nonEmpty)
-          Stream.cons(id -> opt.get, {
-            createStream(dis, id + 1)
-          })
-        else
-          createStream(dis, id + 1)
-      }
-      catch {
-        case _: EOFException => {
-          dis.close()
-          Stream.empty[(Long, T)]
+  override def loadAll(): Iterator[(Long, T)] = {
+    val dis = new DataInputStream(new BufferedInputStream(new FileInputStream(file)))
+    new AbstractIterator[(Long, T)] {
+      private val idx = new AtomicLong()
+      //push None if reach EOF
+      private val _buffered = ArrayBuffer[Option[(Long, T)]]()
+
+      //if empty, fetch one
+      def fetchMoreIfEmpty: Unit = {
+        if (_buffered.isEmpty) {
+          try {
+            var opt: Option[(Long, T)] = None
+            do {
+              opt = blockSerializer.readObjectBlock(dis).map(t => idx.incrementAndGet() -> t)
+            } while (opt.isEmpty)
+
+            _buffered += opt
+          }
+          catch {
+            case _: EOFException => {
+              dis.close()
+              _buffered += None
+            }
+
+            case e => throw e
+          }
         }
-        case e => throw e
+      }
+
+      override def hasNext: Boolean = {
+        fetchMoreIfEmpty
+        _buffered.nonEmpty && _buffered.head.nonEmpty
+      }
+
+      override def next(): (Long, T) = {
+        fetchMoreIfEmpty
+        _buffered.remove(0).get
       }
     }
-
-    val dis = new DataInputStream(new FileInputStream(file))
-    createStream(dis, 0)
   }
 
   override def markDeleted(id: Long) = {
@@ -79,7 +101,8 @@ trait FileBasedPositionMappedArrayStore[T] extends PositionMappedArrayStore[T] {
     buf.release()
   }
 
-  override def saveAll(ts: Seq[(Long, T)]) = {
+  override def saveAll(ts: Iterator[(Long, T)]) = {
+    ptr.truncate(0)
     ts.foreach(x => update(x._1, x._2))
   }
 
