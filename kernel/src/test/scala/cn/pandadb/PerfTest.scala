@@ -7,6 +7,10 @@ import cn.pandadb.kernel.util.Profiler.timing
 import org.apache.commons.io.FileUtils
 import org.junit.{Assert, Before, Test}
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
+
 class PerfTest {
   val COUNT: Int = 100000000
 
@@ -44,4 +48,17 @@ class PerfTest {
       logs._store.saveAll((1 to COUNT).iterator.map(i => CreateNode(StoredNode(i))))
     }
   }
+
+  @Test
+  def testMultiLogs(): Unit = {
+    val futures = (1 to 5).map(i => Future {
+      val logs = new LogStore(new File(s"./testdata/output/logs.$i"))
+      logs._store.saveAll((i * COUNT to i * COUNT + COUNT - 1).iterator.map(x => CreateNode(StoredNode(x))))
+    })
+
+    timing {
+      futures.map(Await.result(_, Duration.Inf))
+    }
+  }
+
 }
