@@ -23,18 +23,17 @@ class PerfTest {
       nodes.saveAll((1 to COUNT).iterator.map(i => StoredNode(i)))
     }
 
-    var idx = 0
+    var idx = 1
     var last: StoredNode = null
     timing {
       nodes.loadAll().foreach {
         x => {
+          Assert.assertEquals(StoredNode(idx, 0, 0, 0, 0), x)
           idx += 1
-          last = x
         }
       }
     }
 
-    Assert.assertEquals(COUNT, idx)
-    Assert.assertEquals(StoredNode(COUNT, 0, 0, 0, 0), last)
+    Assert.assertEquals(COUNT + 1, idx)
   }
 }

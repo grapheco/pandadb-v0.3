@@ -17,6 +17,8 @@ trait PositionMappedArrayStore[T] {
 
   def update(id: Long, t: T)
 
+  def update(ts: Iterator[(Long, T)])
+
   def saveAll(ts: Iterator[(Long, T)])
 }
 
@@ -101,9 +103,58 @@ trait FileBasedPositionMappedArrayStore[T] extends PositionMappedArrayStore[T] {
     buf.release()
   }
 
+  lazy val MAX_BUFFER_SIZE = 10240 / fixedSize
+
+  override def update(ts: Iterator[(Long, T)]) = {
+    val buffered = ArrayBuffer[T]()
+    var (start, end) = (-1L, -2L)
+
+    def flush() {
+      if (buffered.nonEmpty) {
+        ptr.position(positionOf(start))
+        val buf = allocator.buffer()
+        buffered.foreach {
+          blockSerializer.writeObjectBlock(buf, _)
+        }
+        ptr.write(buf.nioBuffer())
+        buf.release()
+        buffered.clear()
+      }
+
+      start = -1
+      end = -2
+    }
+
+    ts.foreach { it =>
+      val (id, t) = it
+
+      if (id == start - 1) {
+        start = id
+        buffered.insert(0, t)
+      }
+      else if (id == end + 1) {
+        end = id
+        buffered.append(t)
+      }
+      else {
+        //not continual
+        flush()
+        start = id
+        end = id
+        buffered.append(t)
+      }
+
+      if (buffered.size > MAX_BUFFER_SIZE) {
+        flush()
+      }
+    }
+
+    flush()
+  }
+
   override def saveAll(ts: Iterator[(Long, T)]) = {
     ptr.truncate(0)
-    ts.foreach(x => update(x._1, x._2))
+    update(ts.map(x => x._1 -> x._2))
   }
 
   def close(): Unit = {
