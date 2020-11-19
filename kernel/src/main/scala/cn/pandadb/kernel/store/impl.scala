@@ -3,7 +3,7 @@ package cn.pandadb.kernel.store
 import java.io.File
 import java.nio.charset.StandardCharsets
 
-import cn.pandadb.kernel.util.{AppendingFileBasedArrayStore, FileBasedPositionMappedArrayStore, ObjectBlockSerializer, ObjectSerializer, RandomAccessibleFileBasedArrayStore, VariantSizedObjectBlockSerializer}
+import cn.pandadb.kernel.util.{AppendingFileBasedArrayStore, FileBasedPositionMappedArrayStore, ObjectBlockSerializer, ObjectSerializer, VariantSizedObjectBlockSerializer}
 import io.netty.buffer.ByteBuf
 
 import scala.collection.mutable.ArrayBuffer
@@ -84,7 +84,7 @@ class LabelStore(labelFile: File, max: Int = Byte.MaxValue) {
       }
     }
 
-    _store.saveAll(map.map(f => StoredLabel(f._1, f._2)).toSeq)
+    _store.saveAll(map.map(f => StoredLabel(f._1, f._2)).iterator)
     newIds
   }
 }

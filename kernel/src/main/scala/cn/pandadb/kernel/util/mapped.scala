@@ -49,6 +49,7 @@ trait FileBasedPositionMappedArrayStore[T] extends PositionMappedArrayStore[T] {
 
   override def loadAll(): Iterator[(Long, T)] = {
     val dis = new DataInputStream(new BufferedInputStream(new FileInputStream(file)))
+    //TODO: use iterator.filter(...)
     new AbstractIterator[(Long, T)] {
       private val idx = new AtomicLong()
       //push None if reach EOF

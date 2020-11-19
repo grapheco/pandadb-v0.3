@@ -1,8 +1,12 @@
 package cn.pandadb.kernel.util
 
 import java.io._
-import java.nio.ByteBuffer
-import io.netty.buffer.{ByteBuf, PooledByteBufAllocator, Unpooled}
+import java.util.concurrent.atomic.AtomicLong
+
+import io.netty.buffer.{ByteBuf, ByteBufAllocator, PooledByteBufAllocator, Unpooled}
+
+import scala.collection.AbstractIterator
+import scala.collection.mutable.ArrayBuffer
 
 trait ObjectSerializer[T] {
   def readObject(buf: ByteBuf): T
@@ -64,7 +68,7 @@ trait FileBasedArrayStore[T] {
 
   val blockSerializer: ObjectBlockSerializer[T]
 
-  def saveAll(ts: Seq[T]): Unit = {
+  def saveAll(ts: Iterator[T]): Unit = {
     val appender = new FileOutputStream(file, false).getChannel
     val buf = PooledByteBufAllocator.DEFAULT.buffer()
     ts.foreach { t =>
@@ -82,29 +86,39 @@ trait FileBasedArrayStore[T] {
     appender.close()
   }
 
-  def loadAll(): Seq[T] = {
-    loadAllWithPosition().map(_._2)
-  }
+  def loadAll(): Iterator[T] = {
+    val dis = new DataInputStream(new BufferedInputStream(new FileInputStream(file)))
+    new AbstractIterator[T] {
+      //push None if reach EOF
+      private val _buffered = ArrayBuffer[Option[T]]()
 
-  def loadAllWithPosition(): Seq[(Position, T)] = {
-    def createStream(dis: DataInputStream, offset: Position): Stream[(Long, T)] = {
-      try {
-        val t = blockSerializer.readObjectBlock(dis)
-        Stream.cons(offset -> t._1, {
-          createStream(dis, offset + t._2)
-        })
-      }
-      catch {
-        case _: EOFException => {
-          dis.close()
-          Stream.empty[(Long, T)]
+      //if empty, fetch one
+      def fetchMoreIfEmpty: Unit = {
+        if (_buffered.isEmpty) {
+          try {
+            _buffered += Some(blockSerializer.readObjectBlock(dis)._1)
+          }
+          catch {
+            case _: EOFException => {
+              dis.close()
+              _buffered += None
+            }
+
+            case e => throw e
+          }
         }
-        case e => throw e
+      }
+
+      override def hasNext: Boolean = {
+        fetchMoreIfEmpty
+        _buffered.nonEmpty && _buffered.head.nonEmpty
+      }
+
+      override def next(): T = {
+        fetchMoreIfEmpty
+        _buffered.remove(0).get
       }
     }
-
-    val dis = new DataInputStream(new FileInputStream(file))
-    createStream(dis, 0)
   }
 }
 
@@ -119,87 +133,21 @@ trait AppendingFileBasedArrayStore[T] extends FileBasedArrayStore[T] {
     ptr.truncate(0)
   }
 
-  def append(ts: Iterable[T], posit: (T, Position) => Unit): Unit = {
+  val allocator: ByteBufAllocator = ByteBufAllocator.DEFAULT
+
+  def append(ts: Iterable[T]): Unit = {
     val offset0 = ptr.size()
     var offset = offset0
-    val buf = Unpooled.buffer()
+    val buf = allocator.buffer()
     ts.foreach { t =>
-      val buf0 = Unpooled.buffer()
+      val buf0 = allocator.buffer()
       blockSerializer.writeObjectBlock(buf0, t)
-      posit(t, offset)
       offset += buf0.readableBytes()
       buf.writeBytes(buf0)
+      buf0.release()
     }
 
     ptr.write(buf.nioBuffer())
     buf.release()
   }
-}
-
-trait RandomAccessibleFileBasedArrayStore[T] extends FileBasedArrayStore[T] with FixedSizedObjectBlockSerializer[T] {
-  final val blockSerializer: ObjectBlockSerializer[T] = this
-  lazy val ptr = new RandomAccessFile(file, "rw").getChannel
-
-  def close(): Unit = {
-    ptr.close()
-  }
-
-  def clear(): Unit = {
-    ptr.truncate(0)
-  }
-
-  def append(ts: Iterable[T], posit: (T, Position) => Unit): Unit = {
-    val buf = Unpooled.buffer()
-    val offset0 = ptr.size()
-    var offset = offset0
-    ts.foreach { t =>
-      val buf0 = Unpooled.buffer()
-      blockSerializer.writeObjectBlock(buf0, t)
-      posit(t, offset)
-      offset += buf0.readableBytes()
-      buf.writeBytes(buf0)
-    }
-
-    ptr.write(buf.nioBuffer(), offset0)
-  }
-
-  def remove(poss: Iterable[Position], posit: (T, Position) => Unit): Unit = {
-    val set = Set() ++ poss
-    var total = ptr.size()
-    set.foreach { pos: Position =>
-      if (pos < 0 || pos >= total || pos % fixedSize != 0)
-        throw new InvalidPositionException(pos)
-
-      total -= fixedSize
-      val bytes = new Array[Byte](fixedSize)
-      ptr.read(ByteBuffer.wrap(bytes), total)
-      val (t, _) = readObjectBlock(new DataInputStream(new ByteArrayInputStream(bytes)))
-
-      ptr.write(ByteBuffer.wrap(bytes), pos)
-      posit(t, pos)
-    }
-
-    ptr.truncate(total)
-  }
-
-  def overwrite(ts: Iterable[(Position, T)], posit: (T, Position) => Unit): Unit = {
-    val total = ptr.size()
-    ts.foreach { x =>
-      val (pos: Position, t: T) = x
-      if (pos < 0 || pos >= total || pos % fixedSize != 0)
-        throw new InvalidPositionException(pos)
-
-      val buf = Unpooled.buffer()
-      writeObjectBlock(buf, t)
-
-      posit(t, pos)
-      ptr.write(buf.nioBuffer(), pos)
-    }
-
-    ptr.truncate(total)
-  }
-}
-
-class InvalidPositionException(pos: Long) extends RuntimeException {
-
 }

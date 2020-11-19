@@ -84,9 +84,9 @@ class LogStore(logFile: File) {
     t
   }
 
-  def append(t: LogRecord) = _store.append(Some(t), (t: LogRecord, pos: Long) => {})
+  def append(t: LogRecord) = _store.append(Some(t))
 
-  def append(ts: Iterable[LogRecord]) = _store.append(ts, (t: LogRecord, pos: Long) => {})
+  def append(ts: Iterable[LogRecord]) = _store.append(ts)
 
   def close() = _store.close()
 
