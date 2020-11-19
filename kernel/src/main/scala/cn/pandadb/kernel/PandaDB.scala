@@ -3,7 +3,7 @@ package cn.pandadb.kernel
 import java.io.{File, FileNotFoundException}
 
 import cn.pandadb.kernel.impl.SimpleGraphRAM
-import cn.pandadb.kernel.store.{FileBasedIdGen, LabelStore, LogStore, PositionMappedNodeStore, PositionMappedRelationStore}
+import cn.pandadb.kernel.store.{FileBasedIdGen, LabelStore, LogStore, NodeStoreImpl, RelationStoreImpl}
 import cn.pandadb.kernel.util.LockFile
 
 import scala.collection.mutable
@@ -15,8 +15,8 @@ object PandaDB {
     if (!dir.exists())
       throw new FileNotFoundException(root.getPath)
 
-    val nodes = new PositionMappedNodeStore(new File(root, "nodes"))
-    val rels = new PositionMappedRelationStore(new File(root, "rels"))
+    val nodes = new NodeStoreImpl(new File(root, "nodes"),new File(root, "nodesmap"))
+    val rels = new RelationStoreImpl(new File(root, "rels"),new File(root, "relsmap"))
     val logs = new LogStore(new File(root, "logs"))
     val nodelabels = new LabelStore(new File(root, "nodelabels"))
     val rellabels = new LabelStore(new File(root, "rellabels"), Int.MaxValue)

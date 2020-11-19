@@ -3,7 +3,7 @@ package cn.pandadb
 import java.io.File
 
 import cn.pandadb.kernel.impl.{SimpleGraphRAM, SimplePropertyStore}
-import cn.pandadb.kernel.store.{FileBasedIdGen, LabelStore, LogStore, NodeStore, PositionMappedNodeStore, PositionMappedRelationStore, RelationStore}
+import cn.pandadb.kernel.store.{FileBasedIdGen, LabelStore, LogStore, NodeStore, NodeStoreImpl, RelationStoreImpl, RelationStore}
 import cn.pandadb.kernel.GraphFacade
 import org.apache.commons.io.FileUtils
 import org.junit.{Assert, Before, Test}
@@ -28,8 +28,8 @@ class StoreTest {
     new File("./testdata/output/rels").createNewFile()
     new File("./testdata/output/logs").createNewFile()
 
-    nodes = new PositionMappedNodeStore(new File("./testdata/output/nodes"))
-    rels = new PositionMappedRelationStore(new File("./testdata/output/rels"))
+    nodes = new NodeStoreImpl(new File("./testdata/output/nodes"), new File("./testdata/output/nodesmap"))
+    rels = new RelationStoreImpl(new File("./testdata/output/rels"), new File("./testdata/output/relsmap"))
     logs = new LogStore(new File("./testdata/output/logs"))
     nodeLabelStore = new LabelStore(new File("./testdata/output/nodelabels"))
     relLabelStore = new LabelStore(new File("./testdata/output/rellabels"))

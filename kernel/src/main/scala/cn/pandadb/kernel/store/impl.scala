@@ -3,18 +3,18 @@ package cn.pandadb.kernel.store
 import java.io.File
 import java.nio.charset.StandardCharsets
 
-import cn.pandadb.kernel.util.{AppendingFileBasedArrayStore, FileBasedPositionMappedArrayStore, ObjectBlockSerializer, ObjectSerializer, VariantSizedObjectBlockSerializer}
 import io.netty.buffer.ByteBuf
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.{mutable}
 
 object NodeSerializer extends ObjectSerializer[StoredNode] {
   override def readObject(buf: ByteBuf): StoredNode =
-    StoredNode(buf.readLong(), buf.readByte(), buf.readByte(), buf.readByte(), buf.readByte())
+    StoredNode(buf.readLong(), (1 to buf.readableBytes()).map(_ => buf.readByte().toInt): _*)
 
   override def writeObject(buf: ByteBuf, t: StoredNode): Unit = {
-    buf.writeLong(t.id).writeByte(t.labelId1).writeByte(t.labelId2).writeByte(t.labelId3).writeByte(t.labelId4)
+    buf.writeLong(t.id)
+    t.labelIds.foreach(buf.writeByte(_))
   }
 }
 
@@ -48,7 +48,7 @@ object LabelSerializer extends ObjectSerializer[StoredLabel] {
  * @param max max value for id
  */
 class LabelStore(labelFile: File, max: Int = Byte.MaxValue) {
-  val _store = new AppendingFileBasedArrayStore[StoredLabel] {
+  val _store = new FileBasedArrayStore[StoredLabel] {
     override val file: File = labelFile
     override val blockSerializer: ObjectBlockSerializer[StoredLabel] = new VariantSizedObjectBlockSerializer[StoredLabel] {
       override val objectSerializer: ObjectSerializer[StoredLabel] = new ObjectSerializer[StoredLabel] {
@@ -84,12 +84,12 @@ class LabelStore(labelFile: File, max: Int = Byte.MaxValue) {
       }
     }
 
-    _store.saveAll(map.map(f => StoredLabel(f._1, f._2)).iterator)
+    _store.saveAll(map.map(f => StoredLabel(f._1, f._2)).iterator, _ => {})
     newIds
   }
 }
 
-case class StoredNode(id: Long, labelId1: Int = 0, labelId2: Int = 0, labelId3: Int = 0, labelId4: Int = 0) {
+case class StoredNode(id: Long, labelIds: Int*) {
 
 }
 
@@ -101,71 +101,81 @@ case class StoredLabel(key: String, value: Int) {
 
 }
 
-trait WithPositions[Id, Long, T] {
-  private val mapId2Position = mutable.Map[Id, Long]()
-
-  protected def id(t: T): Id
-
-  protected def set(ts: Seq[(Long, T)]) = {
-    mapId2Position.clear()
-    mapId2Position ++= ts.map(x => id(x._2) -> x._1)
-  }
-
-  protected def position(t: T): Option[Long] = mapId2Position.get(id(t))
-}
-
 ///////////////////////////////
-class PositionMappedNodeStore(val nodeFile: File) extends NodeStore {
-  val _store = new FileBasedPositionMappedArrayStore[StoredNode]() {
-    override val objectSerializer: ObjectSerializer[StoredNode] = NodeSerializer2
-    override val fixedSize: Int = 4
-    override val file: File = nodeFile
+trait StoreWithMap[T] {
+  val mapFile: File
+  val _mainStore: FileBasedMarkableArrayStore[T]
+
+  def openMapFile(): PositionMapFile
+
+  def id(t: T): Long
+
+  def loadAll(): Iterator[T] = _mainStore.loadAll()
+
+  def merge(changes: MergedChanges[T, Long]): Unit = {
+    val map = openMapFile()
+    changes.toDelete.foreach(id => {
+      _mainStore.markDeleted(map.positionOf(id))
+      map.markDeleted(id)
+    })
+
+    _mainStore.append(changes.toAdd, ts =>
+      map.update(ts.map(x => id(x._1) -> x._2).iterator))
+
+    map.close()
   }
 
-  override def loadAll(): Iterator[StoredNode] = _store.loadAll().map(x => StoredNode(x._1, x._2.labelId1, x._2.labelId2, x._2.labelId3, x._2.labelId4))
+  def saveAll(ts: Iterator[T]): Unit = {
+    val map = openMapFile()
+    _mainStore.saveAll(ts, (ts) =>
+      map.update(ts.map(x => id(x._1) -> x._2).iterator))
 
-  override def update(t: StoredNode): Unit = _store.update(t.id, t)
+    map.close()
+  }
 
-  override def saveAll(ts: Iterator[StoredNode]): Unit = _store.saveAll(ts.map(x => x.id -> x))
-
-  override def close(): Unit = _store.close()
-
-  override def delete(id: Long): Unit = _store.markDeleted(id)
+  def close(): Unit = _mainStore.close()
 }
 
-class PositionMappedRelationStore(val relationFile: File) extends RelationStore {
-  val _store = new FileBasedPositionMappedArrayStore[StoredRelation]() {
-    override val objectSerializer: ObjectSerializer[StoredRelation] = RelationSerializer2
-    override val fixedSize: Int = 4 * 2 + 1
+trait XStore[Id, T] {
+  def close(): Unit
+
+  def loadAll(): Iterator[T]
+
+  def merge(changes: MergedChanges[T, Id]): Unit
+
+  def saveAll(ts: Iterator[T])
+}
+
+trait NodeStore extends XStore[Long, StoredNode] {
+}
+
+trait RelationStore extends XStore[Long, StoredRelation] {
+}
+
+class NodeStoreImpl(val nodeFile: File, val mapFile: File) extends NodeStore with StoreWithMap[StoredNode] {
+  override val _mainStore = new FileBasedMarkableArrayStore[StoredNode] {
+    override val file: File = nodeFile
+    override val blockSerializer = new VariantSizedObjectBlockSerializer[StoredNode] {
+      override val objectSerializer: ObjectSerializer[StoredNode] = NodeSerializer
+    }
+  }
+
+  override def openMapFile = new PositionMapFile(mapFile)
+
+  override def id(t: StoredNode): Long = t.id
+}
+
+class RelationStoreImpl(val relationFile: File, val mapFile: File) extends RelationStore with StoreWithMap[StoredRelation] {
+  override val _mainStore = new FileBasedMarkableArrayStore[StoredRelation] {
+    override val blockSerializer = new VariantSizedObjectBlockSerializer[StoredRelation] {
+      override val objectSerializer: ObjectSerializer[StoredRelation] = RelationSerializer
+    }
     override val file: File = relationFile
   }
 
-  override def loadAll(): Iterator[StoredRelation] = _store.loadAll().map(x => StoredRelation(x._1, x._2.from, x._2.to, x._2.labelId))
+  override def openMapFile = new PositionMapFile(mapFile)
 
-  override def update(t: StoredRelation): Unit = _store.update(t.id, t)
-
-  override def saveAll(ts: Iterator[StoredRelation]): Unit = _store.saveAll(ts.map(x => x.id -> x))
-
-  override def close(): Unit = _store.close()
-
-  override def delete(id: Long): Unit = _store.markDeleted(id)
-}
-
-object NodeSerializer2 extends ObjectSerializer[StoredNode] {
-  override def readObject(buf: ByteBuf): StoredNode =
-    StoredNode(-1, buf.readByte(), buf.readByte(), buf.readByte(), buf.readByte())
-
-  override def writeObject(buf: ByteBuf, t: StoredNode): Unit = {
-    buf.writeByte(t.labelId1).writeByte(t.labelId2).writeByte(t.labelId3).writeByte(t.labelId4)
-  }
-}
-
-object RelationSerializer2 extends ObjectSerializer[StoredRelation] {
-  override def readObject(buf: ByteBuf): StoredRelation =
-    StoredRelation(buf.readLong(), buf.readLong(), buf.readLong(), buf.readInt())
-
-  override def writeObject(buf: ByteBuf, t: StoredRelation): Unit =
-    buf.writeLong(t.id).writeLong(t.from).writeLong(t.to).writeInt(t.labelId)
+  override def id(t: StoredRelation): Long = t.id
 }
 
 class TooManyLabelException(maxLimit: Int) extends RuntimeException

@@ -2,7 +2,7 @@ package cn.pandadb
 
 import java.io.File
 
-import cn.pandadb.kernel.store.{CreateNode, LogStore, NodeSerializer, PositionMappedNodeStore, StoredNode}
+import cn.pandadb.kernel.store.{CreateNode, LogStore, NodeSerializer, NodeStoreImpl, StoredNode}
 import cn.pandadb.kernel.util.Profiler.timing
 import org.apache.commons.io.FileUtils
 import org.junit.{Assert, Before, Test}
@@ -22,7 +22,7 @@ class PerfTest {
 
   @Test
   def testNodes(): Unit = {
-    val nodes = new PositionMappedNodeStore(new File("./testdata/output/nodes"))
+    val nodes = new NodeStoreImpl(new File("./testdata/output/nodes"), new File("./testdata/output/nodesmap"))
     timing {
       nodes.saveAll((1 to COUNT).iterator.map(i => StoredNode(i)))
     }
@@ -32,7 +32,7 @@ class PerfTest {
     timing {
       nodes.loadAll().foreach {
         x => {
-          Assert.assertEquals(StoredNode(idx, 0, 0, 0, 0), x)
+          Assert.assertEquals(StoredNode(idx), x)
           idx += 1
         }
       }
@@ -45,7 +45,7 @@ class PerfTest {
   def testLogs(): Unit = {
     val logs = new LogStore(new File("./testdata/output/logs"))
     timing {
-      logs._store.saveAll((1 to COUNT).iterator.map(i => CreateNode(StoredNode(i))))
+      logs._store.saveAll((1 to COUNT).iterator.map(i => CreateNode(StoredNode(i))), _ => {})
     }
   }
 
@@ -53,7 +53,7 @@ class PerfTest {
   def testMultiLogs(): Unit = {
     val futures = (1 to 5).map(i => Future {
       val logs = new LogStore(new File(s"./testdata/output/logs.$i"))
-      logs._store.saveAll((i * COUNT to i * COUNT + COUNT - 1).iterator.map(x => CreateNode(StoredNode(x))))
+      logs._store.saveAll((i * COUNT to i * COUNT + COUNT - 1).iterator.map(x => CreateNode(StoredNode(x))), _ => {})
     })
 
     timing {

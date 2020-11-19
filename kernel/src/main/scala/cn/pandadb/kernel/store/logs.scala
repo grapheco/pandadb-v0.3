@@ -1,16 +1,13 @@
 package cn.pandadb.kernel.store
 
 import java.io.File
-
-import cn.pandadb.kernel.util.{AppendingFileBasedArrayStore, ObjectBlockSerializer, ObjectSerializer, VariantSizedObjectBlockSerializer}
 import io.netty.buffer.ByteBuf
-
 import scala.collection.mutable
 
 trait LogRecord {
 }
 
-class UnmergedLogs[T, Id] {
+class UnmergedChanges[T, Id] {
   private val toAdd = mutable.Map[Id, T]()
   private val toDelete = mutable.Map[Id, Id]()
 
@@ -18,7 +15,7 @@ class UnmergedLogs[T, Id] {
 
   def delete(id: Id) = toDelete += id -> id
 
-  def merge(): MergedLogs[T, Id] = {
+  def merge(): MergedChanges[T, Id] = {
     //toAdd={11,12,13}, toDelete={12,7,8,9}
     //intersection={12}
     val intersection = toDelete.keySet.intersect(toAdd.keySet)
@@ -30,37 +27,35 @@ class UnmergedLogs[T, Id] {
     }
 
     //toReplace={11->7,13->8}, toAdd={}, toDelete={9}
-    val toReplace: Seq[(Id, T)] = toAdd.zip(toDelete).map(x => x._2._2 -> x._1._2).toSeq
+    //val toReplace: Seq[(Id, T)] = toAdd.zip(toDelete).map(x => x._2._2 -> x._1._2).toSeq
 
-    MergedLogs[T, Id](
-      toAdd.drop(toReplace.size).map(_._2).toSeq,
-      toDelete.drop(toReplace.size).map(_._2).toSeq,
-      toReplace)
+    MergedChanges[T, Id](
+      toAdd.map(_._2).toSeq,
+      toDelete.map(_._2).toSeq)
   }
 }
 
-case class MergedLogs[T, Id]
+case class MergedChanges[T, Id]
 (
   toAdd: Seq[T],
   toDelete: Seq[Id],
-  toReplace: Seq[(Id, T)]
 ) {
   assert(!(toAdd.nonEmpty && toDelete.nonEmpty))
 }
 
-case class MergedGraphLogs
+case class MergedGraphChanges
 (
-  nodes: MergedLogs[StoredNode, Long],
-  rels: MergedLogs[StoredRelation, Long]
+  nodes: MergedChanges[StoredNode, Long],
+  rels: MergedChanges[StoredRelation, Long]
 )
 
 class LogStore(logFile: File) {
   def length() = logFile.length()
 
-  def offer[T](consume: (MergedGraphLogs => T)): T = {
+  def offer[T](consume: (MergedGraphChanges => T)): T = {
 
-    val nodelogs = new UnmergedLogs[StoredNode, Long]()
-    val rellogs = new UnmergedLogs[StoredRelation, Long]()
+    val nodelogs = new UnmergedChanges[StoredNode, Long]()
+    val rellogs = new UnmergedChanges[StoredRelation, Long]()
 
     _store.loadAll().toArray.foreach {
       _ match {
@@ -78,21 +73,21 @@ class LogStore(logFile: File) {
       }
     }
 
-    val graphLogs = MergedGraphLogs(nodelogs.merge(), rellogs.merge())
+    val graphLogs = MergedGraphChanges(nodelogs.merge(), rellogs.merge())
     val t = consume(graphLogs)
     _store.clear()
     t
   }
 
-  def append(t: LogRecord) = _store.append(Some(t))
+  def append(t: LogRecord) = _store.append(Some(t), _ => {})
 
-  def append(ts: Iterable[LogRecord]) = _store.append(ts)
+  def append(ts: Iterable[LogRecord]) = _store.append(ts, _ => {})
 
   def close() = _store.close()
 
   def clear() = _store.clear()
 
-  val _store = new AppendingFileBasedArrayStore[LogRecord] {
+  val _store = new FileBasedArrayStore[LogRecord] {
     val blockSerializer: ObjectBlockSerializer[LogRecord] = new VariantSizedObjectBlockSerializer[LogRecord] {
       override val objectSerializer: ObjectSerializer[LogRecord] = new ObjectSerializer[LogRecord] {
         override def readObject(buf: ByteBuf): LogRecord = {

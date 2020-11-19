@@ -1,6 +1,6 @@
 package cn.pandadb.kernel
 
-import cn.pandadb.kernel.store.{MergedGraphLogs, _}
+import cn.pandadb.kernel.store.{MergedGraphChanges, _}
 import org.apache.logging.log4j.scala.Logging
 import org.opencypher.lynx.{LynxSession, PropertyGraphScan}
 import org.opencypher.okapi.api.graph.CypherResult
@@ -30,7 +30,7 @@ class GraphFacade(
 
         override def id: Id = node.id
 
-        override def labels: Set[String] = Set(node.labelId1, node.labelId2, node.labelId3, node.labelId4).filter(_ > 0).map(nodeLabelStore.key(_).get)
+        override def labels: Set[String] = node.labelIds.toSet.map((id: Int) => nodeLabelStore.key(id).get)
 
         override def copy(id: Long, labels: Set[String], properties: CypherValue.CypherMap): this.type = ???
 
@@ -94,23 +94,10 @@ class GraphFacade(
 
   def mergeLogs2Store(updateMem: Boolean): Unit = {
     logStore.offer {
-      (logs: MergedGraphLogs) =>
+      (logs: MergedGraphChanges) =>
         //mem should be appended before creating logs
-
-        if (logs.nodes.toAdd.nonEmpty)
-          nodeStore.updateAll(logs.nodes.toAdd)
-        if (logs.nodes.toReplace.nonEmpty)
-          nodeStore.updateAll(logs.nodes.toReplace.map(_._2))
-        if (logs.nodes.toDelete.nonEmpty) {
-          nodeStore.deleteAll(logs.nodes.toDelete)
-        }
-
-        if (logs.rels.toAdd.nonEmpty)
-          relStore.updateAll(logs.rels.toAdd)
-        if (logs.rels.toReplace.nonEmpty)
-          relStore.updateAll(logs.rels.toReplace.map(_._2))
-        if (logs.rels.toDelete.nonEmpty)
-          relStore.deleteAll(logs.rels.toDelete)
+        nodeStore.merge(logs.nodes)
+        relStore.merge(logs.rels)
     }
   }
 
