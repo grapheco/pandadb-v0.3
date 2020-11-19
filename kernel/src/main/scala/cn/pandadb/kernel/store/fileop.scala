@@ -3,7 +3,6 @@ package cn.pandadb.kernel.store
 import java.io._
 import java.nio.ByteBuffer
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, PooledByteBufAllocator, Unpooled}
-
 import scala.collection.AbstractIterator
 import scala.collection.mutable.ArrayBuffer
 
@@ -64,24 +63,36 @@ trait FixedSizedObjectBlockSerializer[T] extends ObjectBlockSerializer[T] {
   }
 }
 
-trait FileBasedArrayStore[T] {
+trait ArrayStore[T] {
+  def close(): Unit
+
+  def clear(): Unit
+
+  def append(ts: Iterable[T], updatePositions: Iterable[(T, Long)] => Unit): Unit
+
+  def saveAll(ts: Iterator[T], updatePositions: Iterable[(T, Long)] => Unit): Unit
+
+  def loadAll(): Iterator[T]
+}
+
+trait FileBasedArrayStore[T] extends ArrayStore[T] {
   val file: File
 
   val blockSerializer: ObjectBlockSerializer[T]
 
   lazy val ptr = new FileOutputStream(file, true).getChannel
 
-  def close(): Unit = {
+  override def close(): Unit = {
     ptr.close()
   }
 
-  def clear(): Unit = {
+  override def clear(): Unit = {
     ptr.truncate(0)
   }
 
   val allocator: ByteBufAllocator = ByteBufAllocator.DEFAULT
 
-  def append(ts: Iterable[T], updatePositions: Iterable[(T, Long)] => Unit): Unit = {
+  override def append(ts: Iterable[T], updatePositions: Iterable[(T, Long)] => Unit): Unit = {
     val offset0 = ptr.position()
     val results = ArrayBuffer[(T, Long)]()
     var offset = offset0
@@ -100,7 +111,7 @@ trait FileBasedArrayStore[T] {
     buf.release()
   }
 
-  def saveAll(ts: Iterator[T], updatePositions: Iterable[(T, Long)] => Unit): Unit = {
+  override def saveAll(ts: Iterator[T], updatePositions: Iterable[(T, Long)] => Unit): Unit = {
     val results = ArrayBuffer[(T, Long)]()
     val appender = new FileOutputStream(file, false).getChannel
     val buf = PooledByteBufAllocator.DEFAULT.buffer()
@@ -124,7 +135,7 @@ trait FileBasedArrayStore[T] {
     appender.close()
   }
 
-  def loadAll(): Iterator[T] = {
+  override def loadAll(): Iterator[T] = {
     val dis = new DataInputStream(new BufferedInputStream(new FileInputStream(file)))
     new AbstractIterator[T] {
       //push None if reach EOF
@@ -160,11 +171,17 @@ trait FileBasedArrayStore[T] {
   }
 }
 
-trait FileBasedMarkableArrayStore[T] {
+trait RemovableArrayStore[T] extends ArrayStore[T] {
+  def markDeleted(pos: Long): Unit
+}
+
+trait FileBasedRemovableArrayStore[T] extends RemovableArrayStore[T] {
   val self = this
   val file: File
 
   def close(): Unit = _store.close()
+
+  def clear(): Unit = _store.clear()
 
   def loadAll(): Iterator[T] = _store.loadAll().filter(_._1 != 0).map(_._2)
 
@@ -188,17 +205,17 @@ trait FileBasedMarkableArrayStore[T] {
 
   lazy val ptr = _store.ptr
 
-  def markDeleted(pos: Long) = {
+  override def markDeleted(pos: Long) = {
     ptr.position(pos)
     ptr.write(ByteBuffer.wrap(Array[Byte](0)))
   }
 
-  def append(ts: Iterable[T], updatePositions: Iterable[(T, Long)] => Unit): Unit = {
+  override def append(ts: Iterable[T], updatePositions: Iterable[(T, Long)] => Unit): Unit = {
     _store.append(ts.map(1.toByte -> _),
       (ts: Iterable[((Byte, T), Long)]) => updatePositions(ts.map(x => x._1._2 -> x._2)))
   }
 
-  def saveAll(ts: Iterator[T], updatePositions: Iterable[(T, Long)] => Unit): Unit = {
+  override def saveAll(ts: Iterator[T], updatePositions: Iterable[(T, Long)] => Unit): Unit = {
     _store.saveAll(ts.map(1.toByte -> _),
       (ts: Iterable[((Byte, T), Long)]) => updatePositions(ts.map(x => x._1._2 -> x._2)))
   }

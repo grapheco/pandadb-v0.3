@@ -2,9 +2,7 @@ package cn.pandadb.kernel.store
 
 import java.io.File
 import java.nio.charset.StandardCharsets
-
 import io.netty.buffer.ByteBuf
-
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -104,7 +102,7 @@ case class StoredLabel(key: String, value: Int) {
 ///////////////////////////////
 trait StoreWithMap[T] {
   val mapFile: File
-  val _mainStore: FileBasedMarkableArrayStore[T]
+  val _mainStore: RemovableArrayStore[T]
 
   def openMapFile(): PositionMapFile
 
@@ -153,7 +151,7 @@ trait RelationStore extends XStore[Long, StoredRelation] {
 }
 
 class NodeStoreImpl(val nodeFile: File, val mapFile: File) extends NodeStore with StoreWithMap[StoredNode] {
-  override val _mainStore = new FileBasedMarkableArrayStore[StoredNode] {
+  override val _mainStore = new FileBasedRemovableArrayStore[StoredNode] {
     override val file: File = nodeFile
     override val blockSerializer = new VariantSizedObjectBlockSerializer[StoredNode] {
       override val objectSerializer: ObjectSerializer[StoredNode] = NodeSerializer
@@ -166,7 +164,7 @@ class NodeStoreImpl(val nodeFile: File, val mapFile: File) extends NodeStore wit
 }
 
 class RelationStoreImpl(val relationFile: File, val mapFile: File) extends RelationStore with StoreWithMap[StoredRelation] {
-  override val _mainStore = new FileBasedMarkableArrayStore[StoredRelation] {
+  override val _mainStore = new FileBasedRemovableArrayStore[StoredRelation] {
     override val blockSerializer = new VariantSizedObjectBlockSerializer[StoredRelation] {
       override val objectSerializer: ObjectSerializer[StoredRelation] = RelationSerializer
     }
