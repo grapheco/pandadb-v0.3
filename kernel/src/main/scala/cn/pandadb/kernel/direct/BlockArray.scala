@@ -89,6 +89,23 @@ object DirectMemoryManager {
     }
   }
 
+  def addDataToBlock(block: EndNodesBlock, nodeId: Long): Unit ={
+    this.synchronized {
+      val directBuffer = directBufferPageArray(block.thisBlockId.pageId - 1)
+      directBuffer.markWriterIndex()
+      directBuffer.writerIndex(block.thisBlockId.offset + 18)
+
+      directBuffer.writeLong(block.thisBlockMinNodeId) // + 8
+      directBuffer.writeLong(block.thisBlockMaxNodeId) // + 8
+      directBuffer.writeShort(block.arrayUsedSize) // + 2, now is 18 + 16 + 2 = 36
+
+      directBuffer.writerIndex(block.thisBlockId.offset + 36 + (block.arrayUsedSize - 1) * 8)
+      directBuffer.writeLong(nodeId)
+
+      directBuffer.resetWriterIndex()
+    }
+  }
+
   def updateBlockData(block: EndNodesBlock): Unit = {
     this.synchronized {
       val directBuffer = directBufferPageArray(block.thisBlockId.pageId - 1)
@@ -203,11 +220,13 @@ class OutGoingEdgeBlockManager(initBlockId: BlockId = BlockId()) {
 
     if (nodeId > queryBlock.thisBlockMinNodeId && nodeId < queryBlock.thisBlockMaxNodeId) {
       val res = queryBlock.put(nodeId)
+      // if isUpdate, it means block not full, so we just update it's data
       if (res._1) {
-        DirectMemoryManager.updateBlockData(queryBlock)
+//        DirectMemoryManager.updateBlockData(queryBlock)
+        DirectMemoryManager.addDataToBlock(queryBlock, nodeId)
       }
       else {
-        if (res._2 != BlockId()) beginBlockId = res._2
+        if (res._2 != BlockId()) beginBlockId = res._2 // means pre = null, and change head
         if (preBlock != null) {
           preBlock.thisBlockNextBlockId = res._3
           DirectMemoryManager.updateBlockIds(preBlock)
@@ -437,7 +456,9 @@ class EndNodesBlock(blockId: BlockId, preBlock: BlockId, nextBlock: BlockId,
     var biggerBlockId: BlockId = BlockId()
 
     if (arrayUsedSize < nodeIdArray.length) {
-      insertToArray(nodeId)
+//      insertToArray(nodeId)
+      nodeIdArray(arrayUsedSize) = nodeId
+      arrayUsedSize = (arrayUsedSize + 1).toShort
       if (arrayUsedSize != 1) {
         if (nodeId < thisBlockMinNodeId) thisBlockMinNodeId = nodeId
         if (nodeId > thisBlockMaxNodeId) thisBlockMaxNodeId = nodeId
@@ -454,22 +475,26 @@ class EndNodesBlock(blockId: BlockId, preBlock: BlockId, nextBlock: BlockId,
       val smallerBlock = DirectMemoryManager.generateBlock()
       val biggerBlock = DirectMemoryManager.generateBlock()
 
-      if (nodeId < nodeIdArray(splitAt)) {
+      val tmpArray = nodeIdArray.sorted
+      if (nodeId < tmpArray(splitAt)) {
         // nodeId belong to smaller block
-        for (i <- 0 until splitAt) smallerBlock.put(nodeIdArray(i))
+        for (i <- 0 until splitAt) smallerBlock.put(tmpArray(i))
         smallerBlock.put(nodeId)
-        for (i <- splitAt until dataLength) biggerBlock.put(nodeIdArray(i))
+        for (i <- splitAt until dataLength) biggerBlock.put(tmpArray(i))
       }
       // nodeId belong to bigger block
       else {
-        for (i <- 0 to splitAt) smallerBlock.put(nodeIdArray(i))
-        for (i <- (splitAt + 1) until dataLength) biggerBlock.put(nodeIdArray(i))
+        for (i <- 0 to splitAt) smallerBlock.put(tmpArray(i))
+        for (i <- (splitAt + 1) until dataLength) biggerBlock.put(tmpArray(i))
         biggerBlock.put(nodeId)
       }
-      smallerBlock.thisBlockMinNodeId = smallerBlock.nodeIdArray(0)
-      smallerBlock.thisBlockMaxNodeId = smallerBlock.nodeIdArray(splitAt)
-      biggerBlock.thisBlockMinNodeId = biggerBlock.nodeIdArray(0)
-      biggerBlock.thisBlockMaxNodeId = biggerBlock.nodeIdArray(splitAt)
+      val tmpA = smallerBlock.nodeIdArray.slice(0, splitAt + 1).sorted
+      val tmpB = biggerBlock.nodeIdArray.slice(0, splitAt + 1).sorted
+
+      smallerBlock.thisBlockMinNodeId = tmpA(0)
+      smallerBlock.thisBlockMaxNodeId = tmpA(splitAt)
+      biggerBlock.thisBlockMinNodeId = tmpB(0)
+      biggerBlock.thisBlockMaxNodeId = tmpB(splitAt)
 
       // first block split
       if (thisBlockPreBlockId == BlockId()) {
