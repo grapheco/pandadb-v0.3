@@ -1,10 +1,8 @@
 package cn.pandadb.kernel.store
 
 import java.io._
-import java.nio.ByteBuffer
-import io.netty.buffer.{ByteBuf, ByteBufAllocator, PooledByteBufAllocator, Unpooled}
-import scala.collection.AbstractIterator
-import scala.collection.mutable.ArrayBuffer
+
+import io.netty.buffer.{ByteBuf, Unpooled}
 
 trait ObjectSerializer[T] {
   def readObject(buf: ByteBuf): T
@@ -21,12 +19,39 @@ trait ObjectBlockSerializer[T] {
   def writeObjectBlock(buf: ByteBuf, t: T): Int
 }
 
+trait LengthSerializer {
+  def readLength(dis: DataInputStream): Int
+
+  def writeLength(buf: ByteBuf, len: Int)
+
+  val maxValue: Int
+}
+
+object LengthSerializer {
+  val INT = new LengthSerializer() {
+    override def readLength(dis: DataInputStream): Int = dis.readInt()
+
+    override def writeLength(buf: ByteBuf, len: Int): Unit = buf.writeInt(len)
+
+    override val maxValue: Int = Int.MaxValue
+  }
+
+  val BYTE = new LengthSerializer() {
+    override def readLength(dis: DataInputStream): Int = dis.readByte()
+
+    override def writeLength(buf: ByteBuf, len: Int): Unit = buf.writeByte(len)
+
+    override val maxValue: Int = Byte.MaxValue
+  }
+}
+
 trait VariantSizedObjectBlockSerializer[T] extends ObjectBlockSerializer[T] {
   val objectSerializer: ObjectSerializer[T]
+  val lengthSerializer: LengthSerializer = LengthSerializer.INT
 
   //[length][object]
   def readObjectBlock(dis: DataInputStream): (T, Int) = {
-    val len = dis.readInt()
+    val len = lengthSerializer.readLength(dis)
     val bytes = new Array[Byte](len)
     dis.read(bytes)
     val buf = Unpooled.wrappedBuffer(bytes)
@@ -38,8 +63,10 @@ trait VariantSizedObjectBlockSerializer[T] extends ObjectBlockSerializer[T] {
     val buf0 = Unpooled.buffer()
     objectSerializer.writeObject(buf0, t)
     val len = buf0.readableBytes()
-
-    buf.writeInt(len) //length
+    if (len > lengthSerializer.maxValue) {
+      throw new TooLargeBlockException(len, lengthSerializer.maxValue)
+    }
+    lengthSerializer.writeLength(buf, len)
     buf.writeBytes(buf0)
     len + 4
   }
@@ -78,3 +105,5 @@ trait ArrayStore[T] {
 trait RemovableArrayStore[T] extends ArrayStore[T] {
   def markDeleted(pos: Long): Unit
 }
+
+class TooLargeBlockException(actual: Int, maxValue: Int) extends RuntimeException

@@ -23,9 +23,11 @@ class StoreTest {
     FileUtils.deleteDirectory(new File("./testdata/output"))
     new File("./testdata/output").mkdirs()
     new File("./testdata/output/nodes").createNewFile()
+    new File("./testdata/output/nodesmap").createNewFile()
     new File("./testdata/output/nodelabels").createNewFile()
     new File("./testdata/output/rellabels").createNewFile()
     new File("./testdata/output/rels").createNewFile()
+    new File("./testdata/output/relsmap").createNewFile()
     new File("./testdata/output/logs").createNewFile()
 
     nodes = new NodeStoreImpl(new File("./testdata/output/nodes"), new File("./testdata/output/nodesmap"))
@@ -37,7 +39,6 @@ class StoreTest {
     memGraph = new GraphFacade(nodes, rels, logs, nodeLabelStore, relLabelStore,
       new FileBasedIdGen(new File("./testdata/output/nodeid"), 100),
       new FileBasedIdGen(new File("./testdata/output/relid"), 100),
-      //new DirectGraphRAMImpl(),
       new SimpleGraphRAM(),
       new SimplePropertyStore {
 
@@ -45,7 +46,6 @@ class StoreTest {
 
       }
     )
-
   }
 
   @Test
@@ -62,7 +62,7 @@ class StoreTest {
     Assert.assertEquals(0, nodes.loadAll().size)
     Assert.assertEquals(0, rels.loadAll().size)
 
-    memGraph.mergeLogs2Store(true)
+    memGraph.mergeLogs2Store()
 
     Assert.assertEquals(0, logs._store.loadAll().size)
     Assert.assertEquals(List(1, 2), nodes.loadAll().toSeq.map(_.id).sorted)
@@ -70,24 +70,24 @@ class StoreTest {
 
     memGraph.addNode(Map("name" -> "3"))
     //nodes: {1,2,3}
-    memGraph.mergeLogs2Store(true)
+    memGraph.mergeLogs2Store()
 
     Assert.assertEquals(0, logs._store.loadAll().size)
     Assert.assertEquals(List(1, 2, 3), nodes.loadAll().toSeq.map(_.id).sorted)
 
     memGraph.deleteNode(2)
     //nodes: {1,3}
-    memGraph.mergeLogs2Store(true)
+    memGraph.mergeLogs2Store()
     Assert.assertEquals(List(1, 3), nodes.loadAll().toSeq.map(_.id).sorted)
 
     memGraph.addNode(Map("name" -> "4")).deleteNode(1L)
     //nodes: {3,4}
-    memGraph.mergeLogs2Store(true)
+    memGraph.mergeLogs2Store()
     Assert.assertEquals(List(3, 4), nodes.loadAll().toSeq.map(_.id).sorted)
 
     memGraph.addNode(Map("name" -> "5")).addNode(Map("name" -> "6")).deleteNode(5L).deleteNode(3L)
     //nodes: {4,6}
-    memGraph.mergeLogs2Store(true)
+    memGraph.mergeLogs2Store()
     Assert.assertEquals(List(4, 6), nodes.loadAll().toSeq.map(_.id).sorted)
 
     memGraph.close()
@@ -136,7 +136,7 @@ class StoreTest {
     Assert.assertEquals(2, relLabelStore.map.seq.size)
     Assert.assertEquals(6, logs._store.loadAll().size)
 
-    memGraph.mergeLogs2Store(true)
+    memGraph.mergeLogs2Store()
     Assert.assertEquals(0, logs._store.loadAll().size)
 
     memGraph.close()
@@ -160,11 +160,12 @@ class StoreTest {
     memGraph.addRelation("relation2", 2L, 3L, Map())
     memGraph.addRelation("relation3", 3L, 4L, Map())
 
-    memGraph.mergeLogs2Store(true)
+    memGraph.mergeLogs2Store()
+    Assert.assertEquals(4, nodes.loadAll().size)
     Assert.assertEquals(3, rels.loadAll().size)
 
     memGraph.deleteRelation(1)
-    memGraph.mergeLogs2Store(true)
+    memGraph.mergeLogs2Store()
 
     Assert.assertEquals(2, rels.loadAll().size)
     memGraph.close()

@@ -40,14 +40,16 @@ case class MergedChanges[T, Id]
   toAdd: Seq[T],
   toDelete: Seq[Id],
 ) {
-  assert(!(toAdd.nonEmpty && toDelete.nonEmpty))
+  def nonEmpty: Boolean = toAdd.nonEmpty || toDelete.nonEmpty
 }
 
 case class MergedGraphChanges
 (
   nodes: MergedChanges[StoredNode, Long],
   rels: MergedChanges[StoredRelation, Long]
-)
+){
+  def nonEmpty: Boolean = nodes.nonEmpty || rels.nonEmpty
+}
 
 class LogStore(logFile: File) {
   def length() = logFile.length()

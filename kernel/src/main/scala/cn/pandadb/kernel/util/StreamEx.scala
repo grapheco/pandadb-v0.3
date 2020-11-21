@@ -1,10 +1,16 @@
 package cn.pandadb.kernel.util
 
-import java.io.{DataInputStream, DataOutputStream}
-
 import io.netty.buffer.ByteBuf
 
 class ByteBufEx(buf: ByteBuf) {
+  def readInt40(): Long = buf.readByte() << 32 | buf.readInt()
+
+  def writeInt40(v: Long): ByteBuf = {
+    buf.writeByte((v >> 32).toByte)
+    buf.writeInt((v & 0xFFFFFFFF).toInt)
+    buf
+  }
+
   def readString(): String = {
     val len = buf.readInt()
     readString(len)

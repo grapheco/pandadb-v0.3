@@ -2,26 +2,28 @@ package cn.pandadb.kernel.store
 
 import java.io.File
 import java.nio.charset.StandardCharsets
+import cn.pandadb.kernel.util.StreamExLike._
 import io.netty.buffer.ByteBuf
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 object NodeSerializer extends ObjectSerializer[StoredNode] {
   override def readObject(buf: ByteBuf): StoredNode =
-    StoredNode(buf.readLong(), (1 to buf.readableBytes()).map(_ => buf.readByte().toInt): _*)
+    StoredNode(buf.readInt40(), (1 to buf.readableBytes()).map(_ => buf.readByte().toInt): _*)
 
   override def writeObject(buf: ByteBuf, t: StoredNode): Unit = {
-    buf.writeLong(t.id)
+    buf.writeInt40(t.id)
     t.labelIds.foreach(buf.writeByte(_))
   }
 }
 
 object RelationSerializer extends ObjectSerializer[StoredRelation] {
   override def readObject(buf: ByteBuf): StoredRelation =
-    StoredRelation(buf.readLong(), buf.readLong(), buf.readLong(), buf.readInt())
+    StoredRelation(buf.readInt40(), buf.readInt40(), buf.readInt40(), buf.readInt())
 
-  override def writeObject(buf: ByteBuf, t: StoredRelation): Unit =
-    buf.writeLong(t.id).writeLong(t.from).writeLong(t.to).writeInt(t.labelId)
+  override def writeObject(buf: ByteBuf, t: StoredRelation): Unit = {
+    buf.writeInt40(t.id).writeInt40(t.from).writeInt40(t.to).writeInt(t.labelId)
+  }
 }
 
 object LabelSerializer extends ObjectSerializer[StoredLabel] {
@@ -111,16 +113,17 @@ trait StoreWithMap[T] {
   def loadAll(): Iterator[T] = _mainStore.loadAll()
 
   def merge(changes: MergedChanges[T, Long]): Unit = {
-    val map = openMapFile()
-    changes.toDelete.foreach(id => {
-      _mainStore.markDeleted(map.positionOf(id))
-      map.markDeleted(id)
-    })
+    if(changes.nonEmpty) {
+      val map = openMapFile()
+      changes.toDelete.foreach(id => {
+        _mainStore.markDeleted(map.positionOf(id))
+      })
 
-    _mainStore.append(changes.toAdd, ts =>
-      map.update(ts.map(x => id(x._1) -> x._2).iterator))
+      _mainStore.append(changes.toAdd, ts =>
+        map.update(ts.map(x => id(x._1) -> x._2).iterator))
 
-    map.close()
+      map.close()
+    }
   }
 
   def saveAll(ts: Iterator[T]): Unit = {
@@ -155,6 +158,7 @@ class NodeStoreImpl(val nodeFile: File, val mapFile: File) extends NodeStore wit
     override val file: File = nodeFile
     override val blockSerializer = new VariantSizedObjectBlockSerializer[StoredNode] {
       override val objectSerializer: ObjectSerializer[StoredNode] = NodeSerializer
+      override val lengthSerializer: LengthSerializer = LengthSerializer.BYTE
     }
   }
 
@@ -167,6 +171,7 @@ class RelationStoreImpl(val relationFile: File, val mapFile: File) extends Relat
   override val _mainStore = new FileBasedRemovableArrayStore[StoredRelation] {
     override val blockSerializer = new VariantSizedObjectBlockSerializer[StoredRelation] {
       override val objectSerializer: ObjectSerializer[StoredRelation] = RelationSerializer
+      override val lengthSerializer: LengthSerializer = LengthSerializer.BYTE
     }
     override val file: File = relationFile
   }

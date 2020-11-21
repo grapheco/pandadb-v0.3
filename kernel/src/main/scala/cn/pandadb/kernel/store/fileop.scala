@@ -24,42 +24,52 @@ trait FileBasedArrayStore[T] extends ArrayStore[T] {
   val allocator: ByteBufAllocator = ByteBufAllocator.DEFAULT
 
   override def append(ts: Iterable[T], updatePositions: Iterable[(T, Long)] => Unit): Unit = {
-    val offset0 = ptr.position()
-    val results = ArrayBuffer[(T, Long)]()
-    var offset = offset0
-    val buf = allocator.buffer()
-    ts.foreach { t =>
-      val buf0 = allocator.buffer()
-      blockSerializer.writeObjectBlock(buf0, t)
-      buf.writeBytes(buf0)
-      buf0.release()
-      results += t -> offset
-      offset += buf0.readableBytes()
-    }
+    if (ts.nonEmpty) {
+      val offset0 = ptr.position()
+      val results = ArrayBuffer[(T, Long)]()
+      var offset = offset0
+      val buf = allocator.buffer()
+      ts.foreach { t =>
+        val buf0 = allocator.buffer()
+        blockSerializer.writeObjectBlock(buf0, t)
+        results += t -> offset
+        offset += buf0.readableBytes()
+        buf.writeBytes(buf0)
+        buf0.release()
+      }
 
-    ptr.write(buf.nioBuffer())
-    updatePositions(results)
-    buf.release()
+      ptr.write(buf.nioBuffer())
+      updatePositions(results)
+
+      buf.release()
+    }
   }
+
+  val MAX_BUFFER_SIZE: Int = 10240
 
   override def saveAll(ts: Iterator[T], updatePositions: Iterable[(T, Long)] => Unit): Unit = {
     val results = ArrayBuffer[(T, Long)]()
     val appender = new FileOutputStream(file, false).getChannel
-    val buf = PooledByteBufAllocator.DEFAULT.buffer()
+    val buf = allocator.buffer()
+
+    def flush(): Unit = {
+      appender.write(buf.nioBuffer())
+      updatePositions(results)
+      buf.clear()
+      results.clear()
+    }
+
     ts.foreach { t =>
       results += t -> buf.readableBytes()
       blockSerializer.writeObjectBlock(buf, t)
 
-      if (buf.readableBytes() > 10240) {
-        appender.write(buf.nioBuffer())
-        updatePositions(results)
-        buf.clear()
-        results.clear()
+      if (buf.readableBytes() > MAX_BUFFER_SIZE) {
+        flush()
       }
     }
 
-    if (buf.readableBytes() > 0) {
-      appender.write(buf.nioBuffer())
+    if (results.nonEmpty) {
+      flush()
     }
 
     buf.release()
@@ -72,7 +82,7 @@ trait FileBasedArrayStore[T] extends ArrayStore[T] {
       //push None if reach EOF
       private val _buffered = ArrayBuffer[Option[T]]()
 
-      //if empty, fetch one
+      //if empty, fetch one more
       def fetchMoreIfEmpty: Unit = {
         if (_buffered.isEmpty) {
           try {
@@ -102,16 +112,9 @@ trait FileBasedArrayStore[T] extends ArrayStore[T] {
   }
 }
 
-
 trait FileBasedRemovableArrayStore[T] extends RemovableArrayStore[T] {
   val self = this
   val file: File
-
-  def close(): Unit = _store.close()
-
-  def clear(): Unit = _store.clear()
-
-  def loadAll(): Iterator[T] = _store.loadAll().filter(_._1 != 0).map(_._2)
 
   val blockSerializer: ObjectBlockSerializer[T]
 
@@ -134,8 +137,7 @@ trait FileBasedRemovableArrayStore[T] extends RemovableArrayStore[T] {
   lazy val ptr = _store.ptr
 
   override def markDeleted(pos: Long) = {
-    ptr.position(pos)
-    ptr.write(ByteBuffer.wrap(Array[Byte](0)))
+    ptr.write(ByteBuffer.wrap(Array[Byte](0)), pos)
   }
 
   override def append(ts: Iterable[T], updatePositions: Iterable[(T, Long)] => Unit): Unit = {
@@ -147,6 +149,12 @@ trait FileBasedRemovableArrayStore[T] extends RemovableArrayStore[T] {
     _store.saveAll(ts.map(1.toByte -> _),
       (ts: Iterable[((Byte, T), Long)]) => updatePositions(ts.map(x => x._1._2 -> x._2)))
   }
+
+  def close(): Unit = _store.close()
+
+  def clear(): Unit = _store.clear()
+
+  def loadAll(): Iterator[T] = _store.loadAll().filter(_._1 != 0).map(_._2)
 }
 
 class PositionMapFile(val mapFile: File) {
@@ -160,8 +168,6 @@ class PositionMapFile(val mapFile: File) {
 
     override val fixedSize: Int = 8
   }
-
-  def markDeleted(id: Long) = _store.markDeleted(id)
 
   def positionOf(id: Long): Long = _store.read(id).get
 
@@ -177,29 +183,23 @@ trait FileBasedPositionMappedArrayStore[T] {
   val objectSerializer: ObjectSerializer[T]
   val fixedSize: Int
   lazy val ptr = new RandomAccessFile(file, "rw").getChannel
-  lazy val bytes = new Array[Byte](1 + fixedSize)
+  lazy val bytes = new Array[Byte](fixedSize)
 
-  protected def positionOf(id: Long): Long = (1 + fixedSize) * id
+  protected def positionOf(id: Long): Long = fixedSize * id
 
   private def readObjectBlock(position: Long): Option[T] = {
     val bbuf = ByteBuffer.wrap(bytes)
-    ptr.read(bbuf, position)
-    val buf = Unpooled.wrappedBuffer(bbuf)
-    val flag = buf.readByte()
-    if (flag == 0)
+    if (ptr.read(bbuf, position) == -1) {
       None
-    else
+    }
+    else {
+      val buf = Unpooled.wrappedBuffer(bytes)
       Some(objectSerializer.readObject(buf))
+    }
   }
 
   private def writeObjectBlock(buf: ByteBuf, t: T): Unit = {
-    buf.writeByte(1)
     objectSerializer.writeObject(buf, t)
-  }
-
-  def markDeleted(id: Long) = {
-    ptr.position(positionOf(id))
-    ptr.write(ByteBuffer.wrap(Array[Byte](0)))
   }
 
   val allocator: ByteBufAllocator = ByteBufAllocator.DEFAULT
