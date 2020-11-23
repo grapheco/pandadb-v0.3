@@ -6,8 +6,8 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 object UpdateBlockPosition extends Enumeration {
-  val Pre = Value("1")
-  val Next = Value("2")
+  val PRE = Value("1")
+  val NEXT = Value("2")
 }
 
 object DirectMemoryManager {
@@ -59,168 +59,152 @@ object DirectMemoryManager {
 
   //
   def putInitBlockToDirectBuffer(block: EndNodesBlock, nodeIdArray: Array[Long], isSplit:Boolean): Unit = {
-    this.synchronized {
-      val directBuffer = directBufferPageArray(block.thisBlockId.pageId - 1)
+    val directBuffer = directBufferPageArray(block.thisBlockId.pageId - 1)
 
-      // blockId
-      directBuffer.setShort(block.thisBlockId.offset, block.thisBlockId.pageId)
-      directBuffer.setInt(block.thisBlockId.offset + 2, block.thisBlockId.offset)
-      // preBlockId
-      directBuffer.setShort(block.thisBlockId.offset + 6, block.thisBlockPreBlockId.pageId)
-      directBuffer.setInt(block.thisBlockId.offset + 8, block.thisBlockPreBlockId.offset)
-      // nextBlockId
-      directBuffer.setShort(block.thisBlockId.offset + 12, block.thisBlockNextBlockId.pageId)
-      directBuffer.setInt(block.thisBlockId.offset + 14, block.thisBlockNextBlockId.offset)
-      // min max node Id
-      directBuffer.setLong(block.thisBlockId.offset + 18, block.thisBlockMinNodeId)
-      directBuffer.setLong(block.thisBlockId.offset + 26, block.thisBlockMaxNodeId)
-      // arrayUsedSize
-      directBuffer.setShort(block.thisBlockId.offset + 34, block.arrayUsedSize)
+    // blockId
+    directBuffer.setShort(block.thisBlockId.offset, block.thisBlockId.pageId)
+    directBuffer.setInt(block.thisBlockId.offset + 2, block.thisBlockId.offset)
+    // preBlockId
+    directBuffer.setShort(block.thisBlockId.offset + 6, block.thisBlockPreBlockId.pageId)
+    directBuffer.setInt(block.thisBlockId.offset + 8, block.thisBlockPreBlockId.offset)
+    // nextBlockId
+    directBuffer.setShort(block.thisBlockId.offset + 12, block.thisBlockNextBlockId.pageId)
+    directBuffer.setInt(block.thisBlockId.offset + 14, block.thisBlockNextBlockId.offset)
+    // min max node Id
+    directBuffer.setLong(block.thisBlockId.offset + 18, block.thisBlockMinNodeId)
+    directBuffer.setLong(block.thisBlockId.offset + 26, block.thisBlockMaxNodeId)
+    // arrayUsedSize
+    directBuffer.setShort(block.thisBlockId.offset + 34, block.arrayUsedSize)
 
-      // endNodes Id
-      if (!isSplit){
-        directBuffer.setLong(block.thisBlockId.offset + 36, nodeIdArray(0))
-      }else{
-        for (i <- nodeIdArray.indices){
-          directBuffer.setLong(block.thisBlockId.offset + 36 + i * 8, nodeIdArray(i))
-        }
+    // endNodes Id
+    if (!isSplit){
+      directBuffer.setLong(block.thisBlockId.offset + 36, nodeIdArray(0))
+    }else{
+      for (i <- nodeIdArray.indices){
+        directBuffer.setLong(block.thisBlockId.offset + 36 + i * 8, nodeIdArray(i))
       }
     }
   }
   def addNodeIdToBlock(block: EndNodesBlock, nodeId: Long, minChanged:Boolean, maxChanged:Boolean): Unit = {
-    this.synchronized {
-      val directBuffer = directBufferPageArray(block.thisBlockId.pageId - 1)
+    val directBuffer = directBufferPageArray(block.thisBlockId.pageId - 1)
 
-      if (minChanged){
-        directBuffer.setLong(block.thisBlockId.offset + 18, block.thisBlockMinNodeId)
-        directBuffer.setShort(block.thisBlockId.offset + 34, block.arrayUsedSize)
-      }
-      else if (maxChanged){
-        directBuffer.setLong(block.thisBlockId.offset + 26, block.thisBlockMaxNodeId)
-        directBuffer.setShort(block.thisBlockId.offset + 34, block.arrayUsedSize)
-      }
-      else {
-        directBuffer.setShort(block.thisBlockId.offset + 34, block.arrayUsedSize)
-      }
-      directBuffer.setLong(block.thisBlockId.offset + 36 + (block.arrayUsedSize - 1) * 8, nodeId)
+    if (minChanged){
+      directBuffer.setLong(block.thisBlockId.offset + 18, block.thisBlockMinNodeId)
+      directBuffer.setShort(block.thisBlockId.offset + 34, block.arrayUsedSize)
     }
+    else if (maxChanged){
+      directBuffer.setLong(block.thisBlockId.offset + 26, block.thisBlockMaxNodeId)
+      directBuffer.setShort(block.thisBlockId.offset + 34, block.arrayUsedSize)
+    }
+    else {
+      directBuffer.setShort(block.thisBlockId.offset + 34, block.arrayUsedSize)
+    }
+    directBuffer.setLong(block.thisBlockId.offset + 36 + (block.arrayUsedSize - 1) * 8, nodeId)
   }
   def updateBlockIds(blockId: BlockId, position: UpdateBlockPosition.Value , value:BlockId): Unit = {
-    this.synchronized {
-      val directBuffer = directBufferPageArray(blockId.pageId - 1)
+    val directBuffer = directBufferPageArray(blockId.pageId - 1)
 
-      position match {
-        case UpdateBlockPosition.Pre =>{
-          directBuffer.setShort(blockId.offset + 6, value.pageId)
-          directBuffer.setInt(blockId.offset + 8, value.offset)
-        }
-        case UpdateBlockPosition.Next =>{
-          directBuffer.setShort(blockId.offset + 12, value.pageId)
-          directBuffer.setInt(blockId.offset + 14, value.offset)
-        }
+    position match {
+      case UpdateBlockPosition.PRE =>{
+        directBuffer.setShort(blockId.offset + 6, value.pageId)
+        directBuffer.setInt(blockId.offset + 8, value.offset)
+      }
+      case UpdateBlockPosition.NEXT =>{
+        directBuffer.setShort(blockId.offset + 12, value.pageId)
+        directBuffer.setInt(blockId.offset + 14, value.offset)
       }
     }
   }
   def getBlockInfo(id: BlockId): BlockInfo = {
-    this.synchronized {
-      if (id == BlockId()) {
-        throw new NoBlockToGetException
-      }
-      else {
-        val directBuffer = directBufferPageArray(id.pageId - 1)
-
-        //this
-        val thisBlockPage = directBuffer.getShort(id.offset)
-        val thisBlockId = directBuffer.getInt(id.offset + 2)
-        //pre
-        val preBlockPage = directBuffer.getShort(id.offset + 6)
-        val preBlockId = directBuffer.getInt(id.offset + 8)
-        //next
-        val nextBlockPage = directBuffer.getShort(id.offset + 12)
-        val nextBlockId = directBuffer.getInt(id.offset + 14)
-        //range
-        val minId = directBuffer.getLong(id.offset + 18)
-        val maxId = directBuffer.getLong(id.offset + 26)
-        // used size
-        val arrayUsedSize = directBuffer.getShort(id.offset + 34)
-
-        val blockInfo = BlockInfo(BlockId(thisBlockPage, thisBlockId), BlockId(preBlockPage, preBlockId),
-          BlockId(nextBlockPage, nextBlockId), minId, maxId, arrayUsedSize)
-        blockInfo
-      }
+    if (id == BlockId()) {
+      throw new NoBlockToGetException
     }
-  }
-  def getBlock(id: BlockId): EndNodesBlock = {
-    this.synchronized {
-      if (id == BlockId()) {
-        throw new NoBlockToGetException
-      }
-      else {
-        val directBuffer = directBufferPageArray(id.pageId - 1)
-
-        //this
-        val thisBlockPage = directBuffer.getShort(id.offset)
-        val thisBlockId = directBuffer.getInt(id.offset + 2)
-        //pre
-        val preBlockPage = directBuffer.getShort(id.offset + 6)
-        val preBlockId = directBuffer.getInt(id.offset + 8)
-        //next
-        val nextBlockPage = directBuffer.getShort(id.offset + 12)
-        val nextBlockId = directBuffer.getInt(id.offset + 14)
-        //range
-        val minId = directBuffer.getLong(id.offset + 18)
-        val maxId = directBuffer.getLong(id.offset + 26)
-        // used size
-        val arrayUsedSize = directBuffer.getShort(id.offset + 34)
-
-        val block = new EndNodesBlock(BlockId(thisBlockPage, thisBlockId), BlockId(preBlockPage, preBlockId), BlockId(nextBlockPage, nextBlockId), minId, maxId, DATA_LENGTH, deleteLog)
-        block.arrayUsedSize = arrayUsedSize
-        block
-      }
-    }
-  }
-  def queryBlockData(id: BlockId): BlockId ={
-    this.synchronized {
-      var nextId: BlockId = null
+    else {
       val directBuffer = directBufferPageArray(id.pageId - 1)
+
+      //this
+      val thisBlockPage = directBuffer.getShort(id.offset)
+      val thisBlockId = directBuffer.getInt(id.offset + 2)
+      //pre
+      val preBlockPage = directBuffer.getShort(id.offset + 6)
+      val preBlockId = directBuffer.getInt(id.offset + 8)
       //next
       val nextBlockPage = directBuffer.getShort(id.offset + 12)
       val nextBlockId = directBuffer.getInt(id.offset + 14)
-      nextId = BlockId(nextBlockPage, nextBlockId)
-
+      //range
+      val minId = directBuffer.getLong(id.offset + 18)
+      val maxId = directBuffer.getLong(id.offset + 26)
+      // used size
       val arrayUsedSize = directBuffer.getShort(id.offset + 34)
-      for (i <- 1 to arrayUsedSize){
-        println(directBuffer.getLong(id.offset + 36 + (i-1) * 8))
-      }
-      nextId
+
+      val blockInfo = BlockInfo(BlockId(thisBlockPage, thisBlockId), BlockId(preBlockPage, preBlockId),
+        BlockId(nextBlockPage, nextBlockId), minId, maxId, arrayUsedSize)
+      blockInfo
     }
+  }
+  def getBlock(id: BlockId): EndNodesBlock = {
+    if (id == BlockId()) {
+      throw new NoBlockToGetException
+    }
+    else {
+      val directBuffer = directBufferPageArray(id.pageId - 1)
+
+      //this
+      val thisBlockPage = directBuffer.getShort(id.offset)
+      val thisBlockId = directBuffer.getInt(id.offset + 2)
+      //pre
+      val preBlockPage = directBuffer.getShort(id.offset + 6)
+      val preBlockId = directBuffer.getInt(id.offset + 8)
+      //next
+      val nextBlockPage = directBuffer.getShort(id.offset + 12)
+      val nextBlockId = directBuffer.getInt(id.offset + 14)
+      //range
+      val minId = directBuffer.getLong(id.offset + 18)
+      val maxId = directBuffer.getLong(id.offset + 26)
+      // used size
+      val arrayUsedSize = directBuffer.getShort(id.offset + 34)
+
+      val block = new EndNodesBlock(BlockId(thisBlockPage, thisBlockId), BlockId(preBlockPage, preBlockId), BlockId(nextBlockPage, nextBlockId), minId, maxId, DATA_LENGTH, deleteLog)
+      block.arrayUsedSize = arrayUsedSize
+      block
+    }
+  }
+  def queryBlockData(id: BlockId): BlockId ={
+    var nextId: BlockId = null
+    val directBuffer = directBufferPageArray(id.pageId - 1)
+    //next
+    val nextBlockPage = directBuffer.getShort(id.offset + 12)
+    val nextBlockId = directBuffer.getInt(id.offset + 14)
+    nextId = BlockId(nextBlockPage, nextBlockId)
+
+    val arrayUsedSize = directBuffer.getShort(id.offset + 34)
+    for (i <- 1 to arrayUsedSize){
+      println(directBuffer.getLong(id.offset + 36 + (i-1) * 8))
+    }
+    nextId
   }
   def getBlockDataArray(id: BlockId): ArrayBuffer[Long] ={
-    this.synchronized{
-      var dataArray: ArrayBuffer[Long] = new ArrayBuffer[Long]()
-      if (id == BlockId()) {
-        throw new NoBlockToGetException
-      }
-      else {
-        val directBuffer = directBufferPageArray(id.pageId - 1)
-        val arrayUsedSize = directBuffer.getShort(id.offset + 34)
-        for (i <- 0 until arrayUsedSize){
-          dataArray += directBuffer.getLong(id.offset + 36 + i * 8 )
-        }
-      }
-      dataArray
+    var dataArray: ArrayBuffer[Long] = new ArrayBuffer[Long]()
+    if (id == BlockId()) {
+      throw new NoBlockToGetException
     }
+    else {
+      val directBuffer = directBufferPageArray(id.pageId - 1)
+      val arrayUsedSize = directBuffer.getShort(id.offset + 34)
+      for (i <- 0 until arrayUsedSize){
+        dataArray += directBuffer.getLong(id.offset + 36 + i * 8 )
+      }
+    }
+    dataArray
   }
   def updateBlockData(id: BlockId, dataArray: Array[Long]): Unit ={
-    this.synchronized{
-      val directBuffer = directBufferPageArray(id.pageId - 1)
-      // min max node Id
-      directBuffer.setLong(id.offset + 18, dataArray.head)
-      directBuffer.setLong(id.offset + 26, dataArray.last)
-      directBuffer.setShort(id.offset + 34, dataArray.length)
-      for (i <- dataArray.indices){
-        directBuffer.setLong(id.offset + 36 + i * 8, dataArray(i))
-      }
+    val directBuffer = directBufferPageArray(id.pageId - 1)
+    // min max node Id
+    directBuffer.setLong(id.offset + 18, dataArray.head)
+    directBuffer.setLong(id.offset + 26, dataArray.last)
+    directBuffer.setShort(id.offset + 34, dataArray.length)
+    for (i <- dataArray.indices){
+      directBuffer.setLong(id.offset + 36 + i * 8, dataArray(i))
     }
   }
   /////
@@ -303,7 +287,7 @@ class OutGoingEdgeBlockManager(initBlockId: BlockId = BlockId()) {
         val newBlock = DirectMemoryManager.generateBlock()
         newBlock.thisBlockNextBlockId = queryBlock.thisBlockId
         newHeadId = newBlock.put(nodeId)
-        DirectMemoryManager.updateBlockIds(queryBlock.thisBlockId, UpdateBlockPosition.Pre, newBlock.thisBlockId)
+        DirectMemoryManager.updateBlockIds(queryBlock.thisBlockId, UpdateBlockPosition.PRE, newBlock.thisBlockId)
         beginBlockId = newBlock.thisBlockId
         isFound = true
       }
@@ -314,8 +298,8 @@ class OutGoingEdgeBlockManager(initBlockId: BlockId = BlockId()) {
         leftBlock.thisBlockNextBlockId = queryBlock.thisBlockId
         leftBlock.put(nodeId)
 
-        DirectMemoryManager.updateBlockIds(preBlockInfo.blockId, UpdateBlockPosition.Next, leftBlock.thisBlockId)
-        DirectMemoryManager.updateBlockIds(queryBlock.thisBlockId, UpdateBlockPosition.Pre, leftBlock.thisBlockId)
+        DirectMemoryManager.updateBlockIds(preBlockInfo.blockId, UpdateBlockPosition.NEXT, leftBlock.thisBlockId)
+        DirectMemoryManager.updateBlockIds(queryBlock.thisBlockId, UpdateBlockPosition.PRE, leftBlock.thisBlockId)
 
         isFound = true
       }
@@ -326,8 +310,8 @@ class OutGoingEdgeBlockManager(initBlockId: BlockId = BlockId()) {
         rightBlock.thisBlockNextBlockId = nextBlockInfo.blockId
         rightBlock.put(nodeId)
 
-        DirectMemoryManager.updateBlockIds(nextBlockInfo.blockId, UpdateBlockPosition.Pre, rightBlock.thisBlockId)
-        DirectMemoryManager.updateBlockIds(queryBlock.thisBlockId, UpdateBlockPosition.Next, rightBlock.thisBlockId)
+        DirectMemoryManager.updateBlockIds(nextBlockInfo.blockId, UpdateBlockPosition.PRE, rightBlock.thisBlockId)
+        DirectMemoryManager.updateBlockIds(queryBlock.thisBlockId, UpdateBlockPosition.NEXT, rightBlock.thisBlockId)
         isFound = true
       }
       // new tail
@@ -336,7 +320,7 @@ class OutGoingEdgeBlockManager(initBlockId: BlockId = BlockId()) {
         tailBlock.thisBlockPreBlockId = queryBlock.thisBlockId
         tailBlock.put(nodeId)
 
-        DirectMemoryManager.updateBlockIds(queryBlock.thisBlockId, UpdateBlockPosition.Next, tailBlock.thisBlockId)
+        DirectMemoryManager.updateBlockIds(queryBlock.thisBlockId, UpdateBlockPosition.NEXT, tailBlock.thisBlockId)
 
 
         isFound = true
@@ -360,16 +344,16 @@ class OutGoingEdgeBlockManager(initBlockId: BlockId = BlockId()) {
           else if (queryBlock.thisBlockPreBlockId == BlockId()) {
             val nextBlock = DirectMemoryManager.getBlock(queryBlock.thisBlockNextBlockId)
             beginBlockId = nextBlock.thisBlockId
-            DirectMemoryManager.updateBlockIds(nextBlock.thisBlockId, UpdateBlockPosition.Pre, BlockId())
+            DirectMemoryManager.updateBlockIds(nextBlock.thisBlockId, UpdateBlockPosition.PRE, BlockId())
           }
           // delete middle block
           else if (queryBlock.thisBlockPreBlockId != BlockId() && queryBlock.thisBlockNextBlockId != BlockId()) {
-            DirectMemoryManager.updateBlockIds(queryBlock.thisBlockPreBlockId, UpdateBlockPosition.Next, queryBlock.thisBlockNextBlockId)
-            DirectMemoryManager.updateBlockIds(queryBlock.thisBlockNextBlockId, UpdateBlockPosition.Pre, queryBlock.thisBlockPreBlockId)
+            DirectMemoryManager.updateBlockIds(queryBlock.thisBlockPreBlockId, UpdateBlockPosition.NEXT, queryBlock.thisBlockNextBlockId)
+            DirectMemoryManager.updateBlockIds(queryBlock.thisBlockNextBlockId, UpdateBlockPosition.PRE, queryBlock.thisBlockPreBlockId)
           }
           // delete last block
           else {
-            DirectMemoryManager.updateBlockIds(queryBlock.thisBlockPreBlockId, UpdateBlockPosition.Next, BlockId())
+            DirectMemoryManager.updateBlockIds(queryBlock.thisBlockPreBlockId, UpdateBlockPosition.NEXT, BlockId())
           }
           DirectMemoryManager.deleteLog.enqueue(queryBlock.thisBlockId)
         }
@@ -470,7 +454,7 @@ class EndNodesBlock(blockId: BlockId, preBlock: BlockId, nextBlock: BlockId,
         biggerBlock.thisBlockPreBlockId = smallerBlock.thisBlockId
         if (thisBlockNextBlockId != BlockId()) {
           biggerBlock.thisBlockNextBlockId = thisBlockNextBlockId
-          DirectMemoryManager.updateBlockIds(thisBlockNextBlockId, UpdateBlockPosition.Pre, biggerBlock.thisBlockId)
+          DirectMemoryManager.updateBlockIds(thisBlockNextBlockId, UpdateBlockPosition.PRE, biggerBlock.thisBlockId)
         }
         newHeadId = smallerBlock.thisBlockId
       }
@@ -482,14 +466,14 @@ class EndNodesBlock(blockId: BlockId, preBlock: BlockId, nextBlock: BlockId,
         biggerBlock.thisBlockPreBlockId = smallerBlock.thisBlockId
         biggerBlock.thisBlockNextBlockId = thisBlockNextBlockId
 
-        DirectMemoryManager.updateBlockIds(thisBlockPreBlockId, UpdateBlockPosition.Next, smallerBlock.thisBlockId)
-        DirectMemoryManager.updateBlockIds(thisBlockNextBlockId, UpdateBlockPosition.Pre, biggerBlock.thisBlockId)
+        DirectMemoryManager.updateBlockIds(thisBlockPreBlockId, UpdateBlockPosition.NEXT, smallerBlock.thisBlockId)
+        DirectMemoryManager.updateBlockIds(thisBlockNextBlockId, UpdateBlockPosition.PRE, biggerBlock.thisBlockId)
       }
       // last block split
       else {
         smallerBlock.thisBlockPreBlockId = thisBlockPreBlockId
         smallerBlock.thisBlockNextBlockId = biggerBlock.thisBlockId
-        DirectMemoryManager.updateBlockIds(thisBlockPreBlockId, UpdateBlockPosition.Next, smallerBlock.thisBlockId)
+        DirectMemoryManager.updateBlockIds(thisBlockPreBlockId, UpdateBlockPosition.NEXT, smallerBlock.thisBlockId)
 
         biggerBlock.thisBlockPreBlockId = smallerBlock.thisBlockId
       }

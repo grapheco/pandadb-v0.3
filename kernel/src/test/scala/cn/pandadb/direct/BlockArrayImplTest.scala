@@ -3,6 +3,7 @@ package scala.cn.pandadb.direct
 import cn.pandadb.kernel.direct.{BlockId, DirectMemoryManager, OutGoingEdgeBlockManager}
 import org.junit.{Assert, Test}
 
+// data length = 5
 class BlockArrayTest {
 
   @Test
