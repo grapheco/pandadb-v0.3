@@ -11,7 +11,6 @@ object UpdateBlockPosition extends Enumeration {
 }
 
 object DirectMemoryManager {
-
   /*
       DATA_LENGTH:    the num of a block's endNodesId
       BLOCK_SIZE:     the size of a block
@@ -19,7 +18,7 @@ object DirectMemoryManager {
       MAX_CAPACITY:   make sure allocate mem can contain integer blocks
                       a directBuffer's maxSize is 2GB = 2147483647
    */
-  val DATA_LENGTH = 5
+  var DATA_LENGTH = 1000
   val BLOCK_SIZE = 36 + DATA_LENGTH * 8
   val MAX_CAPACITY = 2147483647 - (2147483647 % BLOCK_SIZE)
 
@@ -38,7 +37,6 @@ object DirectMemoryManager {
   def generateBlock(): EndNodesBlock = {
     this.synchronized {
       var blockId: BlockId = BlockId()
-
       if (deleteLog.nonEmpty) {
         blockId = deleteLog.dequeue()
       }
@@ -50,17 +48,13 @@ object DirectMemoryManager {
           mallocDirectBuffer()
         }
         blockId = BlockId(pageId, currentPageBlockId)
-
         currentPageBlockId += BLOCK_SIZE
       }
-      new EndNodesBlock(blockId, BlockId(), BlockId(), 0, 0, DATA_LENGTH, deleteLog)
+      EndNodesBlock(blockId, BlockId(), BlockId(), 0, 0, DATA_LENGTH, deleteLog)
     }
   }
-
-  //
   def putInitBlockToDirectBuffer(block: EndNodesBlock, nodeIdArray: Array[Long], isSplit:Boolean): Unit = {
     val directBuffer = directBufferPageArray(block.thisBlockId.pageId - 1)
-
     // blockId
     directBuffer.setShort(block.thisBlockId.offset, block.thisBlockId.pageId)
     directBuffer.setInt(block.thisBlockId.offset + 2, block.thisBlockId.offset)
@@ -75,7 +69,6 @@ object DirectMemoryManager {
     directBuffer.setLong(block.thisBlockId.offset + 26, block.thisBlockMaxNodeId)
     // arrayUsedSize
     directBuffer.setShort(block.thisBlockId.offset + 34, block.arrayUsedSize)
-
     // endNodes Id
     if (!isSplit){
       directBuffer.setLong(block.thisBlockId.offset + 36, nodeIdArray(0))
@@ -87,7 +80,6 @@ object DirectMemoryManager {
   }
   def addNodeIdToBlock(block: EndNodesBlock, nodeId: Long, minChanged:Boolean, maxChanged:Boolean): Unit = {
     val directBuffer = directBufferPageArray(block.thisBlockId.pageId - 1)
-
     if (minChanged){
       directBuffer.setLong(block.thisBlockId.offset + 18, block.thisBlockMinNodeId)
       directBuffer.setShort(block.thisBlockId.offset + 34, block.arrayUsedSize)
@@ -103,7 +95,6 @@ object DirectMemoryManager {
   }
   def updateBlockIds(blockId: BlockId, position: UpdateBlockPosition.Value , value:BlockId): Unit = {
     val directBuffer = directBufferPageArray(blockId.pageId - 1)
-
     position match {
       case UpdateBlockPosition.PRE =>{
         directBuffer.setShort(blockId.offset + 6, value.pageId)
@@ -115,40 +106,12 @@ object DirectMemoryManager {
       }
     }
   }
-  def getBlockInfo(id: BlockId): BlockInfo = {
-    if (id == BlockId()) {
-      throw new NoBlockToGetException
-    }
-    else {
-      val directBuffer = directBufferPageArray(id.pageId - 1)
-
-      //this
-      val thisBlockPage = directBuffer.getShort(id.offset)
-      val thisBlockId = directBuffer.getInt(id.offset + 2)
-      //pre
-      val preBlockPage = directBuffer.getShort(id.offset + 6)
-      val preBlockId = directBuffer.getInt(id.offset + 8)
-      //next
-      val nextBlockPage = directBuffer.getShort(id.offset + 12)
-      val nextBlockId = directBuffer.getInt(id.offset + 14)
-      //range
-      val minId = directBuffer.getLong(id.offset + 18)
-      val maxId = directBuffer.getLong(id.offset + 26)
-      // used size
-      val arrayUsedSize = directBuffer.getShort(id.offset + 34)
-
-      val blockInfo = BlockInfo(BlockId(thisBlockPage, thisBlockId), BlockId(preBlockPage, preBlockId),
-        BlockId(nextBlockPage, nextBlockId), minId, maxId, arrayUsedSize)
-      blockInfo
-    }
-  }
   def getBlock(id: BlockId): EndNodesBlock = {
     if (id == BlockId()) {
       throw new NoBlockToGetException
     }
     else {
       val directBuffer = directBufferPageArray(id.pageId - 1)
-
       //this
       val thisBlockPage = directBuffer.getShort(id.offset)
       val thisBlockId = directBuffer.getInt(id.offset + 2)
@@ -163,8 +126,7 @@ object DirectMemoryManager {
       val maxId = directBuffer.getLong(id.offset + 26)
       // used size
       val arrayUsedSize = directBuffer.getShort(id.offset + 34)
-
-      val block = new EndNodesBlock(BlockId(thisBlockPage, thisBlockId), BlockId(preBlockPage, preBlockId), BlockId(nextBlockPage, nextBlockId), minId, maxId, DATA_LENGTH, deleteLog)
+      val block = EndNodesBlock(BlockId(thisBlockPage, thisBlockId), BlockId(preBlockPage, preBlockId), BlockId(nextBlockPage, nextBlockId), minId, maxId, DATA_LENGTH, deleteLog)
       block.arrayUsedSize = arrayUsedSize
       block
     }
@@ -176,7 +138,6 @@ object DirectMemoryManager {
     val nextBlockPage = directBuffer.getShort(id.offset + 12)
     val nextBlockId = directBuffer.getInt(id.offset + 14)
     nextId = BlockId(nextBlockPage, nextBlockId)
-
     val arrayUsedSize = directBuffer.getShort(id.offset + 34)
     for (i <- 1 to arrayUsedSize){
       println(directBuffer.getLong(id.offset + 36 + (i-1) * 8))
@@ -207,17 +168,13 @@ object DirectMemoryManager {
       directBuffer.setLong(id.offset + 36 + i * 8, dataArray(i))
     }
   }
-  /////
 }
 
 class OutGoingEdgeBlockManager(initBlockId: BlockId = BlockId()) {
-
   private var beginBlockId = initBlockId
-
   def getBeginBlockId: BlockId = {
     beginBlockId
   }
-
   def put(nodeId: Long): BlockId = {
     // no block
     if (beginBlockId == BlockId()) {
@@ -242,15 +199,13 @@ class OutGoingEdgeBlockManager(initBlockId: BlockId = BlockId()) {
     }
     beginBlockId
   }
-
   private def queryBlockToPutStrategy(queryBlock: EndNodesBlock, nodeId: Long): (Boolean, BlockId) = {
     var isFound = false
     var newHeadId = BlockId()
-    var preBlockInfo: BlockInfo = null
-    var nextBlockInfo: BlockInfo = null
-    if (queryBlock.thisBlockPreBlockId != BlockId()) preBlockInfo = DirectMemoryManager.getBlockInfo(queryBlock.thisBlockPreBlockId)
-    if (queryBlock.thisBlockNextBlockId != BlockId()) nextBlockInfo = DirectMemoryManager.getBlockInfo(queryBlock.thisBlockNextBlockId)
-
+    var preBlock: EndNodesBlock = null
+    var nextBlock: EndNodesBlock = null
+    if (queryBlock.thisBlockPreBlockId != BlockId()) preBlock = DirectMemoryManager.getBlock(queryBlock.thisBlockPreBlockId)
+    if (queryBlock.thisBlockNextBlockId != BlockId()) nextBlock = DirectMemoryManager.getBlock(queryBlock.thisBlockNextBlockId)
     if (nodeId > queryBlock.thisBlockMinNodeId && nodeId < queryBlock.thisBlockMaxNodeId) {
       // if isUpdate, it means block not full, so we just update it's data
       newHeadId = queryBlock.put(nodeId)
@@ -258,24 +213,24 @@ class OutGoingEdgeBlockManager(initBlockId: BlockId = BlockId()) {
     }
     else if (queryBlock.arrayUsedSize < DirectMemoryManager.DATA_LENGTH) {
       // put to this block depends on preBlock max and nextBlock min
-      if (preBlockInfo == null && nextBlockInfo == null) {
+      if (preBlock == null && nextBlock == null) {
         newHeadId = queryBlock.put(nodeId)
         isFound = true
       }
-      else if (preBlockInfo == null && nextBlockInfo != null) {
-        if (nodeId < nextBlockInfo.minNodeId) {
+      else if (preBlock == null && nextBlock != null) {
+        if (nodeId < nextBlock.minNodeId) {
           newHeadId = queryBlock.put(nodeId)
           isFound = true
         }
       }
-      else if (preBlockInfo != null && nextBlockInfo == null) {
-        if (nodeId > preBlockInfo.maxNodeId) {
+      else if (preBlock != null && nextBlock == null) {
+        if (nodeId > preBlock.maxNodeId) {
           newHeadId = queryBlock.put(nodeId)
           isFound = true
         }
       }
       else {
-        if (nodeId > preBlockInfo.maxNodeId && nodeId < nextBlockInfo.minNodeId) {
+        if (nodeId > preBlock.maxNodeId && nodeId < nextBlock.minNodeId) {
           newHeadId = queryBlock.put(nodeId)
           isFound = true
         }
@@ -283,7 +238,7 @@ class OutGoingEdgeBlockManager(initBlockId: BlockId = BlockId()) {
     }
     else if (queryBlock.arrayUsedSize == DirectMemoryManager.DATA_LENGTH) {
       // new head
-      if (preBlockInfo == null && nodeId < queryBlock.thisBlockMinNodeId) {
+      if (preBlock == null && nodeId < queryBlock.thisBlockMinNodeId) {
         val newBlock = DirectMemoryManager.generateBlock()
         newBlock.thisBlockNextBlockId = queryBlock.thisBlockId
         newHeadId = newBlock.put(nodeId)
@@ -292,37 +247,34 @@ class OutGoingEdgeBlockManager(initBlockId: BlockId = BlockId()) {
         isFound = true
       }
       // insert to left
-      else if (preBlockInfo != null && nodeId > preBlockInfo.maxNodeId && nodeId < queryBlock.thisBlockMinNodeId) {
+      else if (preBlock != null && nodeId > preBlock.maxNodeId && nodeId < queryBlock.thisBlockMinNodeId) {
         val leftBlock = DirectMemoryManager.generateBlock()
-        leftBlock.thisBlockPreBlockId = preBlockInfo.blockId
+        leftBlock.thisBlockPreBlockId = preBlock.blockId
         leftBlock.thisBlockNextBlockId = queryBlock.thisBlockId
         leftBlock.put(nodeId)
 
-        DirectMemoryManager.updateBlockIds(preBlockInfo.blockId, UpdateBlockPosition.NEXT, leftBlock.thisBlockId)
+        DirectMemoryManager.updateBlockIds(preBlock.blockId, UpdateBlockPosition.NEXT, leftBlock.thisBlockId)
         DirectMemoryManager.updateBlockIds(queryBlock.thisBlockId, UpdateBlockPosition.PRE, leftBlock.thisBlockId)
-
         isFound = true
       }
       // insert to right
-      else if (nextBlockInfo != null && nodeId < nextBlockInfo.minNodeId && nodeId > queryBlock.thisBlockMaxNodeId) {
+      else if (nextBlock != null && nodeId < nextBlock.minNodeId && nodeId > queryBlock.thisBlockMaxNodeId) {
         val rightBlock = DirectMemoryManager.generateBlock()
         rightBlock.thisBlockPreBlockId = queryBlock.thisBlockId
-        rightBlock.thisBlockNextBlockId = nextBlockInfo.blockId
+        rightBlock.thisBlockNextBlockId = nextBlock.blockId
         rightBlock.put(nodeId)
 
-        DirectMemoryManager.updateBlockIds(nextBlockInfo.blockId, UpdateBlockPosition.PRE, rightBlock.thisBlockId)
+        DirectMemoryManager.updateBlockIds(nextBlock.blockId, UpdateBlockPosition.PRE, rightBlock.thisBlockId)
         DirectMemoryManager.updateBlockIds(queryBlock.thisBlockId, UpdateBlockPosition.NEXT, rightBlock.thisBlockId)
         isFound = true
       }
       // new tail
-      else if (nextBlockInfo == null && nodeId > queryBlock.thisBlockMaxNodeId) {
+      else if (nextBlock == null && nodeId > queryBlock.thisBlockMaxNodeId) {
         val tailBlock = DirectMemoryManager.generateBlock()
         tailBlock.thisBlockPreBlockId = queryBlock.thisBlockId
         tailBlock.put(nodeId)
 
         DirectMemoryManager.updateBlockIds(queryBlock.thisBlockId, UpdateBlockPosition.NEXT, tailBlock.thisBlockId)
-
-
         isFound = true
       }
     }
@@ -368,7 +320,6 @@ class OutGoingEdgeBlockManager(initBlockId: BlockId = BlockId()) {
       }
     }
   }
-
   def isExist(endNodeId: Int): Boolean = {
     var block = DirectMemoryManager.getBlock(beginBlockId)
     var flag = true
@@ -394,12 +345,10 @@ class OutGoingEdgeBlockManager(initBlockId: BlockId = BlockId()) {
   }
 }
 
-class EndNodesBlock(blockId: BlockId, preBlock: BlockId, nextBlock: BlockId,
+case class EndNodesBlock(blockId: BlockId, preBlock: BlockId, nextBlock: BlockId,
                     minNodeId: Long, maxNodeId: Long,
                     dataLength: Int, deleteLog: mutable.Queue[BlockId]) {
-
   var arrayUsedSize: Short = 0
-
   var thisBlockMinNodeId: Long = minNodeId
   var thisBlockMaxNodeId: Long = maxNodeId
   var thisBlockId: BlockId = blockId
@@ -477,7 +426,6 @@ class EndNodesBlock(blockId: BlockId, preBlock: BlockId, nextBlock: BlockId,
 
         biggerBlock.thisBlockPreBlockId = smallerBlock.thisBlockId
       }
-
       deleteLog.enqueue(thisBlockId)
       DirectMemoryManager.putInitBlockToDirectBuffer(smallerBlock, smallerArray.toArray, true)
       DirectMemoryManager.putInitBlockToDirectBuffer(biggerBlock, biggerArray.toArray, true)
@@ -504,13 +452,11 @@ class EndNodesBlock(blockId: BlockId, preBlock: BlockId, nextBlock: BlockId,
   }
 }
 
-case class BlockInfo(blockId: BlockId, preBlockId: BlockId, nextBlockId: BlockId, minNodeId: Long, maxNodeId: Long, arrayUsedSize: Short){}
-
 // pageId: in which directBuffer
 case class BlockId(pageId: Short = 0, offset: Int = 0) {}
 
 class GetAllBlockNodesId(manager: OutGoingEdgeBlockManager) extends Iterator[Long] {
-  var block: BlockInfo = _
+  var block: EndNodesBlock = _
   var nextBlockId: BlockId = _
   var arrayUsedSize:Short = _
   var count = 0
@@ -518,8 +464,8 @@ class GetAllBlockNodesId(manager: OutGoingEdgeBlockManager) extends Iterator[Lon
   var dataArray: ArrayBuffer[Long] = _
 
   if (manager.getBeginBlockId != BlockId()){
-    block = DirectMemoryManager.getBlockInfo(manager.getBeginBlockId)
-    nextBlockId = block.nextBlockId
+    block = DirectMemoryManager.getBlock(manager.getBeginBlockId)
+    nextBlockId = block.thisBlockNextBlockId
     arrayUsedSize = block.arrayUsedSize
     dataArray = DirectMemoryManager.getBlockDataArray(manager.getBeginBlockId)
   }
@@ -535,9 +481,9 @@ class GetAllBlockNodesId(manager: OutGoingEdgeBlockManager) extends Iterator[Lon
     }
     else {
       if (nextBlockId != BlockId()){
-        block = DirectMemoryManager.getBlockInfo(nextBlockId)
+        block = DirectMemoryManager.getBlock(nextBlockId)
         dataArray = DirectMemoryManager.getBlockDataArray(nextBlockId)
-        nextBlockId = block.nextBlockId
+        nextBlockId = block.thisBlockNextBlockId
         arrayUsedSize = block.arrayUsedSize
         count = 1
         true

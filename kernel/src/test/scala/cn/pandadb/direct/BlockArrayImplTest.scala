@@ -3,9 +3,8 @@ package scala.cn.pandadb.direct
 import cn.pandadb.kernel.direct.{BlockId, DirectMemoryManager, OutGoingEdgeBlockManager}
 import org.junit.{Assert, Test}
 
-// data length = 5
 class BlockArrayTest {
-
+  DirectMemoryManager.DATA_LENGTH = 5
   @Test
   def test1BlockInsertToPre(): Unit ={
     val manager1 = new OutGoingEdgeBlockManager()
@@ -18,8 +17,8 @@ class BlockArrayTest {
 
     manager1.put(5)
 
-    val blockHead = DirectMemoryManager.getBlockInfo(manager1.getBeginBlockId)
-    val blockNextId = blockHead.nextBlockId
+    val blockHead = DirectMemoryManager.getBlock(manager1.getBeginBlockId)
+    val blockNextId = blockHead.thisBlockNextBlockId
     val headArray = DirectMemoryManager.getBlockDataArray(blockHead.blockId)
     val nextArray = DirectMemoryManager.getBlockDataArray(blockNextId)
 
@@ -39,8 +38,8 @@ class BlockArrayTest {
 
     manager1.put(25)
 
-    val blockHead = DirectMemoryManager.getBlockInfo(manager1.getBeginBlockId)
-    val blockNextId = blockHead.nextBlockId
+    val blockHead = DirectMemoryManager.getBlock(manager1.getBeginBlockId)
+    val blockNextId = blockHead.thisBlockNextBlockId
     val headArray = DirectMemoryManager.getBlockDataArray(blockHead.blockId)
     val nextArray = DirectMemoryManager.getBlockDataArray(blockNextId)
 
@@ -60,8 +59,8 @@ class BlockArrayTest {
 
     manager1.put(60)
 
-    val blockHead = DirectMemoryManager.getBlockInfo(manager1.getBeginBlockId)
-    val blockNextId = blockHead.nextBlockId
+    val blockHead = DirectMemoryManager.getBlock(manager1.getBeginBlockId)
+    val blockNextId = blockHead.thisBlockNextBlockId
     val headArray = DirectMemoryManager.getBlockDataArray(blockHead.blockId)
     val nextArray = DirectMemoryManager.getBlockDataArray(blockNextId)
 
@@ -351,7 +350,6 @@ class BlockArrayTest {
     manager1.put(34)
     manager1.put(35)
     manager1.put(36)
-//    manager1.getAllBlocks().foreach(_.nodeIdArray.toSet.foreach(println))
     val iter = manager1.getAllBlockNodeIds()
     while (iter.hasNext){
       println(iter.next())

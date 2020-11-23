@@ -1,6 +1,6 @@
 package cn.pandadb.direct
 
-import cn.pandadb.kernel.direct.OutGoingEdgeBlockManager
+import cn.pandadb.kernel.direct.{DirectMemoryManager, OutGoingEdgeBlockManager}
 import org.junit.Test
 
 import scala.collection.mutable.ArrayBuffer
@@ -9,6 +9,8 @@ import scala.util.Random
 class BlockArrayWriteTest {
   val managers: ArrayBuffer[OutGoingEdgeBlockManager] = new ArrayBuffer[OutGoingEdgeBlockManager]()
 
+  // data length = 1000 : 6.5s
+  DirectMemoryManager.DATA_LENGTH = 1000
   @Test
   def test1yiData(): Unit ={
     val startTime = System.currentTimeMillis()
