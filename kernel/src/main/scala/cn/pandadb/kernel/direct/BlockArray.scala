@@ -343,6 +343,11 @@ class OutGoingEdgeBlockManager(initBlockId: BlockId = BlockId()) {
   def getAllBlockNodeIds(): Iterator[Long] = {
     new GetAllBlockNodesId(this)
   }
+  def clear(): Unit ={
+    DirectMemoryManager.directBufferPageArray.foreach(buf => buf.release())
+    DirectMemoryManager.directBufferPageArray.clear()
+    DirectMemoryManager.deleteLog.clear()
+  }
 }
 
 case class EndNodesBlock(blockId: BlockId, preBlock: BlockId, nextBlock: BlockId,
