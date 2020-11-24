@@ -59,7 +59,7 @@ class LuceneStoreTest {
     Assert.assertEquals(0, nodes.loadAll().size)
     Assert.assertEquals(0, rels.loadAll().size)
 
-    memGraph.mergeLogs2Store(true)
+    memGraph.mergeLogs2Store()
 
     Assert.assertEquals(0, logs._store.loadAll().size)
     Assert.assertEquals(List(1, 2), nodes.loadAll().toSeq.map(_.id).sorted)
@@ -67,24 +67,24 @@ class LuceneStoreTest {
 
     memGraph.addNode(Map("name" -> "3"))
     //nodes: {1,2,3}
-    memGraph.mergeLogs2Store(true)
+    memGraph.mergeLogs2Store()
 
     Assert.assertEquals(0, logs._store.loadAll().size)
     Assert.assertEquals(List(1, 2, 3), nodes.loadAll().toSeq.map(_.id).sorted)
 
     memGraph.deleteNode(2)
     //nodes: {1,3}
-    memGraph.mergeLogs2Store(true)
+    memGraph.mergeLogs2Store()
     Assert.assertEquals(List(1, 3), nodes.loadAll().toSeq.map(_.id).sorted)
 
     memGraph.addNode(Map("name" -> "4")).deleteNode(1L)
     //nodes: {3,4}
-    memGraph.mergeLogs2Store(true)
+    memGraph.mergeLogs2Store()
     Assert.assertEquals(List(3, 4), nodes.loadAll().toSeq.map(_.id).sorted)
 
     memGraph.addNode(Map("name" -> "5")).addNode(Map("name" -> "6")).deleteNode(5L).deleteNode(3L)
     //nodes: {4,6}
-    memGraph.mergeLogs2Store(true)
+    memGraph.mergeLogs2Store()
     Assert.assertEquals(List(4, 6), nodes.loadAll().toSeq.map(_.id).sorted)
 
     memGraph.close()
@@ -133,7 +133,7 @@ class LuceneStoreTest {
     Assert.assertEquals(2, relLabelStore.map.seq.size)
     Assert.assertEquals(6, logs._store.loadAll().size)
 
-    memGraph.mergeLogs2Store(true)
+    memGraph.mergeLogs2Store()
     Assert.assertEquals(0, logs._store.loadAll().size)
 
     memGraph.close()
@@ -157,11 +157,11 @@ class LuceneStoreTest {
     memGraph.addRelation("relation2", 2L, 3L, Map())
     memGraph.addRelation("relation3", 3L, 4L, Map())
 
-    memGraph.mergeLogs2Store(true)
+    memGraph.mergeLogs2Store()
     Assert.assertEquals(3, rels.loadAll().size)
 
     memGraph.deleteRelation(1)
-    memGraph.mergeLogs2Store(true)
+    memGraph.mergeLogs2Store()
 
     Assert.assertEquals(2, rels.loadAll().size)
     memGraph.close()

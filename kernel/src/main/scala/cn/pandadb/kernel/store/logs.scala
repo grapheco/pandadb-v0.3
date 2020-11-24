@@ -38,7 +38,7 @@ class UnmergedChanges[T, Id] {
 case class MergedChanges[T, Id]
 (
   toAdd: Seq[T],
-  toDelete: Seq[Id],
+  toDelete: Seq[Id]
 ) {
   def nonEmpty: Boolean = toAdd.nonEmpty || toDelete.nonEmpty
 }
