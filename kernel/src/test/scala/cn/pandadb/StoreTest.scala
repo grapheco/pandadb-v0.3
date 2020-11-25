@@ -18,6 +18,10 @@ class StoreTest {
   var relLabelStore: LabelStore = _
   var memGraph: GraphFacade = _
 
+  def createGraphRAM() = new SimpleGraphRAM()
+
+  def createPropertyStore() = new SimplePropertyStore()
+
   @Before
   def setup(): Unit = {
     FileUtils.deleteDirectory(new File("./testdata/output"))
@@ -39,10 +43,8 @@ class StoreTest {
     memGraph = new GraphFacade(nodes, rels, logs, nodeLabelStore, relLabelStore,
       new FileBasedIdGen(new File("./testdata/output/nodeid"), 100),
       new FileBasedIdGen(new File("./testdata/output/relid"), 100),
-      new SimpleGraphRAM(),
-      new SimplePropertyStore {
-
-      }, {
+      createGraphRAM(),
+      createPropertyStore(), {
 
       }
     )
@@ -105,6 +107,14 @@ class StoreTest {
     res = memGraph.cypher("match (n) return n")
     res.show
     Assert.assertEquals(3, res.records.size)
+
+    res = memGraph.cypher("match (n) where n.name='alex' return n")
+    res.show
+    Assert.assertEquals(1, res.records.size)
+
+    res = memGraph.cypher("match (n) where n.age>18 return n")
+    res.show
+    Assert.assertEquals(2, res.records.size)
 
     res = memGraph.cypher("match (m)-[r]->(n) return m,r,n")
     res.show
