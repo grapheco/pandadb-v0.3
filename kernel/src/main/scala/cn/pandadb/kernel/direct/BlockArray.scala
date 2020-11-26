@@ -354,12 +354,12 @@ class OutGoingEdgeBlockManager(initBlockId: BlockId = BlockId()) {
 case class EndNodesBlock(blockId: BlockId, preBlock: BlockId, nextBlock: BlockId,
                     minNodeId: Long, maxNodeId: Long,
                     dataLength: Int, deleteLog: mutable.Queue[BlockId]) {
-  var arrayUsedSize: Short = 0
+  var thisBlockId: BlockId = blockId
   var thisBlockMinNodeId: Long = minNodeId
   var thisBlockMaxNodeId: Long = maxNodeId
-  var thisBlockId: BlockId = blockId
   var thisBlockNextBlockId: BlockId = nextBlock
   var thisBlockPreBlockId: BlockId = preBlock
+  var arrayUsedSize: Short = 0
 
   def put(nodeId: Long): BlockId = {
     var newHeadId = BlockId()
