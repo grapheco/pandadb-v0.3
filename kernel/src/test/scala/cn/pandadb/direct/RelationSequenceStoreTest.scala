@@ -23,7 +23,7 @@ class RelationSequenceStoreTest {
   @Test
   def autoExpand(): Unit ={
     manager.addRelation(1000, 11,11,11)
-    Assert.assertEquals(10, manager.directBufferPageArray.length)
+    Assert.assertEquals(10, manager.directBufferArray.length)
   }
 
   @Test(expected = classOf[NoRelationGetException])
