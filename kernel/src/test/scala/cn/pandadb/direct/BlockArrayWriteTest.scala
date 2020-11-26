@@ -10,7 +10,7 @@ class BlockArrayWriteTest {
   val managers: ArrayBuffer[OutGoingEdgeBlockManager] = new ArrayBuffer[OutGoingEdgeBlockManager]()
 
   // data length = 1000 : 6.5s
-  DirectMemoryManager.DATA_LENGTH = 1000
+  DirectMemoryManager.ENDNODES_LENGTH = 1000
   @Test
   def test1yiData(): Unit ={
     val startTime = System.currentTimeMillis()

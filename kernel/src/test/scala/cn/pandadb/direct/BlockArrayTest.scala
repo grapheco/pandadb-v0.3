@@ -4,7 +4,7 @@ import cn.pandadb.kernel.direct.{BlockId, DirectMemoryManager, OutGoingEdgeBlock
 import org.junit.{Assert, Test}
 
 class BlockArrayTest {
-  DirectMemoryManager.DATA_LENGTH = 5
+  DirectMemoryManager.ENDNODES_LENGTH = 5
   @Test
   def test1BlockInsertToPre(): Unit ={
     val manager1 = new OutGoingEdgeBlockManager()

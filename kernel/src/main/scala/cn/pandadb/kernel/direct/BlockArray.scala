@@ -12,25 +12,26 @@ object UpdateBlockPosition extends Enumeration {
 
 object DirectMemoryManager {
   /*
-      DATA_LENGTH:    the num of a block's endNodesId
-      BLOCK_SIZE:     the size of a block
+      ENDNODES_LENGTH:    the num of a block's endNodesId
+      BLOCK_LENGTH:     the size of a block
                       36bytes = blockId(6) + preBlockId(6) + nextBlockId(6) + minNodeId(8) + maxNodeId(8) + blockArrayUsedSize(2)
       MAX_CAPACITY:   make sure allocate mem can contain integer blocks
                       a directBuffer's maxSize is 2GB = 2147483647
    */
-  var DATA_LENGTH = 1000
-  val BLOCK_SIZE = 36 + DATA_LENGTH * 8
-  val MAX_CAPACITY = 2147483647 - (2147483647 % BLOCK_SIZE)
+  var ENDNODES_LENGTH = 1000
+  val BLOCK_LENGTH = 36 + ENDNODES_LENGTH * 8
+  val MAX_CAPACITY = 2147483647 - (2147483647 % BLOCK_LENGTH)
 
   val deleteLog: mutable.Queue[BlockId] = new mutable.Queue[BlockId]()
   val directBufferPageArray = new ArrayBuffer[ByteBuf]()
 
   private var pageId: Short = 0 // in which directBuffer
-  private var currentPageBlockId = 0 // offset of pageId's directBuffer
+  private var currentPageBlockOffset = 0 // offset of pageId's directBuffer
+  
   private def mallocDirectBuffer(): Unit = {
     val directBuffer = Unpooled.directBuffer(MAX_CAPACITY)
     pageId = (pageId + 1).toShort
-    currentPageBlockId = 0 // reset index to new page
+    currentPageBlockOffset = 0 // reset index to new page
     directBufferPageArray.append(directBuffer)
   }
 
@@ -44,13 +45,13 @@ object DirectMemoryManager {
         if (pageId == 0) {
           mallocDirectBuffer()
         }
-        else if (currentPageBlockId > MAX_CAPACITY - BLOCK_SIZE) {
+        else if (currentPageBlockOffset > MAX_CAPACITY - BLOCK_LENGTH) {
           mallocDirectBuffer()
         }
-        blockId = BlockId(pageId, currentPageBlockId)
-        currentPageBlockId += BLOCK_SIZE
+        blockId = BlockId(pageId, currentPageBlockOffset)
+        currentPageBlockOffset += BLOCK_LENGTH
       }
-      EndNodesBlock(blockId, BlockId(), BlockId(), 0, 0, DATA_LENGTH, deleteLog)
+      EndNodesBlock(blockId, BlockId(), BlockId(), 0, 0, ENDNODES_LENGTH, deleteLog)
     }
   }
   def putInitBlockToDirectBuffer(block: EndNodesBlock, nodeIdArray: Array[Long], isSplit:Boolean): Unit = {
@@ -126,7 +127,7 @@ object DirectMemoryManager {
       val maxId = directBuffer.getLong(id.offset + 26)
       // used size
       val arrayUsedSize = directBuffer.getShort(id.offset + 34)
-      val block = EndNodesBlock(BlockId(thisBlockPage, thisBlockId), BlockId(preBlockPage, preBlockId), BlockId(nextBlockPage, nextBlockId), minId, maxId, DATA_LENGTH, deleteLog)
+      val block = EndNodesBlock(BlockId(thisBlockPage, thisBlockId), BlockId(preBlockPage, preBlockId), BlockId(nextBlockPage, nextBlockId), minId, maxId, ENDNODES_LENGTH, deleteLog)
       block.arrayUsedSize = arrayUsedSize
       block
     }
@@ -211,7 +212,7 @@ class OutGoingEdgeBlockManager(initBlockId: BlockId = BlockId()) {
       newHeadId = queryBlock.put(nodeId)
       isFound = true
     }
-    else if (queryBlock.arrayUsedSize < DirectMemoryManager.DATA_LENGTH) {
+    else if (queryBlock.arrayUsedSize < DirectMemoryManager.ENDNODES_LENGTH) {
       // put to this block depends on preBlock max and nextBlock min
       if (preBlock == null && nextBlock == null) {
         newHeadId = queryBlock.put(nodeId)
@@ -236,7 +237,7 @@ class OutGoingEdgeBlockManager(initBlockId: BlockId = BlockId()) {
         }
       }
     }
-    else if (queryBlock.arrayUsedSize == DirectMemoryManager.DATA_LENGTH) {
+    else if (queryBlock.arrayUsedSize == DirectMemoryManager.ENDNODES_LENGTH) {
       // new head
       if (preBlock == null && nodeId < queryBlock.thisBlockMinNodeId) {
         val newBlock = DirectMemoryManager.generateBlock()
@@ -362,7 +363,7 @@ case class EndNodesBlock(blockId: BlockId, preBlock: BlockId, nextBlock: BlockId
 
   def put(nodeId: Long): BlockId = {
     var newHeadId = BlockId()
-    if (arrayUsedSize < DirectMemoryManager.DATA_LENGTH) {
+    if (arrayUsedSize < DirectMemoryManager.ENDNODES_LENGTH) {
       arrayUsedSize = (arrayUsedSize + 1).toShort
       if (arrayUsedSize == 1) {
         thisBlockMinNodeId = nodeId
