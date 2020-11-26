@@ -3,25 +3,46 @@ package cn.pandadb.kernel.direct
 import cn.pandadb.kernel.GraphRAM
 import cn.pandadb.kernel.store.{StoredNode, StoredRelation}
 
+import scala.collection.mutable
+
 class DirectGraphRAMImpl extends GraphRAM {
+  val relationshipStore = new OutEdgeRelationIndex()
+  val mapRelations = mutable.LinkedHashMap[Id, StoredRelation]()
 
-  override def addNode(t: StoredNode): Unit = ???
+  val mapNodes = mutable.LinkedHashMap[Id, StoredNode]()
 
-  override def nodeAt(id: Id): StoredNode = ???
+  override def addNode(t: StoredNode): Unit = mapNodes += t.id -> t
 
-  override def relationAt(id: Id): StoredRelation = ???
+  override def deleteNode(id: Id): Unit = mapNodes -= id
 
-  override def deleteNode(id: Id): Unit = ???
+  override def nodeAt(id: Id): StoredNode = mapNodes(id)
 
-  override def addRelation(t: StoredRelation): Unit = ???
+  override def relationAt(id: Id): StoredRelation = mapRelations(id)
 
-  override def deleteRelation(id: Id): Unit = ???
+  override def addRelation(t: StoredRelation): Unit = {
+    relationshipStore.addRelationship(fromNode = t.from, toNode = t.to, label = t.labelId)
+    mapRelations += t.id -> t
+  }
 
-  override def nodes(): Iterator[StoredNode] = ???
+  override def deleteRelation(id: Id): Unit = {
+    val r = relationAt(id)
+    if (r != null) {
+      relationshipStore.deleteRelation(r.from, r.to, r.labelId)
+      mapRelations -= id
+    }
+  }
 
-  override def rels(): Iterator[StoredRelation] = ???
+  override def nodes(): Iterator[StoredNode] = mapNodes.map(_._2).iterator
 
-  override def clear(): Unit = ???
+  override def rels(): Iterator[StoredRelation] = mapRelations.map(_._2).iterator
 
-  override def close(): Unit = ???
+  override def clear(): Unit = {
+    // todo
+  }
+
+  override def close(): Unit = {
+    // todo
+  }
+
 }
+
