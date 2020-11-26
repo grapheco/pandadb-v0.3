@@ -53,14 +53,16 @@
             <version>2.11.2</version>
         </dependency>
 
-        <!-->get system memory<-->
+
+        <!-- https://mvnrepository.com/artifact/org.rocksdb/rocksdbjni -->
         <dependency>
-            <groupId>com.github.oshi</groupId>
-            <artifactId>oshi-core</artifactId>
-            <version>3.5.0</version>
+            <groupId>org.rocksdb</groupId>
+            <artifactId>rocksdbjni</artifactId>
+            <version>5.18.4</version>
         </dependency>
 
     </dependencies>
+
     <repositories>
         <repository>
             <id>repos</id>
@@ -68,4 +70,5 @@
             <url>http://10.0.82.220:8081/repository/maven-public/</url>
         </repository>
     </repositories>
+
 </project>
