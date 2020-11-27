@@ -513,7 +513,7 @@ class NoBlockToGetException extends Exception {
   override def getMessage: String = "No such block to get"
 }
 
-class NoNextNodeIdException extends Exception{
-  override def getMessage: String = "next on empty iterator"
-
-}
+//class NoNextNodeIdException extends Exception{
+//  override def getMessage: String = "next on empty iterator"
+//
+//}
