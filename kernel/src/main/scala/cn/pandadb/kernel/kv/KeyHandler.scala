@@ -2,8 +2,6 @@ package cn.pandadb.kernel.kv
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
 
-import com.alibaba.fastjson.JSON
-
 import collection.JavaConverters._
 
 object KeyHandler {

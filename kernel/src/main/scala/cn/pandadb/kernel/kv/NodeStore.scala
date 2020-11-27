@@ -1,7 +1,6 @@
 package cn.pandadb.kernel.kv
 
 import org.rocksdb.{ReadOptions, RocksDB}
-import cn.pandadb.kernel.kv.ByteUtils
 
 case class NodeValue(id:Long, labelIds: Array[Int], properties: Map[String, Any]) {
 }

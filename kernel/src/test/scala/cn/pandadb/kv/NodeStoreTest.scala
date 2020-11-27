@@ -37,7 +37,7 @@ class NodeStoreTest {
 
   @Test
   def testForGetAll(): Unit = {
-    db.put("a".getBytes(),Array("x".toByte))
+    db.put("a".getBytes(), "x".getBytes())
 
     val nodeStore = new NodeStore(db)
     nodeStore.set(1, Array[Int](1,2,3), Map("p1"->1))
