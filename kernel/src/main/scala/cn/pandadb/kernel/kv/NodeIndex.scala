@@ -39,6 +39,10 @@ class NodeIndex(val dbPath:String = "C:\\rocksDB"){
     db.deleteRange(key(indexId, 0.toLong, 0.toLong), key(indexId, -1.toLong, -1.toLong))
   }
 
+  def updateIndexRow(indexId: IndexId, value: ValueType, nodeId: NodeId, newValue: ValueType): Unit = {
+    deleteSingleIndexRow(indexId, value, nodeId)
+    writeIndexRow(indexId, newValue, nodeId)
+  }
 
   /**
    * Index Data
@@ -56,6 +60,7 @@ class NodeIndex(val dbPath:String = "C:\\rocksDB"){
     val prefix = key2(indexId, value)
     iter.seek(prefix)
     while(iter.isValid&&iter.key().startsWith(prefix)) {
+//    while(iter.isValid) {
       result += ByteBuffer.wrap(iter.key()).getLong(16)
       iter.next()
     }
