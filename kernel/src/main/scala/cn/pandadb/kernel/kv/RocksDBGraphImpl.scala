@@ -29,20 +29,27 @@ class RocksDBGraphImpl extends GraphRAM {
   def relsFrom(id: Id): Iterable[StoredRelation] = ???
   def relsTo(id: Id): Iterable[StoredRelation] = ???
 
-  def SearchByLabel(label: Label): Iterable[StoredNode] = ???
-  def SearchByType(t: Type): Iterable[StoredRelation] = ???
-
-  def SearchByProperty(stat: Stat): Iterable[StoredNode] = ???
+  def searchByLabel(label: Label): Iterable[StoredNode] = ???
+  def searchByType(t: Type): Iterable[StoredRelation] = ???
 
   //essential? could check whether index available in implemantion.
-  def SearchByIndexedProperty(stat: Stat): Iterable[StoredNode] = ???
-  def SearchByCategory(category: Category): Iterable[StoredRelation] = ???
+  def searchByIndexedProperty(stat: Stat): Iterable[StoredNode] = ???
+  def searchByCategory(category: Category): Iterable[StoredRelation] = ???
 
+  def searchByProp(stat: Stat): Iterable[StoredNode] = ???
+//  def propContains()
+//  def propStartWith()
+//  def propEndWith()
+//  def propLarger()
+//  def propSmaller()
 
 }
+
 
 case class Label(label: String)
 case class Type(t: String)
 
 case class Stat()
 case class Category()
+
+class Property
