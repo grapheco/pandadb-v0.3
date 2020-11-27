@@ -37,11 +37,6 @@ class RocksDBGraphImpl extends GraphRAM {
   def searchByCategory(category: Category): Iterable[StoredRelation] = ???
 
   def searchByProp(stat: Stat): Iterable[StoredNode] = ???
-//  def propContains()
-//  def propStartWith()
-//  def propEndWith()
-//  def propLarger()
-//  def propSmaller()
 
 }
 
@@ -51,5 +46,3 @@ case class Type(t: String)
 
 case class Stat()
 case class Category()
-
-class Property

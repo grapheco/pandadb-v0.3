@@ -13,10 +13,7 @@ class NodeIndex(val dbPath:String = "C:\\rocksDB"){
   type ValueType = Long
   type NodeId    = Long
 
-
   val db = RocksDBStorage.getDB(dbPath)
-
-
   /**
    * Index MetaData
    */
@@ -71,8 +68,6 @@ class NodeIndex(val dbPath:String = "C:\\rocksDB"){
   def findRange(indexId: IndexId, valueFrom: ValueType, valueTo: ValueType) = {
 
   }
-
-
 
   //key
   def key(a: Long, b: Long, c: Long) = {

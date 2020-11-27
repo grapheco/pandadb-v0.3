@@ -6,6 +6,8 @@ package cn.pandadb.kernel.kv
  * @Date: Created at 19:20 2020/11/27
  * @Modified By:
  */
+
+//carried from panda-2019
 trait NFExpression {
 }
 
