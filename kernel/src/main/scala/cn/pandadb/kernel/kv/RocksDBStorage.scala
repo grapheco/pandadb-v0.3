@@ -18,7 +18,12 @@ object RocksDBStorage {
 
     RocksDB.open(options, path)
   }
+}
 
+class RocksDBStorage(path: String) {
+  val db: RocksDB = RocksDBStorage.getDB(path)
+
+  def close(): Unit = ???
 
 }
 
