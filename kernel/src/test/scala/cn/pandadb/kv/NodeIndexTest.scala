@@ -47,24 +47,49 @@ class NodeIndexTest extends Assert {
   @Test
   def indexBaseTest= {
     val ni = new NodeIndex()
-    ni.deleteIndexRows(1001.toLong)
-    ni.deleteIndexRows(1002.toLong)
+    ni.deleteIndexRows(1001)
+    ni.deleteIndexRows(1002)
     for (node <- 0 until 50) {
       // create factors index
       for (i <- 1 until 10) {
         if (node%i==0)
-          ni.writeIndexRow(1001.toLong, i.toLong, node.toLong)
+          ni.writeIndexRow(1001, i.toLong, node.toLong)
       }
       // create ten index
-      ni.writeIndexRow(1002.toLong, (node/10).toLong, node.toLong)
+      ni.writeIndexRow(1002, (node/10).toLong, node.toLong)
     }
 
     // find 0,7,14,21...
-    Assert.assertArrayEquals(ni.find(1001.toLong, 7.toLong).toArray,
+    Assert.assertArrayEquals(ni.find(1001, 7.toLong).toArray,
       Array[Long](0,7,14,21,28,35,42,49)
     )
     // find 30-39
-    Assert.assertArrayEquals(ni.find(1002.toLong, 3.toLong).toArray,
+    Assert.assertArrayEquals(ni.find(1002, 3.toLong).toArray,
+      Array[Long](30,31,32,33,34,35,36,37,38,39)
+    )
+  }
+
+  @Test
+  def indexBigTest= {
+    val ni = new NodeIndex()
+    ni.deleteIndexRows(1001)
+    ni.deleteIndexRows(1002)
+    for (node <- 0 until 50) {
+      // create factors index
+      for (i <- 1 until 10) {
+        if (node%i==0)
+          ni.writeIndexRow(1001, i.toLong, node.toLong)
+      }
+      // create ten index
+      ni.writeIndexRow(1002, (node/10).toLong, node.toLong)
+    }
+
+    // find 0,7,14,21...
+    Assert.assertArrayEquals(ni.find(1001, 7.toLong).toArray,
+      Array[Long](0,7,14,21,28,35,42,49)
+    )
+    // find 30-39
+    Assert.assertArrayEquals(ni.find(1002, 3.toLong).toArray,
       Array[Long](30,31,32,33,34,35,36,37,38,39)
     )
   }
