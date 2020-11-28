@@ -2,6 +2,8 @@ package cn.pandadb.kernel.kv
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
 
+import cn.pandadb.kernel.kv.KeyHandler.KeyType.KeyType
+
 import collection.JavaConverters._
 
 object KeyHandler {
@@ -48,6 +50,27 @@ object KeyHandler {
     bytes
   }
 
+  def bytesToEdge(byteArr: Array[Byte]): Tuple5[Byte, Long, Int, Long, Long] = {
+    (
+      ByteUtils.getByte(byteArr, 0),
+      ByteUtils.getLong(byteArr, 1),
+      ByteUtils.getInt(byteArr, 9),
+      ByteUtils.getLong(byteArr,13),
+      ByteUtils.getLong(byteArr,21)
+    )
+  }
+
+
+  def twinEdgeKey(byteArr: Array[Byte]): Array[Byte] = {
+    val edgeTuple = bytesToEdge(byteArr)
+    val redundancyEdgeType = edgeTuple._1 match {
+      case b if b == KeyType.InEdge.id.toByte => KeyType.OutEdge.id.toByte
+      case b if b == KeyType.OutEdge.id.toByte => KeyType.InEdge.id.toByte
+      case _ => throw new Exception("not a edge")
+    }
+    _edgeKeyToBytes(redundancyEdgeType, edgeTuple._5, edgeTuple._3, edgeTuple._4, edgeTuple._2)
+  }
+
   def nodeLabelIndexKeyToBytes(labelId: Int, nodeId: Long): Array[Byte] = {
     val bytes = new Array[Byte](13)
     ByteUtils.setByte(bytes, 0, KeyType.NodeLabelIndex.id.toByte)
@@ -65,9 +88,16 @@ object KeyHandler {
     bytes
   }
 
+  private def _edgeKeyToBytes(edgeType: Byte, nodeId1: Long, labelId: Int, category: Long, nodeId2: Long): Array[Byte] = {
+    val bytes = new Array[Byte](29)
+    ByteUtils.setByte(bytes, 0, edgeType)
+    ByteUtils.setLong(bytes, 1, nodeId1)
+    ByteUtils.setInt(bytes, 9, labelId)
+    ByteUtils.setLong(bytes, 13, category)
+    ByteUtils.setLong(bytes, 21, nodeId2)
+    bytes
+  }
 }
-
-
 
 object ByteUtils {
   def setLong(bytes: Array[Byte], index: Int, value: Long): Unit = {
