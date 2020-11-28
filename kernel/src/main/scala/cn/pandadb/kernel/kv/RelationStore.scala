@@ -2,15 +2,15 @@ package cn.pandadb.kernel.kv
 
 import cn.pandadb.kernel.kv.KeyHandler.KeyType
 import com.alibaba.fastjson.{JSON, JSONObject}
-import org.rocksdb.RocksIterator
+import org.rocksdb.{RocksDB, RocksIterator}
 
 class RelationStore {
   val db = RocksDBStorage.getDB()
 
-  def writeRelation(fromNodeId: Long, toNodeId: Long, labelId: Int, category: Long, values: String): Unit ={
+  def putRelation(fromNodeId: Long, toNodeId: Long, labelId: Int, category: Long, jsonString: String): Unit ={
     val inKey = KeyHandler.inEdgeKeyToBytes(fromNodeId, toNodeId, labelId, category)
     val outKey = KeyHandler.outEdgeKeyToBytes(toNodeId, fromNodeId, labelId, category)
-    val value = JSON.toJSONBytes(values)
+    val value = JSON.toJSONBytes(jsonString)
 
     db.put(inKey, value)
     db.put(outKey, value)
@@ -19,7 +19,8 @@ class RelationStore {
   def getRelationValueObject(key:Array[Byte]): JSONObject ={
     val jsonBytes = db.get(key)
     var jsonString = new String(jsonBytes)
-    jsonString = jsonString.slice(1, jsonBytes.length - 1).replaceAll("////", "")
+    jsonString = jsonString.slice(1, jsonBytes.length - 1).replaceAll("////", "").replaceAll("\\\\", "")
+
     JSON.parseObject(jsonString)
   }
 
@@ -28,23 +29,43 @@ class RelationStore {
     if (res == null) false else true
   }
 
-  def updateRelation(key:Array[Byte], newValue:Array[Byte]): Unit ={
-    db.put(key, newValue)
+  def updateRelation(key:Array[Byte], jsonString: String): Unit ={
+    val redundancy: Array[Byte] = KeyHandler.twinEdgeKey(key)
+    val value = JSON.toJSONBytes(jsonString)
+
+    db.put(key, value)
+    db.put(redundancy, value)
   }
 
   def deleteRelation(key:Array[Byte]): Unit ={
-    // delete outgoing and incoming
     val redundancy: Array[Byte] = KeyHandler.twinEdgeKey(key)
     db.delete(key)
     db.delete(redundancy)
   }
 
-  def getAllRelation(relationType: Byte, startNodeId: Long): (Array[Byte], RocksIterator) ={
+  def getAllRelation(relationType: Byte, startNodeId: Long): Iterator[Array[Byte]] ={
+    new GetAllRocksRelation(db, relationType, startNodeId)
+  }
+
+  def close(): Unit ={
+    db.close()
+  }
+
+  class GetAllRocksRelation(db: RocksDB, relationType: Byte, startNodeId: Long) extends Iterator[Array[Byte]]{
     val prefix = new Array[Byte](9)
     ByteUtils.setByte(prefix, 0, relationType)
     ByteUtils.setLong(prefix, 1, startNodeId)
     val iter = db.newIterator()
     iter.seek(prefix)
-    (prefix, iter)
+
+    override def hasNext: Boolean = {
+      iter.isValid
+    }
+
+    override def next(): Array[Byte] = {
+      val res = iter.key()
+      iter.next()
+      res
+    }
   }
 }
