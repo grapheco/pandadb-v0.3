@@ -79,12 +79,20 @@ object KeyHandler {
     bytes
   }
 
-  def nodePropertyIndexKeyToBytes(indexId:Long, indexValue: Long, nodeId: Long): Array[Byte] = {
-    val bytes = new Array[Byte](25)
+  def nodePropertyIndexKeyToBytes(indexId:Int, indexValue: Long, nodeId: Long): Array[Byte] = {
+    val bytes = new Array[Byte](21)
     ByteUtils.setByte(bytes, 0, KeyType.NodePropertyIndex.id.toByte)
     ByteUtils.setLong(bytes, 1, indexId)
-    ByteUtils.setLong(bytes, 9, indexValue)
-    ByteUtils.setLong(bytes, 17, nodeId)
+    ByteUtils.setLong(bytes, 5, indexValue)
+    ByteUtils.setLong(bytes, 13, nodeId)
+    bytes
+  }
+
+  def nodePropertyIndexPrefixToBytes(indexId:Int, indexValue: Long): Array[Byte] = {
+    val bytes = new Array[Byte](13)
+    ByteUtils.setByte(bytes, 0, KeyType.NodePropertyIndex.id.toByte)
+    ByteUtils.setLong(bytes, 1, indexId)
+    ByteUtils.setLong(bytes, 5, indexValue)
     bytes
   }
 
