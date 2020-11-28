@@ -34,7 +34,24 @@ class RelationStore {
 
   def deleteRelation(key:Array[Byte]): Unit ={
     // delete outgoing and incoming
-    val redundancy: Array[Byte] = KeyHandler.twinEdgeKey(key)
+    val rtype = ByteUtils.getByte(key, 1)
+    var redundancy: Array[Byte] = null
+    rtype match {
+      case KeyType.InEdge.id.toByte =>{
+        val fromNode = ByteUtils.getLong(key, 1)
+        val label = ByteUtils.getInt(key, 9)
+        val category = ByteUtils.getLong(key, 13)
+        val toNode =  ByteUtils.getLong(key, 21)
+        redundancy = KeyHandler.outEdgeKeyToBytes(fromNode, toNode, label, category)
+      }
+      case KeyType.OutEdge.id.toByte =>{
+        val fromNode = ByteUtils.getLong(key, 21)
+        val label = ByteUtils.getInt(key, 9)
+        val category = ByteUtils.getLong(key, 13)
+        val toNode =  ByteUtils.getLong(key, 1)
+        redundancy = KeyHandler.inEdgeKeyToBytes(fromNode, toNode, label, category)
+      }
+    }
     db.delete(key)
     db.delete(redundancy)
   }
