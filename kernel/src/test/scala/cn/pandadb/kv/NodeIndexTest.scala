@@ -6,11 +6,14 @@ import cn.pandadb.kernel.kv.{NodeIndex, RocksDBStorage}
 import org.junit.{After, Assert, Before, Test}
 import org.rocksdb.{ReadOptions, RocksDB}
 
+import scala.tools.nsc.profile.Profiler
+
 @Test
 class NodeIndexTest extends Assert {
 
 
   val path = "C:\\rocksDB"
+  val hddPath = "D:\\rocksDB"
 
   @Test
   def rocksDBTest = {
@@ -68,5 +71,7 @@ class NodeIndexTest extends Assert {
       Array[Long](30,31,32,33,34,35,36,37,38,39)
     )
   }
+
+  Profiler
 
 }

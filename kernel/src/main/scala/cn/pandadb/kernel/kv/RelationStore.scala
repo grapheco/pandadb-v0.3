@@ -2,10 +2,9 @@ package cn.pandadb.kernel.kv
 
 import cn.pandadb.kernel.kv.KeyHandler.KeyType
 import com.alibaba.fastjson.{JSON, JSONObject}
-import org.rocksdb.RocksIterator
+import org.rocksdb.{RocksDB, RocksIterator}
 
-class RelationStore {
-  val db = RocksDBStorage.getDB()
+class RelationStore(db: RocksDB) {
 
   def writeRelation(fromNodeId: Long, toNodeId: Long, labelId: Int, category: Long, values: String): Unit ={
     val inKey = KeyHandler.inEdgeKeyToBytes(fromNodeId, toNodeId, labelId, category)
