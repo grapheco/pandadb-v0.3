@@ -8,8 +8,8 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship}
 
 class GraphFacade(
-                   nodeStore: NodeStore,
-                   relStore: RelationStore,
+                   //nodeStore: NodeStore,
+                   //relStore: RelationStore,
                    logStore: LogStore,
                    nodeLabelStore: LabelStore,
                    relLabelStore: LabelStore,
@@ -21,27 +21,7 @@ class GraphFacade(
                  ) extends Logging with GraphService {
 
   private val propertyGraph = new LynxSession().createPropertyGraph(new PropertyGraphScan[Long] {
-    def mapNode(node: StoredNode): Node[Id] = {
-      new Node[Id] {
-        override type I = this.type
-
-        override def id: Id = node.id
-
-        override def labels: Set[String] = node.labelIds.toSet.map((id: Int) => nodeLabelStore.key(id).get)
-
-        override def copy(id: Long, labels: Set[String], properties: CypherValue.CypherMap): this.type = ???
-
-        override def properties: CypherValue.CypherMap = CypherMap(props.lookup(NodeId(node.id)).get.toSeq: _*)
-      }
-    }
-
-    override def nodeAt(id: Long): CypherValue.Node[Long] = mapNode(mem.nodeAt(id))
-
-    override def allNodes(): Iterable[Node[Id]] = mem.nodes().map { node =>
-      mapNode(node)
-    }.toIterable
-
-    override def allRelationships(): Iterable[CypherValue.Relationship[Id]] = mem.rels().map { rel =>
+    private def mapRelation(rel: StoredRelation): Relationship[Id] = {
       new Relationship[Id] {
         override type I = this.type
 
@@ -57,6 +37,38 @@ class GraphFacade(
 
         override def properties: CypherMap = CypherMap(props.lookup(RelationId(rel.id)).get.toSeq: _*)
       }
+    }
+
+    private def mapNode(node: StoredNode): Node[Id] = {
+      new Node[Id] {
+        override type I = this.type
+
+        override def id: Id = node.id
+
+        override def labels: Set[String] = node.labelIds.toSet.map((id: Int) => nodeLabelStore.key(id).get)
+
+        override def copy(id: Long, labels: Set[String], properties: CypherValue.CypherMap): this.type = ???
+
+        override def properties: CypherValue.CypherMap = CypherMap(props.lookup(NodeId(node.id)).get.toSeq: _*)
+      }
+    }
+
+    override def nodeAt(id: Long): CypherValue.Node[Long] = mapNode(mem.nodeAt(id))
+
+    override def allNodes(labels: Set[String], exactLabelMatch: Boolean): Iterable[Node[Id]] = mem.nodesMatchOneOf(labels).map { node =>
+      mapNode(node)
+    }.toIterable
+
+    override def allNodes(): Iterable[Node[Id]] = mem.nodes().map { node =>
+      mapNode(node)
+    }.toIterable
+
+    override def allRelationships(): Iterable[CypherValue.Relationship[Id]] = mem.rels().map { rel =>
+      mapRelation(rel)
+    }.toIterable
+
+    override def allRelationships(relTypes: Set[String]): Iterable[Relationship[Id]] = mem.relsMatchOneOf(relTypes).map { rel =>
+      mapRelation(rel)
     }.toIterable
   })
 
@@ -80,8 +92,8 @@ class GraphFacade(
   }
 
   override def close(): Unit = {
-    nodeStore.close
-    relStore.close
+    //nodeStore.close
+    //relStore.close
     logStore.close
     nodeIdGen.flush()
     relIdGen.flush()
@@ -131,8 +143,8 @@ class GraphFacade(
     logStore.offer {
       (logs: MergedGraphChanges) =>
         //mem should be appended before creating logs
-        nodeStore.merge(logs.nodes)
-        relStore.merge(logs.rels)
+        //nodeStore.merge(logs.nodes)
+        //relStore.merge(logs.rels)
     }
   }
 
@@ -140,14 +152,14 @@ class GraphFacade(
   private def init(): Unit = {
     mergeLogs2Store()
     mem.clear()
-    mem.init(nodeStore.loadAll(), relStore.loadAll())
+    //mem.init(nodeStore.loadAll(), relStore.loadAll())
     thread.start()
   }
 
   def snapshot(): Unit = {
     //TODO: transaction safe
-    nodeStore.saveAll(mem.nodes())
-    relStore.saveAll(mem.rels())
+    //nodeStore.saveAll(mem.nodes())
+    //relStore.saveAll(mem.rels())
     logStore.clear()
   }
 }

@@ -1,14 +1,18 @@
 package cn.pandadb.kernel
 
-import cn.pandadb.kernel.store.{StoredNode, StoredRelation}
+import cn.pandadb.kernel.store.{NodeStore, RelationStore, StoredNode, StoredRelation}
 
-trait GraphRAM {
+trait GraphRAM extends NodeStore with RelationStore {
   type Id = Long
 
   def init(nodes: Iterator[StoredNode], rels: Iterator[StoredRelation]) = {
     nodes.foreach(addNode(_))
     rels.foreach(addRelation(_))
   }
+
+  def relsMatchOneOf(relTypes: Set[String]): Iterator[StoredRelation] = ???
+
+  def nodesMatchOneOf(labels: Set[String]): Iterator[StoredNode] = ???
 
   def addNode(t: StoredNode)
 

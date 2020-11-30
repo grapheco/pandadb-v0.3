@@ -7,11 +7,14 @@ import org.junit.{After, Assert, Before, Test}
 import org.rocksdb.{ReadOptions, RocksDB}
 import org.apache.commons.lang3.RandomStringUtils
 
+import scala.tools.nsc.profile.Profiler
+
 @Test
 class NodeIndexTest extends Assert {
 
 
   val path = "C:\\rocksDB"
+  val hddPath = "D:\\rocksDB"
 
   @Test
   def rocksDBTest = {
@@ -86,5 +89,7 @@ class NodeIndexTest extends Assert {
     println(ni.find(1003, 567.toLong).length)
     println(ni.find(1003, 999.toLong).length)
   }
+
+  Profiler
 
 }

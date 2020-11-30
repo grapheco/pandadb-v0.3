@@ -43,6 +43,5 @@ class DirectGraphRAMImpl extends GraphRAM {
   override def close(): Unit = {
     // todo
   }
-
 }
 

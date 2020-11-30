@@ -50,7 +50,7 @@ object KeyHandler {
     bytes
   }
 
-  def bytesToEdge(byteArr: Array[Byte]): Tuple5[Byte, Long, Int, Long, Long] = {
+  def bytesToEdge(byteArr: Array[Byte]): (Byte, Long, Int, Long, Long) = {
     (
       ByteUtils.getByte(byteArr, 0),
       ByteUtils.getLong(byteArr, 1),

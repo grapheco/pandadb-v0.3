@@ -1,7 +1,6 @@
 package cn.pandadb.kernel.direct
 
 import io.netty.buffer.{ByteBuf, Unpooled}
-
 import scala.collection.mutable.ArrayBuffer
 
 // 2GB = 4.29 billion nodeId
@@ -18,6 +17,7 @@ class BitNodeIdStore(maxCapacityBytes: Int = Unpooled.directBuffer().maxCapacity
   }
 
   def setNodeId(nodeId: Long): Unit = {
+    if (nodeId <= 0) throw new NodeIdNotIllegalException
     var directBuffer: ByteBuf = null
     var offset: Long = 0
 
@@ -28,23 +28,28 @@ class BitNodeIdStore(maxCapacityBytes: Int = Unpooled.directBuffer().maxCapacity
         mallocDirectBuffer()
       }
       directBuffer = directBufferArray.last
-      offset = ((nodeId - 1) - (directBufferArray.length - 1) * MAX_NUM_OF_A_BUFFER) >> 6 << 3
+      // >> 3: in which byte
+      offset = ((nodeId - 1) - (directBufferArray.length - 1) * MAX_NUM_OF_A_BUFFER) >> 3
     }
     else {
       directBuffer = directBufferArray(index.toInt)
-      offset = ((nodeId - 1) - index * MAX_NUM_OF_A_BUFFER) >> 6 << 3
+      offset = ((nodeId - 1) - index * MAX_NUM_OF_A_BUFFER) >> 3
     }
     bitUtil.setBit(directBuffer, offset.toInt, nodeId)
   }
 
   def exists(nodeId: Long): Boolean = {
     val position = getPosition(nodeId)
-    bitUtil.exists(position._1, position._2, nodeId)
+    if (position._1 == null){
+      false
+    }else{
+      bitUtil.exists(position._1, position._2, nodeId)
+    }
   }
 
   def reset(nodeId: Long): Unit = {
     val position = getPosition(nodeId)
-    bitUtil.reset(position._1, position._2, nodeId)
+    if (position._1 != null) bitUtil.reset(position._1, position._2, nodeId)
   }
 
   def getAllNodeId(): Iterator[Long] ={
@@ -54,10 +59,11 @@ class BitNodeIdStore(maxCapacityBytes: Int = Unpooled.directBuffer().maxCapacity
   def getPosition(nodeId: Long): (ByteBuf, Int) = {
     var directBuffer: ByteBuf = null
     var offset: Long = 0
-    val index = (nodeId - 1) / MAX_NUM_OF_A_BUFFER
-    directBuffer = directBufferArray(index.toInt)
-    offset = ((nodeId - 1) - index * MAX_NUM_OF_A_BUFFER) >> 6 << 3
-
+    val index = ((nodeId - 1) / MAX_NUM_OF_A_BUFFER).toInt
+    if (index + 1 <= directBufferArray.length){
+      directBuffer = directBufferArray(index)
+      offset = ((nodeId - 1) - index * MAX_NUM_OF_A_BUFFER) >> 3
+    }
     (directBuffer, offset.toInt)
   }
 }
@@ -87,7 +93,7 @@ class NodeIterator(store: BitNodeIdStore) extends Iterator[Long]{
           numCount += 1
           nodeId += 1
           val index = (nodeId - 1) / store.MAX_NUM_OF_A_BUFFER
-          val offset = ((nodeId - 1) - index * store.MAX_NUM_OF_A_BUFFER) >> 6 << 3
+          val offset = ((nodeId - 1) - index * store.MAX_NUM_OF_A_BUFFER) >> 3
           val find = util.exists(buffer, offset.toInt, nodeId)
           if (find){
             isFinish = true
@@ -112,25 +118,29 @@ class NodeIterator(store: BitNodeIdStore) extends Iterator[Long]{
 }
 
 class BitUtil {
-  // % 0X3F = % 64 (0~63)
+  // & 0X3F = % 64 (0~63)
+  // & 0X7 = % 8 (0~7)
   def setBit(directBuffer: ByteBuf, offset: Int, nodeId: Long): Unit = {
-    val value = directBuffer.getLong(offset)
-    val toSet = value | (1.toLong << (nodeId & 0X3F))
-    directBuffer.setLong(offset, toSet)
+    val value = directBuffer.getByte(offset)
+    val toSet = value | (1 << ((nodeId-1) & 0X7))
+    directBuffer.setByte(offset, toSet.toInt)
   }
 
   def exists(directBuffer: ByteBuf, offset: Int, nodeId: Long): Boolean = {
-    val value = directBuffer.getLong(offset)
-    (value & (1.toLong << (nodeId & 0X3F))) != 0
+    val value = directBuffer.getByte(offset)
+    (value & (1 << ((nodeId-1) & 0X7))) != 0
   }
 
   def reset(directBuffer: ByteBuf, offset: Int, nodeId: Long): Unit = {
-    val value = directBuffer.getLong(offset)
-    val toSet = value & (~(1.toLong << (nodeId & 0X3F)))
-    directBuffer.setLong(offset, toSet)
+    val value = directBuffer.getByte(offset)
+    val toSet = value & (~(1 << ((nodeId-1) & 0X7)))
+    directBuffer.setByte(offset, toSet)
   }
 }
 
 class NoNextNodeIdException extends Exception{
   override def getMessage: String = "next on empty iterator"
+}
+class NodeIdNotIllegalException extends Exception{
+  override def getMessage: String = "node id start with 1"
 }
