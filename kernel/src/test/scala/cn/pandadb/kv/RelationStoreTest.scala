@@ -1,6 +1,6 @@
 package cn.pandadb.kv
 
-import cn.pandadb.kernel.kv.{KeyHandler, RelationStore}
+import cn.pandadb.kernel.kv.{KeyHandler, RelationStore, RocksDBStorage}
 import org.junit.{After, Assert, Before, Test}
 
 class RelationStoreTest {
@@ -8,33 +8,30 @@ class RelationStoreTest {
   var keyIn: Array[Byte] = null
   var keyOut: Array[Byte] = null
 
-  val jsonString = "{\"et\":\"kanqiu_client_join\",\"vtm\":1435898329434,\"body\":{\"client\":\"866963024862254\",\"client_type\":\"android\",\"room\":\"NBA_HOME\",\"gid\":\"\",\"type\":\"\",\"roomid\":\"\"}," +
-    "\"time\":[{\"arrayKey\":\"arrayVal\"},{\"key2\":\"val2\"}]}"
-
   @Before
-  def init(): Unit ={
-    relationStore = new RelationStore
-    keyIn = KeyHandler.inEdgeKeyToBytes(1,1,1,1)
-    keyOut = KeyHandler.outEdgeKeyToBytes(1,1,1,1)
-    relationStore.putRelation(1,1,1,1, jsonString)
+  def init(): Unit = {
+    val db = RocksDBStorage.getDB()
+    relationStore = new RelationStore(db)
+    keyIn = KeyHandler.inEdgeKeyToBytes(1, 1, 1, 1)
+    keyOut = KeyHandler.outEdgeKeyToBytes(1, 1, 1, 1)
+    relationStore.putRelation(1, 1, 1, 1, Map[String, Object]("a" -> 1.asInstanceOf[Object], "b" -> "c".asInstanceOf[Object]))
   }
 
   @After
-  def close(): Unit ={
+  def close(): Unit = {
     relationStore.close()
   }
 
   @Test
-  def writeAndGetTest(): Unit ={
-   val resIn = relationStore.getRelationValueObject(keyIn).toString
-    val resOut = relationStore.getRelationValueObject(keyOut).toString()
+  def writeAndGetTest(): Unit = {
+    val resIn = relationStore.getRelationValueMap(keyIn).toString()
+    val resOut = relationStore.getRelationValueMap(keyOut).toString()
 
     Assert.assertEquals(resIn, resOut)
   }
 
   @Test
-  def isExistTest(): Unit ={
-    relationStore.putRelation(1,1,1,1, jsonString)
+  def isExistTest(): Unit = {
     val resIn = relationStore.relationIsExist(keyIn)
     val resOut = relationStore.relationIsExist(keyOut)
 
@@ -43,21 +40,18 @@ class RelationStoreTest {
   }
 
   @Test
-  def updateValue(): Unit ={
-    val jsonString2 = "{\"vtm\":1435898329434,\"body\":{\"client\":\"866963024862254\",\"client_type\":\"android\",\"room\":\"NBA_HOME\",\"gid\":\"\",\"type\":\"\",\"roomid\":\"\"}," +
-      "\"time\":[{\"arrayKey\":\"arrayVal\"},{\"key2\":\"val2\"}]}"
+  def updateValue(): Unit = {
+    relationStore.updateRelation(keyIn, Map[String, Object]("ccc"->222.asInstanceOf[Object]))
 
-    relationStore.updateRelation(keyIn, jsonString2)
+    val res1 = relationStore.getRelationValueMap(keyIn)
+    val res2 = relationStore.getRelationValueMap(keyOut)
 
-    val res1 = relationStore.getRelationValueObject(keyIn).toString()
-    val res2 = relationStore.getRelationValueObject(keyOut).toString()
-
-    Assert.assertEquals(false, res1.contains("et"))
-    Assert.assertEquals(false, res2.contains("et"))
+    Assert.assertEquals(Set("ccc"), res1.keySet)
+    Assert.assertEquals(Set("ccc"), res2.keySet)
   }
 
   @Test
-  def delete(): Unit ={
+  def delete(): Unit = {
     relationStore.deleteRelation(keyIn)
 
     val resIn = relationStore.relationIsExist(keyIn)
@@ -67,9 +61,19 @@ class RelationStoreTest {
   }
 
   @Test
-  def iterator(): Unit ={
+  def iterator(): Unit = {
     val iter = relationStore.getAllRelation(KeyHandler.KeyType.InEdge.id.toByte, 1)
 
     Assert.assertEquals(2, iter.toStream.length)
+  }
+
+  @Test
+  def mapTest(): Unit = {
+    val map = Map[String, Object]("a" -> 1.asInstanceOf[Object], "b" -> "c".asInstanceOf[Object])
+    val bt = relationStore.map2ArrayByte(map)
+    val getMap = relationStore.arrayByte2Map(bt)
+
+    Assert.assertEquals(1, getMap("a"))
+    Assert.assertEquals("c", getMap("b"))
   }
 }

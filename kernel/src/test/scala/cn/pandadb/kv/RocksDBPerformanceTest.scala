@@ -6,7 +6,7 @@ import cn.pandadb.kernel.kv.KeyHandler.KeyType
 import cn.pandadb.kernel.kv.{NodeStore, NodeValue, RelationStore, RocksDBStorage}
 import cn.pandadb.kernel.util
 import cn.pandadb.kernel.util.Profiler
-import org.junit.{Assert, Before, Test}
+import org.junit.{After, Assert, Before, Test}
 import org.rocksdb.RocksDB
 
 import scala.io.Source
@@ -39,6 +39,11 @@ class RocksDBPerformanceTest {
     relationStore = new RelationStore(db)
   }
 
+  @After
+  def close(): Unit ={
+    db.close()
+  }
+
   @Test
   def writeTest(): Unit ={
     val nodeIter = Source.fromFile(nodeFile, "utf-8").getLines()
@@ -69,11 +74,10 @@ class RocksDBPerformanceTest {
   @Test
   def readRelationTest(): Unit = {
     val time0 = new Date().getTime
-    val allRel = relationStore.getAllRelation(KeyType.InEdge.id.toByte, 3235527)
+    val iter = relationStore.getAllRelation(KeyType.InEdge.id.toByte, 3235527)
     val time1 = new Date().getTime
-    val iter = allRel._2
     var degree = 0
-    while (iter.isValid){
+    while (iter.hasNext){
       degree += 1
       iter.next()
     }
@@ -113,7 +117,7 @@ class RocksDBPerformanceTest {
       val rvArr: Array[String] = str.split("\t")
       val id1: Long = rvArr(0).toLong
       val id2: Long = rvArr(1).toLong
-      relationStore.writeRelation(id1, id2, 1, id2, "{relProp: 'test rel'}")
+      relationStore.putRelation(id1, id2, 1, id2, Map[String, Object]("relProp"->"test rel".asInstanceOf[Object]))
     })
   }
 }
