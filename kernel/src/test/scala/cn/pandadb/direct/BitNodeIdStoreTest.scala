@@ -10,7 +10,6 @@ class BitNodeIdStoreTest {
     store.setNodeId(1)
     store.setNodeId(64)
     store.setNodeId(65)
-
     Assert.assertEquals(true, store.exists(1))
     Assert.assertEquals(true, store.exists(64))
     Assert.assertEquals(true, store.exists(65))
@@ -26,8 +25,25 @@ class BitNodeIdStoreTest {
     Assert.assertEquals(2, store.directBufferArray.length)
 
   }
+
   @Test
-  def iterator(): Unit ={
+  def testBoundary(): Unit = {
+    val store = new BitNodeIdStore(1)
+    for (i <- 5 to 8) {
+      store.setNodeId(i)
+    }
+    val iter = store.getAllNodeId()
+
+    Assert.assertEquals(4, iter.toStream.length)
+    Assert.assertEquals(1, store.directBufferArray.length)
+
+    store.setNodeId(9)
+    Assert.assertEquals(2, store.directBufferArray.length)
+
+  }
+
+  @Test
+  def iterator(): Unit = {
     val store = new BitNodeIdStore(8)
     store.setNodeId(1)
     store.setNodeId(64)
@@ -35,4 +51,5 @@ class BitNodeIdStoreTest {
     val iter = store.getAllNodeId()
     Assert.assertEquals(3, iter.toStream.length)
   }
+}
 }
