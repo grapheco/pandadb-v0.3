@@ -56,7 +56,7 @@ class InEdgeRelationStore(db: RocksDB){
         val category =  ByteUtils.getInt(bytes, 13)
         val map = getRelationValueMap(from, to, label, category)
 
-        new StoredRelationWithProperty(0, from, to, label, map)
+        new StoredRelationWithProperty(0, from, to, label, map, category)
       }
       nextRelation
     }
@@ -116,7 +116,7 @@ class OutEdgeRelationStore(db: RocksDB){
         val category =  ByteUtils.getInt(bytes, 13)
         val map = getRelationValueMap(from, to, label, category)
 
-        new StoredRelationWithProperty(0, from, to, label, map)
+        new StoredRelationWithProperty(0, from, to, label, map, category)
       }
       nextRelation
     }
@@ -139,7 +139,9 @@ class RelationStore(db: RocksDB) {
   def getRelation(relationId: Long): StoredRelationWithProperty ={
     val keyBytes = KeyHandler.RelationKeyToBytes(relationId)
     val relation = ByteUtils.mapFromBytes(db.get(keyBytes))
-    new StoredRelationWithProperty(relationId, relation("from").asInstanceOf[Long], relation("to").asInstanceOf[Long], relation("labelId").asInstanceOf[Int], relation("prop").asInstanceOf[Map[String, Any]])
+    new StoredRelationWithProperty(relationId, relation("from").asInstanceOf[Long], relation("to").asInstanceOf[Long],
+      relation("labelId").asInstanceOf[Int], relation("prop").asInstanceOf[Map[String, Any]],
+      relation("category").asInstanceOf[Long])
   }
 
   def relationIsExist(relationId: Long): Boolean = {
@@ -157,13 +159,13 @@ class RelationStore(db: RocksDB) {
   }
 
   class GetAllRocksRelation(db: RocksDB) extends Iterator[StoredRelationWithProperty] {
-    val prefix = KeyHandler.RelationKeyPrefix()
+    val keyPrefix = KeyHandler.RelationKeyPrefix()
 
     val iter = db.newIterator()
-    iter.seek(prefix)
+    iter.seek(keyPrefix)
 
     override def hasNext: Boolean = {
-      iter.isValid
+      iter.isValid && iter.key().startsWith(keyPrefix)
     }
 
     override def next(): StoredRelationWithProperty = {
@@ -172,8 +174,12 @@ class RelationStore(db: RocksDB) {
         val relation = ByteUtils.mapFromBytes(db.get(keyBytes))
 
         val relationId = ByteUtils.getLong(keyBytes, 1)
-        new StoredRelationWithProperty(relationId, relation("from").asInstanceOf[Long], relation("to").asInstanceOf[Long], relation("labelId").asInstanceOf[Int], relation("prop").asInstanceOf[Map[String, Any]])
+        new StoredRelationWithProperty(relationId, relation("from").asInstanceOf[Long], relation("to").asInstanceOf[Long],
+          relation("labelId").asInstanceOf[Int], relation("prop").asInstanceOf[Map[String, Any]],
+          relation("category").asInstanceOf[Long]
+        )
       }
+      iter.next()
       nextRelation
     }
   }

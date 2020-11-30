@@ -52,4 +52,3 @@ class BitNodeIdStoreTest {
     Assert.assertEquals(3, iter.toStream.length)
   }
 }
-}

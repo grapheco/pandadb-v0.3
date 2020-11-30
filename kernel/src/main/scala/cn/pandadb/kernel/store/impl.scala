@@ -9,7 +9,7 @@ import scala.collection.mutable.ArrayBuffer
 
 object NodeSerializer extends ObjectSerializer[StoredNode] {
   override def readObject(buf: ByteBuf): StoredNode =
-    StoredNode(buf.readInt40(), (1 to buf.readableBytes()).map(_ => buf.readByte().toInt): _*)
+    StoredNode(buf.readInt40(), (1 to buf.readableBytes()).map(_ => buf.readByte().toInt).toArray)
 
   override def writeObject(buf: ByteBuf, t: StoredNode): Unit = {
     buf.writeInt40(t.id)
@@ -89,10 +89,12 @@ class LabelStore(labelFile: File, max: Int = Byte.MaxValue) {
   }
 }
 
-case class StoredNode(id: Long, labelIds: Array[Int]) {
+case class StoredNode(id: Long, labelIds: Array[Int]=null) {
 }
 
-class StoredNodeWithProperty(override val id: Long, override val labelIds: Array[Int], properties:Map[String,Any])
+class StoredNodeWithProperty(override val id: Long,
+                             override val labelIds: Array[Int],
+                             val properties:Map[String,Any])
   extends StoredNode(id, labelIds){
 }
 
@@ -100,16 +102,12 @@ case class StoredRelation(id: Long, from: Long, to: Long, labelId: Int) {
 }
 
 class StoredRelationWithProperty(override val id: Long,
-                                      override val from: Long,
-                                      override val to: Long,
-                                      override val labelId: Int,
-                                      properties:Map[String,Any])
-  extends StoredRelation(id, from, to, labelId){
-  val rId = id
-  val rFrom = from
-  val rTo = to
-  val rLabelId = labelId
-  val propMap = properties
+                                 override val from: Long,
+                                 override val to: Long,
+                                 override val labelId: Int,
+                                 val properties:Map[String,Any],
+                                 val category: Long)
+  extends StoredRelation(id, from, to, labelId) {
 }
 
 case class StoredLabel(key: String, value: Int) {

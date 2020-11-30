@@ -2,7 +2,8 @@ package cn.pandadb.kernel
 
 import cn.pandadb.kernel.store.{NodeStore, RelationStore, StoredNode, StoredRelation}
 
-trait GraphRAM extends NodeStore with RelationStore {
+//trait GraphRAM extends NodeStore with RelationStore {
+trait GraphRAM  {
   type Id = Long
 
   def init(nodes: Iterator[StoredNode], rels: Iterator[StoredRelation]) = {
