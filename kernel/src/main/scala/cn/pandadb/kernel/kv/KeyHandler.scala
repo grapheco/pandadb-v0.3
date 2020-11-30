@@ -32,7 +32,7 @@ object KeyHandler {
 
   def RelationKeyToBytes(relationId: Long): Array[Byte] = {
     val bytes = new Array[Byte](9)
-    ByteUtils.setByte(bytes, 0, KeyType.Node.id.toByte)
+    ByteUtils.setByte(bytes, 0, KeyType.Relation.id.toByte)
     ByteUtils.setLong(bytes, 1, relationId)
     bytes
   }
