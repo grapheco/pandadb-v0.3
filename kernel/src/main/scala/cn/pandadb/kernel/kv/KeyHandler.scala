@@ -14,7 +14,7 @@ object KeyHandler {
     val OutEdge = Value(3)
     val NodeLabelIndex = Value(4)
     val NodePropertyIndex = Value(5)
-
+    val Relation = Value(6)
   }
 
   def nodeKeyToBytes(nodeId: Long): Array[Byte] = {
@@ -27,6 +27,19 @@ object KeyHandler {
   def nodeKeyPrefix(): Array[Byte] = {
     val bytes = new Array[Byte](1)
     ByteUtils.setByte(bytes, 0, KeyType.Node.id.toByte)
+    bytes
+  }
+
+  def RelationKeyToBytes(relationId: Long): Array[Byte] = {
+    val bytes = new Array[Byte](9)
+    ByteUtils.setByte(bytes, 0, KeyType.Node.id.toByte)
+    ByteUtils.setLong(bytes, 1, relationId)
+    bytes
+  }
+
+  def RelationKeyPrefix(): Array[Byte] = {
+    val bytes = new Array[Byte](1)
+    ByteUtils.setByte(bytes, 0, KeyType.Relation.id.toByte)
     bytes
   }
 
