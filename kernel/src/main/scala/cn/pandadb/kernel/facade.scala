@@ -105,8 +105,8 @@ class GraphFacade(
 
   override def addNode(nodeProps: Map[String, Any], labels: String*): this.type = {
     val nodeId = nodeIdGen.nextId()
-    val labelIds = nodeLabelStore.ids(labels.toSet).toSeq
-    val node = StoredNode(nodeId, labelIds: _*)
+    val labelIds = nodeLabelStore.ids(labels.toSet).toArray
+    val node = StoredNode(nodeId, labelIds)
     //TODO: transaction safe
     logStore.append(CreateNode(node))
     props.insert(NodeId(nodeId), nodeProps)
