@@ -2,28 +2,50 @@ package cn.pandadb.kernel.kv
 
 import java.nio.ByteBuffer
 
+import org.rocksdb.RocksDB
 
 import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import scala.util.Random
 
-class NodeIndex(val dbPath:String = "C:\\rocksDB"){
-  //TODO  2.Index元数据怎么存,存哪些 3. 范围索引
+class NodeIndex(db: RocksDB){
   
   type IndexId   = Int
   type ValueType = Long
   type NodeId    = Long
 
-  val db = RocksDBStorage.getDB(dbPath)
   /**
    * Index MetaData
-   * indexId, label, prop
+   * ------------------------
+   *      key      |  value
+   * ------------------------
+   * label + props |  indexId
+   * ------------------------
    */
-  def writeIndexMeta(): Unit = {
-
+  def addIndexMeta(label: Int, props: Array[Int]): IndexId = {
+    val key = KeyHandler.nodePropertyIndexInfoToBytes(label, props)
+    val id  = db.get(key)
+    if (id == null || id.length == 0){
+      val new_id = Random.nextInt(100) // TODO generate
+      db.put(key, Array[Byte](new_id.toByte))
+      new_id
+    } else {
+      // exist
+      ByteUtils.getInt(id, 0)
+    }
   }
 
-  def deleteIndexMeta(IndexId: IndexId): Unit = {
+  def deleteIndexMeta(label: Int, props: Array[Int]): Unit = {
+    db.delete(KeyHandler.nodePropertyIndexInfoToBytes(label, props))
+  }
 
+  def getIndexId(label: Int, props: Array[Int]): IndexId = {
+    val v = db.get(KeyHandler.nodePropertyIndexInfoToBytes(label, props))
+    if (v == null || v.length < 4) {
+      -1
+    }else{
+      ByteUtils.getInt(v, 0)
+    }
   }
 
   /**
@@ -50,24 +72,28 @@ class NodeIndex(val dbPath:String = "C:\\rocksDB"){
   /**
    * Index Data
    */
-  def createIndex() = ???
-
-  def dropIndex(indexId: IndexId): Unit = {
-    deleteIndexMeta(indexId)
-    deleteIndexRows(indexId)
+  def createIndex(label: Int, props: Array[Int]) = {
+    addIndexMeta(label, props)
   }
 
-  def find(indexId: IndexId, value: ValueType): List[NodeId] = {
-    val result = ListBuffer.empty[Long]
+  def dropIndex(label: Int, props: Array[Int]): Unit = {
+    deleteIndexRows(getIndexId(label, props))
+    deleteIndexMeta(label, props)
+  }
+
+  def find(indexId: IndexId, value: ValueType): Iterator[NodeId] = {
     val iter = db.newIterator()
     val prefix = KeyHandler.nodePropertyIndexPrefixToBytes(indexId, value)
     iter.seek(prefix)
-    while(iter.isValid&&iter.key().startsWith(prefix)) {
-      result += ByteBuffer.wrap(iter.key()).getLong(16)
-      iter.next()
+    new Iterator[NodeId] (){
+      override def hasNext: Boolean = iter.isValid() && iter.key().startsWith(prefix)
+
+      override def next(): NodeId = {
+        val id = ByteBuffer.wrap(iter.key()).getLong(13)
+        iter.next()
+        id
+      }
     }
-    iter.close()
-    result.toList
   }
 
   // TODO 有问题

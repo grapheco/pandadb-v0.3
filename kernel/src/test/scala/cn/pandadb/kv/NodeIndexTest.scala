@@ -50,7 +50,8 @@ class NodeIndexTest extends Assert {
 
   @Test
   def indexBaseTest= {
-    val ni = new NodeIndex()
+    val db:RocksDB = RocksDBStorage.getDB(path+"/test2")
+    val ni = new NodeIndex(db)
     ni.deleteIndexRows(1001)
     ni.deleteIndexRows(1002)
     for (node <- 0 until 50) {
@@ -75,21 +76,36 @@ class NodeIndexTest extends Assert {
 
   @Test
   def indexBigTest= {
-    val ni = new NodeIndex(path+"/test3")
-//    for (node <- 0 until 1000000) {
-//      ni.writeIndexRow(1003, scala.util.Random.nextInt(1000).toLong, node.toLong)
-//    }
-    println(ni.find(1003, 100.toLong).length)
-    println(ni.find(1003, 14.toLong).length)
-    println(ni.find(1003, 55.toLong).length)
-    println(ni.find(1003, 77.toLong).length)
-    println(ni.find(1003, 88.toLong).length)
-    println(ni.find(1003, 123.toLong).length)
-    println(ni.find(1003, 845.toLong).length)
-    println(ni.find(1003, 567.toLong).length)
-    println(ni.find(1003, 999.toLong).length)
+    val db:RocksDB = RocksDBStorage.getDB(path+"/test3")
+    val ni = new NodeIndex(db)
+    val t0 = System.currentTimeMillis()
+    for (node <- 0 until 10000000) {
+      ni.writeIndexRow(1003, scala.util.Random.nextInt(1000).toLong, node.toLong)
+    }
+    val t1 = System.currentTimeMillis()
+    println("create time: ", t1-t0)
+    for (i <- 0 until 1000){
+      ni.find(1003, 100.toLong).toList.length
+    }
+    val t2 = System.currentTimeMillis()
+    println("search 1000 time: ", t2-t1)
   }
 
-  Profiler
+  @Test
+  def stringIndexTest = {
+    val db:RocksDB = RocksDBStorage.getDB(path+"/test4")
+    val ni = new NodeIndex(db)
+    val t0 = System.currentTimeMillis()
+    for (node <- 0 until 10000000) {
+      ni.writeIndexRow(1003, scala.util.Random.nextInt(1000).toLong, node.toLong)
+    }
+    val t1 = System.currentTimeMillis()
+    println("create time: ", t1-t0)
+    for (i <- 0 until 1000){
+      ni.find(1003, 100.toLong).toList.length
+    }
+    val t2 = System.currentTimeMillis()
+    println("search 1000 time: ", t2-t1)
+  }
 
 }

@@ -79,6 +79,18 @@ object KeyHandler {
     bytes
   }
 
+  def nodePropertyIndexInfoToBytes(labelId: Int, props:Array[Int]): Array[Byte] = {
+    val bytes = new Array[Byte](1+4+4*props.length)
+    ByteUtils.setByte(bytes, 0, KeyType.NodeLabelIndex.id.toByte)
+    ByteUtils.setInt(bytes, 1, labelId)
+    var index=5
+    props.foreach{
+      p=>ByteUtils.setInt(bytes,index,p)
+        index+=4
+    }
+    return bytes
+  }
+
   def nodePropertyIndexKeyToBytes(indexId:Int, indexValue: Long, nodeId: Long): Array[Byte] = {
     val bytes = new Array[Byte](21)
     ByteUtils.setByte(bytes, 0, KeyType.NodePropertyIndex.id.toByte)
