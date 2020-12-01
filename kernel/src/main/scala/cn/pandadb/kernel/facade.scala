@@ -8,8 +8,8 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship}
 
 class GraphFacade(
-                   //nodeStore: NodeStore,
-                   //relStore: RelationStore,
+                   nodeStore: NodeStore,
+                   relStore: RelationStore,
                    logStore: LogStore,
                    nodeLabelStore: LabelStore,
                    relLabelStore: LabelStore,
