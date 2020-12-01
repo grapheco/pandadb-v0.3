@@ -21,7 +21,7 @@ class NodeIndex(db: RocksDB){
    * label + props |  indexId
    * ------------------------
    */
-  def addIndexMeta(label: Int, props: Array[Int]): IndexId = {
+  private def addIndexMeta(label: Int, props: Array[Int]): IndexId = {
     val key = KeyHandler.nodePropertyIndexInfoToBytes(label, props)
     val id  = db.get(key)
     if (id == null || id.length == 0){
@@ -36,7 +36,7 @@ class NodeIndex(db: RocksDB){
     }
   }
 
-  def deleteIndexMeta(label: Int, props: Array[Int]): Unit = {
+  private def deleteIndexMeta(label: Int, props: Array[Int]): Unit = {
     db.delete(KeyHandler.nodePropertyIndexInfoToBytes(label, props))
   }
 
@@ -52,29 +52,29 @@ class NodeIndex(db: RocksDB){
   /**
    * Index Data
    */
-  def writeIndexRow(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: NodeId): Unit = {
+  private def writeIndexRow(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: NodeId): Unit = {
     db.put(KeyHandler.nodePropertyIndexKeyToBytes(indexId, value, length, nodeId), Array.emptyByteArray)
   }
 
-  def writeIndexRow(indexId: IndexId, value: Array[Byte], length: Byte, nodeId: NodeId): Unit = {
+  private def writeIndexRow(indexId: IndexId, value: Array[Byte], length: Byte, nodeId: NodeId): Unit = {
     db.put(KeyHandler.nodePropertyIndexKeyToBytes(indexId, value, Array[Byte](length), nodeId), Array.emptyByteArray)
   }
 
   // TODO
-  def writeIndexRowBatch(): Unit ={
+  private def writeIndexRowBatch(): Unit ={
 
   }
 
-  def deleteSingleIndexRow(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: NodeId): Unit = {
+  private def deleteSingleIndexRow(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: NodeId): Unit = {
     db.delete(KeyHandler.nodePropertyIndexKeyToBytes(indexId, value, length, nodeId))
   }
 
-  def deleteIndexRows(indexId: IndexId): Unit = {
+  private def deleteIndexRows(indexId: IndexId): Unit = {
     db.deleteRange(KeyHandler.nodePropertyIndexKeyToBytes(indexId, zeroByteArray(8), Array.emptyByteArray, 0.toLong),
       KeyHandler.nodePropertyIndexKeyToBytes(indexId, oneByteArray(8), Array.emptyByteArray, -1.toLong))
   }
 
-  def updateIndexRow(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: NodeId, newValue: Array[Byte]): Unit = {
+  private def updateIndexRow(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: NodeId, newValue: Array[Byte]): Unit = {
     deleteSingleIndexRow(indexId, value, length, nodeId)
     writeIndexRow(indexId, newValue, length, nodeId)
   }
@@ -86,11 +86,19 @@ class NodeIndex(db: RocksDB){
     addIndexMeta(label, props)
   }
 
-  def insertIndex(indexId: IndexId, data: Iterator[(Array[Byte],Array[Byte], Long)]): Unit ={
+  def insertIndexRecord(indexId: IndexId, data: Iterator[(Array[Byte],Array[Byte], Long)]): Unit ={
     while (data.hasNext){
       val d = data.next()
       writeIndexRow(indexId, d._1, d._2, d._3)
     }
+  }
+
+  def updateIndexRecord(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: NodeId, newValue: Array[Byte]): Unit = {
+    updateIndexRow(indexId, value, length, nodeId, newValue)
+  }
+
+  def deleteIndexRecord(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: NodeId): Unit ={
+    deleteSingleIndexRow(indexId, value, length, nodeId)
   }
 
   def dropIndex(label: Int, props: Array[Int]): Unit = {
@@ -120,11 +128,11 @@ class NodeIndex(db: RocksDB){
   def findRange(indexId: IndexId, value: Array[Byte], length: Array[Byte]): Unit = {
   }
 
-  def zeroByteArray(len: Int): Array[Byte] = {
+  private def zeroByteArray(len: Int): Array[Byte] = {
     new Array[Byte](len)
   }
 
-  def oneByteArray(len: Int): Array[Byte] = {
+  private def oneByteArray(len: Int): Array[Byte] = {
     val a = new Array[Byte](len)
     for (i <- a.indices)
       a(i) = -1

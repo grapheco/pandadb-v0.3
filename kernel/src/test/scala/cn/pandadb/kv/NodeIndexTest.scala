@@ -80,7 +80,7 @@ class NodeIndexTest extends Assert {
         val v = long2Bytes(l/10)
         (v, Array[Byte](v.length.toByte), l)
     }
-    ni.insertIndex(ni.getIndexId(LABEL, PROPS),data)
+    ni.insertIndexRecord(ni.getIndexId(LABEL, PROPS),data)
 
     // find 20-29
     Assert.assertArrayEquals(ni.find(indexId, long2Bytes(2)).toArray,
@@ -97,7 +97,7 @@ class NodeIndexTest extends Assert {
         val v = long2Bytes(l%10)
         (v, Array[Byte](v.length.toByte), l)
     }
-    ni.insertIndex(ni.getIndexId(LABEL2, PROPS2), data2)
+    ni.insertIndexRecord(ni.getIndexId(LABEL2, PROPS2), data2)
 
     //drop index1
     ni.dropIndex(LABEL, PROPS)
@@ -147,7 +147,7 @@ class NodeIndexTest extends Assert {
     val ni = new NodeIndex(db)
     // create and insert
     val indexId = ni.createIndex(5,Array[Int](5))
-    ni.insertIndex(indexId, data)
+    ni.insertIndexRecord(indexId, data)
     // search
     Assert.assertArrayEquals(Array[Long](0, 3), ni.find(indexId, "张三".getBytes()).toArray)
     Assert.assertArrayEquals(Array[Long](4), ni.find(indexId, "张三丰".getBytes()).toArray)
