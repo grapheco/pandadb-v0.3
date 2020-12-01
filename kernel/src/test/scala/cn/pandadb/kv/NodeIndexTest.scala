@@ -2,12 +2,13 @@ package cn.pandadb.kv
 
 import java.nio.ByteBuffer
 
-import cn.pandadb.kernel.kv.{NodeIndex, RocksDBStorage}
+import cn.pandadb.kernel.kv.{ByteUtils, NodeIndex, RocksDBStorage}
 import org.junit.{After, Assert, Before, Test}
 import org.rocksdb.{ReadOptions, RocksDB}
 import org.apache.commons.lang3.RandomStringUtils
 
 import scala.tools.nsc.profile.Profiler
+import scala.util.Random
 
 @Test
 class NodeIndexTest extends Assert {
@@ -48,64 +49,111 @@ class NodeIndexTest extends Assert {
     db.close()
   }
 
+  def long2Bytes(long: Long)={
+    val b = new Array[Byte](8)
+    ByteUtils.setLong(b,0,long)
+    b
+  }
+
   @Test
   def indexBaseTest= {
     val db:RocksDB = RocksDBStorage.getDB(path+"/test2")
+    val LABEL = 1
+    val PROPS = Array[Int](1)
     val ni = new NodeIndex(db)
-    ni.deleteIndexRows(1001)
-    ni.deleteIndexRows(1002)
-    for (node <- 0 until 50) {
-      // create factors index
-      for (i <- 1 until 10) {
-        if (node%i==0)
-          ni.writeIndexRow(1001, i.toLong, node.toLong)
-      }
-      // create ten index
-      ni.writeIndexRow(1002, (node/10).toLong, node.toLong)
-    }
 
-    // find 0,7,14,21...
-    Assert.assertArrayEquals(ni.find(1001, 7.toLong).toArray,
-      Array[Long](0,7,14,21,28,35,42,49)
+    // drop index
+    ni.dropIndex(LABEL, PROPS)
+
+    // create index
+    val indexId = ni.createIndex(LABEL, PROPS)
+    val indexId2 = ni.createIndex(LABEL, PROPS)
+    assert(indexId == indexId2)
+
+    // get Index id
+    val indexId3 = ni.getIndexId(LABEL, PROPS)
+    assert(indexId == indexId3)
+
+    // insert index
+    val data = (0 until 50).iterator.map(_.toLong).map{
+      l=>
+        val v = long2Bytes(l/10)
+        (v, Array[Byte](v.length.toByte), l)
+    }
+    ni.insertIndex(ni.getIndexId(LABEL, PROPS),data)
+
+    // find 20-29
+    Assert.assertArrayEquals(ni.find(indexId, long2Bytes(2)).toArray,
+      Array[Long](20,21,22,23,24,25,26,27,28,29)
     )
-    // find 30-39
-    Assert.assertArrayEquals(ni.find(1002, 3.toLong).toArray,
-      Array[Long](30,31,32,33,34,35,36,37,38,39)
-    )
+
+    // create and index2
+    val LABEL2 = 2
+    val PROPS2 = Array[Int](2)
+    val indexId4 = ni.createIndex(LABEL2, PROPS2)
+    assert(indexId4 == ni.getIndexId(LABEL2, PROPS2))
+    val data2 = (0 until 50).iterator.map(_.toLong).map{
+      l=>
+        val v = long2Bytes(l%10)
+        (v, Array[Byte](v.length.toByte), l)
+    }
+    ni.insertIndex(ni.getIndexId(LABEL2, PROPS2), data2)
+
+    //drop index1
+    ni.dropIndex(LABEL, PROPS)
+
+    // find 20-29 by index 1
+    assert(ni.find(indexId, long2Bytes(2)).toArray.length==0)
+
+    // find 1,11,21,31,41 by index 2
+    Assert.assertArrayEquals(ni.find(ni.getIndexId(LABEL2, PROPS2), long2Bytes(1)).toArray,
+      Array[Long](1,11,21,31,41))
   }
 
   @Test
   def indexBigTest= {
-    val db:RocksDB = RocksDBStorage.getDB(path+"/test3")
-    val ni = new NodeIndex(db)
-    val t0 = System.currentTimeMillis()
-    for (node <- 0 until 10000000) {
-      ni.writeIndexRow(1003, scala.util.Random.nextInt(1000).toLong, node.toLong)
-    }
-    val t1 = System.currentTimeMillis()
-    println("create time: ", t1-t0)
-    for (i <- 0 until 1000){
-      ni.find(1003, 100.toLong).toList.length
-    }
-    val t2 = System.currentTimeMillis()
-    println("search 1000 time: ", t2-t1)
+//    val db:RocksDB = RocksDBStorage.getDB(path+"/test3")
+//    val ni = new NodeIndex(db)
+//    val t0 = System.currentTimeMillis()
+//    for (node <- 0 until 10000000) {
+//      ni.writeIndexRow(1003, long2Bytes(scala.util.Random.nextInt(1000).toLong), node.toLong)
+//    }
+//    val t1 = System.currentTimeMillis()
+//    println("create time: ", t1-t0)//47624
+//    for (i <- 0 until 1000){
+//      ni.find(1003, long2Bytes(100.toLong)).toList.length
+//    }
+//    val t2 = System.currentTimeMillis()
+//    println("search 1000 time: ", t2-t1)//2774
   }
 
   @Test
   def stringIndexTest = {
-    val db:RocksDB = RocksDBStorage.getDB(path+"/test4")
+    val data = Map[Int,String](
+      0->"张三",
+      1->"李四",
+      2->"王五",
+      3->"张三",
+      4->"张三丰",
+      5->"李四光",
+      6->"王五",
+      7->"Scala",
+      8->"PandaDB",
+      9->"PandaDB is a Intelligent Graph Database.").map{
+      v=> val value = v._2.getBytes()
+        (value, Array[Byte](value.length.toByte), v._1.toLong)
+    }.iterator
+    val db:RocksDB = RocksDBStorage.getDB(path+"/test5")
     val ni = new NodeIndex(db)
-    val t0 = System.currentTimeMillis()
-    for (node <- 0 until 10000000) {
-      ni.writeIndexRow(1003, scala.util.Random.nextInt(1000).toLong, node.toLong)
-    }
-    val t1 = System.currentTimeMillis()
-    println("create time: ", t1-t0)
-    for (i <- 0 until 1000){
-      ni.find(1003, 100.toLong).toList.length
-    }
-    val t2 = System.currentTimeMillis()
-    println("search 1000 time: ", t2-t1)
+    // create and insert
+    val indexId = ni.createIndex(5,Array[Int](5))
+    ni.insertIndex(indexId, data)
+    // search
+    Assert.assertArrayEquals(Array[Long](0, 3), ni.find(indexId, "张三".getBytes()).toArray)
+    Assert.assertArrayEquals(Array[Long](4), ni.find(indexId, "张三丰".getBytes()).toArray)
+    Assert.assertArrayEquals(Array[Long](8), ni.find(indexId, "PandaDB".getBytes()).toArray)
+    Assert.assertArrayEquals(Array[Long](9), ni.find(indexId, "PandaDB is a Intelligent Graph Database.".getBytes()).toArray)
+
   }
 
 }

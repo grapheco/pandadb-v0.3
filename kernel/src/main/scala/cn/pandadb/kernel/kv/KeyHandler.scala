@@ -108,23 +108,31 @@ object KeyHandler {
       p=>ByteUtils.setInt(bytes,index,p)
         index+=4
     }
-    return bytes
-  }
-
-  def nodePropertyIndexKeyToBytes(indexId:Int, indexValue: Long, nodeId: Long): Array[Byte] = {
-    val bytes = new Array[Byte](21)
-    ByteUtils.setByte(bytes, 0, KeyType.NodePropertyIndex.id.toByte)
-    ByteUtils.setLong(bytes, 1, indexId)
-    ByteUtils.setLong(bytes, 5, indexValue)
-    ByteUtils.setLong(bytes, 13, nodeId)
     bytes
   }
 
-  def nodePropertyIndexPrefixToBytes(indexId:Int, indexValue: Long): Array[Byte] = {
-    val bytes = new Array[Byte](13)
+  def nodePropertyIndexKeyToBytes(indexId:Int, value: Array[Byte], length: Array[Byte], nodeId: Long): Array[Byte] = {
+    val bytesLength = 13+value.length+length.length
+    val bytes = new Array[Byte](bytesLength)
     ByteUtils.setByte(bytes, 0, KeyType.NodePropertyIndex.id.toByte)
-    ByteUtils.setLong(bytes, 1, indexId)
-    ByteUtils.setLong(bytes, 5, indexValue)
+    ByteUtils.setInt(bytes, 1, indexId)
+    for (i <- value.indices)
+      bytes(5+i) = value(i)
+    for (i <- length.indices)
+      bytes(5+value.length+i) = length(i)
+    ByteUtils.setLong(bytes, bytesLength-8, nodeId)
+    bytes
+  }
+
+  def nodePropertyIndexPrefixToBytes(indexId:Int, value: Array[Byte], length: Array[Byte]): Array[Byte] = {
+    val bytesLength = 5+value.length+length.length
+    val bytes = new Array[Byte](bytesLength)
+    ByteUtils.setByte(bytes, 0, KeyType.NodePropertyIndex.id.toByte)
+    ByteUtils.setInt(bytes, 1, indexId)
+    for (i <- value.indices)
+      bytes(5+i) = value(i)
+    for (i <- length.indices)
+      bytes(5+value.length+i) = length(i)
     bytes
   }
 

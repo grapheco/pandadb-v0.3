@@ -11,7 +11,6 @@ import scala.util.Random
 class NodeIndex(db: RocksDB){
   
   type IndexId   = Int
-  type ValueType = Long
   type NodeId    = Long
 
   /**
@@ -27,7 +26,9 @@ class NodeIndex(db: RocksDB){
     val id  = db.get(key)
     if (id == null || id.length == 0){
       val new_id = Random.nextInt(100) // TODO generate
-      db.put(key, Array[Byte](new_id.toByte))
+      val id_byte = new Array[Byte](4)
+      ByteUtils.setInt(id_byte, 0, new_id)
+      db.put(key,id_byte)
       new_id
     } else {
       // exist
@@ -51,29 +52,45 @@ class NodeIndex(db: RocksDB){
   /**
    * Index Data
    */
-  def writeIndexRow(indexId: IndexId, value: ValueType, nodeId: NodeId): Unit = {
-    db.put(KeyHandler.nodePropertyIndexKeyToBytes(indexId, value, nodeId), Array.emptyByteArray) // TODO batch
+  def writeIndexRow(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: NodeId): Unit = {
+    db.put(KeyHandler.nodePropertyIndexKeyToBytes(indexId, value, length, nodeId), Array.emptyByteArray)
   }
 
-  def deleteSingleIndexRow(indexId: IndexId, value: ValueType, nodeId: NodeId): Unit = {
-    db.delete(KeyHandler.nodePropertyIndexKeyToBytes(indexId, value, nodeId))
+  def writeIndexRow(indexId: IndexId, value: Array[Byte], length: Byte, nodeId: NodeId): Unit = {
+    db.put(KeyHandler.nodePropertyIndexKeyToBytes(indexId, value, Array[Byte](length), nodeId), Array.emptyByteArray)
+  }
+
+  // TODO
+  def writeIndexRowBatch(): Unit ={
+
+  }
+
+  def deleteSingleIndexRow(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: NodeId): Unit = {
+    db.delete(KeyHandler.nodePropertyIndexKeyToBytes(indexId, value, length, nodeId))
   }
 
   def deleteIndexRows(indexId: IndexId): Unit = {
-    db.deleteRange(KeyHandler.nodePropertyIndexKeyToBytes(indexId, 0.toLong, 0.toLong),
-      KeyHandler.nodePropertyIndexKeyToBytes(indexId, -1.toLong, -1.toLong))
+    db.deleteRange(KeyHandler.nodePropertyIndexKeyToBytes(indexId, zeroByteArray(8), Array.emptyByteArray, 0.toLong),
+      KeyHandler.nodePropertyIndexKeyToBytes(indexId, oneByteArray(8), Array.emptyByteArray, -1.toLong))
   }
 
-  def updateIndexRow(indexId: IndexId, value: ValueType, nodeId: NodeId, newValue: ValueType): Unit = {
-    deleteSingleIndexRow(indexId, value, nodeId)
-    writeIndexRow(indexId, newValue, nodeId)
+  def updateIndexRow(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: NodeId, newValue: Array[Byte]): Unit = {
+    deleteSingleIndexRow(indexId, value, length, nodeId)
+    writeIndexRow(indexId, newValue, length, nodeId)
   }
 
   /**
-   * Index Data
+   * Index
    */
-  def createIndex(label: Int, props: Array[Int]) = {
+  def createIndex(label: Int, props: Array[Int]): IndexId = {
     addIndexMeta(label, props)
+  }
+
+  def insertIndex(indexId: IndexId, data: Iterator[(Array[Byte],Array[Byte], Long)]): Unit ={
+    while (data.hasNext){
+      val d = data.next()
+      writeIndexRow(indexId, d._1, d._2, d._3)
+    }
   }
 
   def dropIndex(label: Int, props: Array[Int]): Unit = {
@@ -81,23 +98,36 @@ class NodeIndex(db: RocksDB){
     deleteIndexMeta(label, props)
   }
 
-  def find(indexId: IndexId, value: ValueType): Iterator[NodeId] = {
+  def find(indexId: IndexId, value: Array[Byte], length: Array[Byte]): Iterator[NodeId] = {
     val iter = db.newIterator()
-    val prefix = KeyHandler.nodePropertyIndexPrefixToBytes(indexId, value)
+    val prefix = KeyHandler.nodePropertyIndexPrefixToBytes(indexId, value, length)
     iter.seek(prefix)
     new Iterator[NodeId] (){
-      override def hasNext: Boolean = iter.isValid() && iter.key().startsWith(prefix)
+      override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
 
       override def next(): NodeId = {
-        val id = ByteBuffer.wrap(iter.key()).getLong(13)
+        val key = iter.key()
+        val id = ByteBuffer.wrap(key).getLong(key.length-8)
         iter.next()
         id
       }
     }
   }
 
+  def find(indexId: IndexId, value: Array[Byte]): Iterator[NodeId] = find(indexId, value, Array[Byte](value.length.toByte))
+
   // TODO 有问题
-  def findRange(indexId: IndexId, valueFrom: ValueType, valueTo: ValueType): Unit = {
+  def findRange(indexId: IndexId, value: Array[Byte], length: Array[Byte]): Unit = {
   }
 
+  def zeroByteArray(len: Int): Array[Byte] = {
+    new Array[Byte](len)
+  }
+
+  def oneByteArray(len: Int): Array[Byte] = {
+    val a = new Array[Byte](len)
+    for (i <- a.indices)
+      a(i) = -1
+    a
+  }
 }
