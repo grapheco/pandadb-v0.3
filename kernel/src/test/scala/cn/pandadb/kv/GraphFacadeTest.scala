@@ -149,17 +149,21 @@ class GraphFacadeTest {
 
 
   @Test
-  def testNode(): Unit = {
+  def testAddNode(): Unit = {
     graphFacade.addNode(Map("Name" -> "google"), "Person1")
     Assert.assertEquals(1, graphStore.allNodes().size)
-
-    val node = graphStore.allNodes().next().asInstanceOf[StoredNodeWithProperty]
-
-    println(node.id, node.labelIds, node.properties)
-
-
     graphFacade.close()
+  }
 
+  @Test
+  def testNodeFilterByLabel(): Unit = {
+    graphFacade.addNode(Map("Name" -> "google"), "company")
+    graphFacade.addNode(Map("Name" -> "fb"), "company", "person")
+    graphFacade.addNode(Map("Name" -> "microsoft"), "person")
+
+    var res = graphFacade.cypher("match (n:person) return n")
+    res.show
+    Assert.assertEquals(2, res.records.size)
   }
 
 }

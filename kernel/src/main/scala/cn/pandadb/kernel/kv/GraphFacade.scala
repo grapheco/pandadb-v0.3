@@ -1,7 +1,9 @@
 package cn.pandadb.kernel.kv
 
+import scala.collection.mutable
+
 import cn.pandadb.kernel.GraphService
-import cn.pandadb.kernel.store.{MergedGraphChanges, _}
+import cn.pandadb.kernel.store._
 import org.apache.logging.log4j.scala.Logging
 import org.opencypher.lynx.{LynxSession, PropertyGraphScan}
 import org.opencypher.okapi.api.graph.CypherResult
@@ -53,7 +55,6 @@ class GraphFacade(
 
         override def copy(id: Long, labels: Set[String], properties: CypherValue.CypherMap): this.type = ???
 
-//        override def properties: CypherValue.CypherMap = CypherMap(props.lookup(NodeId(node.id)).get.toSeq: _*)
         override def properties: CypherMap = {
           var props: Map[String, Any] = null
           if (node.isInstanceOf[StoredNodeWithProperty]) {
@@ -72,8 +73,25 @@ class GraphFacade(
       graphStore.nodeAt(id)
     )
 
-//    override def allNodes(labels: Set[String], exactLabelMatch: Boolean): Iterable[Node[Id]] = {
-//    }
+    override def allNodes(labels: Set[String], exactLabelMatch: Boolean): Iterable[Node[Id]] = {
+      var nodes: Set[Id] = null
+      val labelIds = relLabelStore.ids(labels)
+      labelIds.foreach(labelId => {
+        if (nodes == null) {
+          nodes = graphStore.nodes(labelId).toSet[Id]
+        }
+        else {
+          if(exactLabelMatch) {  // intersect
+            nodes = nodes & graphStore.nodes(labelId).toSet[Id]
+          }
+          else {  // union
+            nodes = nodes ++ graphStore.nodes(labelId).toSet[Id]
+          }
+        }
+      })
+      println("======",nodes)
+      nodes.map(nodeId => mapNode(graphStore.nodeAt(nodeId)))
+    }
 
 
     override def allNodes(): Iterable[Node[Id]] = {

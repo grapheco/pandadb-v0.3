@@ -7,6 +7,7 @@ class RocksDBGraphImpl(dbPath: String) {
   private val rocksDB = RocksDBStorage.getDB(dbPath)
   private val nodeStore = new NodeStore(rocksDB)
   private val relationStore = new RelationStore(rocksDB)
+  private val nodeLabelIndex = new NodeLabelIndex(rocksDB)
 
   def clear(): Unit = {
   }
@@ -38,6 +39,10 @@ class RocksDBGraphImpl(dbPath: String) {
 
   def nodes(): Iterator[StoredNode] = {
     nodeStore.all()
+  }
+
+  def nodes(labelId: Int): Iterator[Long] = {
+    nodeLabelIndex.getNodes(labelId)
   }
 
   def allNodes(): Iterator[StoredNode] = {

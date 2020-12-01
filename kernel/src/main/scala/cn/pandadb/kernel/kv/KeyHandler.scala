@@ -9,11 +9,11 @@ import collection.JavaConverters._
 object KeyHandler {
   object KeyType extends Enumeration {
     type KeyType = Value
-    val Node = Value(1)
-    val InEdge = Value(2)
-    val OutEdge = Value(3)
-    val NodeLabelIndex = Value(4)
-    val NodePropertyIndex = Value(5)
+    val Node = Value(1)     // [type(1Byte),nodeId(8Bytes)] -> nodeValue(id, labels, properties)
+    val InEdge = Value(2)   // [type(1Byte),fromNodeId(8Bytes),relationLabel(4Bytes),category(8Bytes),toNodeId(8Bytes)] -> relationValue(properties)
+    val OutEdge = Value(3)  // [type(1Byte),toNodeId(8Bytes),relationLabel(4Bytes),category(8Bytes),fromNodeId(8Bytes)] -> relationValue(properties)
+    val NodeLabelIndex = Value(4)     // [type(1Byte),labelId(4Bytes),nodeId(8Bytes)] -> null
+    val NodePropertyIndex = Value(5)  // [type(1Bytes), indexId()]
     val Relation = Value(6)
   }
 
@@ -89,6 +89,13 @@ object KeyHandler {
     ByteUtils.setByte(bytes, 0, KeyType.NodeLabelIndex.id.toByte)
     ByteUtils.setInt(bytes, 1, labelId)
     ByteUtils.setLong(bytes, 5, nodeId)
+    bytes
+  }
+
+  def nodeLabelIndexKeyPrefixToBytes(labelId: Int): Array[Byte] = {
+    val bytes = new Array[Byte](5)
+    ByteUtils.setByte(bytes, 0, KeyType.NodeLabelIndex.id.toByte)
+    ByteUtils.setInt(bytes, 1, labelId)
     bytes
   }
 
