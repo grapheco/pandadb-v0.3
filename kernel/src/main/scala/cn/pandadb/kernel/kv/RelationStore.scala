@@ -11,12 +11,12 @@ class InEdgeRelationIndexStore(db: RocksDB) {
    * ------------------------
    * srcId + EdgeType |  DestId
    * ------------------------
-   * srcId + Category | DestId  necessary?
+   * srcId + Category | DestId
    * ------------------------
    */
   def setIndex(fromNode: Long, edgeType: Int, category: Long, toNode: Long, relationId: Long): Unit = {
     val keyBytes = KeyHandler.inEdgeKeyToBytes(fromNode, toNode, edgeType, category)
-    db.put(keyBytes, KeyHandler.relationIdToBytes(relationId))
+    db.put(keyBytes, ByteUtils.longToBytes(relationId))
   }
 
   def deleteIndex(fromNode: Long, edgeType: Int, category: Long, toNode: Long): Unit = {
@@ -25,16 +25,23 @@ class InEdgeRelationIndexStore(db: RocksDB) {
   }
 
   //////
-  def getToNodesByFromNodeAndEdgeType(fromNode: Long, edgeType: Int): Iterator[Long] = {
-    new GetToNodesByFromNodeAndEdgeType(fromNode, edgeType)
+  type SrcId = Long
+  type CategoryId = Long
+  type EdgeType = Int
+
+  def getAllToNodes(fromNode: SrcId, edgeType: EdgeType): Iterator[Long] = {
+    new ToNodesIterator(fromNode, edgeType)
+  }
+  def getAllToNodes(fromNode: SrcId, category: CategoryId): Iterator[Long] ={
+    new ToNodesIterator2(fromNode, category)
   }
 
-  class GetToNodesByFromNodeAndEdgeType(fromNode: Long, edgeType: Int) extends Iterator[Long] {
-    val prefix = KeyHandler.relationNodeIdAndEdgeTypeIndexToBytes(fromNode, edgeType)
+  class ToNodesIterator(fromNode: SrcId, edgeType: EdgeType) extends Iterator[Long] {
+    val prefix = KeyHandler.relationIndexPrefixKeyToBytes(KeyHandler.KeyType.InEdge.id.toByte, fromNode, edgeType)
     val iter = db.newIterator()
-    iter.seek(KeyHandler.inEdgeToBytes())
+    iter.seek(prefix)
 
-    override def hasNext: Boolean = iter.isValid && iter.key().slice(1, 13).sameElements(prefix)
+    override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
 
     override def next(): Long = {
       val toNodeId = ByteUtils.getLong(iter.key(), 21)
@@ -42,7 +49,42 @@ class InEdgeRelationIndexStore(db: RocksDB) {
       toNodeId
     }
   }
+  class ToNodesIterator2(fromNode: SrcId, category: CategoryId) extends Iterator[Long] {
+    val prefix = KeyHandler.relationIndexPrefixKeyToBytes(KeyHandler.KeyType.InEdge.id.toByte, fromNode)
+    val iter = db.newIterator()
+    iter.seek(prefix)
+    var toNodeId: Long = _
 
+    override def hasNext: Boolean = {
+      var isFinish = false
+      var isFound = false
+      if (iter.isValid && iter.key().startsWith(prefix)){
+        while (!isFinish){
+          if (ByteUtils.getLong(iter.key(),13) == category) {
+            isFinish = true
+            isFound = true
+            toNodeId = ByteUtils.getLong(iter.key(),21)
+            iter.next()
+          }
+          else {
+            if (iter.isValid && iter.key().startsWith(prefix)){
+              iter.next()
+            }
+            else{
+              isFinish = true
+              isFound = false
+            }
+          }
+        }
+        isFound
+      }
+      else false
+    }
+
+    override def next(): Long = {
+      toNodeId
+    }
+  }
   //////
 
 }
@@ -51,7 +93,7 @@ class OutEdgeRelationIndexStore(db: RocksDB) {
 
   def setIndex(fromNode: Long, edgeType: Int, category: Long, toNode: Long, relationId: Long): Unit = {
     val keyBytes = KeyHandler.outEdgeKeyToBytes(fromNode, toNode, edgeType, category)
-    db.put(keyBytes, KeyHandler.relationIdToBytes(relationId))
+    db.put(keyBytes, ByteUtils.longToBytes(relationId))
   }
 
   def deleteIndex(fromNode: Long, edgeType: Int, category: Long, toNode: Long): Unit = {
@@ -60,24 +102,68 @@ class OutEdgeRelationIndexStore(db: RocksDB) {
   }
 
   //////
-  def getFromNodesByToNodeAndEdgeType(toNode: Long, edgeType: Int): Iterator[Long] = {
-    new GetFromNodesByToNodeAndEdgeType(toNode, edgeType)
+  type SrcId = Long
+  type CategoryId = Long
+  type EdgeType = Int
+
+  def getAllFromNodes(toNode: SrcId, edgeType: EdgeType): Iterator[Long] = {
+    new fromNodesIterator(toNode, edgeType)
+  }
+  def getAllFromNodes(toNode: SrcId, category: CategoryId): Iterator[Long] ={
+    new fromNodesIterator2(toNode, category)
   }
 
-  class GetFromNodesByToNodeAndEdgeType(toNode: Long, edgeType: Int) extends Iterator[Long] {
-    val prefix = KeyHandler.relationNodeIdAndEdgeTypeIndexToBytes(toNode, edgeType)
+  class fromNodesIterator(toNode: SrcId, edgeType: EdgeType) extends Iterator[Long] {
+    val prefix = KeyHandler.relationIndexPrefixKeyToBytes(KeyHandler.KeyType.OutEdge.id.toByte, toNode, edgeType)
     val iter = db.newIterator()
-    iter.seek(KeyHandler.inEdgeToBytes())
+    iter.seek(prefix)
 
-    override def hasNext: Boolean = iter.isValid && iter.key().slice(1, 13).sameElements(prefix)
+    override def hasNext: Boolean = {
+      iter.isValid && iter.key().startsWith(prefix)
+    }
 
     override def next(): Long = {
-      val fromNode = ByteUtils.getLong(iter.key(), 21)
+      val toNodeId = ByteUtils.getLong(iter.key(), 21)
       iter.next()
-      fromNode
+      toNodeId
     }
   }
+  class fromNodesIterator2(toNode: SrcId, category: CategoryId) extends Iterator[Long] {
+    val prefix = KeyHandler.relationIndexPrefixKeyToBytes(KeyHandler.KeyType.OutEdge.id.toByte, toNode)
+    val iter = db.newIterator()
+    iter.seek(prefix)
+    var fromNodeId: Long = _
 
+    override def hasNext: Boolean = {
+      var isFinish = false
+      var isFound = false
+      if (iter.isValid && iter.key().startsWith(prefix)){
+        while (!isFinish){
+          if (ByteUtils.getLong(iter.key(),13) == category) {
+            isFinish = true
+            isFound = true
+            fromNodeId = ByteUtils.getLong(iter.key(),21)
+            iter.next()
+          }
+          else {
+            if (iter.isValid && iter.key().startsWith(prefix)){
+              iter.next()
+            }
+            else{
+              isFinish = true
+              isFound = false
+            }
+          }
+        }
+        isFound
+      }
+      else false
+    }
+
+    override def next(): Long = {
+      fromNodeId
+    }
+  }
   //////
 
 }

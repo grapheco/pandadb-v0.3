@@ -65,37 +65,6 @@ class RelationStoreTest {
   @Test
   def iterator(): Unit = {
     val iter = relationStore.getAll()
-    while (iter.hasNext){
-      println(iter.next().properties)
-    }
+    Assert.assertEquals(3, iter.toStream.length)
   }
-
-  @Test
-  def testIndex(): Unit ={
-    val keyBytes1 = KeyHandler.inEdgeKeyToBytes(1,2,3,4)
-    val keyBytes2 = KeyHandler.inEdgeKeyToBytes(1,3,3,5)
-    val keyBytes3 = KeyHandler.inEdgeKeyToBytes(1,4,3,6)
-
-    val value1 = KeyHandler.relationIdToBytes(1)
-    val value2 = KeyHandler.relationIdToBytes(2)
-    val value3 = KeyHandler.relationIdToBytes(3)
-
-    db.put(keyBytes1, value1)
-    db.put(keyBytes2, value2)
-    db.put(keyBytes3, value3)
-
-    val iter = db.newIterator()
-    val prefix = KeyHandler.relationNodeIdAndEdgeTypeIndexToBytes(1, 3)
-    val array = Array[Byte](1)
-    array(0) = KeyHandler.KeyType.InEdge.id.toByte
-    iter.seek(array)
-    val res = iter.key().slice(1, 14)
-
-    while (iter.isValid && iter.key().slice(1, 13).sameElements(prefix)){
-      val res = ByteUtils.getLong(db.get(iter.key()), 0)
-      println(res)
-      iter.next()
-    }
-  }
-
 }
