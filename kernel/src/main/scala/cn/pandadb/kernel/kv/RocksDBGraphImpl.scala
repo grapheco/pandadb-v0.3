@@ -8,6 +8,7 @@ class RocksDBGraphImpl(dbPath: String) {
   private val nodeStore = new NodeStore(rocksDB)
   private val relationStore = new RelationStore(rocksDB)
   private val nodeLabelIndex = new NodeLabelIndex(rocksDB)
+  private val relationLabelIndex = new RelationLabelIndex(rocksDB)
 
   def clear(): Unit = {
   }
@@ -17,31 +18,33 @@ class RocksDBGraphImpl(dbPath: String) {
   }
 
   // node operations
-  def addNode(t: StoredNode): Unit = {
-    nodeStore.set(t.id, t.labelIds, null)
-  }
-
-  def addNode(t: StoredNodeWithProperty): Unit = {
-    nodeStore.set(t.id, t.labelIds, t.properties)
-  }
+//  def addNode(t: StoredNode): Unit = {
+//    nodeStore.set(t.id, t.labelIds, null)
+//  }
+//
+//  def addNode(t: StoredNodeWithProperty): Unit = {
+//    nodeStore.set(t.id, t.labelIds, t.properties)
+//  }
 
   def addNode(nodeId: Long, labelIds: Array[Int], propeties: Map[String, Any]): Unit = {
     nodeStore.set(nodeId, labelIds, propeties)
+    labelIds.foreach(labelId => nodeLabelIndex.add(labelId, nodeId))
   }
 
   def deleteNode(id: Long): Unit = {
-    nodeStore.delete(id)
+    val node = nodeStore.delete(id)
+    node.labelIds.foreach(labelId => nodeLabelIndex.delete(labelId, id))
   }
 
   def nodeAt(id: Long): StoredNode = {
     nodeStore.get(id)
   }
 
-  def nodes(): Iterator[StoredNode] = {
-    nodeStore.all()
-  }
+//  def nodes(): Iterator[StoredNode] = {
+//    nodeStore.all()
+//  }
 
-  def nodes(labelId: Int): Iterator[Long] = {
+  def findNodes(labelId: Int): Iterator[Long] = {
     nodeLabelIndex.getNodes(labelId)
   }
 
@@ -77,8 +80,8 @@ class RocksDBGraphImpl(dbPath: String) {
     relationStore.getAll()
   }
 
-  def relationScanByLabel(labelId: Int): Iterator[StoredRelation] = {
-    null
+  def findRelations(labelId: Int): Iterator[Long] = {
+    relationLabelIndex.getRelations(labelId)
   }
 
 

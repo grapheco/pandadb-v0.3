@@ -1,20 +1,23 @@
 package cn.pandadb.kernel.kv
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
+import java.nio.charset.{Charset, StandardCharsets}
 
 import cn.pandadb.kernel.kv.KeyHandler.KeyType.KeyType
-
-import collection.JavaConverters._
 
 object KeyHandler {
   object KeyType extends Enumeration {
     type KeyType = Value
+
     val Node = Value(1)     // [type(1Byte),nodeId(8Bytes)] -> nodeValue(id, labels, properties)
-    val InEdge = Value(2)   // [type(1Byte),fromNodeId(8Bytes),relationLabel(4Bytes),category(8Bytes),toNodeId(8Bytes)] -> relationValue(properties)
-    val OutEdge = Value(3)  // [type(1Byte),toNodeId(8Bytes),relationLabel(4Bytes),category(8Bytes),fromNodeId(8Bytes)] -> relationValue(properties)
-    val NodeLabelIndex = Value(4)     // [type(1Byte),labelId(4Bytes),nodeId(8Bytes)] -> null
-    val NodePropertyIndex = Value(5)  // [type(1Bytes), indexId()]
-    val Relation = Value(6)
+    val NodeLabelIndex = Value(2)     // [type(1Byte),labelId(4Bytes),nodeId(8Bytes)] -> null
+    val NodePropertyIndexMeta = Value(3)     // [type(1Byte),labelId(4Bytes),properties(8Bytes)] -> null
+    val NodePropertyIndex = Value(4)  // [type(1Bytes),indexId(4),indexValue(xBytes)]
+
+    val Relation = Value(5)  // [type(1Byte),relationId(8Bytes)] -> relationValue(id, fromNode, toNode, labelId, category)
+    val RelationLabelIndex = Value(6) // [type(1Byte),labelId(4Bytes),relationId(8Bytes)] -> null
+    val InEdge = Value(7)   // [type(1Byte),fromNodeId(8Bytes),relationLabel(4Bytes),category(8Bytes),toNodeId(8Bytes)] -> relationValue(properties)
+    val OutEdge = Value(8)  // [type(1Byte),toNodeId(8Bytes),relationLabel(4Bytes),category(8Bytes),fromNodeId(8Bytes)] -> relationValue(properties)
   }
 
   def nodeKeyToBytes(nodeId: Long): Array[Byte] = {
@@ -97,17 +100,6 @@ object KeyHandler {
     )
   }
 
-
-  def twinEdgeKey(byteArr: Array[Byte]): Array[Byte] = {
-    val edgeTuple = bytesToEdge(byteArr)
-    val redundancyEdgeType = edgeTuple._1 match {
-      case b if b == KeyType.InEdge.id.toByte => KeyType.OutEdge.id.toByte
-      case b if b == KeyType.OutEdge.id.toByte => KeyType.InEdge.id.toByte
-      case _ => throw new Exception("not a edge")
-    }
-    _edgeKeyToBytes(redundancyEdgeType, edgeTuple._5, edgeTuple._3, edgeTuple._4, edgeTuple._2)
-  }
-
   def nodeLabelIndexKeyToBytes(labelId: Int, nodeId: Long): Array[Byte] = {
     val bytes = new Array[Byte](13)
     ByteUtils.setByte(bytes, 0, KeyType.NodeLabelIndex.id.toByte)
@@ -123,9 +115,9 @@ object KeyHandler {
     bytes
   }
 
-  def nodePropertyIndexInfoToBytes(labelId: Int, props:Array[Int]): Array[Byte] = {
+  def nodePropertyIndexMetaKeyToBytes(labelId: Int, props:Array[Int]): Array[Byte] = {
     val bytes = new Array[Byte](1+4+4*props.length)
-    ByteUtils.setByte(bytes, 0, KeyType.NodeLabelIndex.id.toByte)
+    ByteUtils.setByte(bytes, 0, KeyType.NodePropertyIndexMeta.id.toByte)
     ByteUtils.setInt(bytes, 1, labelId)
     var index=5
     props.foreach{
@@ -160,13 +152,18 @@ object KeyHandler {
     bytes
   }
 
-  private def _edgeKeyToBytes(edgeType: Byte, nodeId1: Long, labelId: Int, category: Long, nodeId2: Long): Array[Byte] = {
-    val bytes = new Array[Byte](29)
-    ByteUtils.setByte(bytes, 0, edgeType)
-    ByteUtils.setLong(bytes, 1, nodeId1)
-    ByteUtils.setInt(bytes, 9, labelId)
-    ByteUtils.setLong(bytes, 13, category)
-    ByteUtils.setLong(bytes, 21, nodeId2)
+  def relationLabelIndexKeyToBytes(labelId: Int, nodeId: Long): Array[Byte] = {
+    val bytes = new Array[Byte](13)
+    ByteUtils.setByte(bytes, 0, KeyType.NodeLabelIndex.id.toByte)
+    ByteUtils.setInt(bytes, 1, labelId)
+    ByteUtils.setLong(bytes, 5, nodeId)
+    bytes
+  }
+
+  def relationLabelIndexKeyPrefixToBytes(labelId: Int): Array[Byte] = {
+    val bytes = new Array[Byte](5)
+    ByteUtils.setByte(bytes, 0, KeyType.NodeLabelIndex.id.toByte)
+    ByteUtils.setInt(bytes, 1, labelId)
     bytes
   }
 }
@@ -250,5 +247,15 @@ object ByteUtils {
     val bis=new ByteArrayInputStream(bytes)
     val ois=new ObjectInputStream(bis)
     ois.readObject.asInstanceOf[Set[Long]]
+  }
+
+  def stringToBytes(str: String, charset: Charset = StandardCharsets.UTF_8): Array[Byte] = {
+    str.getBytes(charset)
+  }
+
+  def stringFromBytes(bytes: Array[Byte], offset: Int = 0, length:Int = 0,
+                      charset: Charset = StandardCharsets.UTF_8): String = {
+    if (length > 0) new String(bytes, offset, length, charset)
+    else new String(bytes, offset, bytes.length, charset)
   }
 }

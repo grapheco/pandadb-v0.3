@@ -19,17 +19,17 @@ class KeyHandlerTest {
   val inEdgeKey2: Array[Byte] = KeyHandler.inEdgeKeyToBytes(id1, id2, labelId, category)
   val outEdgeKey: Array[Byte] = KeyHandler.outEdgeKeyToBytes(id1, id2, labelId, category)
 
-  @Test
-  def testTwinEdge(): Unit ={
-    Assert.assertArrayEquals(inEdgeKey, KeyHandler.twinEdgeKey(outEdgeKey))
-    Assert.assertArrayEquals(outEdgeKey, KeyHandler.twinEdgeKey(inEdgeKey))
-  }
-
-  @Test
-  def testBytesToEdge: Unit = {
-    val inEdgeTuple = (KeyType.InEdge.id.toByte, id1, labelId, category, id2)
-    val outEdgeTuple = (KeyType.OutEdge.id.toByte, id2, labelId, category, id1)
-    Assert.assertEquals(inEdgeTuple, KeyHandler.bytesToEdge(inEdgeKey))
-    Assert.assertEquals(outEdgeTuple, KeyHandler.bytesToEdge(outEdgeKey))
-  }
+//  @Test
+//  def testTwinEdge(): Unit ={
+//    Assert.assertArrayEquals(inEdgeKey, KeyHandler.twinEdgeKey(outEdgeKey))
+//    Assert.assertArrayEquals(outEdgeKey, KeyHandler.twinEdgeKey(inEdgeKey))
+//  }
+//
+//  @Test
+//  def testBytesToEdge: Unit = {
+//    val inEdgeTuple = (KeyType.InEdge.id.toByte, id1, labelId, category, id2)
+//    val outEdgeTuple = (KeyType.OutEdge.id.toByte, id2, labelId, category, id1)
+//    Assert.assertEquals(inEdgeTuple, KeyHandler.bytesToEdge(inEdgeKey))
+//    Assert.assertEquals(outEdgeTuple, KeyHandler.bytesToEdge(outEdgeKey))
+//  }
 }

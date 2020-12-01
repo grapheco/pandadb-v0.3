@@ -38,9 +38,12 @@ class NodeStore(db: RocksDB)  {
     db.put(keyBytes, NodeValue.toBytes(id, labels, properties ))
   }
 
-  def delete(id: Long): Unit = {
+  def delete(id: Long): NodeValue = {
     val keyBytes = KeyHandler.nodeKeyToBytes(id)
+    val valueBytes = db.get(keyBytes)
+    val node = NodeValue.parseFromBytes(valueBytes)
     db.delete(keyBytes)
+    node
   }
 
   def get(id: Long): NodeValue = {

@@ -161,9 +161,16 @@ class GraphFacadeTest {
     graphFacade.addNode(Map("Name" -> "fb"), "company", "person")
     graphFacade.addNode(Map("Name" -> "microsoft"), "person")
 
-    var res = graphFacade.cypher("match (n:person) return n")
-    res.show
-    Assert.assertEquals(2, res.records.size)
+    Assert.assertEquals(3, graphStore.allNodes().size)
+    val res1 = graphStore.findNodes(nodeLabelStore.id("person"))
+    Assert.assertEquals(2, res1.size)
+
+    val res2 = graphFacade.cypher("match (n:person) return n")
+    res2.show
+    Assert.assertEquals(2, res2.records.size)
+
+    graphFacade.close()
+
   }
 
 }

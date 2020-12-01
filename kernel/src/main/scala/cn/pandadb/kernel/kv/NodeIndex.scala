@@ -21,8 +21,8 @@ class NodeIndex(db: RocksDB){
    * label + props |  indexId
    * ------------------------
    */
-  private def addIndexMeta(label: Int, props: Array[Int]): IndexId = {
-    val key = KeyHandler.nodePropertyIndexInfoToBytes(label, props)
+  def addIndexMeta(label: Int, props: Array[Int]): IndexId = {
+    val key = KeyHandler.nodePropertyIndexMetaKeyToBytes(label, props)
     val id  = db.get(key)
     if (id == null || id.length == 0){
       val new_id = Random.nextInt(100) // TODO generate
@@ -36,12 +36,12 @@ class NodeIndex(db: RocksDB){
     }
   }
 
-  private def deleteIndexMeta(label: Int, props: Array[Int]): Unit = {
-    db.delete(KeyHandler.nodePropertyIndexInfoToBytes(label, props))
+  def deleteIndexMeta(label: Int, props: Array[Int]): Unit = {
+    db.delete(KeyHandler.nodePropertyIndexMetaKeyToBytes(label, props))
   }
 
   def getIndexId(label: Int, props: Array[Int]): IndexId = {
-    val v = db.get(KeyHandler.nodePropertyIndexInfoToBytes(label, props))
+    val v = db.get(KeyHandler.nodePropertyIndexMetaKeyToBytes(label, props))
     if (v == null || v.length < 4) {
       -1
     }else{

@@ -75,21 +75,20 @@ class GraphFacade(
 
     override def allNodes(labels: Set[String], exactLabelMatch: Boolean): Iterable[Node[Id]] = {
       var nodes: Set[Id] = null
-      val labelIds = relLabelStore.ids(labels)
+      val labelIds = nodeLabelStore.ids(labels)
       labelIds.foreach(labelId => {
         if (nodes == null) {
-          nodes = graphStore.nodes(labelId).toSet[Id]
+          nodes = graphStore.findNodes(labelId).toSet[Id]
         }
         else {
           if(exactLabelMatch) {  // intersect
-            nodes = nodes & graphStore.nodes(labelId).toSet[Id]
+            nodes = nodes & graphStore.findNodes(labelId).toSet[Id]
           }
           else {  // union
-            nodes = nodes ++ graphStore.nodes(labelId).toSet[Id]
+            nodes = nodes ++ graphStore.findNodes(labelId).toSet[Id]
           }
         }
       })
-      println("======",nodes)
       nodes.map(nodeId => mapNode(graphStore.nodeAt(nodeId)))
     }
 
@@ -102,9 +101,16 @@ class GraphFacade(
       graphStore.allRelations().map(rel => mapRelation(rel)).toIterable
     }
 
-//    override def allRelationships(relTypes: Set[String]): Iterable[Relationship[Id]] = {
-//
-//    }
+    override def allRelationships(relTypes: Set[String]): Iterable[Relationship[Id]] = {
+      var relations: Set[Id] = Set[Id]()
+      val labelIds = relLabelStore.ids(relTypes)
+      labelIds.foreach(labelId => { // union
+        relations = relations ++ graphStore.findRelations(labelId).toSet[Id]
+      })
+
+      relations.map(relId => mapRelation(graphStore.relationAt(relId)))
+
+    }
   })
 
 
