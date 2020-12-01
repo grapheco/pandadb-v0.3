@@ -1,6 +1,10 @@
 package cn.pandadb.kv
 
-import cn.pandadb.kernel.kv.{KeyHandler, NoRelationGetException, RelationStore, RocksDBStorage}
+import java.io.File
+
+import cn.pandadb.kernel.kv.{InEdgeRelationIndexStore, KeyHandler, NoRelationGetException, RelationStore, RocksDBStorage}
+import cn.pandadb.kernel.store.StoredRelationWithProperty
+import org.apache.commons.io.FileUtils
 import org.junit.{After, Assert, Before, Test}
 
 class RelationStoreTest {
@@ -8,12 +12,15 @@ class RelationStoreTest {
 
   @Before
   def init(): Unit = {
+    if (new File("testdata/rocks/db").exists()){
+      FileUtils.deleteDirectory(new File("testdata/rocks/db"))
+    }
     val db = RocksDBStorage.getDB()
     relationStore = new RelationStore(db)
+
     relationStore.setRelation(0, 1, 2, 0, 0, Map("a"->1, "b"->"c"))
     relationStore.setRelation(1, 2, 3, 0, 0, Map("a"->2, "b"->"d"))
     relationStore.setRelation(2, 3, 4, 0, 0, Map("a"->3, "b"->"e"))
-
   }
 
   @After
@@ -58,6 +65,9 @@ class RelationStoreTest {
   @Test
   def iterator(): Unit = {
     val iter = relationStore.getAll()
-    Assert.assertEquals(3, iter.toStream.length)
+    while (iter.hasNext){
+      println(iter.next().properties)
+    }
+//    Assert.assertEquals(3, iter.toStream.length)
   }
 }
