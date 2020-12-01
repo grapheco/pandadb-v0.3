@@ -30,6 +30,17 @@ object KeyHandler {
     bytes
   }
 
+  def relationIdToBytes(relationId: Long): Array[Byte] = {
+    val bytes = new Array[Byte](8)
+    ByteUtils.setLong(bytes, 0, relationId)
+    bytes
+  }
+  def inEdgeToBytes(): Array[Byte] ={
+    val array = Array[Byte](1)
+    ByteUtils.setByte(array, 0, KeyType.InEdge.id.toByte)
+    array
+  }
+
   def relationKeyToBytes(relationId: Long): Array[Byte] = {
     val bytes = new Array[Byte](9)
     ByteUtils.setByte(bytes, 0, KeyType.Relation.id.toByte)
