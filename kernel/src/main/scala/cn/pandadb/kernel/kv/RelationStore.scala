@@ -138,10 +138,14 @@ class RelationStore(db: RocksDB) {
 
   def getRelation(relationId: Long): StoredRelationWithProperty ={
     val keyBytes = KeyHandler.RelationKeyToBytes(relationId)
-    val relation = ByteUtils.mapFromBytes(db.get(keyBytes))
-    new StoredRelationWithProperty(relationId, relation("from").asInstanceOf[Long], relation("to").asInstanceOf[Long],
-      relation("labelId").asInstanceOf[Int], relation("prop").asInstanceOf[Map[String, Any]],
-      relation("category").asInstanceOf[Long])
+    val res = db.get(keyBytes)
+    if (res != null){
+      val relation = ByteUtils.mapFromBytes(res)
+      new StoredRelationWithProperty(relationId, relation("from").asInstanceOf[Long], relation("to").asInstanceOf[Long],
+        relation("labelId").asInstanceOf[Int], relation("prop").asInstanceOf[Map[String, Any]],
+        relation("category").asInstanceOf[Long])
+    }
+    else throw new NoRelationGetException
   }
 
   def relationIsExist(relationId: Long): Boolean = {
@@ -183,4 +187,8 @@ class RelationStore(db: RocksDB) {
       nextRelation
     }
   }
+}
+
+class NoRelationGetException extends Exception{
+  override def getMessage: String = "no such relation to get"
 }
