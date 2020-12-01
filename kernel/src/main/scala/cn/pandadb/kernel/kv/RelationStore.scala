@@ -3,143 +3,102 @@ package cn.pandadb.kernel.kv
 import cn.pandadb.kernel.store.{StoredRelationWithProperty}
 import org.rocksdb.RocksDB
 
-class InEdgeRelationStore(db: RocksDB){
-  def setRelation(fromNodeId: Long, toNodeId: Long, labelId: Int, category: Long, valueMap: Map[String, Any]): Unit = {
-    val key = KeyHandler.inEdgeKeyToBytes(fromNodeId, toNodeId, labelId, category)
-    val value = ByteUtils.mapToBytes(valueMap)
-    db.put(key, value)
+class InEdgeRelationIndexStore(db: RocksDB) {
+  /**
+   * Index
+   * ------------------------
+   * key      |  value
+   * ------------------------
+   * srcId + EdgeType |  DestId
+   * ------------------------
+   * srcId + Category | DestId  necessary?
+   * ------------------------
+   */
+  def setIndex(fromNode: Long, edgeType: Int, category: Long, toNode: Long, relationId: Long): Unit = {
+    val keyBytes = KeyHandler.inEdgeKeyToBytes(fromNode, toNode, edgeType, category)
+    db.put(keyBytes, KeyHandler.relationIdToBytes(relationId))
   }
 
-  def getRelationValueMap(fromNodeId: Long, toNodeId: Long, labelId: Int, category: Long): Map[String, Any] = {
-    val key = KeyHandler.inEdgeKeyToBytes(fromNodeId, toNodeId, labelId, category)
-    val mapBytes = db.get(key)
-    ByteUtils.mapFromBytes(mapBytes)
+  def deleteIndex(fromNode: Long, edgeType: Int, category: Long, toNode: Long): Unit = {
+    val keyBytes = KeyHandler.inEdgeKeyToBytes(fromNode, toNode, edgeType, category)
+    db.delete(keyBytes)
   }
 
-  def relationIsExist(fromNodeId: Long, toNodeId: Long, labelId: Int, category: Long): Boolean = {
-    val key = KeyHandler.inEdgeKeyToBytes(fromNodeId, toNodeId, labelId, category)
-    val res = db.get(key)
-    if (res == null) false else true
+  //////
+  def getToNodesByFromNodeAndEdgeType(fromNode: Long, edgeType: Int): Iterator[Long] = {
+    new GetToNodesByFromNodeAndEdgeType(fromNode, edgeType)
   }
 
-  def deleteRelation(fromNodeId: Long, toNodeId: Long, labelId: Int, category: Long): Unit = {
-    val key = KeyHandler.inEdgeKeyToBytes(fromNodeId, toNodeId, labelId, category)
-    db.delete(key)
-  }
+  class GetToNodesByFromNodeAndEdgeType(fromNode: Long, edgeType: Int) extends Iterator[Long] {
+    val prefix = KeyHandler.relationNodeIdAndEdgeTypeIndexToBytes(fromNode, edgeType)
+    val iter = db.newIterator()
+    iter.seek(KeyHandler.inEdgeToBytes())
 
-  def getAllRelation(): Iterator[StoredRelationWithProperty] = {
-    new GetAllRocksInRelation(db)
-  }
+    override def hasNext: Boolean = iter.isValid && iter.key().slice(1, 13).sameElements(prefix)
 
-  def close(): Unit = {
-    db.close()
-  }
-
-  class GetAllRocksInRelation(db: RocksDB) extends Iterator[StoredRelationWithProperty] {
-    val prefix1 = new Array[Byte](1)
-    val in = KeyHandler.KeyType.InEdge.id.toByte
-    ByteUtils.setByte(prefix1, 0, in)
-
-    val inIter = db.newIterator()
-    inIter.seek(prefix1)
-
-    override def hasNext: Boolean = {
-      inIter.isValid
-    }
-
-    override def next(): StoredRelationWithProperty = {
-      val nextRelation = {
-        val bytes = inIter.key()
-        val from = ByteUtils.getLong(bytes, 1)
-        val to = ByteUtils.getLong(bytes, 21)
-        val label = ByteUtils.getInt(bytes, 9)
-        val category =  ByteUtils.getInt(bytes, 13)
-        val map = getRelationValueMap(from, to, label, category)
-
-        new StoredRelationWithProperty(0, from, to, label, map, category)
-      }
-      nextRelation
+    override def next(): Long = {
+      val toNodeId = ByteUtils.getLong(iter.key(), 21)
+      iter.next()
+      toNodeId
     }
   }
+
+  //////
+
 }
 
-class OutEdgeRelationStore(db: RocksDB){
-  def setRelation(fromNodeId: Long, toNodeId: Long, labelId: Int, category: Long, valueMap: Map[String, Any]): Unit = {
-    val key = KeyHandler.outEdgeKeyToBytes(fromNodeId, toNodeId, labelId, category)
-    val value = ByteUtils.mapToBytes(valueMap)
-    db.put(key, value)
+class OutEdgeRelationIndexStore(db: RocksDB) {
+
+  def setIndex(fromNode: Long, edgeType: Int, category: Long, toNode: Long, relationId: Long): Unit = {
+    val keyBytes = KeyHandler.outEdgeKeyToBytes(fromNode, toNode, edgeType, category)
+    db.put(keyBytes, KeyHandler.relationIdToBytes(relationId))
   }
 
-  def getRelationValueMap(fromNodeId: Long, toNodeId: Long, labelId: Int, category: Long): Map[String, Any] = {
-    val key = KeyHandler.outEdgeKeyToBytes(fromNodeId, toNodeId, labelId, category)
-    val mapBytes = db.get(key)
-    ByteUtils.mapFromBytes(mapBytes)
+  def deleteIndex(fromNode: Long, edgeType: Int, category: Long, toNode: Long): Unit = {
+    val keyBytes = KeyHandler.outEdgeKeyToBytes(fromNode, toNode, edgeType, category)
+    db.delete(keyBytes)
   }
 
-  def relationIsExist(fromNodeId: Long, toNodeId: Long, labelId: Int, category: Long): Boolean = {
-    val key = KeyHandler.outEdgeKeyToBytes(fromNodeId, toNodeId, labelId, category)
-    val res = db.get(key)
-    if (res == null) false else true
+  //////
+  def getFromNodesByToNodeAndEdgeType(toNode: Long, edgeType: Int): Iterator[Long] = {
+    new GetFromNodesByToNodeAndEdgeType(toNode, edgeType)
   }
 
-  def deleteRelation(fromNodeId: Long, toNodeId: Long, labelId: Int, category: Long): Unit = {
-    val key = KeyHandler.outEdgeKeyToBytes(fromNodeId, toNodeId, labelId, category)
-    db.delete(key)
-  }
+  class GetFromNodesByToNodeAndEdgeType(toNode: Long, edgeType: Int) extends Iterator[Long] {
+    val prefix = KeyHandler.relationNodeIdAndEdgeTypeIndexToBytes(toNode, edgeType)
+    val iter = db.newIterator()
+    iter.seek(KeyHandler.inEdgeToBytes())
 
-  def getAllRelation(): Iterator[StoredRelationWithProperty] = {
-    new GetAllRocksOutRelation(db)
-  }
+    override def hasNext: Boolean = iter.isValid && iter.key().slice(1, 13).sameElements(prefix)
 
-  def close(): Unit = {
-    db.close()
-  }
-
-  class GetAllRocksOutRelation(db: RocksDB) extends Iterator[StoredRelationWithProperty] {
-    val prefix2 = new Array[Byte](1)
-    val out = KeyHandler.KeyType.OutEdge.id.toByte
-    ByteUtils.setByte(prefix2, 0, out)
-
-    val outIter = db.newIterator()
-    outIter.seek(prefix2)
-
-    override def hasNext: Boolean = {
-     outIter.isValid
-    }
-
-    override def next(): StoredRelationWithProperty = {
-      val nextRelation = {
-        val bytes = outIter.key()
-        val from = ByteUtils.getLong(bytes, 21)
-        val to = ByteUtils.getLong(bytes, 1)
-        val label = ByteUtils.getInt(bytes, 9)
-        val category =  ByteUtils.getInt(bytes, 13)
-        val map = getRelationValueMap(from, to, label, category)
-
-        new StoredRelationWithProperty(0, from, to, label, map, category)
-      }
-      nextRelation
+    override def next(): Long = {
+      val fromNode = ByteUtils.getLong(iter.key(), 21)
+      iter.next()
+      fromNode
     }
   }
+
+  //////
+
 }
 
 class RelationStore(db: RocksDB) {
-  def setRelation(relationId: Long, from: Long, to: Long, labelId: Int, category: Long, value: Map[String, Any]): Unit ={
-    val keyBytes = KeyHandler.RelationKeyToBytes(relationId)
-    val map = Map("from"->from, "to"->to, "labelId"->labelId, "category"->category, "prop"->value)
+  def setRelation(relationId: Long, from: Long, to: Long, labelId: Int, category: Long, value: Map[String, Any]): Unit = {
+    val keyBytes = KeyHandler.relationKeyToBytes(relationId)
+    val map = Map("from" -> from, "to" -> to, "labelId" -> labelId, "category" -> category, "prop" -> value)
     val valueBytes = ByteUtils.mapToBytes(map)
     db.put(keyBytes, valueBytes)
   }
 
-  def deleteRelation(relationId: Long): Unit ={
-    val keyBytes = KeyHandler.RelationKeyToBytes(relationId)
+  def deleteRelation(relationId: Long): Unit = {
+    val keyBytes = KeyHandler.relationKeyToBytes(relationId)
     db.delete(keyBytes)
   }
 
-  def getRelation(relationId: Long): StoredRelationWithProperty ={
-    val keyBytes = KeyHandler.RelationKeyToBytes(relationId)
+  def getRelation(relationId: Long): StoredRelationWithProperty = {
+    val keyBytes = KeyHandler.relationKeyToBytes(relationId)
     val res = db.get(keyBytes)
-    if (res != null){
+    if (res != null) {
       val relation = ByteUtils.mapFromBytes(res)
       new StoredRelationWithProperty(relationId, relation("from").asInstanceOf[Long], relation("to").asInstanceOf[Long],
         relation("labelId").asInstanceOf[Int], relation("prop").asInstanceOf[Map[String, Any]],
@@ -149,21 +108,21 @@ class RelationStore(db: RocksDB) {
   }
 
   def relationIsExist(relationId: Long): Boolean = {
-    val keyBytes = KeyHandler.RelationKeyToBytes(relationId)
+    val keyBytes = KeyHandler.relationKeyToBytes(relationId)
     val res = db.get(keyBytes)
     if (res != null) true else false
   }
 
-  def getAll(): Iterator[StoredRelationWithProperty] ={
+  def getAll(): Iterator[StoredRelationWithProperty] = {
     new GetAllRocksRelation(db)
   }
 
-  def close(): Unit ={
+  def close(): Unit = {
     db.close()
   }
 
   class GetAllRocksRelation(db: RocksDB) extends Iterator[StoredRelationWithProperty] {
-    val keyPrefix = KeyHandler.RelationKeyPrefix()
+    val keyPrefix = KeyHandler.relationKeyPrefix()
 
     val iter = db.newIterator()
     iter.seek(keyPrefix)
@@ -187,8 +146,13 @@ class RelationStore(db: RocksDB) {
       nextRelation
     }
   }
+
 }
 
-class NoRelationGetException extends Exception{
+class NoRelationGetException extends Exception {
   override def getMessage: String = "no such relation to get"
+}
+
+class NoRelationIndexGetException extends Exception {
+  override def getMessage: String = "no such relation index to get"
 }

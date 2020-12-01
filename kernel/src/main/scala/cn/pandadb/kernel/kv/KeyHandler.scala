@@ -30,16 +30,40 @@ object KeyHandler {
     bytes
   }
 
-  def RelationKeyToBytes(relationId: Long): Array[Byte] = {
+  def relationIdToBytes(relationId: Long): Array[Byte] = {
+    val bytes = new Array[Byte](8)
+    ByteUtils.setLong(bytes, 0, relationId)
+    bytes
+  }
+  def inEdgeToBytes(): Array[Byte] ={
+    val array = Array[Byte](1)
+    ByteUtils.setByte(array, 0, KeyType.InEdge.id.toByte)
+    array
+  }
+
+  def relationKeyToBytes(relationId: Long): Array[Byte] = {
     val bytes = new Array[Byte](9)
     ByteUtils.setByte(bytes, 0, KeyType.Relation.id.toByte)
     ByteUtils.setLong(bytes, 1, relationId)
     bytes
   }
 
-  def RelationKeyPrefix(): Array[Byte] = {
+  def relationKeyPrefix(): Array[Byte] = {
     val bytes = new Array[Byte](1)
     ByteUtils.setByte(bytes, 0, KeyType.Relation.id.toByte)
+    bytes
+  }
+
+  def relationNodeIdAndEdgeTypeIndexToBytes(NodeId: Long, edgeType: Int): Array[Byte] ={
+    val bytes = new Array[Byte](12)
+    ByteUtils.setLong(bytes, 0, NodeId)
+    ByteUtils.setInt(bytes, 8, edgeType)
+    bytes
+  }
+  def relationNodeIdAndCategoryIndexToBytes(NodeId: Long, category: Long): Array[Byte] ={
+    val bytes = new Array[Byte](16)
+    ByteUtils.setLong(bytes, 0, NodeId)
+    ByteUtils.setLong(bytes, 8, category)
     bytes
   }
 
@@ -215,4 +239,16 @@ object ByteUtils {
     ois.readObject.asInstanceOf[Map[String, Any]]
   }
 
+  def setToBytes(set: Set[Long]): Array[Byte] ={
+    val bos = new ByteArrayOutputStream()
+    val oos = new ObjectOutputStream(bos)
+    oos.writeObject(set)
+    oos.close()
+    bos.toByteArray
+  }
+  def setFromBytes(bytes: Array[Byte]): Set[Long] = {
+    val bis=new ByteArrayInputStream(bytes)
+    val ois=new ObjectInputStream(bis)
+    ois.readObject.asInstanceOf[Set[Long]]
+  }
 }
