@@ -15,9 +15,9 @@ class KeyHandlerTest {
   val category: Long = 88888888
   val labelId: Int = 6666
 
-  val inEdgeKey: Array[Byte] = KeyHandler.inEdgeKeyToBytes(id1, id2, labelId, category)
-  val inEdgeKey2: Array[Byte] = KeyHandler.inEdgeKeyToBytes(id1, id2, labelId, category)
-  val outEdgeKey: Array[Byte] = KeyHandler.outEdgeKeyToBytes(id1, id2, labelId, category)
+//  val inEdgeKey: Array[Byte] = KeyHandler.inEdgeKeyToBytes(id1, id2, labelId, category)
+//  val inEdgeKey2: Array[Byte] = KeyHandler.inEdgeKeyToBytes(id1, id2, labelId, category)
+//  val outEdgeKey: Array[Byte] = KeyHandler.outEdgeKeyToBytes(id1, id2, labelId, category)
 
 //  @Test
 //  def testTwinEdge(): Unit ={

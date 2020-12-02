@@ -5,196 +5,193 @@ import org.rocksdb.RocksDB
 
 class InEdgeRelationIndexStore(db: RocksDB) {
   /**
-   * Index
+   * in edge data structure
    * ------------------------
-   * key      |  Find
-   * ------------------------
-   * srcId + EdgeType |  DestId
-   * ------------------------
-   * srcId + Category | DestId
-   * ------------------------
-   * srcId + EdgeType + Category | DestId
+   * type(1Byte),toNodeId(8Bytes),relationLabel(4Bytes),category(8Bytes),fromNodeId(8Bytes)-->relationValue(id, properties)
    * ------------------------
    */
-  def setIndex(fromNode: Long, edgeType: Int, category: Long, toNode: Long, relationId: Long): Unit = {
-    val keyBytes = KeyHandler.inEdgeKeyToBytes(fromNode, toNode, edgeType, category)
-    db.put(keyBytes, ByteUtils.longToBytes(relationId))
+  val RELATION_ID = "id"
+  val RELATION_PROP = "prop"
+
+  def setIndex(fromNode: Long, edgeType: Int, category: Long, toNode: Long,
+               relationId: Long, prop: Map[String, Any]=Map()): Unit = {
+
+    val keyBytes = KeyHandler.inEdgeKeyToBytes(toNode, edgeType, category, fromNode)
+    db.put(keyBytes, ByteUtils.mapToBytes(Map[String, Any](RELATION_ID->relationId, RELATION_PROP->prop)))
   }
 
   def deleteIndex(fromNode: Long, edgeType: Int, category: Long, toNode: Long): Unit = {
-    val keyBytes = KeyHandler.inEdgeKeyToBytes(fromNode, toNode, edgeType, category)
+    val keyBytes = KeyHandler.inEdgeKeyToBytes(toNode, edgeType, category, fromNode)
     db.delete(keyBytes)
   }
 
   //////
-  type SrcId = Long
-  type CategoryId = Long
-  type EdgeType = Int
-
-  def getAllToNodes(fromNode: SrcId, edgeType: EdgeType): Iterator[Long] = {
-    new Iterator[Long] {
-      val prefix = KeyHandler.relationIndexPrefixKeyToBytes(KeyHandler.KeyType.InEdge.id.toByte, fromNode, edgeType)
-      val iter = db.newIterator()
-      iter.seek(prefix)
-
-      override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
-
-      override def next(): Long = {
-        val toNodeId = ByteUtils.getLong(iter.key(), 21)
-        iter.next()
-        toNodeId
-      }
-    }
+  def findNodes(): Iterator[Long] = {
+    val prefix = KeyHandler.inEdgeKeyPrefixToBytes()
+    new NodesIterator(db, prefix)
   }
 
-  def getAllToNodes(fromNode: SrcId, category: CategoryId): Iterator[Long] = {
-    new Iterator[Long] {
-      val categoryBytes = ByteUtils.longToBytes(category)
-      val prefix = KeyHandler.relationIndexPrefixKeyToBytes(KeyHandler.KeyType.InEdge.id.toByte, fromNode)
-      val iter = db.newIterator()
-      iter.seek(prefix)
-      var toNodeId: Long = _
-
-      override def hasNext: Boolean = {
-        var isFinish = false
-        var isFound = false
-        if (iter.isValid && iter.key().startsWith(prefix)) {
-          while (!isFinish) {
-            if (iter.key().slice(13, 21).sameElements(categoryBytes)) {
-              isFinish = true
-              isFound = true
-              toNodeId = ByteUtils.getLong(iter.key(), 21)
-              iter.next()
-            }
-            else {
-              if (iter.isValid && iter.key().startsWith(prefix)) {
-                iter.next()
-              }
-              else {
-                isFinish = true
-                isFound = false
-              }
-            }
-          }
-          isFound
-        }
-        else false
-      }
-
-      override def next(): Long = {
-        toNodeId
-      }
-    }
+  def findNodes(toNodeId: Long): Iterator[Long] = {
+    val prefix = KeyHandler.inEdgeKeyPrefixToBytes(toNodeId)
+    new NodesIterator(db, prefix)
   }
 
-  def getAllToNodes(fromNode: SrcId, edgeType: EdgeType, category: CategoryId): Iterator[Long] = {
-    new Iterator[Long] {
-      val prefix = KeyHandler.relationIndexPrefixKeyToBytes(KeyHandler.KeyType.InEdge.id.toByte, fromNode, edgeType, category)
-      val iter = db.newIterator()
-      iter.seek(prefix)
+  def findNodes(toNodeId: Long, edgeType: Int): Iterator[Long] = {
+    val prefix = KeyHandler.inEdgeKeyPrefixToBytes(toNodeId, edgeType)
+    new NodesIterator(db, prefix)
+  }
 
-      override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
+  def findNodes(toNodeId: Long, edgeType: Int, category: Long): Iterator[Long] = {
+    val prefix = KeyHandler.inEdgeKeyPrefixToBytes(toNodeId, edgeType, category)
+    new NodesIterator(db, prefix)
+  }
 
-      override def next(): Long = {
-        val toNodeId = ByteUtils.getLong(iter.key(), 21)
-        iter.next()
-        toNodeId
-      }
+  class NodesIterator(db: RocksDB, prefix: Array[Byte]) extends Iterator[Long]{
+    val iter = db.newIterator()
+    iter.seek(prefix)
+
+    override def hasNext: Boolean = {
+      val k = iter.key()
+      iter.isValid && iter.key().startsWith(prefix)
+    }
+
+    override def next(): Long = {
+      val fromNodeId = ByteUtils.getLong(iter.key(), 21)
+      iter.next()
+      fromNodeId
+    }
+  }
+  //////
+
+  def getRelations(): Iterator[StoredRelationWithProperty] = {
+    val prefix = KeyHandler.inEdgeKeyPrefixToBytes()
+    new RelationIterator(db, prefix)
+  }
+
+  def getRelations(toNodeId: Long): Iterator[StoredRelationWithProperty] = {
+    val prefix = KeyHandler.inEdgeKeyPrefixToBytes(toNodeId)
+    new RelationIterator(db, prefix)
+  }
+
+  def getRelations(toNodeId: Long, edgeType: Int): Iterator[StoredRelationWithProperty] = {
+    val prefix = KeyHandler.inEdgeKeyPrefixToBytes(toNodeId, edgeType)
+    new RelationIterator(db, prefix)
+  }
+
+  def getRelations(toNodeId: Long, edgeType: Int, category: Long): Iterator[StoredRelationWithProperty] = {
+    val prefix = KeyHandler.inEdgeKeyPrefixToBytes(toNodeId, edgeType, category)
+    new RelationIterator(db, prefix)
+  }
+
+  class RelationIterator(db: RocksDB, prefix: Array[Byte]) extends Iterator[StoredRelationWithProperty]{
+    val iter = db.newIterator()
+    iter.seek(prefix)
+
+    override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
+
+    override def next(): StoredRelationWithProperty = {
+      val values = ByteUtils.mapFromBytes(db.get(iter.key()))
+      val keys = KeyHandler.parseInEdgeKeyFromBytes(iter.key())
+      val relation = new StoredRelationWithProperty(values(RELATION_ID).asInstanceOf[Long], keys._4, keys._1, keys._2,
+        values(RELATION_PROP).asInstanceOf[Map[String, Any]], keys._3)
+      iter.next()
+      relation
     }
   }
 
   //////
-
 }
 
 class OutEdgeRelationIndexStore(db: RocksDB) {
+  /**
+   * out edge data structure
+   * ------------------------
+   * type(1Byte),fromNodeId(8Bytes),relationLabel(4Bytes),category(8Bytes),toNodeId(8Bytes)-->relationValue(id, properties)
+   * ------------------------
+   */
+  val RELATION_ID = "id"
+  val RELATION_PROP = "prop"
 
-  def setIndex(fromNode: Long, edgeType: Int, category: Long, toNode: Long, relationId: Long): Unit = {
-    val keyBytes = KeyHandler.outEdgeKeyToBytes(fromNode, toNode, edgeType, category)
-    db.put(keyBytes, ByteUtils.longToBytes(relationId))
+  def setIndex(fromNode: Long, edgeType: Int, category: Long, toNode: Long,
+               relationId: Long, prop: Map[String, Any]=Map()): Unit = {
+
+    val keyBytes = KeyHandler.outEdgeKeyToBytes(fromNode, edgeType, category, toNode)
+    db.put(keyBytes, ByteUtils.mapToBytes(Map[String, Any](RELATION_ID->relationId, RELATION_PROP->prop)))
   }
 
   def deleteIndex(fromNode: Long, edgeType: Int, category: Long, toNode: Long): Unit = {
-    val keyBytes = KeyHandler.outEdgeKeyToBytes(fromNode, toNode, edgeType, category)
+    val keyBytes = KeyHandler.outEdgeKeyToBytes(fromNode, edgeType, category, toNode)
     db.delete(keyBytes)
   }
 
   //////
-  type SrcId = Long
-  type CategoryId = Long
-  type EdgeType = Int
-
-  def getAllFromNodes(toNode: SrcId, edgeType: EdgeType): Iterator[Long] = {
-    new Iterator[Long] {
-      val prefix = KeyHandler.relationIndexPrefixKeyToBytes(KeyHandler.KeyType.OutEdge.id.toByte, toNode, edgeType)
-      val iter = db.newIterator()
-      iter.seek(prefix)
-      override def hasNext: Boolean = {
-        iter.isValid && iter.key().startsWith(prefix)
-      }
-
-      override def next(): Long = {
-        val toNodeId = ByteUtils.getLong(iter.key(), 21)
-        iter.next()
-        toNodeId
-      }
-    }
+  def findNodes(): Iterator[Long] = {
+    val prefix = KeyHandler.outEdgeKeyPrefixToBytes()
+    new NodesIterator(db, prefix)
   }
 
-  def getAllFromNodes(toNode: SrcId, category: CategoryId): Iterator[Long] = {
-    new Iterator[Long] {
-      val categoryBytes = ByteUtils.longToBytes(category)
-
-      val prefix = KeyHandler.relationIndexPrefixKeyToBytes(KeyHandler.KeyType.OutEdge.id.toByte, toNode)
-      val iter = db.newIterator()
-      iter.seek(prefix)
-      var fromNodeId: Long = _
-
-      override def hasNext: Boolean = {
-        var isFinish = false
-        var isFound = false
-        if (iter.isValid && iter.key().startsWith(prefix)) {
-          while (!isFinish) {
-            if (iter.key().slice(13, 21).sameElements(categoryBytes)) {
-              isFinish = true
-              isFound = true
-              fromNodeId = ByteUtils.getLong(iter.key(), 21)
-              iter.next()
-            }
-            else {
-              if (iter.isValid && iter.key().startsWith(prefix)) {
-                iter.next()
-              }
-              else {
-                isFinish = true
-                isFound = false
-              }
-            }
-          }
-          isFound
-        }
-        else false
-      }
-
-      override def next(): Long = {
-        fromNodeId
-      }
-    }
+  def findNodes(fromNodeId: Long): Iterator[Long] = {
+    val prefix = KeyHandler.outEdgeKeyPrefixToBytes(fromNodeId)
+    new NodesIterator(db, prefix)
   }
 
-  def getAllFromNodes(toNode: SrcId, edgeType: EdgeType, category: CategoryId): Iterator[Long] = {
-    new Iterator[Long] {
-      val prefix = KeyHandler.relationIndexPrefixKeyToBytes(KeyHandler.KeyType.OutEdge.id.toByte, toNode, edgeType, category)
-      val iter = db.newIterator()
-      iter.seek(prefix)
+  def findNodes(fromNodeId: Long, edgeType: Int): Iterator[Long] = {
+    val prefix = KeyHandler.outEdgeKeyPrefixToBytes(fromNodeId, edgeType)
+    new NodesIterator(db, prefix)
+  }
 
-      override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
+  def findNodes(fromNodeId: Long, edgeType: Int, category: Long): Iterator[Long] = {
+    val prefix = KeyHandler.outEdgeKeyPrefixToBytes(fromNodeId, edgeType, category)
+    new NodesIterator(db, prefix)
+  }
 
-      override def next(): Long = {
-        val toNodeId = ByteUtils.getLong(iter.key(), 21)
-        iter.next()
-        toNodeId
-      }
+  class NodesIterator(db: RocksDB, prefix: Array[Byte]) extends Iterator[Long]{
+    val iter = db.newIterator()
+    iter.seek(prefix)
+
+    override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
+
+    override def next(): Long = {
+      val toNodeId = ByteUtils.getLong(iter.key(), 21)
+      iter.next()
+      toNodeId
+    }
+  }
+  //////
+
+  def getRelations(): Iterator[StoredRelationWithProperty] = {
+    val prefix = KeyHandler.outEdgeKeyPrefixToBytes()
+    new RelationIterator(db, prefix)
+  }
+
+  def getRelations(fromNodeId: Long): Iterator[StoredRelationWithProperty] = {
+    val prefix = KeyHandler.outEdgeKeyPrefixToBytes(fromNodeId)
+    new RelationIterator(db, prefix)
+  }
+
+  def getRelations(fromNodeId: Long, edgeType: Int): Iterator[StoredRelationWithProperty] = {
+    val prefix = KeyHandler.outEdgeKeyPrefixToBytes(fromNodeId, edgeType)
+    new RelationIterator(db, prefix)
+  }
+
+  def getRelations(fromNodeId: Long, edgeType: Int, category: Long): Iterator[StoredRelationWithProperty] = {
+    val prefix = KeyHandler.outEdgeKeyPrefixToBytes(fromNodeId, edgeType, category)
+    new RelationIterator(db, prefix)
+  }
+
+  class RelationIterator(db: RocksDB, prefix: Array[Byte]) extends Iterator[StoredRelationWithProperty]{
+    val iter = db.newIterator()
+    iter.seek(prefix)
+
+    override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
+
+    override def next(): StoredRelationWithProperty = {
+      val values = ByteUtils.mapFromBytes(db.get(iter.key()))
+      val keys = KeyHandler.parseOutEdgeKeyFromBytes(iter.key())
+      val relation = new StoredRelationWithProperty(values(RELATION_ID).asInstanceOf[Long],
+        keys._1, keys._4, keys._2, values(RELATION_PROP).asInstanceOf[Map[String, Any]], keys._3)
+      iter.next()
+      relation
     }
   }
   //////
