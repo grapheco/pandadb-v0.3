@@ -50,6 +50,7 @@ class InEdgeRelationIndexStore(db: RocksDB) {
     }
   }
   class ToNodesIterator2(fromNode: SrcId, category: CategoryId) extends Iterator[Long] {
+    val categoryBytes = ByteUtils.longToBytes(category)
     val prefix = KeyHandler.relationIndexPrefixKeyToBytes(KeyHandler.KeyType.InEdge.id.toByte, fromNode)
     val iter = db.newIterator()
     iter.seek(prefix)
@@ -60,7 +61,7 @@ class InEdgeRelationIndexStore(db: RocksDB) {
       var isFound = false
       if (iter.isValid && iter.key().startsWith(prefix)){
         while (!isFinish){
-          if (ByteUtils.getLong(iter.key(),13) == category) {
+          if (iter.key().slice(13, 21).sameElements(categoryBytes)) {
             isFinish = true
             isFound = true
             toNodeId = ByteUtils.getLong(iter.key(),21)
@@ -129,6 +130,8 @@ class OutEdgeRelationIndexStore(db: RocksDB) {
     }
   }
   class fromNodesIterator2(toNode: SrcId, category: CategoryId) extends Iterator[Long] {
+    val categoryBytes = ByteUtils.longToBytes(category)
+
     val prefix = KeyHandler.relationIndexPrefixKeyToBytes(KeyHandler.KeyType.OutEdge.id.toByte, toNode)
     val iter = db.newIterator()
     iter.seek(prefix)
@@ -139,7 +142,7 @@ class OutEdgeRelationIndexStore(db: RocksDB) {
       var isFound = false
       if (iter.isValid && iter.key().startsWith(prefix)){
         while (!isFinish){
-          if (ByteUtils.getLong(iter.key(),13) == category) {
+          if (iter.key().slice(13, 21).sameElements(categoryBytes)) {
             isFinish = true
             isFound = true
             fromNodeId = ByteUtils.getLong(iter.key(),21)
@@ -200,14 +203,14 @@ class RelationStore(db: RocksDB) {
   }
 
   def getAll(): Iterator[StoredRelationWithProperty] = {
-    new GetAllRocksRelation(db)
+    new StoredRelationIterator(db)
   }
 
   def close(): Unit = {
     db.close()
   }
 
-  class GetAllRocksRelation(db: RocksDB) extends Iterator[StoredRelationWithProperty] {
+  class StoredRelationIterator(db: RocksDB) extends Iterator[StoredRelationWithProperty] {
     val keyPrefix = KeyHandler.relationKeyPrefix()
 
     val iter = db.newIterator()
