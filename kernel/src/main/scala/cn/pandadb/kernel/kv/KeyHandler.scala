@@ -72,6 +72,15 @@ object KeyHandler {
     bytes
   }
 
+  def relationIndexPrefixKeyToBytes(rType: Byte, NodeId: Long, edgeType: Int, category: Long): Array[Byte] ={
+    val bytes = new Array[Byte](21)
+    ByteUtils.setByte(bytes, 0, rType)
+    ByteUtils.setLong(bytes, 1, NodeId)
+    ByteUtils.setInt(bytes, 9, edgeType)
+    ByteUtils.setLong(bytes, 13, category)
+    bytes
+  }
+
   def inEdgeKeyToBytes(fromNodeId: Long, toNodeId: Long, labelId: Int, category: Long): Array[Byte] = {
     val bytes = new Array[Byte](29)
     ByteUtils.setByte(bytes, 0, KeyType.InEdge.id.toByte)

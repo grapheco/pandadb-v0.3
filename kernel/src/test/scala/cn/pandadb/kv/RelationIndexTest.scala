@@ -37,14 +37,16 @@ class RelationIndexTest {
 
     val iter1 = inRelationIndexStore.getAllToNodes(0, 3)
     val iter2 = inRelationIndexStore.getAllToNodes(0, 3L)
+    val iter3 = inRelationIndexStore.getAllToNodes(0, 2, 3L)
 
     Assert.assertEquals(2, iter1.toStream.length)
     Assert.assertEquals(3, iter2.toStream.length)
+    Assert.assertEquals(3, iter3.toStream.length)
 
     inRelationIndexStore.deleteIndex(0, 2,3,6)
-    val iter3 = inRelationIndexStore.getAllToNodes(0, 3L)
+    val iter4 = inRelationIndexStore.getAllToNodes(0, 3L)
 
-    Assert.assertEquals(2, iter3.toStream.length)
+    Assert.assertEquals(2, iter4.toStream.length)
 
   }
 
@@ -59,14 +61,16 @@ class RelationIndexTest {
 
     val iter1 = outRelationIndexStore.getAllFromNodes(0, 3)
     val iter2 = outRelationIndexStore.getAllFromNodes(0, 3L)
+    val iter3 = outRelationIndexStore.getAllFromNodes(0, 2,3L)
 
     Assert.assertEquals(2, iter1.toStream.length)
     Assert.assertEquals(3, iter2.toStream.length)
+    Assert.assertEquals(3, iter3.toStream.length)
 
     outRelationIndexStore.deleteIndex(6, 2,3,0)
-    val iter3 = outRelationIndexStore.getAllFromNodes(0, 3L)
+    val iter4 = outRelationIndexStore.getAllFromNodes(0, 3L)
 
-    Assert.assertEquals(2, iter3.toStream.length)
+    Assert.assertEquals(2, iter4.toStream.length)
 
   }
 

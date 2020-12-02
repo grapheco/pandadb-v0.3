@@ -7,11 +7,13 @@ class InEdgeRelationIndexStore(db: RocksDB) {
   /**
    * Index
    * ------------------------
-   * key      |  value
+   * key      |  Find
    * ------------------------
    * srcId + EdgeType |  DestId
    * ------------------------
    * srcId + Category | DestId
+   * ------------------------
+   * srcId + EdgeType + Category | DestId
    * ------------------------
    */
   def setIndex(fromNode: Long, edgeType: Int, category: Long, toNode: Long, relationId: Long): Unit = {
@@ -85,6 +87,22 @@ class InEdgeRelationIndexStore(db: RocksDB) {
     }
   }
 
+  def getAllToNodes(fromNode: SrcId, edgeType: EdgeType, category: CategoryId): Iterator[Long] = {
+    new Iterator[Long] {
+      val prefix = KeyHandler.relationIndexPrefixKeyToBytes(KeyHandler.KeyType.InEdge.id.toByte, fromNode, edgeType, category)
+      val iter = db.newIterator()
+      iter.seek(prefix)
+
+      override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
+
+      override def next(): Long = {
+        val toNodeId = ByteUtils.getLong(iter.key(), 21)
+        iter.next()
+        toNodeId
+      }
+    }
+  }
+
   //////
 
 }
@@ -111,7 +129,6 @@ class OutEdgeRelationIndexStore(db: RocksDB) {
       val prefix = KeyHandler.relationIndexPrefixKeyToBytes(KeyHandler.KeyType.OutEdge.id.toByte, toNode, edgeType)
       val iter = db.newIterator()
       iter.seek(prefix)
-
       override def hasNext: Boolean = {
         iter.isValid && iter.key().startsWith(prefix)
       }
@@ -161,6 +178,22 @@ class OutEdgeRelationIndexStore(db: RocksDB) {
 
       override def next(): Long = {
         fromNodeId
+      }
+    }
+  }
+
+  def getAllFromNodes(toNode: SrcId, edgeType: EdgeType, category: CategoryId): Iterator[Long] = {
+    new Iterator[Long] {
+      val prefix = KeyHandler.relationIndexPrefixKeyToBytes(KeyHandler.KeyType.OutEdge.id.toByte, toNode, edgeType, category)
+      val iter = db.newIterator()
+      iter.seek(prefix)
+
+      override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
+
+      override def next(): Long = {
+        val toNodeId = ByteUtils.getLong(iter.key(), 21)
+        iter.next()
+        toNodeId
       }
     }
   }
