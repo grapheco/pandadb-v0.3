@@ -86,6 +86,19 @@ object KeyHandler {
     bytes
   }
 
+  // [keyType(1Byte),labelId(4Bytes),properties(x*4Bytes)]
+  def nodePropertyFulltextIndexMetaKeyToBytes(labelId: Int, props:Array[Int]): Array[Byte] = {
+    val bytes = new Array[Byte](1+4+4*props.length)
+    ByteUtils.setByte(bytes, 0, KeyType.NodePropertyFulltextIndexMeta.id.toByte)
+    ByteUtils.setInt(bytes, 1, labelId)
+    var index=5
+    props.foreach{
+      p=>ByteUtils.setInt(bytes,index,p)
+        index+=4
+    }
+    bytes
+  }
+
   // [keyType(1Bytes),indexId(4),propValue(xBytes),valueLength(xBytes),nodeId(8Bytes)]
   def nodePropertyIndexKeyToBytes(indexId:Int, value: Array[Byte], length: Array[Byte], nodeId: Long): Array[Byte] = {
     val bytesLength = 13+value.length+length.length
