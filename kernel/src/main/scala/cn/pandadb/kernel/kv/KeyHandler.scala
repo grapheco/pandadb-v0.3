@@ -3,7 +3,7 @@ package cn.pandadb.kernel.kv
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
 import java.nio.charset.{Charset, StandardCharsets}
 
-import cn.pandadb.kernel.kv.KeyHandler.KeyType.KeyType
+import cn.pandadb.kernel.kv.KeyHandler.KeyType.{KeyType, Value}
 
 class IllegalKeyException(s: String) extends RuntimeException(s) {
 }
@@ -21,6 +21,7 @@ object KeyHandler {
     val RelationLabelIndex = Value(6) // [keyType(1Byte),labelId(4Bytes),relationId(8Bytes)] -> null
     val OutEdge = Value(7)  // [keyType(1Byte),fromNodeId(8Bytes),relationLabel(4Bytes),category(8Bytes),toNodeId(8Bytes)] -> relationValue(id,properties)
     val InEdge = Value(8)   // [keyType(1Byte),toNodeId(8Bytes),relationLabel(4Bytes),category(8Bytes),fromNodeId(8Bytes)] -> relationValue(id,properties)
+    val NodePropertyFulltextIndexMeta = Value(9)     // [keyType(1Byte),labelId(4Bytes),properties(x*4Bytes)] -> null
 
   }
 
