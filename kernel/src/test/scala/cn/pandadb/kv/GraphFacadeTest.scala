@@ -69,9 +69,9 @@ class GraphFacadeTest {
 
   @Test
   def testQuery(): Unit = {
-    graphFacade.addNode(Map("Name" -> "bluejoe", "age" -> 40), "person")
-    graphFacade.addNode(Map("Name" -> "alex", "age" -> 20), "person")
-    graphFacade.addNode(Map("Name" -> "simba", "age" -> 10), "person")
+    graphFacade.addNode(Map("name" -> "bluejoe", "age" -> 40), "person")
+    graphFacade.addNode(Map("name" -> "alex", "age" -> 20), "person")
+    graphFacade.addNode(Map("name" -> "simba", "age" -> 10), "person")
     graphFacade.addRelation("knows", 1L, 2L, Map())
     graphFacade.addRelation("knows", 2L, 3L, Map())
 
@@ -81,6 +81,10 @@ class GraphFacadeTest {
     Assert.assertEquals(3, res.records.size)
 
     res = graphFacade.cypher("match (n) where n.name='alex' return n")
+    res.show
+    Assert.assertEquals(1, res.records.size)
+
+    res = graphFacade.cypher("match (n) where n.age=20 return n")
     res.show
     Assert.assertEquals(1, res.records.size)
 
