@@ -5,21 +5,26 @@ import java.nio.charset.{Charset, StandardCharsets}
 
 import cn.pandadb.kernel.kv.KeyHandler.KeyType.KeyType
 
+class IllegalKeyException(s: String) extends RuntimeException(s) {
+}
+
 object KeyHandler {
   object KeyType extends Enumeration {
     type KeyType = Value
 
-    val Node = Value(1)     // [type(1Byte),nodeId(8Bytes)] -> nodeValue(id, labels, properties)
-    val NodeLabelIndex = Value(2)     // [type(1Byte),labelId(4Bytes),nodeId(8Bytes)] -> null
-    val NodePropertyIndexMeta = Value(3)     // [type(1Byte),labelId(4Bytes),properties(8Bytes)] -> null
-    val NodePropertyIndex = Value(4)  // [type(1Bytes),indexId(4),indexValue(xBytes)]
+    val Node = Value(1)     // [keyType(1Byte),nodeId(8Bytes)] -> nodeValue(id, labels, properties)
+    val NodeLabelIndex = Value(2)     // [keyType(1Byte),labelId(4Bytes),nodeId(8Bytes)] -> null
+    val NodePropertyIndexMeta = Value(3)     // [keyType(1Byte),labelId(4Bytes),properties(x*4Bytes)] -> null
+    val NodePropertyIndex = Value(4)  // // [keyType(1Bytes),indexId(4),propValue(xBytes),valueLength(xBytes),nodeId(8Bytes)] -> null
 
-    val Relation = Value(5)  // [type(1Byte),relationId(8Bytes)] -> relationValue(id, fromNode, toNode, labelId, category)
-    val RelationLabelIndex = Value(6) // [type(1Byte),labelId(4Bytes),relationId(8Bytes)] -> null
-    val InEdge = Value(7)   // [type(1Byte),fromNodeId(8Bytes),relationLabel(4Bytes),category(8Bytes),toNodeId(8Bytes)] -> relationValue(properties)
-    val OutEdge = Value(8)  // [type(1Byte),toNodeId(8Bytes),relationLabel(4Bytes),category(8Bytes),fromNodeId(8Bytes)] -> relationValue(properties)
+    val Relation = Value(5)  // [keyType(1Byte),relationId(8Bytes)] -> relationValue(id, fromNode, toNode, labelId, category)
+    val RelationLabelIndex = Value(6) // [keyType(1Byte),labelId(4Bytes),relationId(8Bytes)] -> null
+    val OutEdge = Value(7)  // [keyType(1Byte),fromNodeId(8Bytes),relationLabel(4Bytes),category(8Bytes),toNodeId(8Bytes)] -> relationValue(id,properties)
+    val InEdge = Value(8)   // [keyType(1Byte),toNodeId(8Bytes),relationLabel(4Bytes),category(8Bytes),fromNodeId(8Bytes)] -> relationValue(id,properties)
+
   }
 
+  // [keyType(1Byte),nodeId(8Bytes)]
   def nodeKeyToBytes(nodeId: Long): Array[Byte] = {
     val bytes = new Array[Byte](9)
     ByteUtils.setByte(bytes, 0, KeyType.Node.id.toByte)
@@ -27,90 +32,22 @@ object KeyHandler {
     bytes
   }
 
+  // [keyType(1Byte),--]
   def nodeKeyPrefix(): Array[Byte] = {
     val bytes = new Array[Byte](1)
     ByteUtils.setByte(bytes, 0, KeyType.Node.id.toByte)
     bytes
   }
 
-  def inEdgeKeyToBytes(): Array[Byte] ={
-    val array = Array[Byte](1)
-    ByteUtils.setByte(array, 0, KeyType.InEdge.id.toByte)
-    array
-  }
-  def outEdgeKeyToBytes(): Array[Byte] ={
-    val array = Array[Byte](1)
-    ByteUtils.setByte(array, 0, KeyType.OutEdge.id.toByte)
-    array
+  // return (nodeId:Long)
+  def parseNodeKeyFromBytes(bytes: Array[Byte]): (Long) = {
+    if (bytes.length<9) throw new IllegalKeyException("The length of key bytes is less than required.")
+    val keyType = ByteUtils.getByte(bytes, 0)
+    if (keyType.toInt != KeyType.Node.id) throw new IllegalKeyException("Illegal keyType.")
+    (ByteUtils.getLong(bytes, 1))
   }
 
-  def relationKeyToBytes(relationId: Long): Array[Byte] = {
-    val bytes = new Array[Byte](9)
-    ByteUtils.setByte(bytes, 0, KeyType.Relation.id.toByte)
-    ByteUtils.setLong(bytes, 1, relationId)
-    bytes
-  }
-
-  def relationKeyPrefix(): Array[Byte] = {
-    val bytes = new Array[Byte](1)
-    ByteUtils.setByte(bytes, 0, KeyType.Relation.id.toByte)
-    bytes
-  }
-
-  def relationIndexPrefixKeyToBytes(rType: Byte, NodeId: Long, edgeType: Int): Array[Byte] ={
-    val bytes = new Array[Byte](13)
-    ByteUtils.setByte(bytes, 0, rType)
-    ByteUtils.setLong(bytes, 1, NodeId)
-    ByteUtils.setInt(bytes, 9, edgeType)
-    bytes
-  }
-  // for category
-  def relationIndexPrefixKeyToBytes(rType: Byte, NodeId: Long): Array[Byte] ={
-    val bytes = new Array[Byte](9)
-    ByteUtils.setByte(bytes, 0, rType)
-    ByteUtils.setLong(bytes, 1, NodeId)
-    bytes
-  }
-
-  def relationIndexPrefixKeyToBytes(rType: Byte, NodeId: Long, edgeType: Int, category: Long): Array[Byte] ={
-    val bytes = new Array[Byte](21)
-    ByteUtils.setByte(bytes, 0, rType)
-    ByteUtils.setLong(bytes, 1, NodeId)
-    ByteUtils.setInt(bytes, 9, edgeType)
-    ByteUtils.setLong(bytes, 13, category)
-    bytes
-  }
-
-  def inEdgeKeyToBytes(fromNodeId: Long, toNodeId: Long, labelId: Int, category: Long): Array[Byte] = {
-    val bytes = new Array[Byte](29)
-    ByteUtils.setByte(bytes, 0, KeyType.InEdge.id.toByte)
-    ByteUtils.setLong(bytes, 1, fromNodeId)
-    ByteUtils.setInt(bytes, 9, labelId)
-    ByteUtils.setLong(bytes, 13, category)
-    ByteUtils.setLong(bytes, 21, toNodeId)
-    bytes
-  }
-
-  def outEdgeKeyToBytes(fromNodeId: Long, toNodeId: Long, labelId: Int, category: Long): Array[Byte] = {
-    val bytes = new Array[Byte](29)
-    ByteUtils.setByte(bytes, 0, KeyType.OutEdge.id.toByte)
-    ByteUtils.setLong(bytes, 1, toNodeId)
-    ByteUtils.setInt(bytes, 9, labelId)
-    ByteUtils.setLong(bytes, 13, category)
-    ByteUtils.setLong(bytes, 21, fromNodeId)
-    bytes
-  }
-
-  def bytesToEdge(byteArr: Array[Byte]): (Byte, Long, Int, Long, Long) = {
-    (
-      ByteUtils.getByte(byteArr, 0),
-      ByteUtils.getLong(byteArr, 1),
-      ByteUtils.getInt(byteArr, 9),
-      ByteUtils.getLong(byteArr,13),
-      ByteUtils.getLong(byteArr,21)
-    )
-  }
-
+  // [keyType(1Byte),labelId(4Bytes),nodeId(8Bytes)]
   def nodeLabelIndexKeyToBytes(labelId: Int, nodeId: Long): Array[Byte] = {
     val bytes = new Array[Byte](13)
     ByteUtils.setByte(bytes, 0, KeyType.NodeLabelIndex.id.toByte)
@@ -119,6 +56,7 @@ object KeyHandler {
     bytes
   }
 
+  // [keyType(1Byte),--,--]
   def nodeLabelIndexKeyPrefixToBytes(labelId: Int): Array[Byte] = {
     val bytes = new Array[Byte](5)
     ByteUtils.setByte(bytes, 0, KeyType.NodeLabelIndex.id.toByte)
@@ -126,6 +64,15 @@ object KeyHandler {
     bytes
   }
 
+  // return (labelId(Int),nodeId:Long)
+  def parseNodeLabelIndexKeyFromBytes(bytes: Array[Byte]): (Int, Long) = {
+    if (bytes.length<13) throw new IllegalKeyException("The length of key bytes is less than required.")
+    val keyType = ByteUtils.getByte(bytes, 0)
+    if (keyType.toInt != KeyType.NodeLabelIndex.id) throw new IllegalKeyException("Illegal keyType.")
+    (ByteUtils.getInt(bytes, 1), ByteUtils.getLong(bytes, 5))
+  }
+
+  // [keyType(1Byte),labelId(4Bytes),properties(x*4Bytes)]
   def nodePropertyIndexMetaKeyToBytes(labelId: Int, props:Array[Int]): Array[Byte] = {
     val bytes = new Array[Byte](1+4+4*props.length)
     ByteUtils.setByte(bytes, 0, KeyType.NodePropertyIndexMeta.id.toByte)
@@ -138,6 +85,7 @@ object KeyHandler {
     bytes
   }
 
+  // [keyType(1Bytes),indexId(4),propValue(xBytes),valueLength(xBytes),nodeId(8Bytes)]
   def nodePropertyIndexKeyToBytes(indexId:Int, value: Array[Byte], length: Array[Byte], nodeId: Long): Array[Byte] = {
     val bytesLength = 13+value.length+length.length
     val bytes = new Array[Byte](bytesLength)
@@ -151,6 +99,7 @@ object KeyHandler {
     bytes
   }
 
+  // [keyType(1Bytes),indexId(4),propValue(xBytes),valueLength(xBytes),nodeId(8Bytes)]
   def nodePropertyIndexPrefixToBytes(indexId:Int, value: Array[Byte], length: Array[Byte]): Array[Byte] = {
     val bytesLength = 5+value.length+length.length
     val bytes = new Array[Byte](bytesLength)
@@ -163,20 +112,166 @@ object KeyHandler {
     bytes
   }
 
-  def relationLabelIndexKeyToBytes(labelId: Int, nodeId: Long): Array[Byte] = {
-    val bytes = new Array[Byte](13)
-    ByteUtils.setByte(bytes, 0, KeyType.NodeLabelIndex.id.toByte)
-    ByteUtils.setInt(bytes, 1, labelId)
-    ByteUtils.setLong(bytes, 5, nodeId)
+  // [keyType(1Byte),relationId(8Bytes)]
+  def relationKeyToBytes(relationId: Long): Array[Byte] = {
+    val bytes = new Array[Byte](9)
+    ByteUtils.setByte(bytes, 0, KeyType.Relation.id.toByte)
+    ByteUtils.setLong(bytes, 1, relationId)
     bytes
   }
 
+  // [keyType(1Byte),--]
+  def relationKeyPrefix(): Array[Byte] = {
+    val bytes = new Array[Byte](1)
+    ByteUtils.setByte(bytes, 0, KeyType.Relation.id.toByte)
+    bytes
+  }
+
+  // return (relationId:Long)
+  def parseRelationKeyFromBytes(bytes: Array[Byte]): (Long) = {
+    if (bytes.length<9) throw new IllegalKeyException("The length of key bytes is less than required.")
+    val keyType = ByteUtils.getByte(bytes, 0)
+    if (keyType.toInt != KeyType.Relation.id) throw new IllegalKeyException("Illegal keyType.")
+    (ByteUtils.getLong(bytes, 1))
+  }
+
+  // [keyType(1Byte),relLabelId(4Bytes),relationId(8Bytes)]
+  def relationLabelIndexKeyToBytes(labelId: Int, relationId: Long): Array[Byte] = {
+    val bytes = new Array[Byte](13)
+    ByteUtils.setByte(bytes, 0, KeyType.RelationLabelIndex.id.toByte)
+    ByteUtils.setInt(bytes, 1, labelId)
+    ByteUtils.setLong(bytes, 5, relationId)
+    bytes
+  }
+
+  // [keyType(1Byte),relLabelId(4Bytes),--]
   def relationLabelIndexKeyPrefixToBytes(labelId: Int): Array[Byte] = {
     val bytes = new Array[Byte](5)
     ByteUtils.setByte(bytes, 0, KeyType.NodeLabelIndex.id.toByte)
     ByteUtils.setInt(bytes, 1, labelId)
     bytes
   }
+
+  // return (relLabelId(Int),relationId:Long)
+  def parseRelationLabelIndexKeyFromBytes(bytes: Array[Byte]): (Int,Long) = {
+    if (bytes.length<13) throw new IllegalKeyException("The length of key bytes is less than required.")
+    val keyType = ByteUtils.getByte(bytes, 0)
+    if (keyType.toInt != KeyType.RelationLabelIndex.id) throw new IllegalKeyException("Illegal keyType.")
+    (ByteUtils.getInt(bytes, 1), ByteUtils.getLong(bytes, 5))
+  }
+
+  // [keyType(1Byte),fromNodeId(8Bytes),relationLabel(4Bytes),category(8Bytes),toNodeId(8Bytes)]
+  def outEdgeKeyToBytes(fromNodeId: Long, labelId: Int, category: Long, toNodeId: Long): Array[Byte] = {
+    val bytes = new Array[Byte](29)
+    ByteUtils.setByte(bytes, 0, KeyType.OutEdge.id.toByte)
+    ByteUtils.setLong(bytes, 1, fromNodeId)
+    ByteUtils.setInt(bytes, 9, labelId)
+    ByteUtils.setLong(bytes, 13, category)
+    ByteUtils.setLong(bytes, 21, toNodeId)
+    bytes
+  }
+
+  // return (fromNodeId: Long, labelId: Int, category: Long, toNodeId: Long)
+  def parseOutEdgeKeyFromBytes(bytes: Array[Byte]): (Long,Int,Long,Long) = {
+    if (bytes.length<29) throw new IllegalKeyException("The length of key bytes is less than required.")
+    val keyType = ByteUtils.getByte(bytes, 0)
+    if (keyType.toInt != KeyType.OutEdge.id) throw new IllegalKeyException("Illegal keyType.")
+    ( ByteUtils.getLong(bytes, 1),
+    ByteUtils.getInt(bytes, 9),
+    ByteUtils.getLong(bytes, 13),
+    ByteUtils.getLong(bytes, 21) )
+  }
+
+  // [keyType(1Byte),--,--,--,--]
+  def outEdgeKeyPrefixToBytes(): Array[Byte] = {
+    val bytes = new Array[Byte](1)
+    ByteUtils.setByte(bytes, 0, KeyType.OutEdge.id.toByte)
+    bytes
+  }
+
+  // [keyType(1Byte),fromNodeId(8Bytes),--,--,--]
+  def outEdgeKeyPrefixToBytes(fromNodeId: Long): Array[Byte] = {
+    val bytes = new Array[Byte](9)
+    ByteUtils.setByte(bytes, 0, KeyType.OutEdge.id.toByte)
+    ByteUtils.setLong(bytes, 1, fromNodeId)
+    bytes
+  }
+
+  // [keyType(1Byte),fromNodeId(8Bytes),relationLabel(4Bytes),--,--]
+  def outEdgeKeyPrefixToBytes(fromNodeId: Long, labelId: Int): Array[Byte] = {
+    val bytes = new Array[Byte](13)
+    ByteUtils.setByte(bytes, 0, KeyType.OutEdge.id.toByte)
+    ByteUtils.setLong(bytes, 1, fromNodeId)
+    ByteUtils.setInt(bytes, 9, labelId)
+    bytes
+  }
+
+  // [keyType(1Byte),fromNodeId(8Bytes),relationLabel(4Bytes),category(8Bytes),--]
+  def outEdgeKeyPrefixToBytes(fromNodeId: Long, labelId: Int, category: Long): Array[Byte] = {
+    val bytes = new Array[Byte](21)
+    ByteUtils.setByte(bytes, 0, KeyType.OutEdge.id.toByte)
+    ByteUtils.setLong(bytes, 1, fromNodeId)
+    ByteUtils.setInt(bytes, 9, labelId)
+    ByteUtils.setLong(bytes, 13, category)
+    bytes
+  }
+
+  // [keyType(1Byte),toNodeId(8Bytes),relationLabel(4Bytes),category(8Bytes),fromNodeId(8Bytes)]
+  def inEdgeKeyToBytes(toNodeId: Long, labelId: Int, category: Long, fromNodeId: Long): Array[Byte] = {
+    val bytes = new Array[Byte](29)
+    ByteUtils.setByte(bytes, 0, KeyType.InEdge.id.toByte)
+    ByteUtils.setLong(bytes, 1, toNodeId)
+    ByteUtils.setInt(bytes, 9, labelId)
+    ByteUtils.setLong(bytes, 13, category)
+    ByteUtils.setLong(bytes, 21, fromNodeId)
+    bytes
+  }
+
+  // return (toNodeId: Long, labelId: Int, category: Long, fromNodeId: Long)
+  def parseInEdgeKeyFromBytes(bytes: Array[Byte]): (Long,Int,Long,Long) = {
+    if (bytes.length<29) throw new IllegalKeyException("The length of key bytes is less than required.")
+    val keyType = ByteUtils.getByte(bytes, 0)
+    if (keyType.toInt != KeyType.InEdge.id) throw new IllegalKeyException("Illegal keyType.")
+    (ByteUtils.getLong(bytes, 1),
+      ByteUtils.getInt(bytes, 9),
+    ByteUtils.getLong(bytes, 13),
+    ByteUtils.getLong(bytes, 21) )
+  }
+
+  // [keyType(1Byte),--,--,--,--]
+  def inEdgeKeyPrefixToBytes(): Array[Byte] = {
+    val bytes = new Array[Byte](1)
+    ByteUtils.setByte(bytes, 0, KeyType.InEdge.id.toByte)
+    bytes
+  }
+
+  // [keyType(1Byte),toNodeId(8Bytes),--,--,--]
+  def inEdgeKeyPrefixToBytes(toNodeId: Long): Array[Byte] = {
+    val bytes = new Array[Byte](9)
+    ByteUtils.setByte(bytes, 0, KeyType.InEdge.id.toByte)
+    ByteUtils.setLong(bytes, 1, toNodeId)
+    bytes
+  }
+
+  // [keyType(1Byte),toNodeId(8Bytes),relationLabel(4Bytes),--,--]
+  def inEdgeKeyPrefixToBytes(toNodeId: Long, labelId: Int): Array[Byte] = {
+    val bytes = new Array[Byte](13)
+    ByteUtils.setByte(bytes, 0, KeyType.InEdge.id.toByte)
+    ByteUtils.setLong(bytes, 1, toNodeId)
+    ByteUtils.setInt(bytes, 9, labelId)
+    bytes
+  }
+
+  // [keyType(1Byte),toNodeId(8Bytes),relationLabel(4Bytes),category(8Bytes),--]
+  def inEdgeKeyPrefixToBytes(toNodeId: Long, labelId: Int, category: Long): Array[Byte] = {
+    val bytes = new Array[Byte](21)
+    ByteUtils.setByte(bytes, 0, KeyType.InEdge.id.toByte)
+    ByteUtils.setLong(bytes, 1, toNodeId)
+    ByteUtils.setInt(bytes, 9, labelId)
+    ByteUtils.setLong(bytes, 13, category)
+    bytes
+  }
+
 }
 
 object ByteUtils {
