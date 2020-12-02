@@ -30,62 +30,61 @@ class InEdgeRelationIndexStore(db: RocksDB) {
   type EdgeType = Int
 
   def getAllToNodes(fromNode: SrcId, edgeType: EdgeType): Iterator[Long] = {
-    new ToNodesIterator(fromNode, edgeType)
-  }
-  def getAllToNodes(fromNode: SrcId, category: CategoryId): Iterator[Long] ={
-    new ToNodesIterator2(fromNode, category)
-  }
+    new Iterator[Long] {
+      val prefix = KeyHandler.relationIndexPrefixKeyToBytes(KeyHandler.KeyType.InEdge.id.toByte, fromNode, edgeType)
+      val iter = db.newIterator()
+      iter.seek(prefix)
 
-  class ToNodesIterator(fromNode: SrcId, edgeType: EdgeType) extends Iterator[Long] {
-    val prefix = KeyHandler.relationIndexPrefixKeyToBytes(KeyHandler.KeyType.InEdge.id.toByte, fromNode, edgeType)
-    val iter = db.newIterator()
-    iter.seek(prefix)
+      override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
 
-    override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
-
-    override def next(): Long = {
-      val toNodeId = ByteUtils.getLong(iter.key(), 21)
-      iter.next()
-      toNodeId
+      override def next(): Long = {
+        val toNodeId = ByteUtils.getLong(iter.key(), 21)
+        iter.next()
+        toNodeId
+      }
     }
   }
-  class ToNodesIterator2(fromNode: SrcId, category: CategoryId) extends Iterator[Long] {
-    val categoryBytes = ByteUtils.longToBytes(category)
-    val prefix = KeyHandler.relationIndexPrefixKeyToBytes(KeyHandler.KeyType.InEdge.id.toByte, fromNode)
-    val iter = db.newIterator()
-    iter.seek(prefix)
-    var toNodeId: Long = _
 
-    override def hasNext: Boolean = {
-      var isFinish = false
-      var isFound = false
-      if (iter.isValid && iter.key().startsWith(prefix)){
-        while (!isFinish){
-          if (iter.key().slice(13, 21).sameElements(categoryBytes)) {
-            isFinish = true
-            isFound = true
-            toNodeId = ByteUtils.getLong(iter.key(),21)
-            iter.next()
-          }
-          else {
-            if (iter.isValid && iter.key().startsWith(prefix)){
+  def getAllToNodes(fromNode: SrcId, category: CategoryId): Iterator[Long] = {
+    new Iterator[Long] {
+      val categoryBytes = ByteUtils.longToBytes(category)
+      val prefix = KeyHandler.relationIndexPrefixKeyToBytes(KeyHandler.KeyType.InEdge.id.toByte, fromNode)
+      val iter = db.newIterator()
+      iter.seek(prefix)
+      var toNodeId: Long = _
+
+      override def hasNext: Boolean = {
+        var isFinish = false
+        var isFound = false
+        if (iter.isValid && iter.key().startsWith(prefix)) {
+          while (!isFinish) {
+            if (iter.key().slice(13, 21).sameElements(categoryBytes)) {
+              isFinish = true
+              isFound = true
+              toNodeId = ByteUtils.getLong(iter.key(), 21)
               iter.next()
             }
-            else{
-              isFinish = true
-              isFound = false
+            else {
+              if (iter.isValid && iter.key().startsWith(prefix)) {
+                iter.next()
+              }
+              else {
+                isFinish = true
+                isFound = false
+              }
             }
           }
+          isFound
         }
-        isFound
+        else false
       }
-      else false
-    }
 
-    override def next(): Long = {
-      toNodeId
+      override def next(): Long = {
+        toNodeId
+      }
     }
   }
+
   //////
 
 }
@@ -108,67 +107,64 @@ class OutEdgeRelationIndexStore(db: RocksDB) {
   type EdgeType = Int
 
   def getAllFromNodes(toNode: SrcId, edgeType: EdgeType): Iterator[Long] = {
-    new fromNodesIterator(toNode, edgeType)
-  }
-  def getAllFromNodes(toNode: SrcId, category: CategoryId): Iterator[Long] ={
-    new fromNodesIterator2(toNode, category)
-  }
+    new Iterator[Long] {
+      val prefix = KeyHandler.relationIndexPrefixKeyToBytes(KeyHandler.KeyType.OutEdge.id.toByte, toNode, edgeType)
+      val iter = db.newIterator()
+      iter.seek(prefix)
 
-  class fromNodesIterator(toNode: SrcId, edgeType: EdgeType) extends Iterator[Long] {
-    val prefix = KeyHandler.relationIndexPrefixKeyToBytes(KeyHandler.KeyType.OutEdge.id.toByte, toNode, edgeType)
-    val iter = db.newIterator()
-    iter.seek(prefix)
+      override def hasNext: Boolean = {
+        iter.isValid && iter.key().startsWith(prefix)
+      }
 
-    override def hasNext: Boolean = {
-      iter.isValid && iter.key().startsWith(prefix)
-    }
-
-    override def next(): Long = {
-      val toNodeId = ByteUtils.getLong(iter.key(), 21)
-      iter.next()
-      toNodeId
+      override def next(): Long = {
+        val toNodeId = ByteUtils.getLong(iter.key(), 21)
+        iter.next()
+        toNodeId
+      }
     }
   }
-  class fromNodesIterator2(toNode: SrcId, category: CategoryId) extends Iterator[Long] {
-    val categoryBytes = ByteUtils.longToBytes(category)
 
-    val prefix = KeyHandler.relationIndexPrefixKeyToBytes(KeyHandler.KeyType.OutEdge.id.toByte, toNode)
-    val iter = db.newIterator()
-    iter.seek(prefix)
-    var fromNodeId: Long = _
+  def getAllFromNodes(toNode: SrcId, category: CategoryId): Iterator[Long] = {
+    new Iterator[Long] {
+      val categoryBytes = ByteUtils.longToBytes(category)
 
-    override def hasNext: Boolean = {
-      var isFinish = false
-      var isFound = false
-      if (iter.isValid && iter.key().startsWith(prefix)){
-        while (!isFinish){
-          if (iter.key().slice(13, 21).sameElements(categoryBytes)) {
-            isFinish = true
-            isFound = true
-            fromNodeId = ByteUtils.getLong(iter.key(),21)
-            iter.next()
-          }
-          else {
-            if (iter.isValid && iter.key().startsWith(prefix)){
+      val prefix = KeyHandler.relationIndexPrefixKeyToBytes(KeyHandler.KeyType.OutEdge.id.toByte, toNode)
+      val iter = db.newIterator()
+      iter.seek(prefix)
+      var fromNodeId: Long = _
+
+      override def hasNext: Boolean = {
+        var isFinish = false
+        var isFound = false
+        if (iter.isValid && iter.key().startsWith(prefix)) {
+          while (!isFinish) {
+            if (iter.key().slice(13, 21).sameElements(categoryBytes)) {
+              isFinish = true
+              isFound = true
+              fromNodeId = ByteUtils.getLong(iter.key(), 21)
               iter.next()
             }
-            else{
-              isFinish = true
-              isFound = false
+            else {
+              if (iter.isValid && iter.key().startsWith(prefix)) {
+                iter.next()
+              }
+              else {
+                isFinish = true
+                isFound = false
+              }
             }
           }
+          isFound
         }
-        isFound
+        else false
       }
-      else false
-    }
 
-    override def next(): Long = {
-      fromNodeId
+      override def next(): Long = {
+        fromNodeId
+      }
     }
   }
   //////
-
 }
 
 class RelationStore(db: RocksDB) {
@@ -203,41 +199,35 @@ class RelationStore(db: RocksDB) {
   }
 
   def getAll(): Iterator[StoredRelationWithProperty] = {
-    new StoredRelationIterator(db)
-  }
+    new Iterator[StoredRelationWithProperty]{
+      val keyPrefix = KeyHandler.relationKeyPrefix()
+      val iter = db.newIterator()
+      iter.seek(keyPrefix)
 
+      override def hasNext: Boolean = {
+        iter.isValid && iter.key().startsWith(keyPrefix)
+      }
+
+      override def next(): StoredRelationWithProperty = {
+        val nextRelation = {
+          val keyBytes = iter.key()
+          val relation = ByteUtils.mapFromBytes(db.get(keyBytes))
+
+          val relationId = ByteUtils.getLong(keyBytes, 1)
+          new StoredRelationWithProperty(relationId, relation("from").asInstanceOf[Long], relation("to").asInstanceOf[Long],
+            relation("labelId").asInstanceOf[Int], relation("prop").asInstanceOf[Map[String, Any]],
+            relation("category").asInstanceOf[Long]
+          )
+        }
+        iter.next()
+        nextRelation
+      }
+    }
+  }
   def close(): Unit = {
     db.close()
   }
-
-  class StoredRelationIterator(db: RocksDB) extends Iterator[StoredRelationWithProperty] {
-    val keyPrefix = KeyHandler.relationKeyPrefix()
-
-    val iter = db.newIterator()
-    iter.seek(keyPrefix)
-
-    override def hasNext: Boolean = {
-      iter.isValid && iter.key().startsWith(keyPrefix)
-    }
-
-    override def next(): StoredRelationWithProperty = {
-      val nextRelation = {
-        val keyBytes = iter.key()
-        val relation = ByteUtils.mapFromBytes(db.get(keyBytes))
-
-        val relationId = ByteUtils.getLong(keyBytes, 1)
-        new StoredRelationWithProperty(relationId, relation("from").asInstanceOf[Long], relation("to").asInstanceOf[Long],
-          relation("labelId").asInstanceOf[Int], relation("prop").asInstanceOf[Map[String, Any]],
-          relation("category").asInstanceOf[Long]
-        )
-      }
-      iter.next()
-      nextRelation
-    }
-  }
-
 }
-
 class NoRelationGetException extends Exception {
   override def getMessage: String = "no such relation to get"
 }

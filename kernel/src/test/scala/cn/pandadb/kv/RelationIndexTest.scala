@@ -4,24 +4,30 @@ import java.io.File
 
 import cn.pandadb.kernel.kv.{InEdgeRelationIndexStore, OutEdgeRelationIndexStore, RocksDBStorage}
 import org.apache.commons.io.FileUtils
-import org.junit.{Assert, Before, Test}
+import org.junit.{After, Assert, Before, Test}
+import org.rocksdb.RocksDB
 
 class RelationIndexTest {
   var inRelationIndexStore: InEdgeRelationIndexStore = null
   var outRelationIndexStore: OutEdgeRelationIndexStore = null
-
+  var db: RocksDB = null
   @Before
   def init(): Unit ={
     if (new File("testdata/rocks/db").exists()){
       FileUtils.deleteDirectory(new File("testdata/rocks/db"))
     }
-    val db = RocksDBStorage.getDB()
+    db = RocksDBStorage.getDB()
     inRelationIndexStore = new InEdgeRelationIndexStore(db)
     outRelationIndexStore = new OutEdgeRelationIndexStore(db)
   }
 
+  @After
+  def close(): Unit ={
+    db.close()
+  }
+
   @Test
-  def testIndex(): Unit ={
+  def testIndexIn(): Unit ={
     inRelationIndexStore.setIndex(0,2,3,1, 1)
     inRelationIndexStore.setIndex(0,2,2,2, 2)
     inRelationIndexStore.setIndex(0,3,2,3, 3)
@@ -34,10 +40,16 @@ class RelationIndexTest {
 
     Assert.assertEquals(2, iter1.toStream.length)
     Assert.assertEquals(3, iter2.toStream.length)
+
+    inRelationIndexStore.deleteIndex(0, 2,3,6)
+    val iter3 = inRelationIndexStore.getAllToNodes(0, 3L)
+
+    Assert.assertEquals(2, iter3.toStream.length)
+
   }
 
   @Test
-  def testIndex2(): Unit ={
+  def testIndexOut(): Unit ={
     outRelationIndexStore.setIndex(1,2,3,0, 1)
     outRelationIndexStore.setIndex(2,2,2,0, 2)
     outRelationIndexStore.setIndex(3,3,2,0, 3)
@@ -50,6 +62,12 @@ class RelationIndexTest {
 
     Assert.assertEquals(2, iter1.toStream.length)
     Assert.assertEquals(3, iter2.toStream.length)
+
+    outRelationIndexStore.deleteIndex(6, 2,3,0)
+    val iter3 = outRelationIndexStore.getAllFromNodes(0, 3L)
+
+    Assert.assertEquals(2, iter3.toStream.length)
+
   }
 
 }
