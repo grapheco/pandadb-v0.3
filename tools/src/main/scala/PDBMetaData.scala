@@ -15,15 +15,19 @@ object PDBMetaData {
   def isLabelExists(label: String): Boolean = _propIdMap.contains(label)
 
   def addProp(prop: String): Int = {
-    _propIdMap += (prop -> _propCounter)
-    _propCounter += 1
-    _propCounter - 1
+    if(!_propIdMap.contains(prop)){
+      _propIdMap += (prop -> _propCounter)
+      _propCounter += 1
+      _propCounter - 1
+    } else _propIdMap(prop)
   }
 
   def addLabel(label: String): Int = {
-    _labelIdMap += (label -> _labelCounter)
-    _labelCounter += 1
-    _labelCounter - 1
+    if(!_labelIdMap.contains(label)){
+      _labelIdMap += (label -> _labelCounter)
+      _labelCounter += 1
+      _labelCounter - 1
+    } else _labelIdMap(label)
   }
 
   def getPropId(prop: String): Int = {

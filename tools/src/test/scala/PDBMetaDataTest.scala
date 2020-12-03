@@ -14,12 +14,12 @@ class PDBMetaDataTest {
   @Test
   def getPerformace(): Unit = {
     val time0 = System.currentTimeMillis()
-    for(i<-1 to 10000000){
+    for(i<-1 to 100000000){
       val propId: Int = mmap("name")
     }
     val time1 = System.currentTimeMillis()
 
-    for(i<-1 to 10000000){
+    for(i<-1 to 100000000){
       val propId: Int = pdbMetaData.getPropId("name")
     }
     val time2 = System.currentTimeMillis()

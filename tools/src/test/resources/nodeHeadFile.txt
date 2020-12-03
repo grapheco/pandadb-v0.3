@@ -1,0 +1,1 @@
+id_s:ID,label:LABEL,id_p:long,idStr:string,flag:boolean

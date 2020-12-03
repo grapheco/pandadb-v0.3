@@ -15,6 +15,7 @@
     <modules>
         <module>kernel</module>
         <module>lucene-backend</module>
+        <module>tools</module>
     </modules>
 
     <build>
