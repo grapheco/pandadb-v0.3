@@ -161,7 +161,7 @@ object KeyHandler {
   // [keyType(1Byte),relLabelId(4Bytes),--]
   def relationLabelIndexKeyPrefixToBytes(labelId: Int): Array[Byte] = {
     val bytes = new Array[Byte](5)
-    ByteUtils.setByte(bytes, 0, KeyType.NodeLabelIndex.id.toByte)
+    ByteUtils.setByte(bytes, 0, KeyType.RelationLabelIndex.id.toByte)
     ByteUtils.setInt(bytes, 1, labelId)
     bytes
   }
