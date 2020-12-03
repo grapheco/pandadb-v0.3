@@ -3,7 +3,7 @@ package cn.pandadb.kernel.kv
 import cn.pandadb.kernel.store.{StoredRelationWithProperty}
 import org.rocksdb.RocksDB
 
-class InEdgeRelationIndexStore(db: RocksDB) {
+class RelationInEdgeIndexStore(db: RocksDB) {
   /**
    * in edge data structure
    * ------------------------
@@ -102,7 +102,7 @@ class InEdgeRelationIndexStore(db: RocksDB) {
   //////
 }
 
-class OutEdgeRelationIndexStore(db: RocksDB) {
+class RelationOutEdgeIndexStore(db: RocksDB) {
   /**
    * out edge data structure
    * ------------------------
