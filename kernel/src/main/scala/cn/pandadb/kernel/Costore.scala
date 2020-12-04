@@ -72,7 +72,7 @@ class Costore(indexPath: String) {
     Some(array.toArray)
   }
 
-  private def search(q: Query, topN: Int = Int.MaxValue): TopDocs = {
+  private def executeQuery(q: Query, topN: Int = Int.MaxValue): TopDocs = {
     val newReader = DirectoryReader.openIfChanged(reader)
     if (newReader != null) {
       reader.close()
@@ -84,12 +84,12 @@ class Costore(indexPath: String) {
 
   def search(keyword: (Array[String], String), topN: Int = Int.MaxValue): TopDocs = {
     val stringQuery = new MultiFieldQueryParser(keyword._1,analyzer).parse(keyword._2)
-    searcher.search(stringQuery, topN)
+    executeQuery(stringQuery, topN)
   }
 
   def lookup(id: TypedId): Option[Map[String, Any]] = {
     val idQuery = new QueryParser("_id", analyzer).parse(documentId(id))
-    val hits = search(idQuery,1)
+    val hits = executeQuery(idQuery,1)
     if (hits.totalHits == 0) return None
     Some(scoreDoc2NodeWithProperties(hits.scoreDocs.head))
   }
