@@ -16,43 +16,40 @@ import scala.io.Source
 
 /**
  *
-  headMap(propId1 -> type, propId2 -> type ...)
+  headMap(propName1 -> type, propName2 -> type ...)
  */
 
-
 // protocol: :ID :LABELS propName1:type1 proName2:type2
-case class TempNode(id: Long, labels: Array[Int], properties: Map[Int, Any])
+case class TempNode(id: Long, labels: Array[Int], properties: Map[String, Any])
 
-class PNodeImporter(nodeFile: File, rocksDB: RocksDB, hFile: File) extends PandaImporter {
-  override val db: RocksDB = rocksDB
-  override val file: File = nodeFile
-  override val headFile: File = hFile
-  override val headMap: Map[Int, String] = _setHead()
+class PNodeImporter(nodeFile: File, rocksDB: RocksDB, hFile: File) {
+  val db: RocksDB = rocksDB
+  val file: File = nodeFile
+  val headFile: File = hFile
+  // record the propId sort in the file, example: Array(2, 4, 1, 3)
+  var propSortArr: Array[String] = null
+  val headMap: Map[String, String] = _setNodeHead()
   val nodeStore = new NodeStore(db)
 
-  // record the propId sort in the file, example: Array(2, 4, 1, 3)
-  var propSortArr: Array[Int] = null
+  def importNodes(): Unit = {
+    val iter = Source.fromFile(file).getLines()
+    while (iter.hasNext) {
+      val tempNode = _wrapNode(iter.next().replace("\n", "").split(","))
+      nodeStore.set(tempNode.id, tempNode.labels, tempNode.properties)
+    }
+  }
 
-//  def importNodes() = {
-//    val iter = Source.fromFile(file).getLines()
-//    while (iter.hasNext) {
-//      val lineArray = iter.next().replace("\n", "").split(",")
-//      val tempNode = _wrapNode(lineArray)
-//      nodeStore.set(tempNode.id, tempNode.labels, tempNode.properties)
-//    }
-//  }
-
-  private def _setHead(): Map[Int, String] = {
-    var hMap: Map[Int, String] = Map[Int, String]()
+  private def _setNodeHead(): Map[String, String] = {
+    var hMap: Map[String, String] = Map[String, String]()
     val headArr = Source.fromFile(hFile).getLines().next().replace("\n", "").split(",")
-    propSortArr = Array[Int](headArr.length)
+    propSortArr = new Array[String](headArr.length-2)
     // headArr(0) is :ID, headArr(1) is :LABELS
-    for(i <- 2 until headArr.length - 1) {
+    for(i <- 2 to headArr.length - 1) {
       val fieldArr = headArr(i).split(":")
-      val propId: Int = PDBMetaData.getPropId(fieldArr(0))
-      propSortArr(i-2) = propId
+      val propName: String = fieldArr(0)
+      propSortArr(i-2) = propName
       val propType: String = fieldArr(1).toLowerCase()
-      hMap += (propId -> propType)
+      hMap += (propName -> propType)
     }
     hMap
   }
@@ -60,20 +57,20 @@ class PNodeImporter(nodeFile: File, rocksDB: RocksDB, hFile: File) extends Panda
   private def _wrapNode(lineArr: Array[String]): TempNode = {
     val id = lineArr(0).toLong
 //    TODO：modify the labels import mechanism, enable real array
-    val labels: Array[Int] = Array(lineArr(1).toInt)
-    var propMap: Map[Int, Any] = Map[Int, Any]()
-    for(i <-2 until lineArr.length -1) {
-      val propId = propSortArr(i - 2)
+    val labels: Array[Int] = Array(PDBMetaData.getLabelId(lineArr(1)))
+    var propMap: Map[String, Any] = Map[String, Any]()
+    for(i <-2 to lineArr.length -1) {
+      val propName = propSortArr(i - 2)
       val propValue: Any = {
-        headMap(propId) match {
+        headMap(propName) match {
           case "long" => lineArr(i).toLong
           case "int" => lineArr(i).toInt
           case "boolean" => lineArr(i).toBoolean
           case "double" => lineArr(i).toDouble
-          case _ => lineArr(i)
+          case _ => lineArr(i).replace("\"", "")
         }
       }
-      propMap += (propId -> propValue)
+      propMap += (propName -> propValue)
     }
     TempNode(id, labels, propMap)
   }
