@@ -7,6 +7,7 @@ import org.junit.{After, Assert, Before, Test}
 import org.rocksdb.{ReadOptions, RocksDB}
 import org.apache.commons.lang3.RandomStringUtils
 
+import scala.io.Source
 import scala.tools.nsc.profile.Profiler
 import scala.util.Random
 
@@ -137,7 +138,7 @@ class NodeIndexTest extends Assert {
       4->"张三丰",
       5->"李四光",
       6->"王五",
-      7->"Scala",
+      7->"PandaDB is a Intelligent Graph Database.(",
       8->"PandaDB",
       9->"PandaDB is a Intelligent Graph Database.").map{
       v=> val value = v._2.getBytes()
@@ -154,6 +155,33 @@ class NodeIndexTest extends Assert {
     Assert.assertArrayEquals(Array[Long](8), ni.find(indexId, "PandaDB".getBytes()).toArray)
     Assert.assertArrayEquals(Array[Long](9), ni.find(indexId, "PandaDB is a Intelligent Graph Database.".getBytes()).toArray)
 
+  }
+
+  @Test
+  def LongstringIndexTest = {
+
+    val file = Source.fromFile("data.csv")
+    val l = file.getLines().map{
+      s=>
+        val arr = s.split(",")
+        val value = arr(1).getBytes()
+      (value, Array[Byte](value.length.toByte), arr(0).toLong)
+    }
+    val db:RocksDB = RocksDBStorage.getDB(path+"/test6")
+    val ni = new NodeIndex(db)
+    // create and insert
+    val indexId = ni.createIndex(5,Array[Int](5))
+    ni.insertIndexRecord(indexId, l)
+    val t0 = System.currentTimeMillis()
+    ni.find(indexId, "肖申克的救赎".getBytes()).toArray.foreach(println(_))
+    val t1 = System.currentTimeMillis()
+    println("time1: ",t1-t0)
+    ni.find(indexId, "乐高DC超级英雄：正义联盟之末日军团的进攻".getBytes()).toArray.foreach(println(_))
+    val t2 = System.currentTimeMillis()
+    println("time1: ",t2-t1)
+    ni.find(indexId, "PandaDB".getBytes()).toArray.foreach(println(_))
+    val t3 = System.currentTimeMillis()
+    println("time1: ",t3-t2)
   }
 
 }

@@ -1,7 +1,9 @@
 package cn.pandadb.kernel.kv
 
+import cn.pandadb.kernel.kv.NodeIndex.IndexId
 import cn.pandadb.kernel.{GraphRAM, NodeId, PropertyStore, TypedId}
 import cn.pandadb.kernel.store.{MergedChanges, StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
+import sun.security.util.Length
 
 class RocksDBGraphImpl(dbPath: String) {
   private val rocksDB = RocksDBStorage.getDB(dbPath)
@@ -11,6 +13,7 @@ class RocksDBGraphImpl(dbPath: String) {
   private val relationLabelIndex = new RelationLabelIndex(rocksDB)
   private val relationInEdgeIndex = new RelationInEdgeIndexStore(rocksDB)
   private val relationOutEdgeIndex = new RelationOutEdgeIndexStore(rocksDB)
+  private val nodeIndex = new NodeIndex(rocksDB)
   def clear(): Unit = {
   }
 
@@ -142,6 +145,39 @@ class RocksDBGraphImpl(dbPath: String) {
 
   def findFromNodes(toNodeId: Long, edgeType: Int, category: Long): Iterator[Long] = {
     relationInEdgeIndex.findNodes(toNodeId, edgeType, category)
+  }
+
+  // Index
+  def createIndex(nodeLabel: Int, nodePropertyIds: Array[Int]): NodeIndex.IndexId = {
+    nodeIndex.createIndex(nodeLabel, nodePropertyIds)
+  }
+
+  def getIndexId(nodeLabel: Int, nodePropertyIds: Array[Int]): NodeIndex.IndexId = {
+    nodeIndex.getIndexId(nodeLabel, nodePropertyIds)
+  }
+
+  def dropIndex(nodeLabel: Int, nodePropertyIds: Array[Int]): Unit = {
+    nodeIndex.dropIndex(nodeLabel, nodePropertyIds)
+  }
+
+  def insertIndexRecord(indexId: IndexId, data:Iterator[(Array[Byte], Array[Byte], Long)]): Unit = {
+    nodeIndex.insertIndexRecord(indexId, data)
+  }
+
+  def deleteIndexRecord(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: Int): Unit = {
+    nodeIndex.deleteIndexRecord(indexId, value, length, nodeId)
+  }
+
+  def updateIndexRecord(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: Int, newValue: Array[Byte]): Unit = {
+    nodeIndex.updateIndexRecord(indexId, value, length, nodeId, newValue)
+  }
+
+  def findRecords(indexId: IndexId, value: Array[Byte], length: Array[Byte]): Iterator[Long] = {
+    nodeIndex.find(indexId, value, length)
+  }
+
+  def findRecords(indexId: IndexId, value: Array[Byte]): Iterator[Long] = {
+    nodeIndex.find(indexId, value)
   }
 
   // below is the code added by zhaozihao, for possible further use.

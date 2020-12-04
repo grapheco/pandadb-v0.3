@@ -2,16 +2,22 @@ package cn.pandadb.kernel.kv
 
 import java.nio.ByteBuffer
 
+import cn.pandadb.kernel.kv.NodeIndex.NodeId
+import cn.pandadb.kernel.kv.NodeIndex.IndexId
 import org.rocksdb.RocksDB
 
 import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.util.Random
 
-class NodeIndex(db: RocksDB){
-  
+object NodeIndex{
   type IndexId   = Int
   type NodeId    = Long
+}
+
+class NodeIndex(db: RocksDB){
+  
+
 
   /**
    * Index MetaData
@@ -47,6 +53,10 @@ class NodeIndex(db: RocksDB){
     }else{
       ByteUtils.getInt(v, 0)
     }
+  }
+
+  def getIndexId(label: Int, prop: Int): IndexId = {
+    getIndexId(label, Array[Int](prop))
   }
 
   /**
@@ -111,7 +121,7 @@ class NodeIndex(db: RocksDB){
     val prefix = KeyHandler.nodePropertyIndexPrefixToBytes(indexId, value, length)
     iter.seek(prefix)
     new Iterator[NodeId] (){
-      override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
+      override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix) && iter.key().length-prefix.length==8
 
       override def next(): NodeId = {
         val key = iter.key()
