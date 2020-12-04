@@ -7,7 +7,7 @@ import org.rocksdb.RocksDB
 
 import scala.util.Random
 
-class NodeFulltextIndex(db: RocksDB){
+class NodeFulltextIndex(val db: RocksDB, val indexPath: String){
   
   type IndexId   = Int
   type NodeId    = Long
@@ -55,8 +55,16 @@ class NodeFulltextIndex(db: RocksDB){
     addIndexMeta(label, props)
   }
 
+  private def genIndexFullPath(label: Int, props: Array[Int]): String ={
+    genIndexFullPath(getIndexId(label, props))
+  }
+
+  private def genIndexFullPath(indexId: IndexId): String ={
+    s"${indexPath}/${indexId}"
+  }
+
   def insertIndexRecord(indexId: IndexId, data: Iterator[Map[TypedId, Map[String, String]]]): Unit ={
-    val costore = new Costore(s"./testdata/output/indexfulltext-${indexId}")
+    val costore = new Costore(genIndexFullPath(indexId))
     data.foreach({
       d=>{
         d.foreach({
@@ -75,7 +83,7 @@ class NodeFulltextIndex(db: RocksDB){
   }
 
   def deleteIndexRecord(indexId: IndexId, data: Iterator[TypedId]): Unit ={
-    val costore = new Costore(s"./testdata/output/indexfulltext-${indexId}")
+    val costore = new Costore(genIndexFullPath(indexId))
     data.foreach({
       d => costore.delete(d)
     })
@@ -83,14 +91,14 @@ class NodeFulltextIndex(db: RocksDB){
   }
 
   def dropIndex(label: Int, props: Array[Int]): Unit = {
-    val costore = new Costore(s"./testdata/output/indexfulltext-${getIndexId(label, props)}")
+    val costore = new Costore(genIndexFullPath(label, props))
     costore.indexWriter.deleteAll()
     costore.close()
     deleteIndexMeta(label, props)
   }
 
   def find(indexId: IndexId, keyword: (Array[String], String)): Iterator[Map[String, Any]] = {
-    val costore = new Costore(s"./testdata/output/indexfulltext-${indexId}")
+    val costore = new Costore(genIndexFullPath(indexId))
     val topDocs = costore.search(keyword)
     costore.topDocs2NodeWithPropertiesArray(topDocs).get.iterator
   }
