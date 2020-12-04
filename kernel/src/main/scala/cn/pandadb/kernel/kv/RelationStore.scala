@@ -4,20 +4,20 @@ import cn.pandadb.kernel.store.{StoredRelationWithProperty}
 import org.rocksdb.RocksDB
 
 class RelationInEdgeIndexStore(db: RocksDB) {
-  /**
+  ""/**""
    * in edge data structure
    * ------------------------
    * type(1Byte),toNodeId(8Bytes),relationLabel(4Bytes),category(8Bytes),fromNodeId(8Bytes)-->relationValue(id, properties)
    * ------------------------
    */
   val RELATION_ID = "id"
-  val RELATION_PROP = "prop"
+  val RELATION_PROPERTY = "property"
 
   def setIndex(fromNode: Long, edgeType: Int, category: Long, toNode: Long,
-               relationId: Long, prop: Map[String, Any]=Map()): Unit = {
+               relationId: Long, property: Map[String, Any]=Map()): Unit = {
 
     val keyBytes = KeyHandler.inEdgeKeyToBytes(toNode, edgeType, category, fromNode)
-    db.put(keyBytes, ByteUtils.mapToBytes(Map[String, Any](RELATION_ID->relationId, RELATION_PROP->prop)))
+    db.put(keyBytes, ByteUtils.mapToBytes(Map[String, Any](RELATION_ID->relationId, RELATION_PROPERTY->property)))
   }
 
   def deleteIndex(fromNode: Long, edgeType: Int, category: Long, toNode: Long): Unit = {
@@ -93,7 +93,7 @@ class RelationInEdgeIndexStore(db: RocksDB) {
       val values = ByteUtils.mapFromBytes(db.get(iter.key()))
       val keys = KeyHandler.parseInEdgeKeyFromBytes(iter.key())
       val relation = new StoredRelationWithProperty(values(RELATION_ID).asInstanceOf[Long], keys._4, keys._1, keys._2,
-        values(RELATION_PROP).asInstanceOf[Map[String, Any]], keys._3)
+        values(RELATION_PROPERTY).asInstanceOf[Map[String, Any]], keys._3)
       iter.next()
       relation
     }
@@ -110,13 +110,13 @@ class RelationOutEdgeIndexStore(db: RocksDB) {
    * ------------------------
    */
   val RELATION_ID = "id"
-  val RELATION_PROP = "prop"
+  val RELATION_PROPERTY = "property"
 
   def setIndex(fromNode: Long, edgeType: Int, category: Long, toNode: Long,
-               relationId: Long, prop: Map[String, Any]=Map()): Unit = {
+               relationId: Long, property: Map[String, Any]=Map()): Unit = {
 
     val keyBytes = KeyHandler.outEdgeKeyToBytes(fromNode, edgeType, category, toNode)
-    db.put(keyBytes, ByteUtils.mapToBytes(Map[String, Any](RELATION_ID->relationId, RELATION_PROP->prop)))
+    db.put(keyBytes, ByteUtils.mapToBytes(Map[String, Any](RELATION_ID->relationId, RELATION_PROPERTY->property)))
   }
 
   def deleteIndex(fromNode: Long, edgeType: Int, category: Long, toNode: Long): Unit = {
@@ -189,7 +189,7 @@ class RelationOutEdgeIndexStore(db: RocksDB) {
       val values = ByteUtils.mapFromBytes(db.get(iter.key()))
       val keys = KeyHandler.parseOutEdgeKeyFromBytes(iter.key())
       val relation = new StoredRelationWithProperty(values(RELATION_ID).asInstanceOf[Long],
-        keys._1, keys._4, keys._2, values(RELATION_PROP).asInstanceOf[Map[String, Any]], keys._3)
+        keys._1, keys._4, keys._2, values(RELATION_PROPERTY).asInstanceOf[Map[String, Any]], keys._3)
       iter.next()
       relation
     }
@@ -200,7 +200,7 @@ class RelationOutEdgeIndexStore(db: RocksDB) {
 class RelationStore(db: RocksDB) {
   def setRelation(relationId: Long, from: Long, to: Long, labelId: Int, category: Long, value: Map[String, Any]): Unit = {
     val keyBytes = KeyHandler.relationKeyToBytes(relationId)
-    val map = Map("from" -> from, "to" -> to, "labelId" -> labelId, "category" -> category, "prop" -> value)
+    val map = Map("from" -> from, "to" -> to, "labelId" -> labelId, "category" -> category, "property" -> value)
     val valueBytes = ByteUtils.mapToBytes(map)
     db.put(keyBytes, valueBytes)
   }
@@ -216,7 +216,7 @@ class RelationStore(db: RocksDB) {
     if (res != null) {
       val relation = ByteUtils.mapFromBytes(res)
       new StoredRelationWithProperty(relationId, relation("from").asInstanceOf[Long], relation("to").asInstanceOf[Long],
-        relation("labelId").asInstanceOf[Int], relation("prop").asInstanceOf[Map[String, Any]],
+        relation("labelId").asInstanceOf[Int], relation("property").asInstanceOf[Map[String, Any]],
         relation("category").asInstanceOf[Long])
     }
     else throw new NoRelationGetException
@@ -245,7 +245,7 @@ class RelationStore(db: RocksDB) {
 
           val relationId = ByteUtils.getLong(keyBytes, 1)
           new StoredRelationWithProperty(relationId, relation("from").asInstanceOf[Long], relation("to").asInstanceOf[Long],
-            relation("labelId").asInstanceOf[Int], relation("prop").asInstanceOf[Map[String, Any]],
+            relation("labelId").asInstanceOf[Int], relation("property").asInstanceOf[Map[String, Any]],
             relation("category").asInstanceOf[Long]
           )
         }

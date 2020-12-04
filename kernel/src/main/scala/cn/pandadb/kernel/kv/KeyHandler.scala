@@ -23,6 +23,22 @@ object KeyHandler {
     val InEdge = Value(8)   // [keyType(1Byte),toNodeId(8Bytes),relationLabel(4Bytes),category(8Bytes),fromNodeId(8Bytes)] -> relationValue(id,properties)
     val NodePropertyFulltextIndexMeta = Value(9)     // [keyType(1Byte),labelId(4Bytes),properties(x*4Bytes)] -> null
 
+    val Label = Value(10) // [KeyType(1Byte), LabelId(4Byte)] --> LabelName(String)
+    val Property = Value(11) // [KeyType(1Byte),PropertyId(4Byte)] --> propertyName(String)
+  }
+
+  //  [keyType(1Bytes),  id(4Bytes)]
+  def labelKeyToBytes(labelId: Int): Array[Byte] ={
+    val bytes = new Array[Byte](5)
+    ByteUtils.setByte(bytes, 0, KeyType.Label.id.toByte)
+    ByteUtils.setInt(bytes, 1, labelId)
+    bytes
+  }
+
+  def labelKeyPrefixToBytes(): Array[Byte] ={
+    val bytes = new Array[Byte](1)
+    ByteUtils.setByte(bytes, 0, KeyType.Label.id.toByte)
+    bytes
   }
 
   // [keyType(1Byte),nodeId(8Bytes)]
@@ -359,6 +375,11 @@ object ByteUtils {
   def longToBytes(num: Long): Array[Byte] = {
     val bytes = new Array[Byte](8)
     ByteUtils.setLong(bytes, 0, num)
+    bytes
+  }
+  def intToBytes(num: Int): Array[Byte] = {
+    val bytes = new Array[Byte](4)
+    ByteUtils.setInt(bytes, 0, num)
     bytes
   }
 
