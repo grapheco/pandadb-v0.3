@@ -63,23 +63,25 @@ class NodeFulltextIndex(val db: RocksDB, val indexPath: String){
     s"${indexPath}/${indexId}"
   }
 
-  def insertIndexRecord(indexId: IndexId, data: Iterator[Map[TypedId, Map[String, String]]]): Unit ={
+  def insertIndexRecord(indexId: IndexId, data: Iterator[(TypedId, Map[String, String])]): Unit ={
     val costore = new Costore(genIndexFullPath(indexId))
     data.foreach({
       d=>{
-        d.foreach({
-          kv=>costore.insert(kv._1, kv._2)
-        })
+        costore.insert(d._1, d._2)
       }
     })
     costore.close()
   }
 
-  def updateIndexRecord(indexId: IndexId, data: Iterator[Map[TypedId, Map[String, String]]]): Unit ={
+  def updateIndexRecord(indexId: IndexId, data: Iterator[(TypedId, Map[String, String])]): Unit ={
+    val costore = new Costore(genIndexFullPath(indexId))
     data.foreach({
-      d => deleteIndexRecord(indexId, d.keys.iterator)
+      d => {
+        costore.delete(d._1)
+        costore.insert(d._1, d._2)
+      }
     })
-    insertIndexRecord(indexId, data)
+    costore.close()
   }
 
   def deleteIndexRecord(indexId: IndexId, data: Iterator[TypedId]): Unit ={
@@ -100,7 +102,9 @@ class NodeFulltextIndex(val db: RocksDB, val indexPath: String){
   def find(indexId: IndexId, keyword: (Array[String], String)): Iterator[Map[String, Any]] = {
     val costore = new Costore(genIndexFullPath(indexId))
     val topDocs = costore.search(keyword)
-    costore.topDocs2NodeWithPropertiesArray(topDocs).get.iterator
+    val res = costore.topDocs2NodeWithPropertiesArray(topDocs).get.iterator
+    costore.close()
+    res
   }
 
 }
