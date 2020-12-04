@@ -14,6 +14,9 @@ trait NFExpression {
 trait NFPredicate extends NFExpression {
 }
 
+case class NFLabels(labels: String *) extends NFPredicate {
+
+}
 case class NFGreaterThan(propName: String, value: AnyValue) extends NFPredicate {
 }
 
@@ -71,4 +74,4 @@ case class NFNot(a: NFPredicate) extends NFPredicate {
 case class NFConstantCachedIn(a: NFPredicate) extends NFPredicate {
 }
 
-case class AnyValue(anyValue: String)
+case class AnyValue(anyValue: Any)
