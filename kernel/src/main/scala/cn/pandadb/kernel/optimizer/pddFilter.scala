@@ -1,7 +1,6 @@
 package cn.pandadb.kernel.optimizer
 
 import cn.pandadb.kernel.kv.{AnyValue, NFEquals, NFGreaterThan, NFGreaterThanOrEqual, NFLabels, NFLessThan, NFLessThanOrEqual, NFPredicate}
-import cn.pandadb.kernel.optimizer.PandaPhysicalOptimizer.getPredicate
 import org.opencypher.lynx.{LynxTable, RecordHeader}
 import org.opencypher.lynx.planning.{Filter, LabelRecorders, PhysicalOperator}
 import org.opencypher.okapi.api.types.CTNode
