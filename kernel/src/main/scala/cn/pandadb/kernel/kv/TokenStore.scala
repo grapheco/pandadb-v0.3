@@ -3,7 +3,7 @@ package cn.pandadb.kernel.kv
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.mutable
-import org.rocksdb.{RocksDB, WriteBatch, WriteOptions}
+import org.rocksdb.{RocksDB}
 
 trait TokenStore{
   val db: RocksDB
@@ -15,16 +15,17 @@ trait TokenStore{
   val mapInt2String: mutable.Map[Int, String] = mutable.Map[Int, String]()
 
   def set(labelName: String): Int ={
-    if (!mapString2Int.keySet.contains(labelName)){
+    val opt = mapString2Int.get(labelName)
+    if (opt.isDefined){
+      mapString2Int(labelName)
+    }
+    else{
       val id = idGenerator.incrementAndGet()
       mapString2Int += labelName -> id
       mapInt2String += id -> labelName
       val key = key2ByteArrayFunc(id)
       db.put(key, ByteUtils.stringToBytes(labelName))
       id
-    }
-    else{
-      mapString2Int(labelName)
     }
   }
 
@@ -34,8 +35,23 @@ trait TokenStore{
   def id(labelName: String): Int ={
     mapString2Int(labelName)
   }
-  def ids(): Set[Int] ={
-    mapInt2String.keySet.toSet
+  def ids(keys:Set[String]): Set[Int] ={
+    val newIds = keys.map{
+      key =>
+        val opt = mapString2Int.get(key)
+        if (opt.isDefined){
+          opt.get
+        }
+        else{
+          val id = idGenerator.incrementAndGet()
+          mapString2Int += key -> id
+          mapInt2String += id -> key
+          val dbKey = key2ByteArrayFunc(id)
+          db.put(dbKey, ByteUtils.stringToBytes(key))
+          id
+        }
+    }
+    newIds
   }
 
   def delete(labelName: String): Unit ={
