@@ -1,6 +1,6 @@
 package cn.pandadb.optimizer
 
-import cn.pandadb.kernel.optimizer.PandaCypherSession
+import cn.pandadb.kernel.optimizer.{PandaCypherSession, PandaPropertyGraphScan}
 import org.junit.{Assert, Test}
 import org.opencypher.lynx.{LynxSession, PropertyGraphScan}
 import org.opencypher.okapi.api.schema.PropertyGraphSchema
@@ -35,7 +35,7 @@ class LinTest {
 
   val _session = new PandaCypherSession()
 
-  val graphDemo = _session.createPropertyGraph(new PropertyGraphScan[Long] {
+  val graphDemo = _session.createPropertyGraph(new PandaPropertyGraphScan[Long] {
     val node1 = LynxNode(1, Set("person", "t1"), "name" -> CypherValue("bluejoe"), "age" -> CypherValue(40))
     val node2 = LynxNode(2, Set("student", "t2"), "name" -> CypherValue("alex"), "age" -> CypherValue(30))
     val node3 = LynxNode(3, Set("project", "t3"), "name" -> CypherValue("simba"), "age" -> CypherValue(10))

@@ -1,6 +1,7 @@
 package cn.pandadb.kernel.optimizer
 
 import cn.pandadb.kernel.kv.{AnyValue, NFEquals, NFGreaterThan, NFGreaterThanOrEqual, NFLabels, NFLessThan, NFLessThanOrEqual, NFPredicate}
+import org.opencypher.lynx.graph.LynxPropertyGraph
 import org.opencypher.lynx.{LynxPlannerContext, LynxTable, RecordHeader}
 import org.opencypher.lynx.planning.{Add, AddInto, Aggregate, Alias, Cache, ConstructGraph, Distinct, Drop, EmptyRecords, Filter, FromCatalogGraph, GraphUnionAll, Join, LabelRecorders, Limit, OrderBy, PhysicalOperator, PrefixGraph, ReturnGraph, Select, Skip, Start, SwitchContext, TabularUnionAll}
 import org.opencypher.okapi.api.types.CTNode
@@ -107,22 +108,31 @@ object PandaPhysicalOptimizer {
   }
 
 
-  //def isNecessaryPPD()
+  def isNecessaryPPD(filterops: ArrayBuffer[PhysicalOperator], graph:LynxPropertyGraph): Boolean = {
+    //val prediates = ArrayBuffer[NFPredicate]()
+    //filterops.foreach(u =>{
+    //  prediates += PpdFilter.getPredicate(u)
+   // })
+    //todo figure out whether PPD is necessary
+    true
+    //graph.asInstanceOf[PandaPropertyGraph].isNFPredicatesWithIndex(prediates.toArray)
+  }
+
+  def reOrderPredicates(filterops: ArrayBuffer[PhysicalOperator], graph:LynxPropertyGraph): Array[NFPredicate] = {
+    //todo reorder pddfilter according to graph node counts
+    val prediates = ArrayBuffer[NFPredicate]()
+    filterops.foreach(u =>{
+      prediates += PpdFilter.getPredicate(u)
+     })
+    prediates.toArray
+  }
 
 
 
   def generatePhysicalPlan(filterops: ArrayBuffer[PhysicalOperator], opseq: ArrayBuffer[PhysicalOperator], endOp: PhysicalOperator): PhysicalOperator = {
     if (!filterops.isEmpty) {
-      val prediates = ArrayBuffer[NFPredicate]()
-      filterops.foreach(u =>{
-        prediates += PpdFilter.getPredicate(u)
-      })
-
-      //figure out whether PPD is necessary
-      //reorder pddfilter according to graph node counts
-      if(endOp.graph.asInstanceOf[PandaPropertyGraph].isNFPredicatesWithIndex(prediates.toArray)) {
-
-        var tempOp: PhysicalOperator = PpdFilter(filterops, endOp)
+      if(isNecessaryPPD(filterops, endOp.graph)) {
+        var tempOp: PhysicalOperator = PpdFilter(filterops, endOp, reOrderPredicates(filterops, endOp.graph))
         opseq.reverse.foreach(u => {
           tempOp = constructPhysicalPlan(u, tempOp)
         })
