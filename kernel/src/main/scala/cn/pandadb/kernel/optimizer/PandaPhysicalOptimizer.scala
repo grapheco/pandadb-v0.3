@@ -25,85 +25,85 @@ object PandaPhysicalOptimizer {
     else newPlan
   }
 
-  def extractFilter(ops: ArrayBuffer[PhysicalOperator], opseq: ArrayBuffer[PhysicalOperator], input: PhysicalOperator): PhysicalOperator = {
+  def extractFilter(filterOps: ArrayBuffer[PhysicalOperator], ordinaryOps: ArrayBuffer[PhysicalOperator], input: PhysicalOperator): PhysicalOperator = {
 
     input match {
       case x: Filter => {
-        ops += x
-        extractFilter(ops, opseq, x.in)
+        filterOps += x
+        extractFilter(filterOps, ordinaryOps, x.in)
       }
       case x: LabelRecorders => {
-        ops += x
-        extractFilter(ops, opseq, x.in)
+        filterOps += x
+        extractFilter(filterOps, ordinaryOps, x.in)
       }
       case x: Start =>
-        generatePhysicalPlan(ops, opseq, x)
+        generatePhysicalPlan(filterOps, ordinaryOps, x)
       case x: Select =>
-        opseq += x
-        extractFilter(ops, opseq, x.in)
+        ordinaryOps += x
+        extractFilter(filterOps, ordinaryOps, x.in)
 
       case x: Add =>
-        opseq += x
-        extractFilter(ops, opseq, x.in)
+        ordinaryOps += x
+        extractFilter(filterOps, ordinaryOps, x.in)
       case x: AddInto =>
-        opseq += x
-        extractFilter(ops, opseq, x.in)
+        ordinaryOps += x
+        extractFilter(filterOps, ordinaryOps, x.in)
       case x: Aggregate =>
-        opseq += x
-        extractFilter(ops, opseq, x.in)
+        ordinaryOps += x
+        extractFilter(filterOps, ordinaryOps, x.in)
       case x: Alias =>
-        opseq += x
-        extractFilter(ops, opseq, x.in)
+        ordinaryOps += x
+        extractFilter(filterOps, ordinaryOps, x.in)
       case x: Cache =>
-        opseq += x
-        extractFilter(ops, opseq, x.in)
+        ordinaryOps += x
+        extractFilter(filterOps, ordinaryOps, x.in)
       case x: ConstructGraph =>
-        opseq += x
-        extractFilter(ops, opseq, x.in)
+        ordinaryOps += x
+        extractFilter(filterOps, ordinaryOps, x.in)
       case x: Distinct =>
-        opseq += x
-        extractFilter(ops, opseq, x.in)
+        ordinaryOps += x
+        extractFilter(filterOps, ordinaryOps, x.in)
       case x: Drop[Any] =>
-        opseq += x
-        extractFilter(ops, opseq, x.in)
+        ordinaryOps += x
+        extractFilter(filterOps, ordinaryOps, x.in)
       case x: EmptyRecords =>
-        opseq += x
-        extractFilter(ops, opseq, x.in)
+        ordinaryOps += x
+        extractFilter(filterOps, ordinaryOps, x.in)
       case x: FromCatalogGraph =>
-        opseq += x
-        extractFilter(ops, opseq, x.in)
+        ordinaryOps += x
+        extractFilter(filterOps, ordinaryOps, x.in)
       case x: GraphUnionAll =>
-        generatePhysicalPlan(ops, opseq, x)
+        generatePhysicalPlan(filterOps, ordinaryOps, x)
       case x: Join =>
         val op1 = filterPushDown(x.lhs)
         val op2 = filterPushDown(x.rhs)
         val join = Join(op1, op2, x.joinExprs, x.joinType)
-        generatePhysicalPlan(ops, opseq, join)
+        generatePhysicalPlan(filterOps, ordinaryOps, join)
       case x: Limit =>
-        opseq += x
-        extractFilter(ops, opseq, x.in)
+        ordinaryOps += x
+        extractFilter(filterOps, ordinaryOps, x.in)
       case x: OrderBy =>
-        opseq += x
-        extractFilter(ops, opseq, x.in)
+        ordinaryOps += x
+        extractFilter(filterOps, ordinaryOps, x.in)
       case x: PrefixGraph =>
-        opseq += x
-        extractFilter(ops, opseq, x.in)
+        ordinaryOps += x
+        extractFilter(filterOps, ordinaryOps, x.in)
       case x: ReturnGraph =>
-        opseq += x
-        extractFilter(ops, opseq, x.in)
+        ordinaryOps += x
+        extractFilter(filterOps, ordinaryOps, x.in)
       case x: Skip =>
-        opseq += x
-        extractFilter(ops, opseq, x.in)
+        ordinaryOps += x
+        extractFilter(filterOps, ordinaryOps, x.in)
       case x: SwitchContext =>
-        opseq += x
-        extractFilter(ops, opseq, x.in)
+        ordinaryOps += x
+        extractFilter(filterOps, ordinaryOps, x.in)
       case x: TabularUnionAll =>
         //val op1 = extractFilter(new ArrayBuffer[PhysicalOperator](), new ArrayBuffer[PhysicalOperator](), x.lhs)
         val op1 = filterPushDown(x.lhs)
         //val op2 = extractFilter(new ArrayBuffer[PhysicalOperator](), new ArrayBuffer[PhysicalOperator](), x.rhs)
         val op2 = filterPushDown(x.rhs)
         val tabularUnionAll = TabularUnionAll(op1, op2)
-        generatePhysicalPlan(ops, opseq, tabularUnionAll)
+        generatePhysicalPlan(filterOps, ordinaryOps, tabularUnionAll)
     }
   }
 
