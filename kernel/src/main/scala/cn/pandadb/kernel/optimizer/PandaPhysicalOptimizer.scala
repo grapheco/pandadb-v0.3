@@ -14,10 +14,11 @@ object PandaPhysicalOptimizer {
 
   def process(input: PhysicalOperator)(implicit context: LynxPlannerContext): PhysicalOperator = {
     //InsertCachingOperators(input)
-    filterpushDown(input)
+    val op = filterPushDown(input)
+    op
   }
 
-  def filterpushDown(input: PhysicalOperator): PhysicalOperator = {
+  def filterPushDown(input: PhysicalOperator): PhysicalOperator = {
     val newPlan: PhysicalOperator = extractFilter(new ArrayBuffer[PhysicalOperator](), new ArrayBuffer[PhysicalOperator](), input)
     if(newPlan==null) input
     else newPlan
@@ -73,8 +74,8 @@ object PandaPhysicalOptimizer {
       case x: GraphUnionAll =>
         generatePhysicalPlan(ops, opseq, x)
       case x: Join =>
-        val op1 = filterpushDown(x.lhs)
-        val op2 = filterpushDown(x.rhs)
+        val op1 = filterPushDown(x.lhs)
+        val op2 = filterPushDown(x.rhs)
         val join = Join(op1, op2, x.joinExprs, x.joinType)
         generatePhysicalPlan(ops, opseq, join)
       case x: Limit =>
@@ -97,25 +98,37 @@ object PandaPhysicalOptimizer {
         extractFilter(ops, opseq, x.in)
       case x: TabularUnionAll =>
         //val op1 = extractFilter(new ArrayBuffer[PhysicalOperator](), new ArrayBuffer[PhysicalOperator](), x.lhs)
-        val op1 = filterpushDown(x.lhs)
+        val op1 = filterPushDown(x.lhs)
         //val op2 = extractFilter(new ArrayBuffer[PhysicalOperator](), new ArrayBuffer[PhysicalOperator](), x.rhs)
-        val op2 = filterpushDown(x.rhs)
+        val op2 = filterPushDown(x.rhs)
         val tabularUnionAll = TabularUnionAll(op1, op2)
         generatePhysicalPlan(ops, opseq, tabularUnionAll)
     }
   }
 
 
+  //def isNecessaryPPD()
 
 
 
   def generatePhysicalPlan(filterops: ArrayBuffer[PhysicalOperator], opseq: ArrayBuffer[PhysicalOperator], endOp: PhysicalOperator): PhysicalOperator = {
     if (!filterops.isEmpty) {
-      var tempOp: PhysicalOperator = PpdFilter(filterops, endOp)
-      opseq.reverse.foreach(u => {
-        tempOp = constructPhysicalPlan(u, tempOp)
+      val prediates = ArrayBuffer[NFPredicate]()
+      filterops.foreach(u =>{
+        prediates += PpdFilter.getPredicate(u)
       })
-      tempOp
+
+      //figure out whether PPD is necessary
+      //reorder pddfilter according to graph node counts
+      if(endOp.graph.asInstanceOf[PandaPropertyGraph].isNFPredicatesWithIndex(prediates.toArray)) {
+
+        var tempOp: PhysicalOperator = PpdFilter(filterops, endOp)
+        opseq.reverse.foreach(u => {
+          tempOp = constructPhysicalPlan(u, tempOp)
+        })
+        tempOp
+      }
+      else null
     }
     else null
 

@@ -1,6 +1,7 @@
 package cn.pandadb.kernel.optimizer
 
 import cn.pandadb.kernel.kv.{AnyValue, NFEquals, NFGreaterThan, NFGreaterThanOrEqual, NFLabels, NFLessThan, NFLessThanOrEqual, NFPredicate}
+import org.opencypher.lynx.graph.LynxPropertyGraph
 import org.opencypher.lynx.{LynxRecords, LynxTable, RecordHeader}
 import org.opencypher.lynx.planning.{Filter, LabelRecorders, PhysicalOperator}
 import org.opencypher.okapi.api.types.{CTNode, CypherType}
@@ -69,13 +70,16 @@ object costore {
 
     override def properties: CypherMap = props.toMap
   }
-  def getLynxNodeFromCostore(prediates: Array[NFPredicate]): Iterable[LynxNode] = {
+
+  def reorder
+
+  def getLynxNodeFromCostore(prediates: Array[NFPredicate], graph:LynxPropertyGraph): Iterable[LynxNode] = {
     //todo getnodes from costore according to predicates
     val node1 = LynxNode(1, Set("person", "t1"), "name" -> CypherValue("bluejoe"), "age" -> CypherValue(40))
     Array(node1)
   }
-  def getRecordersFromPredicates(prediates: Array[NFPredicate], name: String, nodeCypherType: CTNode): LynxRecords = {
-    val nodes = getLynxNodeFromCostore(prediates)
+  def getRecordersFromPredicates(prediates: Array[NFPredicate], name: String, nodeCypherType: CTNode, graph:LynxPropertyGraph): LynxRecords = {
+    val nodes = getLynxNodeFromCostore(prediates, graph)
     LynxRecords(
     RecordHeader(Map(NodeVar(name)(CTNode) -> name)),
     LynxTable(Seq(name -> CTNode), Seq(nodes.toSeq)))
@@ -88,8 +92,10 @@ case class PpdFilter(ops: ArrayBuffer[PhysicalOperator], in: PhysicalOperator) e
     prediates += PpdFilter.getPredicate(u)
   })
 
+  //override lazy val graph:LynxPropertyGraph  = in.graph
+
   lazy  val (name, ctype) = PpdFilter.getNodeVar(ops.head)
-  lazy val recorders = costore.getRecordersFromPredicates(prediates.toArray, name, ctype.asInstanceOf[CTNode])
+  lazy val recorders = costore.getRecordersFromPredicates(prediates.toArray, name, ctype.asInstanceOf[CTNode], this.graph)
   override lazy val _table: LynxTable = recorders.table
   override lazy val recordHeader: RecordHeader = recorders.header
   //override lazy val recordHeader: RecordHeader = ops.head.recordHeader
