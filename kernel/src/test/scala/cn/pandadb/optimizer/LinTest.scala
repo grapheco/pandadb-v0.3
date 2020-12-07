@@ -1,7 +1,7 @@
 package cn.pandadb.optimizer
 
 import cn.pandadb.kernel.optimizer.PandaCypherSession
-import org.junit.Test
+import org.junit.{Assert, Test}
 import org.opencypher.lynx.{LynxSession, PropertyGraphScan}
 import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.table.CypherRecords
@@ -70,16 +70,19 @@ class LinTest {
   @Test
   def testFileter1(): Unit = {
     val rs = runOnDemoGraph("match (n) where n.name = 'bluejoe'  return n")
+    Assert.assertEquals(1, rs.collect.size)
   }
 
   @Test
   def testFileter2(): Unit = {
     val rs = runOnDemoGraph("match (n) where n.age = 40  return n")
+    Assert.assertEquals(1, rs.collect.size)
   }
 
   @Test
   def testFileter3(): Unit = {
     val rs = runOnDemoGraph("match (n:person) where n.age >30  return n")
+    Assert.assertEquals(1, rs.collect.size)
   }
 
   //@Test
@@ -104,6 +107,7 @@ class LinTest {
   @Test
   def testFilter8(): Unit = {
     val rs = runOnDemoGraph("match (n)  return n.name")
+    Assert.assertEquals(3, rs.collect.size)
   }
 
 
