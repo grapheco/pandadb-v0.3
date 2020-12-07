@@ -2,7 +2,7 @@ package cn.pandadb.kv
 
 import java.io.File
 
-import cn.pandadb.kernel.kv.{GraphFacade, RocksDBGraphImpl}
+import cn.pandadb.kernel.kv.{GraphFacade, RocksDBGraphAPI}
 import cn.pandadb.kernel.store.{FileBasedIdGen, LabelStore, StoredNodeWithProperty}
 import org.apache.commons.io.FileUtils
 import org.junit.{After, Assert, Before, Test}
@@ -13,7 +13,7 @@ class GraphFacadeTest {
 
   var nodeLabelStore: LabelStore = _
   var relLabelStore: LabelStore = _
-  var graphStore: RocksDBGraphImpl = _
+  var graphStore: RocksDBGraphAPI = _
 
   var graphFacade: GraphFacade = _
 
@@ -27,7 +27,7 @@ class GraphFacadeTest {
 
     nodeLabelStore = new LabelStore(new File("./testdata/output/nodelabels"))
     relLabelStore = new LabelStore(new File("./testdata/output/rellabels"))
-    graphStore = new RocksDBGraphImpl("./testdata/output/rocksdb")
+    graphStore = new RocksDBGraphAPI("./testdata/output/rocksdb")
 
     graphFacade = new GraphFacade( nodeLabelStore, relLabelStore,
       new FileBasedIdGen(new File("./testdata/output/nodeid"), 100),

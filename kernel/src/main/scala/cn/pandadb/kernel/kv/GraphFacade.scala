@@ -15,7 +15,7 @@ class GraphFacade(
                    relLabelStore: LabelStore,
                    nodeIdGen: FileBasedIdGen,
                    relIdGen: FileBasedIdGen,
-                   graphStore: RocksDBGraphImpl,
+                   graphStore: RocksDBGraphAPI,
                    onClose: => Unit
                  ) extends Logging with GraphService {
 
@@ -162,10 +162,6 @@ class GraphFacade(
 
   def allRelations(): Iterable[StoredRelation] = {
     graphStore.allRelations().toIterable
-  }
-
-  def mergeLogs2Store(): Unit = {
-
   }
 
   //FIXME: expensive time cost

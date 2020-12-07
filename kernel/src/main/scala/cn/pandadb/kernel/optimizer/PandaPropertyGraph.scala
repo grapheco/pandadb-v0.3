@@ -47,7 +47,7 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
         case x: NFLabels => {
           labels ++= x.labels
         }
-        case _ => nps += _
+        case x: NFPredicate => nps += x
       }
     })
     nps.toArray -> labels

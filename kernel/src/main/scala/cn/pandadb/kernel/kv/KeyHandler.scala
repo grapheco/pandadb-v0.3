@@ -437,4 +437,5 @@ object ByteUtils {
     if (length > 0) new String(bytes, offset, length, charset)
     else new String(bytes, offset, bytes.length, charset)
   }
+  
 }

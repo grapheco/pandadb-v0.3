@@ -3,9 +3,10 @@ package cn.pandadb.kernel.kv
 import cn.pandadb.kernel.kv.NodeIndex.IndexId
 import cn.pandadb.kernel.{GraphRAM, NodeId, PropertyStore, TypedId}
 import cn.pandadb.kernel.store.{MergedChanges, StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
+import org.rocksdb.RocksDB
 import sun.security.util.Length
 
-class RocksDBGraphImpl(dbPath: String) {
+class RocksDBGraphAPI(dbPath: String) {
   private val rocksDB = RocksDBStorage.getDB(dbPath)
   private val nodeStore = new NodeStore(rocksDB)
   private val relationStore = new RelationStore(rocksDB)
@@ -14,6 +15,9 @@ class RocksDBGraphImpl(dbPath: String) {
   private val relationInEdgeIndex = new RelationInEdgeIndexStore(rocksDB)
   private val relationOutEdgeIndex = new RelationOutEdgeIndexStore(rocksDB)
   private val nodeIndex = new NodeIndex(rocksDB)
+
+  def getRocksDB: RocksDB = rocksDB
+
   def clear(): Unit = {
   }
 
@@ -40,7 +44,7 @@ class RocksDBGraphImpl(dbPath: String) {
     node.labelIds.foreach(labelId => nodeLabelIndex.delete(labelId, id))
   }
 
-  def nodeAt(id: Long): StoredNode = {
+  def nodeAt(id: Long): StoredNodeWithProperty = {
     nodeStore.get(id)
   }
 
@@ -148,50 +152,57 @@ class RocksDBGraphImpl(dbPath: String) {
   }
 
   // Index
-  def createIndex(nodeLabel: Int, nodePropertyIds: Array[Int]): NodeIndex.IndexId = {
+  def createNodeIndex(nodeLabel: Int, nodePropertyIds: Array[Int]): NodeIndex.IndexId = {
     nodeIndex.createIndex(nodeLabel, nodePropertyIds)
   }
 
-  def getIndexId(nodeLabel: Int, nodePropertyIds: Array[Int]): NodeIndex.IndexId = {
+  def getNodeIndexId(nodeLabel: Int, nodePropertyIds: Array[Int]): NodeIndex.IndexId = {
     nodeIndex.getIndexId(nodeLabel, nodePropertyIds)
   }
 
-  def dropIndex(nodeLabel: Int, nodePropertyIds: Array[Int]): Unit = {
+  def dropNodeIndex(nodeLabel: Int, nodePropertyIds: Array[Int]): Unit = {
     nodeIndex.dropIndex(nodeLabel, nodePropertyIds)
   }
 
-  def insertIndexRecord(indexId: IndexId, data:Iterator[(Array[Byte], Array[Byte], Long)]): Unit = {
+  def insertNodeIndexRecord(indexId: IndexId, nodeId: Long, propertyValue: Array[Byte]): Unit = {
+    nodeIndex.insertIndexRecord(indexId, propertyValue, nodeId)
+  }
+
+  def insertNodeIndexRecords(indexId: IndexId, data:Iterator[(Array[Byte], Array[Byte], Long)]): Unit = {
     nodeIndex.insertIndexRecord(indexId, data)
   }
 
-  def deleteIndexRecord(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: Int): Unit = {
+  def deleteNodeIndexRecord(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: Int): Unit = {
     nodeIndex.deleteIndexRecord(indexId, value, length, nodeId)
   }
 
-  def updateIndexRecord(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: Int, newValue: Array[Byte]): Unit = {
+  def updateNodeIndexRecord(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: Int, newValue: Array[Byte]): Unit = {
     nodeIndex.updateIndexRecord(indexId, value, length, nodeId, newValue)
   }
 
-  def findRecords(indexId: IndexId, value: Array[Byte], length: Array[Byte]): Iterator[Long] = {
+  def findNodeIndexRecords(indexId: IndexId, value: Array[Byte], length: Array[Byte]): Iterator[Long] = {
     nodeIndex.find(indexId, value, length)
   }
 
-  def findRecords(indexId: IndexId, value: Array[Byte]): Iterator[Long] = {
+  def findNodeIndexRecords(indexId: IndexId, value: Array[Byte]): Iterator[Long] = {
     nodeIndex.find(indexId, value)
   }
 
-  // below is the code added by zhaozihao, for possible further use.
-  def relsFrom(id: Long): Iterable[StoredRelation] = ???
-  def relsTo(id: Long): Iterable[StoredRelation] = ???
 
-  def searchByLabel(label: Label): Iterable[StoredNode] = ???
-  def searchByType(t: Type): Iterable[StoredRelation] = ???
 
-  //essential? could check whether index available in implemantion.
-  def searchByIndexedProperty(stat: Stat): Iterable[StoredNode] = ???
-  def searchByCategory(category: Category): Iterable[StoredRelation] = ???
 
-  def searchByProp(stat: Stat): Iterable[StoredNode] = ???
+//  // below is the code added by zhaozihao, for possible further use.
+//  def relsFrom(id: Long): Iterable[StoredRelation] = ???
+//  def relsTo(id: Long): Iterable[StoredRelation] = ???
+//
+//  def searchByLabel(label: Label): Iterable[StoredNode] = ???
+//  def searchByType(t: Type): Iterable[StoredRelation] = ???
+//
+//  //essential? could check whether index available in implemantion.
+//  def searchByIndexedProperty(stat: Stat): Iterable[StoredNode] = ???
+//  def searchByCategory(category: Category): Iterable[StoredRelation] = ???
+//
+//  def searchByProp(stat: Stat): Iterable[StoredNode] = ???
 
 
 
@@ -200,8 +211,8 @@ class RocksDBGraphImpl(dbPath: String) {
 }
 
 
-case class Label(label: String)
-case class Type(t: String)
-
-case class Stat()
-case class Category()
+//case class Label(label: String)
+//case class Type(t: String)
+//
+//case class Stat()
+//case class Category()

@@ -113,6 +113,10 @@ class NodeIndex(db: RocksDB){
     addIndexMeta(label, props)
   }
 
+  def insertIndexRecord(indexId: IndexId, value: Array[Byte], nodeId: NodeId): Unit =  {
+    writeIndexRow(indexId, value, value.length.toByte, nodeId )
+  }
+
   def insertIndexRecord(indexId: IndexId, data: Iterator[(Array[Byte],Array[Byte], Long)]): Unit ={
     while (data.hasNext){
       val d = data.next()

@@ -108,12 +108,12 @@ class NodeStore(db: RocksDB)  {
 
 }
 
-trait NodeWriter {
-  def deleteNode(nodeId: Long);
-
-  def addNode(nodeId: Long);
-
-  def addLabel(nodeId: Long, label: Label): Unit;
-
-  def removeLabel(nodeId: Long, label: Label): Unit;
-}
+//trait NodeWriter {
+//  def deleteNode(nodeId: Long);
+//
+//  def addNode(nodeId: Long);
+//
+//  def addLabel(nodeId: Long, label: Label): Unit;
+//
+//  def removeLabel(nodeId: Long, label: Label): Unit;
+//}
