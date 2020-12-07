@@ -73,8 +73,8 @@ object PandaPhysicalOptimizer {
       case x: GraphUnionAll =>
         generatePhysicalPlan(ops, opseq, x)
       case x: Join =>
-        val op1 = extractFilter(new ArrayBuffer[PhysicalOperator](), new ArrayBuffer[PhysicalOperator](), x.lhs)
-        val op2 = extractFilter(new ArrayBuffer[PhysicalOperator](), new ArrayBuffer[PhysicalOperator](), x.rhs)
+        val op1 = filterpushDown(x.lhs)
+        val op2 = filterpushDown(x.rhs)
         val join = Join(op1, op2, x.joinExprs, x.joinType)
         generatePhysicalPlan(ops, opseq, join)
       case x: Limit =>
@@ -96,8 +96,10 @@ object PandaPhysicalOptimizer {
         opseq += x
         extractFilter(ops, opseq, x.in)
       case x: TabularUnionAll =>
-        val op1 = extractFilter(new ArrayBuffer[PhysicalOperator](), new ArrayBuffer[PhysicalOperator](), x.lhs)
-        val op2 = extractFilter(new ArrayBuffer[PhysicalOperator](), new ArrayBuffer[PhysicalOperator](), x.rhs)
+        //val op1 = extractFilter(new ArrayBuffer[PhysicalOperator](), new ArrayBuffer[PhysicalOperator](), x.lhs)
+        val op1 = filterpushDown(x.lhs)
+        //val op2 = extractFilter(new ArrayBuffer[PhysicalOperator](), new ArrayBuffer[PhysicalOperator](), x.rhs)
+        val op2 = filterpushDown(x.rhs)
         val tabularUnionAll = TabularUnionAll(op1, op2)
         generatePhysicalPlan(ops, opseq, tabularUnionAll)
     }
