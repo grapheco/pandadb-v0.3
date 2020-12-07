@@ -71,7 +71,7 @@ object costore {
     override def properties: CypherMap = props.toMap
   }
 
-  def reorder
+  //def reorder
 
   def getLynxNodeFromCostore(prediates: Array[NFPredicate], graph:LynxPropertyGraph): Iterable[LynxNode] = {
     //todo getnodes from costore according to predicates
