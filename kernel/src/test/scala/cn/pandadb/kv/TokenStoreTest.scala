@@ -56,7 +56,7 @@ class TokenStoreTest {
     store.set("music")
     store.set("singer")
     store.delete("artist")
-    store.saveAll()
+//    store.saveAll()
     store.close()
 
     store = new LabelStoreTest2
@@ -79,14 +79,18 @@ class LabelStoreTest extends TokenStore {
     }
     RocksDBStorage.getDB()
   }
-  override val key2ByteArrayFunc: Int => Array[Byte] = KeyHandler.labelKeyToBytes
-  override val keyPrefixFunc: () => Array[Byte] = KeyHandler.labelKeyPrefixToBytes
+  override val key2ByteArrayFunc: Int => Array[Byte] = KeyHandler.nodeLabelKeyToBytes
+  override val keyPrefixFunc: () => Array[Byte] = KeyHandler.nodeLabelKeyPrefixToBytes
+
+  loadAll()
 }
 
 class LabelStoreTest2 extends TokenStore {
   override val db: RocksDB = {
     RocksDBStorage.getDB("testdata/rocks/dbb")
   }
-  override val key2ByteArrayFunc: Int => Array[Byte] = KeyHandler.labelKeyToBytes
-  override val keyPrefixFunc: () => Array[Byte] = KeyHandler.labelKeyPrefixToBytes
+  override val key2ByteArrayFunc: Int => Array[Byte] = KeyHandler.nodeLabelKeyToBytes
+  override val keyPrefixFunc: () => Array[Byte] = KeyHandler.nodeLabelKeyPrefixToBytes
+
+  loadAll()
 }
