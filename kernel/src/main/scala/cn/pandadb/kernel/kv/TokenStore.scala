@@ -14,7 +14,7 @@ trait TokenStore{
   val mapString2Int: mutable.Map[String, Int] = mutable.Map[String, Int]()
   val mapInt2String: mutable.Map[Int, String] = mutable.Map[Int, String]()
 
-  def addToDB(labelName: String): Int ={
+  private def addToDB(labelName: String): Int ={
     val id = idGenerator.incrementAndGet()
     mapString2Int += labelName -> id
     mapInt2String += id -> labelName
@@ -23,19 +23,10 @@ trait TokenStore{
     id
   }
 
-  def set(labelName: String): Int ={
-    val opt = mapString2Int.get(labelName)
-    if (opt.isDefined){
-      mapString2Int(labelName)
-    }
-    else{
-      addToDB(labelName)
-    }
-  }
-
   def key(id: Int): Option[String] ={
     mapInt2String.get(id)
   }
+
   def id(labelName: String): Int ={
     val opt = mapString2Int.get(labelName)
     if (opt.isDefined){
@@ -53,12 +44,7 @@ trait TokenStore{
           opt.get
         }
         else{
-          val id = idGenerator.incrementAndGet()
-          mapString2Int += key -> id
-          mapInt2String += id -> key
-          val dbKey = key2ByteArrayFunc(id)
-          db.put(dbKey, ByteUtils.stringToBytes(key))
-          id
+          addToDB(key)
         }
     }
     newIds
@@ -88,16 +74,6 @@ trait TokenStore{
     }
     idGenerator.set(maxId)
   }
-
-//  def saveAll(): Unit ={
-//    val writeOptions = new WriteOptions()
-//    val batch = new WriteBatch()
-//    mapInt2String.foreach(f => {
-//      val key = key2ByteArrayFunc(f._1)
-//      batch.put(key, ByteUtils.stringToBytes(f._2))
-//    })
-//    db.write(writeOptions, batch)
-//  }
 
   def close(): Unit ={
     db.close()

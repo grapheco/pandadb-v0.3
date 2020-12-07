@@ -398,22 +398,11 @@ object ByteUtils {
     oos.close()
     bos.toByteArray
   }
-  def labelMapToBytes(map: Map[Int, String]): Array[Byte] = {
-    val bos = new ByteArrayOutputStream()
-    val oos = new ObjectOutputStream(bos)
-    oos.writeObject(map)
-    oos.close()
-    bos.toByteArray
-  }
+
   def mapFromBytes(bytes: Array[Byte]): Map[String, Any] = {
     val bis=new ByteArrayInputStream(bytes)
     val ois=new ObjectInputStream(bis)
     ois.readObject.asInstanceOf[Map[String, Any]]
-  }
-  def labelMapFromBytes(bytes: Array[Byte]): Map[Int, String] = {
-    val bis=new ByteArrayInputStream(bytes)
-    val ois=new ObjectInputStream(bis)
-    ois.readObject.asInstanceOf[Map[Int, String]]
   }
 
   def longToBytes(num: Long): Array[Byte] = {
@@ -426,7 +415,6 @@ object ByteUtils {
     ByteUtils.setInt(bytes, 0, num)
     bytes
   }
-
 
   def stringToBytes(str: String, charset: Charset = StandardCharsets.UTF_8): Array[Byte] = {
     str.getBytes(charset)
