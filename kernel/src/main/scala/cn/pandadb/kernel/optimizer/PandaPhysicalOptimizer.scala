@@ -107,14 +107,21 @@ object PandaPhysicalOptimizer {
     }
   }
 
+  def isLabel(in: PhysicalOperator): Boolean = {
+    in match {
+      case x:LabelRecorders => true
+      case x:_ => false
+    }
+  }
 
   def isNecessaryPPD(filterops: ArrayBuffer[PhysicalOperator], graph:LynxPropertyGraph): Boolean = {
     //val prediates = ArrayBuffer[NFPredicate]()
     //filterops.foreach(u =>{
     //  prediates += PpdFilter.getPredicate(u)
+    filterops
    // })
     //todo figure out whether PPD is necessary
-    true
+    filterops.map(isLabel(_)).reduce(_|_)
     //graph.asInstanceOf[PandaPropertyGraph].isNFPredicatesWithIndex(prediates.toArray)
   }
 
