@@ -177,4 +177,15 @@ class GraphFacadeTest {
 
   }
 
+  @Test
+  def testCreateNodeByCypher(): Unit = {
+    graphFacade.cypher("create (n:person) return n")
+    graphFacade.cypher("create (n:person{name:'test1',age:20, work: 'google'})")
+    graphFacade.cypher("create (n:person{name:'test2',age:22, job: 'dev'})")
+
+    Assert.assertEquals(2, graphFacade.allNodes().size)
+
+    graphFacade.close()
+  }
+
 }

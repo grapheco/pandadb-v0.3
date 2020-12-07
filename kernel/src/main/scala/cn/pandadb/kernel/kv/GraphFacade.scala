@@ -156,6 +156,14 @@ class GraphFacade(
     this
   }
 
+  def allNodes(): Iterable[StoredNode] = {
+    graphStore.allNodes().toIterable
+  }
+
+  def allRelations(): Iterable[StoredRelation] = {
+    graphStore.allRelations().toIterable
+  }
+
   def mergeLogs2Store(): Unit = {
 
   }
