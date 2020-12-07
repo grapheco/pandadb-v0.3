@@ -1,16 +1,16 @@
 package cn.pandadb.kv
 
 import cn.pandadb.kernel.{NodeId, TypedId}
-import cn.pandadb.kernel.kv.{NodeFulltextIndex, RocksDBStorage}
+import cn.pandadb.kernel.kv.{FulltextIndex, RocksDBStorage}
 import org.junit.{After, Assert, Before, Test}
 import org.rocksdb.RocksDB
 
 @Test
-class NodeFulltextIndexTest extends Assert {
+class FulltextIndexTest extends Assert {
 
   val path = "D:\\PandaDB-tmp"
   var db: RocksDB = null
-  var index: NodeFulltextIndex = null
+  var index: FulltextIndex = null
   var data: Iterator[(TypedId, Map[String, String])] = Map[TypedId, Map[String, String]](
       NodeId(1)->Map("name" -> "张三"),
       NodeId(2)->Map("name" -> "张三丰"),
@@ -26,7 +26,7 @@ class NodeFulltextIndexTest extends Assert {
   @Before
   def init: Unit ={
     db = RocksDBStorage.getDB(path+"/rocksdb")
-    index = NodeFulltextIndex(db, path+"/lucene",label, props)
+    index = FulltextIndex(db, path+"/lucene",label, props)
     index.dropIfExists()
     index.open(true)
   }

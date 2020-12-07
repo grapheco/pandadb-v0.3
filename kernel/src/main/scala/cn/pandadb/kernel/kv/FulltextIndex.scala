@@ -4,9 +4,8 @@ import cn.pandadb.kernel.{Costore, TypedId}
 import org.rocksdb.RocksDB
 
 import java.util.UUID
-import scala.util.Random
 
-case class NodeFulltextIndex(val db: RocksDB, val indexPathPrefix: String, val labelID: Int, propsIDs: Array[Int]) {
+case class FulltextIndex(db: RocksDB, indexPathPrefix: String, val labelID: Int, val propsIDs: Array[Int]) {
 
   private var handler: Costore = null
   private var indexID: UUID = null
