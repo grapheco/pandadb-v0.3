@@ -14,26 +14,36 @@ trait TokenStore{
   val mapString2Int: mutable.Map[String, Int] = mutable.Map[String, Int]()
   val mapInt2String: mutable.Map[Int, String] = mutable.Map[Int, String]()
 
+  def addToDB(labelName: String): Int ={
+    val id = idGenerator.incrementAndGet()
+    mapString2Int += labelName -> id
+    mapInt2String += id -> labelName
+    val key = key2ByteArrayFunc(id)
+    db.put(key, ByteUtils.stringToBytes(labelName))
+    id
+  }
+
   def set(labelName: String): Int ={
     val opt = mapString2Int.get(labelName)
     if (opt.isDefined){
       mapString2Int(labelName)
     }
     else{
-      val id = idGenerator.incrementAndGet()
-      mapString2Int += labelName -> id
-      mapInt2String += id -> labelName
-      val key = key2ByteArrayFunc(id)
-      db.put(key, ByteUtils.stringToBytes(labelName))
-      id
+      addToDB(labelName)
     }
   }
 
-  def key(id: Int): String ={
-    mapInt2String(id)
+  def key(id: Int): Option[String] ={
+    mapInt2String.get(id)
   }
   def id(labelName: String): Int ={
-    mapString2Int(labelName)
+    val opt = mapString2Int.get(labelName)
+    if (opt.isDefined){
+      opt.get
+    }
+    else{
+      addToDB(labelName)
+    }
   }
   def ids(keys:Set[String]): Set[Int] ={
     val newIds = keys.map{

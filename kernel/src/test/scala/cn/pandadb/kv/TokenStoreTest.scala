@@ -47,7 +47,7 @@ class TokenStoreTest {
   }
 
   @Test
-  def testSaveAllAndLoadAll(): Unit ={
+  def testLoadAll(): Unit ={
     var store = new LabelStoreTest2
     store.set("name")
     store.set("age")
