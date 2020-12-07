@@ -2,6 +2,8 @@ package cn.pandadb.kernel.kv
 
 import java.nio.ByteBuffer
 
+import cn.pandadb.kernel.kv.KeyHandler.KeyType
+import cn.pandadb.kernel.kv.NodeIndex.{IndexId, metaIdKey}
 import cn.pandadb.kernel.{Costore, TypedId}
 import org.rocksdb.RocksDB
 
@@ -11,6 +13,8 @@ class NodeFulltextIndex(val db: RocksDB, val indexPath: String){
   
   type IndexId   = Int
   type NodeId    = Long
+
+  val metaIdKey = Array[Byte](KeyType.NodePropertyFulltextIndexMeta.id.toByte)
 
   /**
    * Index MetaData
@@ -23,8 +27,8 @@ class NodeFulltextIndex(val db: RocksDB, val indexPath: String){
   def addIndexMeta(label: Int, props: Array[Int]): IndexId = {
     val key = KeyHandler.nodePropertyFulltextIndexMetaKeyToBytes(label, props)
     val id  = db.get(key)
-    if (id == null || id.length == 0){
-      val new_id = Random.nextInt(100) // TODO generate
+    if (id == null || id.isEmpty){
+      val new_id = getIncreasingId()
       val id_byte = new Array[Byte](4)
       ByteUtils.setInt(id_byte, 0, new_id)
       db.put(key,id_byte)
@@ -32,6 +36,23 @@ class NodeFulltextIndex(val db: RocksDB, val indexPath: String){
     } else {
       // exist
       ByteUtils.getInt(id, 0)
+    }
+  }
+
+
+  def getIncreasingId(): IndexId ={
+    val increasingId = db.get(metaIdKey)
+    val id_bytes = new Array[Byte](4)
+    if (increasingId == null || increasingId.length == 0){
+      val id:Int = 0
+      ByteUtils.setInt(id_bytes,0, id+1)
+      db.put(metaIdKey, id_bytes)
+      id
+    } else {
+      val id:Int = ByteBuffer.wrap(increasingId).getInt(0)
+      ByteUtils.setInt(id_bytes,0, id+1)
+      db.put(metaIdKey, id_bytes)
+      id
     }
   }
 
