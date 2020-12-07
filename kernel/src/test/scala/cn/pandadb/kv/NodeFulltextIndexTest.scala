@@ -28,8 +28,7 @@ class NodeFulltextIndexTest extends Assert {
     db = RocksDBStorage.getDB(path+"/rocksdb")
     index = NodeFulltextIndex(db, path+"/lucene",label, props)
     index.dropIfExists()
-    index.createIfNotExists()
-    index.open()
+    index.open(true)
   }
 
   @Test
@@ -45,7 +44,7 @@ class NodeFulltextIndexTest extends Assert {
 
   @After
   def cleanup: Unit ={
-    index.close()
+    index.dropAndClose()
     db.close()
   }
 }

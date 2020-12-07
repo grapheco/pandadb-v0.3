@@ -94,9 +94,18 @@ class Costore(val indexPath: String) {
     Some(scoreDoc2NodeWithProperties(hits.scoreDocs.head))
   }
 
+  def dropAndClose(): Unit ={
+    indexWriter.deleteAll()
+    indexWriter.close()
+    reader.close()
+    directory.listAll().foreach(directory.deleteFile(_))
+    dir.delete()
+  }
+
   def close(): Unit = {
     indexWriter.close()
     reader.close()
+    directory.close()
   }
 
 }

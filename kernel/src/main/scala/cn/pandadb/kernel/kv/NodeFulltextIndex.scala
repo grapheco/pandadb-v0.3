@@ -18,18 +18,19 @@ case class NodeFulltextIndex(val db: RocksDB, val indexPathPrefix: String, val l
       return true
     }
     val v = db.get(indexMetaKey)
-    if (v == null || v.length < 4) {
+    if (v == null || v.length!=36) {
       return false
     }
     indexID = UUID.fromString(ByteUtils.stringFromBytes(v, 0))
     true
   }
 
-  def create(): Unit ={
+  def createAndOpen(): Unit ={
     if (exists) {
       throw new Exception(s"index for label {$labelID} and props ${propsIDs} already exists")
     }
     createIndexMeta
+    handler = new Costore(s"${indexPathPrefix}/${indexID}")
   }
 
   def open(forceCreate: Boolean = false): Unit ={
@@ -37,13 +38,14 @@ case class NodeFulltextIndex(val db: RocksDB, val indexPathPrefix: String, val l
       throw new Exception(s"index for label {$labelID} and props ${propsIDs} does not exists!")
     }
     if(!exists){
-      create()
+      createAndOpen()
+    }else{
+      handler = new Costore(s"${indexPathPrefix}/${indexID}")
     }
-    handler = new Costore(s"${indexPathPrefix}/${indexID}")
   }
 
-  def drop(): Unit = {
-    handler.indexWriter.deleteAll()
+  def dropAndClose(): Unit = {
+    handler.dropAndClose()
     deleteIndexMeta()
   }
 
@@ -54,15 +56,14 @@ case class NodeFulltextIndex(val db: RocksDB, val indexPathPrefix: String, val l
 
   def createIfNotExists(): Unit = {
     if (!exists){
-      create()
+      createAndOpen()
     }
   }
 
   def dropIfExists(): Unit = {
     if (exists){
       open()
-      drop()
-      close()
+      dropAndClose()
     }
   }
 
