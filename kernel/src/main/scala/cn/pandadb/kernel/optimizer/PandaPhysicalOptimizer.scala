@@ -109,7 +109,7 @@ object PandaPhysicalOptimizer {
 
   def generatePhysicalPlan(filterops: ArrayBuffer[PhysicalOperator], opseq: ArrayBuffer[PhysicalOperator], endOp: PhysicalOperator): PhysicalOperator = {
     if (!filterops.isEmpty) {
-      var tempOp: PhysicalOperator = ppdFilter(filterops, endOp)
+      var tempOp: PhysicalOperator = PpdFilter(filterops, endOp)
       opseq.reverse.foreach(u => {
         tempOp = constructPhysicalPlan(u, tempOp)
       })
@@ -143,7 +143,12 @@ object PandaPhysicalOptimizer {
       case x: PrefixGraph => PrefixGraph(in, x.prefix)
       case x: ReturnGraph => ReturnGraph(in)
       case x: Skip => Skip(in, x.expr)
-      case x: SwitchContext => SwitchContext(in, x.context)
+      case x: SwitchContext => {
+        in match {
+          case y:Select => y.in
+          case _ => SwitchContext(in, x.context)
+        }
+      }
       case x: TabularUnionAll => null
     }
 
