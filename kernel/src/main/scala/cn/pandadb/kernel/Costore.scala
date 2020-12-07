@@ -10,7 +10,7 @@ import org.apache.lucene.queryparser.classic.{MultiFieldQueryParser, QueryParser
 import org.apache.lucene.search.{IndexSearcher, Query, ScoreDoc, TopDocs}
 import org.apache.lucene.store.{Directory, FSDirectory}
 
-class Costore(indexPath: String) {
+class Costore(val indexPath: String) {
   val dir = new File(indexPath)
   val directory: Directory = FSDirectory.open(dir.toPath)
   val analyzer = new StandardAnalyzer
