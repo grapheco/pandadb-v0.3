@@ -27,50 +27,8 @@ object KeyHandler {
     val RelationLabel = Value(11) // [KeyType(1Byte), LabelId(4Byte)] --> LabelName(String)
     val PropertyName = Value(12) // [KeyType(1Byte),PropertyId(4Byte)] --> propertyName(String)
   }
-////////////////
-  //  [keyType(1Bytes),  id(4Bytes)]
-  def nodeLabelKeyToBytes(labelId: Int): Array[Byte] ={
-    val bytes = new Array[Byte](5)
-    ByteUtils.setByte(bytes, 0, KeyType.NodeLabel.id.toByte)
-    ByteUtils.setInt(bytes, 1, labelId)
-    bytes
-  }
 
-  def nodeLabelKeyPrefixToBytes(): Array[Byte] ={
-    val bytes = new Array[Byte](1)
-    ByteUtils.setByte(bytes, 0, KeyType.NodeLabel.id.toByte)
-    bytes
-  }
 
-  //  [keyType(1Bytes),  id(4Bytes)]
-  def relationLabelKeyToBytes(labelId: Int): Array[Byte] ={
-    val bytes = new Array[Byte](5)
-    ByteUtils.setByte(bytes, 0, KeyType.RelationLabel.id.toByte)
-    ByteUtils.setInt(bytes, 1, labelId)
-    bytes
-  }
-
-  def relationLabelKeyPrefixToBytes(): Array[Byte] ={
-    val bytes = new Array[Byte](1)
-    ByteUtils.setByte(bytes, 0, KeyType.RelationLabel.id.toByte)
-    bytes
-  }
-
-  //  [keyType(1Bytes),  id(4Bytes)]
-  def propertyNameKeyToBytes(labelId: Int): Array[Byte] ={
-    val bytes = new Array[Byte](5)
-    ByteUtils.setByte(bytes, 0, KeyType.PropertyName.id.toByte)
-    ByteUtils.setInt(bytes, 1, labelId)
-    bytes
-  }
-
-  def propertyNameKeyPrefixToBytes(): Array[Byte] ={
-    val bytes = new Array[Byte](1)
-    ByteUtils.setByte(bytes, 0, KeyType.PropertyName.id.toByte)
-    bytes
-  }
-
-////////////////
   // [keyType(1Byte),nodeId(8Bytes)]
   def nodeKeyToBytes(nodeId: Long): Array[Byte] = {
     val bytes = new Array[Byte](9)
@@ -329,6 +287,51 @@ object KeyHandler {
     ByteUtils.setLong(bytes, 1, toNodeId)
     ByteUtils.setInt(bytes, 9, labelId)
     ByteUtils.setLong(bytes, 13, category)
+    bytes
+  }
+
+  // [keyType(1Bytes),id(4Bytes)]
+  def nodeLabelKeyToBytes(labelId: Int): Array[Byte] ={
+    val bytes = new Array[Byte](5)
+    ByteUtils.setByte(bytes, 0, KeyType.NodeLabel.id.toByte)
+    ByteUtils.setInt(bytes, 1, labelId)
+    bytes
+  }
+
+  // [keyType(1Bytes),--]
+  def nodeLabelKeyPrefixToBytes(): Array[Byte] ={
+    val bytes = new Array[Byte](1)
+    ByteUtils.setByte(bytes, 0, KeyType.NodeLabel.id.toByte)
+    bytes
+  }
+
+  // [keyType(1Bytes),id(4Bytes)]
+  def relationLabelKeyToBytes(labelId: Int): Array[Byte] ={
+    val bytes = new Array[Byte](5)
+    ByteUtils.setByte(bytes, 0, KeyType.RelationLabel.id.toByte)
+    ByteUtils.setInt(bytes, 1, labelId)
+    bytes
+  }
+
+  // [keyType(1Bytes),--]
+  def relationLabelKeyPrefixToBytes(): Array[Byte] ={
+    val bytes = new Array[Byte](1)
+    ByteUtils.setByte(bytes, 0, KeyType.RelationLabel.id.toByte)
+    bytes
+  }
+
+  // [keyType(1Bytes),id(4Bytes)]
+  def propertyNameKeyToBytes(labelId: Int): Array[Byte] ={
+    val bytes = new Array[Byte](5)
+    ByteUtils.setByte(bytes, 0, KeyType.PropertyName.id.toByte)
+    ByteUtils.setInt(bytes, 1, labelId)
+    bytes
+  }
+
+  // [keyType(1Bytes),--]
+  def propertyNameKeyPrefixToBytes(): Array[Byte] ={
+    val bytes = new Array[Byte](1)
+    ByteUtils.setByte(bytes, 0, KeyType.PropertyName.id.toByte)
     bytes
   }
 
