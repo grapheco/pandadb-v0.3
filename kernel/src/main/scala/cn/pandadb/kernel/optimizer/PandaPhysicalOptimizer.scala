@@ -110,7 +110,7 @@ object PandaPhysicalOptimizer {
   def isLabel(in: PhysicalOperator): Boolean = {
     in match {
       case x:LabelRecorders => true
-      case x:_ => false
+      case _ => false
     }
   }
 
