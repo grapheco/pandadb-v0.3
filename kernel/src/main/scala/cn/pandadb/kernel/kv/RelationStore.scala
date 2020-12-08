@@ -50,10 +50,7 @@ class RelationInEdgeIndexStore(db: RocksDB) {
     val iter = db.newIterator()
     iter.seek(prefix)
 
-    override def hasNext: Boolean = {
-      val k = iter.key()
-      iter.isValid && iter.key().startsWith(prefix)
-    }
+    override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
 
     override def next(): Long = {
       val fromNodeId = ByteUtils.getLong(iter.key(), 21)
@@ -98,7 +95,6 @@ class RelationInEdgeIndexStore(db: RocksDB) {
       relation
     }
   }
-
   //////
 }
 
