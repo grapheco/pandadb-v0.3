@@ -2,7 +2,7 @@ package cn.pandadb.kv
 
 import java.io.File
 
-import cn.pandadb.kernel.kv.{GraphFacade, GraphFacadeWithPPD, NodeLabelStore, PropertyLabelStore, RelationLabelStore, RocksDBGraphAPI, TokenStore}
+import cn.pandadb.kernel.kv.{GraphFacade, GraphFacadeWithPPD, NodeLabelStore, PropertyNameStore, RelationLabelStore, RocksDBGraphAPI, TokenStore}
 import cn.pandadb.kernel.store.{FileBasedIdGen, LabelStore}
 import org.apache.commons.io.FileUtils
 import org.junit.{Assert, Before, Test}
@@ -30,7 +30,7 @@ class GraphFacadeWithPPDTest {
 
     nodeLabelStore = new NodeLabelStore(graphStore.getRocksDB)
     relLabelStore = new RelationLabelStore(graphStore.getRocksDB)
-    propNameStore = new PropertyLabelStore(graphStore.getRocksDB)
+    propNameStore = new PropertyNameStore(graphStore.getRocksDB)
 
 
 
