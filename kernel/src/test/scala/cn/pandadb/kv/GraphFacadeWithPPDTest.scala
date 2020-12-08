@@ -97,9 +97,9 @@ class GraphFacadeWithPPDTest {
     val indexId = graphFacade.createNodePropertyIndex("person", Set("name"))
     graphFacade.writeNodeIndexRecord(indexId, n1, "bob")
 
-    res = graphFacade.cypher("match (n:person) where n.name='bob' return n")
+    res = graphFacade.cypher("match (n) where n.name='bob' return n")
     res.show
-    Assert.assertEquals(1, res.records.size)
+    Assert.assertEquals(2, res.records.size)
 
     res = graphFacade.cypher("match (n:person) where n.name='alex' return n")
     res.show
@@ -111,6 +111,31 @@ class GraphFacadeWithPPDTest {
     Assert.assertEquals(2, res.records.size)
 
     graphFacade.close()
+  }
+
+  @Test
+  def testQueryRelations(): Unit = {
+    graphFacade.addRelation("knows", 1L, 2L, Map())
+    graphFacade.addRelation("knows", 2L, 3L, Map())
+  }
+
+  @Test
+  def testQueryLabels(): Unit = {
+    val n1: Long = graphFacade.addNode2(Map("name" -> "bob", "age" -> 40), "person")
+    val n2: Long = graphFacade.addNode2(Map("name" -> "alex", "age" -> 20), "person")
+    val n3: Long = graphFacade.addNode2(Map("name" -> "simba", "age" -> 10), "worker")
+
+//    for(i<-1 to 110000){
+//      graphFacade.addNode2(Map("name" -> "simba", "age" -> 10), "worker")
+//    }
+    var res = graphFacade.cypher("match (n: worker)  return n")
+
+    cn.pandadb.kernel.util.Profiler.timing({ graphFacade.cypher("match (n: worker)  return n")})
+
+
+
+
+//    Assert.assertEquals(2, res.records.size)
   }
 
 
