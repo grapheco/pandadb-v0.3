@@ -12,8 +12,8 @@ import org.junit.{Assert, Test}
  */
 class PIndexImporterTest {
   val headFile = new File("src/test/resources/nodeHeadFile.csv")
-  val nodeFile = new File("src/test/resources/s-nodeFile.csv")
-//  val nodeFile = new File("D:\\dataset\\graph500-22-node-wrapped.csv")
+//  val nodeFile = new File("src/test/resources/s-nodeFile.csv")
+  val nodeFile = new File("D:\\dataset\\graph500-22-node-wrapped.csv")
   val rocksdb = RocksDBStorage.getDB("src/test/output/pnodeNodeTestDB")
   val pNodeImporter = new PNodeImporter(nodeFile, rocksdb, headFile)
 
@@ -27,12 +27,13 @@ class PIndexImporterTest {
     val node = nodeStore.get(1813314)
     Assert.assertEquals(1813314.toLong, node.id)
     Assert.assertArrayEquals(Array(1), node.labelIds)
-    Assert.assertEquals(Map("id_p" -> 1813314.toLong, "idStr" -> "bibddbe", "flag" -> false), node.properties)
+    Assert.assertEquals(Map("id_p" -> 1813314.toLong, "idStr" -> "bibddbe", " bflag" -> false), node.properties)
   }
 
   @Test
   def createIndex(): Unit = {
-    val nodeIndex = new NodeIndex(rocksdb)
+    val indexDB = RocksDBStorage.getDB("src/test/output/indexDB")
+    val nodeIndex = new NodeIndex(indexDB)
     val nodeStore = new NodeStore(rocksdb)
 
     // start

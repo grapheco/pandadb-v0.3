@@ -22,7 +22,7 @@ import scala.io.Source
 // protocol: :ID :LABELS propName1:type1 proName2:type2
 case class TempNode(id: Long, labels: Array[Int], properties: Map[String, Any])
 
-class PNodeImporter(nodeFile: File, rocksDB: RocksDB, hFile: File) {
+class PNodeImporter(nodeFile: File, rocksDB: RocksDB, hFile : File) {
   val db: RocksDB = rocksDB
   val file: File = nodeFile
   val headFile: File = hFile
@@ -56,7 +56,7 @@ class PNodeImporter(nodeFile: File, rocksDB: RocksDB, hFile: File) {
 
   private def _wrapNode(lineArr: Array[String]): TempNode = {
     val id = lineArr(0).toLong
-//    TODO：modify the labels import mechanism, enable real array
+//  TODO：modify the labels import mechanism, enable real array
     val labels: Array[Int] = Array(PDBMetaData.getLabelId(lineArr(1)))
     var propMap: Map[String, Any] = Map[String, Any]()
     for(i <-2 to lineArr.length -1) {
@@ -75,53 +75,4 @@ class PNodeImporter(nodeFile: File, rocksDB: RocksDB, hFile: File) {
     TempNode(id, labels, propMap)
   }
 
-
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//  private def _wrapNode(arr: Array[String]): TempNode = {
-//    val id: Long = arr(headMap.get(":ID").get.asInstanceOf[Int]).toLong
-//    val labels: Array[Int] = {
-//      val labelIndexArr: Array[Int] = headMap.get(":LABEL").get.asInstanceOf[Array[Int]]
-//      labelIndexArr.map(item => arr(item).toInt)
-//    }
-//    val props: Map[String, Any]
-//    val tNode =
-//  }
-
-
-
-//  def setHead(): Map[String, Any] = {
-//    val headArr = Source.fromFile(file).getLines().next().replace("\n", "").split(",")
-//    var headMap: mutable.Map[String, Any] = mutable.Map[String, Any]()
-//    headArr.foreach(item => {
-//      item match {
-//        case _ if item.endsWith(":ID") => {
-//          if(headMap.contains(":ID")) throw new Exception("Repeat define of :ID in the head file.")
-//          headMap += (":ID" -> headArr.indexOf(item))
-//        }
-//        case _ if item.endsWith(":LABEL") => {
-//          if (headMap.contains(":LABEL")) headMap(":LABEL") = concat(headMap(":LABEL").asInstanceOf[Array[Int]], Array(headArr.indexOf(item)))
-//          else headMap += (":LABEL" -> Array(headArr.indexOf(item)))
-//        }
-//        case _ => headMap += (item -> headArr.indexOf(item))
-//      }
-//    })
-//    headMap.toMap
-//  }
-
-

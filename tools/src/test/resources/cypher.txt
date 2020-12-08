@@ -1,0 +1,13 @@
+//basic statisic
+Match(n) Return count(n);
+Match p=()-[r]->() Return count(r);
+// degree-compution
+Match (n)-[r]->() Return distinct n, count(r) Order by count(r) Desc limit 100;
+Match ()-[r]->(n) Return distinct n, count(r) Order by count(r) Desc limit 100;
+
+Match (n)-->(m) where n.id_p > 1000000 and m.id_p < 1000000 return count(n);
+Match (n) where id(n) = $id Return(n);
+Match (n) where n.id_p = $id_p Return(n);
+Match (n) where n.id_s = '123456' Return(n);
+Match (n) where n.idStr = 'bcdefg' Return(n);
+Match (n) where n.
