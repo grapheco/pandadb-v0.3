@@ -55,20 +55,12 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
 
   def getNodesByFilter(predicate: Array[NFPredicate], name: String, nodeCypherType: CTNode): LynxRecords = {
 
-/*    var nodes:Seq[Node[Id]] = Seq[Node[Id]]()
-    var isFirst: Boolean = true
-    predicate.foreach(u =>{
-      if(!isFirst){
-        nodes = nodes.intersect(scan.allNodes(u).toSeq)
-      }
-      else {
-        nodes = scan.allNodes(u).toSeq
-        isFirst = false
-      }
-    })*/
 
     val (predicateNew, labels) = findLabelPredicate(predicate)
-    val nodes = predicateNew.map(scan.allNodes(_,  labels.distinct.toSet).toSeq).reduce(_.intersect(_))
+    val nodes = {
+      if(predicateNew.nonEmpty) predicateNew.map(scan.allNodes(_,  labels.distinct.toSet).toSeq).reduce(_.intersect(_))
+      else scan.allNodes(labels.toSet, false)
+    }
     new LynxRecords(
       RecordHeader(Map(NodeVar(name)(CTNode) -> name)),
       LynxTable(Seq(name -> CTNode), nodes.map(Seq(_)))
@@ -79,7 +71,7 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
 
 
 trait PandaPropertyGraphScan[Id] extends PropertyGraphScan[Id] {
-  def isPropertyWithIndex(labels: Set[String], propertyName: String): Boolean = ???
+  def isPropertyWithIndex(labels: Set[String], propertyName: String): Boolean
 
   // def isLabelWithIndex(label: String): Boolean = ???
 
@@ -91,6 +83,6 @@ trait PandaPropertyGraphScan[Id] extends PropertyGraphScan[Id] {
 
  // def getRecorderNumbersFromLabel(label: String): Int = ???
 
-  def allNodes(predicate: NFPredicate, labels: Set[String]): Iterable[Node[Id]] = ???
+  def allNodes(predicate: NFPredicate, labels: Set[String]): Iterable[Node[Id]]
 
 }
