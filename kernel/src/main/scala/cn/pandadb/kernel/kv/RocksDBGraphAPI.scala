@@ -1,5 +1,8 @@
 package cn.pandadb.kernel.kv
 
+import java.io.File
+import java.nio.file.Path
+
 import cn.pandadb.kernel.kv.NodeIndex.IndexId
 import cn.pandadb.kernel.{GraphRAM, NodeId, PropertyStore, TypedId}
 import cn.pandadb.kernel.store.{MergedChanges, StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
@@ -7,14 +10,22 @@ import org.rocksdb.RocksDB
 import sun.security.util.Length
 
 class RocksDBGraphAPI(dbPath: String) {
-  private val rocksDB = RocksDBStorage.getDB(dbPath)
-  private val nodeStore = new NodeStore(rocksDB)
-  private val relationStore = new RelationStore(rocksDB)
-  private val nodeLabelIndex = new NodeLabelIndex(rocksDB)
-  private val relationLabelIndex = new RelationLabelIndex(rocksDB)
-  private val relationInEdgeIndex = new RelationInEdgeIndexStore(rocksDB)
-  private val relationOutEdgeIndex = new RelationOutEdgeIndexStore(rocksDB)
-  private val nodeIndex = new NodeIndex(rocksDB)
+  private val rocksDB = RocksDBStorage.getDB(s"${dbPath}/meta")
+
+  private val nodeDB = RocksDBStorage.getDB(s"${dbPath}/nodes")
+  private val nodeStore = new NodeStore(nodeDB)
+  private val relDB = RocksDBStorage.getDB(s"${dbPath}/rels")
+  private val relationStore = new RelationStore(relDB)
+  private val labelIndexDB = RocksDBStorage.getDB(s"${dbPath}/nodeLabelIndex")
+  private val nodeLabelIndex = new NodeLabelIndex(labelIndexDB)
+  private val relIndexDB = RocksDBStorage.getDB(s"${dbPath}/relLabelIndex")
+  private val relationLabelIndex = new RelationLabelIndex(relIndexDB)
+  private val inEdgeDB = RocksDBStorage.getDB(s"${dbPath}/inEdge")
+  private val relationInEdgeIndex = new RelationInEdgeIndexStore(inEdgeDB)
+  private val outEdgeDB = RocksDBStorage.getDB(s"${dbPath}/outEdge")
+  private val relationOutEdgeIndex = new RelationOutEdgeIndexStore(outEdgeDB)
+  private val nodeIndexDB = RocksDBStorage.getDB(s"${dbPath}/nodeIndex")
+  private val nodeIndex = new NodeIndex(nodeIndexDB)
 
   def getRocksDB: RocksDB = rocksDB
 
@@ -22,6 +33,13 @@ class RocksDBGraphAPI(dbPath: String) {
   }
 
   def close(): Unit = {
+    nodeDB.close()
+    relDB.close()
+    labelIndexDB.close()
+    relIndexDB.close()
+    inEdgeDB.close()
+    outEdgeDB.close()
+    nodeIndexDB.close()
     rocksDB.close()
   }
 

@@ -71,7 +71,7 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
 
 
 trait PandaPropertyGraphScan[Id] extends PropertyGraphScan[Id] {
-  def isPropertyWithIndex(labels: Set[String], propertyName: String): Boolean
+  def isPropertyWithIndex(labels: Set[String], propertyName: String): Boolean = ???
 
   // def isLabelWithIndex(label: String): Boolean = ???
 
@@ -83,6 +83,6 @@ trait PandaPropertyGraphScan[Id] extends PropertyGraphScan[Id] {
 
  // def getRecorderNumbersFromLabel(label: String): Int = ???
 
-  def allNodes(predicate: NFPredicate, labels: Set[String]): Iterable[Node[Id]]
+  def allNodes(predicate: NFPredicate, labels: Set[String]): Iterable[Node[Id]] = ???
 
 }

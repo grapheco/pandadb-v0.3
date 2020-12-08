@@ -65,9 +65,10 @@ trait TokenStore{
     iter.seek(prefix)
 
     while (iter.isValid && iter.key().startsWith(prefix)){
-      val id = ByteUtils.getInt(iter.key(), 1)
+      val key = iter.key()
+      val id = ByteUtils.getInt(key, 1)
       if (maxId < id) maxId = id
-      val name = ByteUtils.stringFromBytes(db.get(iter.key()))
+      val name = ByteUtils.stringFromBytes(db.get(key))
       mapString2Int += name -> id
       mapInt2String += id -> name
       iter.next()
