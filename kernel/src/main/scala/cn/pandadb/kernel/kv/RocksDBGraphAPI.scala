@@ -206,6 +206,14 @@ class RocksDBGraphAPI(dbPath: String) {
     nodeIndex.find(indexId, value)
   }
 
+  def findIntRangeByIndex(indexId: IndexId, startValue: Int = Int.MinValue, endValue: Int = Int.MaxValue) = {
+    nodeIndex.findIntRange(indexId, startValue, endValue)
+  }
+
+  def findStringStartWithByIndex(indexId: IndexId, startWith: String) = {
+    nodeIndex.findStringStartWith(indexId, startWith.getBytes())
+  }
+
 
 
 
