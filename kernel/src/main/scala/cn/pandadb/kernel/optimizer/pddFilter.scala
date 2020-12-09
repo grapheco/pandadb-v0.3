@@ -8,7 +8,7 @@ import org.opencypher.lynx.planning.{Filter, LabelRecorders, PhysicalOperator}
 import org.opencypher.okapi.api.types.{CTNode, CypherType}
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue, Node}
-import org.opencypher.okapi.ir.api.expr.{ElementProperty, Equals, Expr, GreaterThan, GreaterThanOrEqual, Id, LessThan, LessThanOrEqual, NodeVar, Param}
+import org.opencypher.okapi.ir.api.expr.{BoolLit, ElementProperty, Equals, Expr, GreaterThan, GreaterThanOrEqual, Id, LessThan, LessThanOrEqual, NodeVar, Param}
 
 import scala.collection.Seq
 import scala.collection.mutable.ArrayBuffer
@@ -19,7 +19,14 @@ object PpdFilter {
     //todo transform more Exprs to NFPredicates
     expr match {
       case GreaterThan(lhs, rhs) => NFGreaterThan(lhs.asInstanceOf[ElementProperty].key.name, AnyValue(parameters.get(rhs.asInstanceOf[Param].name).get.getValue.get))
-      case Equals(lhs, rhs) => NFEquals(lhs.asInstanceOf[ElementProperty].key.name, AnyValue(parameters.get(rhs.asInstanceOf[Param].name).get.getValue.get))
+      case Equals(lhs, rhs) => NFEquals(lhs.asInstanceOf[ElementProperty].key.name, AnyValue({
+        rhs match {
+          //case x:Falselit
+          case x:BoolLit => x.v
+          case _ => parameters.get(rhs.asInstanceOf[Param].name).get.getValue.get
+        }
+        //parameters.get(rhs.asInstanceOf[Param].name).get.getValue.get
+      }))
       case LessThan(lhs, rhs) => NFLessThan(lhs.asInstanceOf[ElementProperty].key.name, AnyValue(parameters.get(rhs.asInstanceOf[Param].name).get.getValue.get))
       case LessThanOrEqual(lhs, rhs) => NFLessThanOrEqual(lhs.asInstanceOf[ElementProperty].key.name, AnyValue(parameters.get(rhs.asInstanceOf[Param].name).get.getValue.get))
       case GreaterThanOrEqual(lhs, rhs) => NFGreaterThanOrEqual(lhs.asInstanceOf[ElementProperty].key.name, AnyValue(parameters.get(rhs.asInstanceOf[Param].name).get.getValue.get))
