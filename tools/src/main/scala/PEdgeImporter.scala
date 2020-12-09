@@ -1,6 +1,6 @@
 import java.io.File
 
-import cn.pandadb.kernel.kv.{RelationStore}
+import cn.pandadb.kernel.kv.{RelationStore, RocksDBGraphAPI}
 import org.rocksdb.RocksDB
 
 import scala.io.Source
@@ -17,19 +17,17 @@ import scala.io.Source
  * protocol: :relId(long), :fromId(long), :toId(long), :edgetype(string), propName1:type, ...
  */
 case class TempEdge(relId: Long, fromId: Long, toId: Long, edgeType: Int, propMap: Map[String, Any])
-class PEdgeImporter(edgeFile: File, rocksDB: RocksDB, hFile: File) {
-  val db: RocksDB = rocksDB
+class PEdgeImporter(edgeFile: File, hFile: File, rocksDBGraphAPI: RocksDBGraphAPI) {
   val file: File = edgeFile
   val headFile: File = hFile
   var propSortArr: Array[String] = null
   val headMap: Map[String, String] = _setEdgeHead()
-  val relStore = new RelationStore(db)
 
   def importEdges(): Unit ={
     val iter = Source.fromFile(edgeFile).getLines()
     while (iter.hasNext) {
       val tempEdge = _wrapEdge(iter.next().replace("\n", "").split(","))
-      relStore.setRelation(tempEdge.relId, tempEdge.fromId, tempEdge.toId, tempEdge.edgeType, 1, tempEdge.propMap)
+      rocksDBGraphAPI.addRelation(tempEdge.relId, tempEdge.fromId, tempEdge.toId, tempEdge.edgeType, tempEdge.propMap)
     }
   }
 

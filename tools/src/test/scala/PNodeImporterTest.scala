@@ -1,6 +1,6 @@
 import java.io.File
 
-import cn.pandadb.kernel.kv.{NodeStore, RocksDBStorage}
+import cn.pandadb.kernel.kv.{NodeStore, RocksDBGraphAPI, RocksDBStorage}
 import org.junit.{Assert, Test}
 import org.rocksdb.RocksDB
 
@@ -11,10 +11,12 @@ import org.rocksdb.RocksDB
  * @Modified By:
  */
 class PNodeImporterTest {
-  val headFile = new File("src/test/resources/nodeHeadFile.csv")
-  val nodeFile = new File("D:\\dataset\\graph500-22-node-wrapped.csv")
-  val rocksdb = RocksDBStorage.getDB("src/test/output/pnodeNodeTestDB")
-  val pNodeImporter = new PNodeImporter(nodeFile, rocksdb, headFile)
+  val headFile = new File("G://dataset//nodes-1k-wrapped-head.csv")
+  val nodeFile = new File("G://dataset//nodes-1k-wrapped.csv")
+//  val rocksdb = RocksDBStorage.getDB("src/test/output/pnodeNodeTestDB")
+  val rocksDBGraphAPI = new RocksDBGraphAPI("./src/test/resources/rocksdb")
+  val pNodeImporter = new PNodeImporter(nodeFile, headFile, rocksDBGraphAPI)
+
 
   @Test
   def importNode(): Unit = {
@@ -22,11 +24,10 @@ class PNodeImporterTest {
     pNodeImporter.importNodes()
     val time1 = System.currentTimeMillis()
     println(s"import 240W nodes takes ${time1-time0} ms.")
-    val nodeStore = new NodeStore(rocksdb)
-    val node = nodeStore.get(1813314)
-    Assert.assertEquals(1813314.toLong, node.id)
-    Assert.assertArrayEquals(Array(1), node.labelIds)
-    Assert.assertEquals(Map("id_p" -> 1813314.toLong, "idStr" -> "bibddbe", "flag" -> false), node.properties)
+    val node = rocksDBGraphAPI.nodeAt(1)
+    Assert.assertEquals(1.toLong, node.id)
+    Assert.assertArrayEquals(Array(0), node.labelIds)
+    Assert.assertEquals(Map("id_p" -> 1.toLong, "idStr" -> "b", "flag" -> true), node.properties)
   }
 
 }

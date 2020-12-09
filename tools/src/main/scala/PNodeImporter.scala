@@ -1,6 +1,6 @@
 import java.io.File
 
-import cn.pandadb.kernel.kv.NodeStore
+import cn.pandadb.kernel.kv.{NodeStore, RocksDBGraphAPI}
 import org.rocksdb.RocksDB
 
 import scala.Array.concat
@@ -18,24 +18,22 @@ import scala.io.Source
  *
   headMap(propName1 -> type, propName2 -> type ...)
  */
-
 // protocol: :ID :LABELS propName1:type1 proName2:type2
 case class TempNode(id: Long, labels: Array[Int], properties: Map[String, Any])
 
-class PNodeImporter(nodeFile: File, rocksDB: RocksDB, hFile : File) {
-  val db: RocksDB = rocksDB
+class PNodeImporter(nodeFile: File, hFile : File, rocksDBGraphAPI: RocksDBGraphAPI) {
+//  val db: RocksDB = rocksDB
   val file: File = nodeFile
   val headFile: File = hFile
   // record the propId sort in the file, example: Array(2, 4, 1, 3)
   var propSortArr: Array[String] = null
   val headMap: Map[String, String] = _setNodeHead()
-  val nodeStore = new NodeStore(db)
 
   def importNodes(): Unit = {
     val iter = Source.fromFile(file).getLines()
     while (iter.hasNext) {
       val tempNode = _wrapNode(iter.next().replace("\n", "").split(","))
-      nodeStore.set(tempNode.id, tempNode.labels, tempNode.properties)
+      rocksDBGraphAPI.addNode(tempNode.id, tempNode.labels, tempNode.properties)
     }
   }
 
