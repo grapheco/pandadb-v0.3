@@ -2,7 +2,7 @@ package cn.pandadb.kv
 
 import java.nio.ByteBuffer
 
-import cn.pandadb.kernel.kv.{ByteUtils, NodeIndex, RocksDBStorage}
+import cn.pandadb.kernel.kv.{ByteUtils, NodeIndex, NumberEncoder, RocksDBStorage}
 import org.junit.{After, Assert, Before, Test}
 import org.rocksdb.{ReadOptions, RocksDB}
 import org.apache.commons.lang3.RandomStringUtils
@@ -19,7 +19,7 @@ class NodeIndexTest extends Assert {
   val hddPath = "D:\\rocksDB"
 
   @Test
-  def rocksDBTest = {
+  def rocksDBTest(): Unit = {
     val db:RocksDB = RocksDBStorage.getDB(path+"/test1")
     Assert.assertNotNull(db)
 
@@ -50,14 +50,14 @@ class NodeIndexTest extends Assert {
     db.close()
   }
 
-  def long2Bytes(long: Long)={
+  def long2Bytes(long: Long): Array[Byte] ={
     val b = new Array[Byte](8)
     ByteUtils.setLong(b,0,long)
     b
   }
 
   @Test
-  def indexBaseTest= {
+  def indexBaseTest(): Unit= {
     val db:RocksDB = RocksDBStorage.getDB(path+"/test2")
     val LABEL = 1
     val PROPS = Array[Int](1)
@@ -112,7 +112,7 @@ class NodeIndexTest extends Assert {
   }
 
   @Test
-  def indexBigTest= {
+  def indexBigTest(): Unit= {
 //    val db:RocksDB = RocksDBStorage.getDB(path+"/test3")
 //    val ni = new NodeIndex(db)
 //    val t0 = System.currentTimeMillis()
@@ -129,7 +129,7 @@ class NodeIndexTest extends Assert {
   }
 
   @Test
-  def stringIndexTest = {
+  def stringIndexTest(): Unit = {
     val data = Map[Int,String](
       0->"张三",
       1->"李四",
@@ -158,7 +158,7 @@ class NodeIndexTest extends Assert {
   }
 
   @Test
-  def LongstringIndexTest = {
+  def longStringIndexTest(): Unit = {
 
     val file = Source.fromFile("data.csv")
     val l = file.getLines().map{
@@ -184,4 +184,82 @@ class NodeIndexTest extends Assert {
     println("time1: ",t3-t2)
   }
 
+
+  @Test
+  def stringStartWithTest(): Unit = {
+    val data = Map[Int,String](
+      0->"张三",
+      1->"张四",
+      2->"张五",
+      3->"张三",
+      4->"张三丰",
+      5->"张四四",
+      6->"王五",
+      7->"PandaDB is a Intelligent Graph Database.(",
+      8->"PandaDB",
+      9->"PandaDB is a Intelligent Graph Database.").map{
+      v=> val value = v._2.getBytes()
+        (value, Array[Byte](value.length.toByte), v._1.toLong)
+    }.iterator
+    val db:RocksDB = RocksDBStorage.getDB(path+"/test5")
+    val ni = new NodeIndex(db)
+    // create and insert
+    val indexId = ni.createIndex(5,Array[Int](5))
+    ni.insertIndexRecord(indexId, data)
+    // search
+    Assert.assertArrayEquals(Array[Long](0, 3, 4), ni.findStringStartWith(indexId, "张三".getBytes()).toArray.sorted)
+    Assert.assertArrayEquals(Array[Long](0, 1, 2, 3, 4, 5), ni.findStringStartWith(indexId, "张".getBytes()).toArray.sorted)
+    Assert.assertArrayEquals(Array[Long](7,8,9), ni.findStringStartWith(indexId, "PandaDB".getBytes()).toArray.sorted)
+  }
+
+  @Test
+  def intRangeTest(): Unit = {
+    val data = Map[Int,Int](
+      0->1,
+      1->2,
+      2->10,
+      3->20,
+      4->100,
+      5->0,
+      6-> -1,
+      7-> -10,
+      8-> -20,
+      9-> -100).map{
+      v=> val value = NumberEncoder.encode(v._2)
+        (value, Array[Byte](value.length.toByte), v._1.toLong)
+    }.iterator
+    val db:RocksDB = RocksDBStorage.getDB(path+"/test6")
+    val ni = new NodeIndex(db)
+    val indexId = ni.createIndex(6,Array[Int](6))
+    ni.insertIndexRecord(indexId, data)
+    Assert.assertArrayEquals(Array[Long](9,8,7,6,5,0,1,2,3,4), ni.findIntRange(indexId).toArray)
+    Assert.assertArrayEquals(Array[Long](5,0,1,2,3,4), ni.findIntRange(indexId, 0,100).toArray)
+    Assert.assertArrayEquals(Array[Long](5,0,1,2,3), ni.findIntRange(indexId, 0,99).toArray)
+    Assert.assertArrayEquals(Array[Long](8,7,6,5,0,1,2,3), ni.findIntRange(indexId, -60,60).toArray)
+  }
+
+  @Test
+  def doubleRangeTest(): Unit = {
+    val data = Map[Int,Double](
+      0-> -100,
+      1 -> -99.9999,
+      2 -> -99,
+      3 -> -3.1415926,
+      4 -> -0.618,
+      5 -> 0,
+      6 -> 0.0000001,
+      7 -> 1,
+      8 -> 3.1415926,
+      9 -> 18290.87817,
+      10-> 18290.878171).map{
+      v=> val value = NumberEncoder.encode(v._2)
+        (value, Array[Byte](value.length.toByte), v._1.toLong)
+    }.iterator
+    val db:RocksDB = RocksDBStorage.getDB(path+"/test7")
+    val ni = new NodeIndex(db)
+    ni.dropIndex(7,Array[Int](7))
+    val indexId = ni.createIndex(7,Array[Int](7))
+    ni.insertIndexRecord(indexId, data)
+    Assert.assertArrayEquals(Array[Long](0,1,2,3,4,5,6,7,8,9,10), ni.findIntRange(indexId).toArray)
+  }
 }

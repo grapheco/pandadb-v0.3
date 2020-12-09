@@ -5,7 +5,10 @@ import java.nio.ByteBuffer
 import cn.pandadb.kernel.kv.KeyHandler.KeyType
 import cn.pandadb.kernel.kv.NodeIndex.{IndexId, NodeId, metaIdKey}
 import org.rocksdb.RocksDB
+import java.lang.Float._
+import java.lang.Double._
 
+import scala.Byte.byte2int
 import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.util.Random
@@ -13,7 +16,8 @@ import scala.util.Random
 object NodeIndex{
   type IndexId   = Int
   type NodeId    = Long
-  val metaIdKey = Array[Byte](KeyType.NodePropertyIndexMeta.id.toByte)
+  val metaIdKey: Array[Byte] = Array[Byte](KeyType.NodePropertyIndexMeta.id.toByte)
+
 }
 
 class NodeIndex(db: RocksDB){
@@ -32,7 +36,7 @@ class NodeIndex(db: RocksDB){
     val key = KeyHandler.nodePropertyIndexMetaKeyToBytes(label, props)
     val id  = db.get(key)
     if (id == null || id.isEmpty){
-      val new_id = getIncreasingId()
+      val new_id = getIncreasingId
       val id_byte = new Array[Byte](4)
       ByteUtils.setInt(id_byte, 0, new_id)
       db.put(key,id_byte)
@@ -43,20 +47,15 @@ class NodeIndex(db: RocksDB){
     }
   }
 
-  def getIncreasingId(): IndexId ={
+  def getIncreasingId: IndexId ={
     val increasingId = db.get(metaIdKey)
-    val id_bytes = new Array[Byte](4)
-    if (increasingId == null || increasingId.length == 0){
-      val id:Int = 0
-      ByteUtils.setInt(id_bytes,0, id+1)
-      db.put(metaIdKey, id_bytes)
-      id
-    } else {
-      val id:Int = ByteBuffer.wrap(increasingId).getInt(0)
-      ByteUtils.setInt(id_bytes,0, id+1)
-      db.put(metaIdKey, id_bytes)
-      id
+    var id:Int = 0
+    if (increasingId != null && increasingId.nonEmpty){
+      id = ByteUtils.getInt(increasingId, 0)
     }
+    val id_bytes = ByteUtils.intToBytes(id+1)
+    db.put(metaIdKey, id_bytes)
+    id
   }
 
   def deleteIndexMeta(label: Int, props: Array[Int]): Unit = {
@@ -137,12 +136,13 @@ class NodeIndex(db: RocksDB){
     deleteIndexMeta(label, props)
   }
 
-  def find(indexId: IndexId, value: Array[Byte], length: Array[Byte]): Iterator[NodeId] = {
+  def find(indexId: IndexId, value: Array[Byte], length: Array[Byte], strictLength: Boolean = true): Iterator[NodeId] = {
     val iter = db.newIterator()
     val prefix = KeyHandler.nodePropertyIndexPrefixToBytes(indexId, value, length)
     iter.seek(prefix)
     new Iterator[NodeId] (){
-      override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix) && iter.key().length-prefix.length==8
+      override def hasNext: Boolean =
+        iter.isValid && iter.key().startsWith(prefix) && (!strictLength || iter.key().length-prefix.length==8)
 
       override def next(): NodeId = {
         val key = iter.key()
@@ -155,9 +155,40 @@ class NodeIndex(db: RocksDB){
 
   def find(indexId: IndexId, value: Array[Byte]): Iterator[NodeId] = find(indexId, value, Array[Byte](value.length.toByte))
 
-  // TODO 有问题
-  def findRange(indexId: IndexId, value: Array[Byte], length: Array[Byte]): Unit = {
+  def findStringStartWith(indexId: IndexId, stringByteArray: Array[Byte]): Iterator[NodeId] = find(indexId, stringByteArray, Array.emptyByteArray, strictLength = false)
+
+  def findIntRange(indexId: IndexId, startValue: Int = Int.MinValue, endValue: Int = Int.MaxValue): Iterator[NodeId] = {
+    val iter = db.newIterator()
+    val startPrefix = KeyHandler.nodePropertyIndexPrefixToBytes(indexId, NumberEncoder.encode(startValue), zeroByteArray(1))
+    val endPrefix   = KeyHandler.nodePropertyIndexPrefixToBytes(indexId, NumberEncoder.encode(endValue), oneByteArray(1))
+    iter.seekForPrev(endPrefix)
+    val endKey = iter.key()
+    iter.seek(startPrefix)
+    new Iterator[NodeId] (){
+      var end = false
+      override def hasNext: Boolean = iter.isValid && !end
+      override def next(): NodeId = {
+        val key = iter.key()
+        if(key.startsWith(endKey)) end = true
+        val id = ByteBuffer.wrap(key).getLong(key.length-8)
+        iter.next()
+        id
+      }
+    }
   }
+
+  def findDoubleRange(indexId: IndexId, startValue: Double, endValue: Double): Iterator[NodeId] = {
+    val iter = db.newIterator()
+
+    val startPrefix = KeyHandler.nodePropertyIndexPrefixToBytes(indexId, NumberEncoder.encode(startValue), zeroByteArray(1))
+    val endPrefix   = KeyHandler.nodePropertyIndexPrefixToBytes(indexId, NumberEncoder.encode(endValue), oneByteArray(1))
+
+    val across = startValue < 0 && endValue >= 0
+    val direct = startValue >= 0
+
+    null
+  }
+
 
   private def zeroByteArray(len: Int): Array[Byte] = {
     new Array[Byte](len)
@@ -169,4 +200,21 @@ class NodeIndex(db: RocksDB){
       a(i) = -1
     a
   }
+}
+
+object NumberEncoder{
+
+
+  def encode(number: Any): Array[Byte] = {
+    number match {
+      case number:Byte => ByteUtils.byteToBytes((number^Byte.MinValue).toByte)
+      case number: Short => ByteUtils.shortToBytes((number^Short.MinValue).toShort)
+      case number: Int => ByteUtils.intToBytes(number^Int.MinValue)
+      case number: Float => ByteUtils.floatToBytes(number)
+      case number: Long => ByteUtils.longToBytes(number^Long.MinValue)
+      case number: Double => ByteUtils.doubleToBytes(number)
+      case v1: Any => throw new Exception(s"this value type: ${v1.getClass} is not number")
+    }
+  }
+
 }

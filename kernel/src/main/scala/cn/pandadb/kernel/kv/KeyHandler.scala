@@ -360,6 +360,12 @@ object ByteUtils {
       bytes(index + 7).toLong & 0xff
   }
 
+  def setDouble(bytes: Array[Byte], index: Int, value: Double): Unit =
+    setLong(bytes, index, java.lang.Double.doubleToLongBits(value))
+
+  def getDouble(bytes: Array[Byte], index: Int): Double =
+    java.lang.Double.longBitsToDouble(getLong(bytes, index))
+
   def setInt(bytes: Array[Byte], index: Int, value: Int): Unit = {
     bytes(index) = (value >>> 24).toByte
     bytes(index + 1) = (value >>> 16).toByte
@@ -373,6 +379,12 @@ object ByteUtils {
       (bytes(index + 2) & 0xff) << 8 |
       bytes(index + 3) & 0xff
   }
+
+  def setFloat(bytes: Array[Byte], index: Int, value: Float): Unit =
+    setInt(bytes, index, java.lang.Float.floatToIntBits(value))
+
+  def getFloat(bytes: Array[Byte], index: Int): Float =
+    java.lang.Float.intBitsToFloat(getInt(bytes, index))
 
   def setShort(bytes: Array[Byte], index: Int, value: Short): Unit = {
     bytes(index) = (value >>> 8).toByte
@@ -410,11 +422,32 @@ object ByteUtils {
     ByteUtils.setLong(bytes, 0, num)
     bytes
   }
+
+  def doubleToBytes(num: Double): Array[Byte] = {
+    val bytes = new Array[Byte](8)
+    ByteUtils.setDouble(bytes, 0, num)
+    bytes
+  }
+
   def intToBytes(num: Int): Array[Byte] = {
     val bytes = new Array[Byte](4)
     ByteUtils.setInt(bytes, 0, num)
     bytes
   }
+
+  def floatToBytes(num: Float): Array[Byte] = {
+    val bytes = new Array[Byte](4)
+    ByteUtils.setFloat(bytes, 0, num)
+    bytes
+  }
+
+  def shortToBytes(num: Short): Array[Byte] = {
+    val bytes = new Array[Byte](2)
+    ByteUtils.setShort(bytes, 0, num)
+    bytes
+  }
+
+  def byteToBytes(num: Byte): Array[Byte] = Array[Byte](num)
 
   def stringToBytes(str: String, charset: Charset = StandardCharsets.UTF_8): Array[Byte] = {
     str.getBytes(charset)
