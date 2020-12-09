@@ -36,7 +36,8 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
     //predicate.map()
     val (predicateNew, labels) = findLabelPredicate(predicate)
 
-    predicateNew.map(isNFPredicateWithIndex(_, labels.distinct.toSet)).reduce(_|_)
+    if (predicateNew.nonEmpty) predicateNew.map(isNFPredicateWithIndex(_, labels.distinct.toSet)).reduce(_|_)
+    else true
   }
 
   def findLabelPredicate(predicate: Array[NFPredicate]): (Array[NFPredicate], Seq[String]) = {
