@@ -6,7 +6,7 @@ import org.opencypher.lynx.{LynxPlannerContext, LynxTable, RecordHeader}
 import org.opencypher.lynx.planning.{Add, AddInto, Aggregate, Alias, Cache, ConstructGraph, Distinct, Drop, EmptyRecords, Filter, FromCatalogGraph, GraphUnionAll, Join, LabelRecorders, Limit, OrderBy, PhysicalOperator, PrefixGraph, ReturnGraph, Select, Skip, Start, SwitchContext, TabularUnionAll}
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.ir.api.expr.{ElementProperty, Equals, Expr, GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual, Param}
+import org.opencypher.okapi.ir.api.expr.{ElementProperty, Equals, Expr, GreaterThan, GreaterThanOrEqual, Id, LessThan, LessThanOrEqual, Param}
 import org.opencypher.okapi.trees.TopDown
 
 import scala.collection.mutable.ArrayBuffer
@@ -121,7 +121,13 @@ object PandaPhysicalOptimizer {
     filterops
    // })
     //todo figure out whether PPD is necessary
-    filterops.map(isLabel(_)).reduce(_|_)
+    val prediates = ArrayBuffer[NFPredicate]()
+    filterops.foreach(u =>{
+      prediates += PpdFilter.getPredicate(u)
+    })
+
+    filterops.map(isLabel(_)).reduce(_|_) && graph.asInstanceOf[PandaPropertyGraph[Id]].isNFPredicatesWithIndex(prediates.toArray)
+
     //graph.asInstanceOf[PandaPropertyGraph].isNFPredicatesWithIndex(prediates.toArray)
   }
 
