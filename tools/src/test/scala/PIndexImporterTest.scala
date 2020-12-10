@@ -1,6 +1,6 @@
 import java.io.File
 
-import cn.pandadb.kernel.kv.{NodeIndex, NodeStore, RocksDBStorage}
+import cn.pandadb.kernel.kv.{NodeIndex, NodeStore, RocksDBGraphAPI, RocksDBStorage}
 import org.junit.{Assert, Test}
 
 /**
@@ -15,7 +15,8 @@ class PIndexImporterTest {
 //  val nodeFile = new File("src/test/resources/s-nodeFile.csv")
   val nodeFile = new File("D:\\dataset\\graph500-22-node-wrapped.csv")
   val rocksdb = RocksDBStorage.getDB("src/test/output/pnodeNodeTestDB")
-  val pNodeImporter = new PNodeImporter(nodeFile, rocksdb, headFile)
+  val rocksDBGraphAPI = new RocksDBGraphAPI("./src/test/resources/rocksdb")
+  val pNodeImporter = new PNodeImporter(nodeFile, headFile, rocksDBGraphAPI)
 
   @Test
   def importNode(): Unit = {
@@ -32,14 +33,11 @@ class PIndexImporterTest {
 
   @Test
   def createIndex(): Unit = {
-    val indexDB = RocksDBStorage.getDB("src/test/output/indexDB")
-    val nodeIndex = new NodeIndex(indexDB)
-    val nodeStore = new NodeStore(rocksdb)
 
     // start
     val time0 = System.currentTimeMillis()
-    val indexId = nodeIndex.createIndex(1,Array[Int](5))
-    nodeIndex.insertIndexRecord(indexId, nodeStore.all.map{
+    val indexId = rocksDBGraphAPI.createNodeIndex(1,Array[Int](5))
+    rocksDBGraphAPI.insertNodeIndexRecords(indexId, rocksDBGraphAPI.allNodes().map{
       node=>
         val value = node.properties("idStr").toString.getBytes()
         (value, Array(value.length.toByte), node.id)
