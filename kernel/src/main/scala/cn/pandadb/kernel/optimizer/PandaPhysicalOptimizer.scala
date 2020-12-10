@@ -15,8 +15,7 @@ object PandaPhysicalOptimizer {
 
   def process(input: PhysicalOperator)(implicit context: LynxPlannerContext): PhysicalOperator = {
     //InsertCachingOperators(input)
-    val op = filterPushDown(input)
-    op
+    filterPushDown(input)
   }
 
   def filterPushDown(input: PhysicalOperator): PhysicalOperator = {
@@ -127,7 +126,7 @@ object PandaPhysicalOptimizer {
       prediates += PpdFilter.getPredicate(u)
     })
 
-    filterops.map(isLabel(_)).reduce(_|_) && graph.asInstanceOf[PandaPropertyGraph[Id]].isNFPredicatesWithIndex(prediates.toArray)
+    filterops.map(isLabel(_)).reduce(_|_) //&& graph.asInstanceOf[PandaPropertyGraph[Id]].isNFPredicatesWithIndex(prediates.toArray)
 
     //graph.asInstanceOf[PandaPropertyGraph].isNFPredicatesWithIndex(prediates.toArray)
   }
