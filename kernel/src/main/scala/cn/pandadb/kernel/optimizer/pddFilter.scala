@@ -4,7 +4,7 @@ import cn.pandadb.kernel.kv.{AnyValue, NFEquals, NFGreaterThan, NFGreaterThanOrE
 import cn.pandadb.kernel.optimizer.costore.LynxNode
 import org.opencypher.lynx.graph.LynxPropertyGraph
 import org.opencypher.lynx.{LynxRecords, LynxTable, RecordHeader}
-import org.opencypher.lynx.planning.{Filter, LabelRecorders, PhysicalOperator}
+import org.opencypher.lynx.planning.{EmptyRecords, Filter, PhysicalOperator}
 import org.opencypher.okapi.api.types.{CTNode, CypherType}
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue, Node}
@@ -34,8 +34,8 @@ object PpdFilter {
   }
   def getPredicate(op: PhysicalOperator): NFPredicate = {
     op match {
-      case x:LabelRecorders => {
-        NFLabels(x.cypherType.asInstanceOf[CTNode].labels.toSeq)
+      case x:EmptyRecords => {
+        NFLabels(x.fields.head.asInstanceOf[NodeVar].cypherType.asInstanceOf[CTNode].labels.toSeq)
       }
       case x:Filter => {
         expr2predicate(x.expr, x.context.parameters)
@@ -63,7 +63,7 @@ object PpdFilter {
             x.lhs.asInstanceOf[ElementProperty].propertyOwner.asInstanceOf[NodeVar].name ->
               x.lhs.asInstanceOf[ElementProperty].propertyOwner.asInstanceOf[NodeVar].cypherType
         }
-      case x: LabelRecorders => x.name -> x.cypherType.asInstanceOf[CTNode]
+      case x: EmptyRecords => x.fields.head.name -> x.fields.head.asInstanceOf[NodeVar].cypherType.asInstanceOf[CTNode]
     }
   }
 }

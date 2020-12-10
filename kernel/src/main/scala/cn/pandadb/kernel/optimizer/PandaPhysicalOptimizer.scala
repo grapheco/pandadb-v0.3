@@ -3,7 +3,7 @@ package cn.pandadb.kernel.optimizer
 import cn.pandadb.kernel.kv.{AnyValue, NFEquals, NFGreaterThan, NFGreaterThanOrEqual, NFLabels, NFLessThan, NFLessThanOrEqual, NFPredicate}
 import org.opencypher.lynx.graph.LynxPropertyGraph
 import org.opencypher.lynx.{LynxPlannerContext, LynxTable, RecordHeader}
-import org.opencypher.lynx.planning.{Add, AddInto, Aggregate, Alias, Cache, ConstructGraph, Distinct, Drop, EmptyRecords, Filter, FromCatalogGraph, GraphUnionAll, Join, LabelRecorders, Limit, OrderBy, PhysicalOperator, PrefixGraph, ReturnGraph, Select, Skip, Start, SwitchContext, TabularUnionAll}
+import org.opencypher.lynx.planning.{Add, AddInto, Aggregate, Alias, Cache, ConstructGraph, Distinct, Drop, EmptyRecords, Filter, FromCatalogGraph, GraphUnionAll, Join, Limit, OrderBy, PhysicalOperator, PrefixGraph, ReturnGraph, Select, Skip, Start, SwitchContext, TabularUnionAll}
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api.expr.{ElementProperty, Equals, Expr, GreaterThan, GreaterThanOrEqual, Id, LessThan, LessThanOrEqual, Param}
@@ -32,10 +32,10 @@ object PandaPhysicalOptimizer {
         filterOps += x
         extractFilter(filterOps, ordinaryOps, x.in)
       }
-      case x: LabelRecorders => {
+  /*    case x: LabelRecorders => {
         filterOps += x
         extractFilter(filterOps, ordinaryOps, x.in)
-      }
+      }*/
       case x: Start =>
         generatePhysicalPlan(filterOps, ordinaryOps, x)
       case x: Select =>
@@ -67,7 +67,8 @@ object PandaPhysicalOptimizer {
         ordinaryOps += x
         extractFilter(filterOps, ordinaryOps, x.in)
       case x: EmptyRecords =>
-        ordinaryOps += x
+        if (x.fields.size >= 1) filterOps += x
+        else ordinaryOps += x
         extractFilter(filterOps, ordinaryOps, x.in)
       case x: FromCatalogGraph =>
         ordinaryOps += x
@@ -109,7 +110,7 @@ object PandaPhysicalOptimizer {
 
   def isLabel(in: PhysicalOperator): Boolean = {
     in match {
-      case x:LabelRecorders => true
+      case x:EmptyRecords => true
       case _ => false
     }
   }
@@ -161,7 +162,7 @@ object PandaPhysicalOptimizer {
     //todo with null
     current match {
       case x: Filter => null
-      case x: LabelRecorders => null
+      //case x: LabelRecorders => null
       case x: Start => null
       case x: Select => Select(in, x.expressions, x.columnRenames)
       case x: Add => Add(in, x.exprs)
