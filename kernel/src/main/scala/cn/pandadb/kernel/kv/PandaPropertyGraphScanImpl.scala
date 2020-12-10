@@ -70,22 +70,12 @@ class PropertyGraphScanImpl(nodeLabelStore: TokenStore,
   )
 
   override def allNodes(labels: Set[String], exactLabelMatch: Boolean): Iterable[Node[Id]] = {
-    var nodes: Set[Id] = null
+    if (labels.size>1){
+      throw new Exception("PandaDB doesn't support multiple label matching at the same time")
+    }
     val labelIds = nodeLabelStore.ids(labels)
-    labelIds.foreach(labelId => {
-      if (nodes == null) {
-        nodes = graphStore.findNodes(labelId).toSet[Id]
-      }
-      else {
-        if(exactLabelMatch) {  // intersect
-          nodes = nodes & graphStore.findNodes(labelId).toSet[Id]
-        }
-        else {  // union
-          nodes = nodes ++ graphStore.findNodes(labelId).toSet[Id]
-        }
-      }
-    })
-    nodes.map(nodeId => mapNode(graphStore.nodeAt(nodeId)))
+    val nodes: Iterator[Id] = graphStore.findNodes(labelIds.head)[Id]
+    nodes.map(nodeId => mapNode(graphStore.nodeAt(nodeId))).toIterable
   }
 
 
@@ -98,17 +88,13 @@ class PropertyGraphScanImpl(nodeLabelStore: TokenStore,
   }
 
   override def allRelationships(relTypes: Set[String]): Iterable[Relationship[Id]] = {
-    var relations: Set[Id] = Set[Id]()
-    val labelIds = relLabelStore.ids(relTypes)
-    labelIds.foreach(labelId => { // union
-      relations = relations ++ graphStore.findRelations(labelId).toSet[Id]
-    })
-
-    relations.map(relId => mapRelation(graphStore.relationAt(relId)))
+    if (relTypes.size>1){
+      throw new Exception("PandaDB doesn't support multiple label matching at the same time")
+    }
+    val relations: Iterator[Id] = graphStore.findRelations(relLabelStore.ids(relTypes).head)[Id]
+    relations.map(relId => mapRelation(graphStore.relationAt(relId))).toIterable
   }
 }
-
-
 
 class PandaPropertyGraphScanImpl(    nodeLabelStore: TokenStore,
                                      relLabelStore: TokenStore,
