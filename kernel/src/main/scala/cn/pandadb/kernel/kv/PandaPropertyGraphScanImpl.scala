@@ -74,7 +74,7 @@ class PropertyGraphScanImpl(nodeLabelStore: TokenStore,
       throw new Exception("PandaDB doesn't support multiple label matching at the same time")
     }
     val labelIds = nodeLabelStore.ids(labels)
-    val nodes: Iterator[Id] = graphStore.findNodes(labelIds.head)[Id]
+    val nodes: Iterator[Id] = graphStore.findNodes(labelIds.head)
     nodes.map(nodeId => mapNode(graphStore.nodeAt(nodeId))).toIterable
   }
 
@@ -91,7 +91,7 @@ class PropertyGraphScanImpl(nodeLabelStore: TokenStore,
     if (relTypes.size>1){
       throw new Exception("PandaDB doesn't support multiple label matching at the same time")
     }
-    val relations: Iterator[Id] = graphStore.findRelations(relLabelStore.ids(relTypes).head)[Id]
+    val relations: Iterator[Id] = graphStore.findRelations(relLabelStore.ids(relTypes).head)
     relations.map(relId => mapRelation(graphStore.relationAt(relId))).toIterable
   }
 }
