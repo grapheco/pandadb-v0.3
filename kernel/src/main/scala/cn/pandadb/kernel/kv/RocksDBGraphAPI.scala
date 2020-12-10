@@ -190,6 +190,10 @@ class RocksDBGraphAPI(dbPath: String) {
     nodeIndex.insertIndexRecord(indexId, data)
   }
 
+  def insertNodeIndexRecordsBatch(indexId: IndexId, data:Iterator[(Array[Byte], Array[Byte], Long)]): Unit = {
+    nodeIndex.insertIndexRecordBatch(indexId, data)
+  }
+
   def deleteNodeIndexRecord(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: Int): Unit = {
     nodeIndex.deleteIndexRecord(indexId, value, length, nodeId)
   }
@@ -206,11 +210,11 @@ class RocksDBGraphAPI(dbPath: String) {
     nodeIndex.find(indexId, value)
   }
 
-  def findIntRangeByIndex(indexId: IndexId, startValue: Int = Int.MinValue, endValue: Int = Int.MaxValue) = {
+  def findIntRangeByIndex(indexId: IndexId, startValue: Int = Int.MinValue, endValue: Int = Int.MaxValue): Iterator[Long] = {
     nodeIndex.findIntRange(indexId, startValue, endValue)
   }
 
-  def findStringStartWithByIndex(indexId: IndexId, startWith: String) = {
+  def findStringStartWithByIndex(indexId: IndexId, startWith: String): Iterator[Long] = {
     nodeIndex.findStringStartWith(indexId, startWith.getBytes())
   }
 

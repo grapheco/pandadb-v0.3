@@ -4,7 +4,7 @@ import java.nio.ByteBuffer
 
 import cn.pandadb.kernel.kv.KeyHandler.KeyType
 import cn.pandadb.kernel.kv.NodeIndex.{IndexId, NodeId, metaIdKey}
-import org.rocksdb.RocksDB
+import org.rocksdb.{RocksDB, WriteBatch, WriteOptions}
 import java.lang.Float._
 import java.lang.Double._
 
@@ -87,8 +87,20 @@ class NodeIndex(db: RocksDB){
   }
 
   // TODO
-  private def writeIndexRowBatch(): Unit ={
-
+  private def writeIndexRowBatch(indexId: IndexId, data: Iterator[(Array[Byte],Array[Byte], Long)]): Unit ={
+    val writeOpt = new WriteOptions()
+    val batch = new WriteBatch()
+    var i = 0
+    while (data.hasNext){
+      val d = data.next()
+      batch.put(KeyHandler.nodePropertyIndexKeyToBytes(indexId, d._1, d._2, d._3), Array.emptyByteArray)
+      if (i % 10000 == 0){
+        db.write(writeOpt, batch)
+        batch.clear()
+      }
+      i += 1
+    }
+    db.write(writeOpt, batch)
   }
 
   private def deleteSingleIndexRow(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: NodeId): Unit = {
@@ -121,6 +133,10 @@ class NodeIndex(db: RocksDB){
       val d = data.next()
       writeIndexRow(indexId, d._1, d._2, d._3)
     }
+  }
+
+  def insertIndexRecordBatch(indexId: IndexId, data: Iterator[(Array[Byte],Array[Byte], Long)]): Unit ={
+    writeIndexRowBatch(indexId: IndexId, data: Iterator[(Array[Byte],Array[Byte], Long)])
   }
 
   def updateIndexRecord(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: NodeId, newValue: Array[Byte]): Unit = {
@@ -183,10 +199,43 @@ class NodeIndex(db: RocksDB){
     val startPrefix = KeyHandler.nodePropertyIndexPrefixToBytes(indexId, NumberEncoder.encode(startValue), zeroByteArray(1))
     val endPrefix   = KeyHandler.nodePropertyIndexPrefixToBytes(indexId, NumberEncoder.encode(endValue), oneByteArray(1))
 
-    val across = startValue < 0 && endValue >= 0
-    val direct = startValue >= 0
+    val minPositive  = KeyHandler.nodePropertyIndexPrefixToBytes(indexId, Array[Byte](0), Array.emptyByteArray)
 
-    null
+    println("min",minPositive.mkString("Array(", ", ", ")"))
+    val across = startValue < 0 && endValue >= 0
+    var direct = startValue >= 0
+    val end_direct = endValue >= 0
+
+    iter.seekForPrev(endPrefix)
+    if (!end_direct){
+      iter.next()
+    }
+    val end_key = iter.key()
+    println(end_key.foreach(print(_)))
+    iter.seek(startPrefix)
+    new Iterator[NodeId] (){
+      var end = false
+      override def hasNext: Boolean = iter.isValid && !end
+      override def next(): NodeId = {
+        val key = iter.key()
+        val symbol = if(direct) 0.toByte else Byte.MinValue
+        if (!key.startsWith(KeyHandler.nodePropertyIndexPrefixToBytes(indexId, Array[Byte](symbol), Array.emptyByteArray))){
+          // across
+          if(direct) end = true
+          else{
+            iter.seek(minPositive)
+            direct = true
+          }
+        }
+        if(key.startsWith(end_key)) end = true
+        val id = ByteBuffer.wrap(key).getLong(key.length-8)
+        if (direct)
+          iter.next()
+        else
+          iter.prev()
+        id
+      }
+    }
   }
 
 
