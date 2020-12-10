@@ -26,11 +26,12 @@ class NodeIndex(db: RocksDB){
 
   /**
    * Index MetaData
-   * ------------------------
-   *      key      |  value
-   * ------------------------
-   * label + props |  indexId
-   * ------------------------
+   *
+   * ╔═══════════════╦══════════════╗
+   * ║      key      ║    value     ║
+   * ╠═══════╦═══════╬══════════════╣
+   * ║ label ║ props ║   indexId    ║
+   * ╚═══════╩═══════╩══════════════╝
    */
   def addIndexMeta(label: Int, props: Array[Int]): IndexId = {
     val key = KeyHandler.nodePropertyIndexMetaKeyToBytes(label, props)
