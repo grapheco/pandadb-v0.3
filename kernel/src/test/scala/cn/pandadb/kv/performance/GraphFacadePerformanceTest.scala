@@ -46,34 +46,36 @@ class GraphFacadePerformanceTest {
     graphFacade.addNode2(Map("id_p" -> 4L, "idStr" -> "d", "flag"->true), "worker")
     graphFacade.addNode2(Map("id_p" -> 5L, "idStr" -> "e", "flag"->false), "person")
     graphFacade.addNode2(Map("id_p" -> 6L, "idStr" -> "f", "flag"->true), "person")
+    graphFacade.addNode2(Map("id_p" -> 1L, "idStr" -> "a", "flag"->true), "person")
+    graphFacade.addNode2(Map("id_p" -> 1L, "idStr" -> "a", "flag"->false), "person")
 
-//    graphFacade.addRelation("Relation", 1, 2, Map())
-//    graphFacade.addRelation("Relation", 3, 4, Map())
-//    graphFacade.addRelation("Relation", 5, 6, Map())
+
+    graphFacade.addRelation("Relation", 1, 2, Map())
+    graphFacade.addRelation("Relation", 3, 4, Map())
+    graphFacade.addRelation("Relation", 5, 6, Map())
   }
   
   @Test
-  def basic1(): Unit ={
+  def testQueryAll(): Unit ={
     var res = graphFacade.cypher("match (n) return n")
     res.show
     res = graphFacade.cypher("match ()-[r]->() return r")
     res.show
+    res = graphFacade.cypher("match (n:person)-[r]->() return r")
+    res.show
   }
 
   @Test
-  def basic2(): Unit ={
-    // use id(n) error
-//    var res = graphFacade.cypher("match (n) where id(n)=1 return n")
-//    res.show
-//    var res = graphFacade.cypher("match (n) where n.id_p=1 return n")
-//    res.show
-//    res = graphFacade.cypher("match (n) where n.idStr='a' return n")
-//    res.show
-//    res = graphFacade.cypher("match (n) where n.flag=false return n")
-//    res.show
+  def testFilterWithSingleProperty(): Unit ={
+    var res = graphFacade.cypher("match (n) where n.id_p=1 return n")
+    res.show
+    res = graphFacade.cypher("match (n) where n.idStr='a' return n")
+    res.show
+    res = graphFacade.cypher("match (n) where n.flag=false return n")
+    res.show
   }
   @Test
-  def basic3(): Unit ={
+  def testFilterWithMultipleProperties(): Unit ={
     var res = graphFacade.cypher("match (n) where n.id_p=1 and n.idStr='a' return n")
     res.show
     res = graphFacade.cypher("match (n) where n.id_p=1 and n.flag= false return n")
@@ -82,13 +84,31 @@ class GraphFacadePerformanceTest {
     res.show
   }
   @Test
-  def basic4(): Unit ={
-    // label with property error
+  def testFilterWithLabelAndProperties(): Unit ={
     var res = graphFacade.cypher("match (n:person) return n")
     res.show
     res = graphFacade.cypher("match (n:person) where n.id_p=1 return n")
     res.show
     res = graphFacade.cypher("match (n:person) where n.idStr='a' return n")
     res.show
+    res = graphFacade.cypher("match (n:person) where n.flag = false return n")
+    res.show
+    res = graphFacade.cypher("match (n:person) where n.id_p=1 and n.idStr = 'a' return n")
+    res.show
+    res = graphFacade.cypher("match (n:person) where n.id_p=1 and n.flag = false return n")
+    res.show
+    res = graphFacade.cypher("match (n:person) where n.id_p=1 and n.idStr = 'a' and n.flag = false return n")
+    res.show
+  }
+
+  @Test
+  def testQueryfunctions(): Unit ={
+    // functions error
+//    var res = graphFacade.cypher("match (n) where id(n)=1 return n")
+//    res.show
+//    var res = graphFacade.cypher("match (n) return max(n.id_p)")
+//    res.show
+//    var res = graphFacade.cypher("match (n) return sum(n.id_p)")
+//    res.show
   }
 }
