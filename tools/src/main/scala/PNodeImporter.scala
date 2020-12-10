@@ -1,4 +1,6 @@
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
 
 import cn.pandadb.kernel.kv.{NodeStore, RocksDBGraphAPI}
 import org.rocksdb.RocksDB
@@ -29,9 +31,16 @@ class PNodeImporter(nodeFile: File, hFile : File, rocksDBGraphAPI: RocksDBGraphA
   var propSortArr: Array[String] = null
   val headMap: Map[String, String] = _setNodeHead()
 
+  //todo: automatically print progress.
   def importNodes(): Unit = {
     val iter = Source.fromFile(file).getLines()
+    var i = 0
     while (iter.hasNext) {
+      if(i % 10000000 == 0) {
+        val time1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
+        println(s"${i/10000000}% nodes imported. $time1")
+      }
+      i += 1;
       val tempNode = _wrapNode(iter.next().replace("\n", "").split(","))
       rocksDBGraphAPI.addNode(tempNode.id, tempNode.labels, tempNode.properties)
     }

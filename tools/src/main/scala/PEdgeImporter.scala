@@ -1,4 +1,6 @@
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
 
 import cn.pandadb.kernel.kv.{RelationStore, RocksDBGraphAPI}
 import org.rocksdb.RocksDB
@@ -25,7 +27,13 @@ class PEdgeImporter(edgeFile: File, hFile: File, rocksDBGraphAPI: RocksDBGraphAP
 
   def importEdges(): Unit ={
     val iter = Source.fromFile(edgeFile).getLines()
+    var i = 0
     while (iter.hasNext) {
+      if(i%20000000 == 0){
+        val time1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
+        println(s"${i/20000000}% edges imported. $time1")
+      }
+      i += 1
       val tempEdge = _wrapEdge(iter.next().replace("\n", "").split(","))
       rocksDBGraphAPI.addRelation(tempEdge.relId, tempEdge.fromId, tempEdge.toId, tempEdge.edgeType, tempEdge.propMap)
     }
