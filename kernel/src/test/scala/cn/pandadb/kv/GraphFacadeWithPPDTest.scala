@@ -103,7 +103,7 @@ class GraphFacadeWithPPDTest {
 
     res = graphFacade.cypher("match (n:person) where n.name='alex' return n")
     res.show
-    Assert.assertEquals(0, res.records.size)
+    Assert.assertEquals(1, res.records.size)
 
     graphFacade.writeNodeIndexRecord(indexId, n4, "bob")
     res = graphFacade.cypher("match (n:person) where n.name='bob' return n")
