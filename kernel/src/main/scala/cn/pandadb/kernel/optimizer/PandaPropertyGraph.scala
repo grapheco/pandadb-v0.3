@@ -67,12 +67,21 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
     })
     nps.toArray -> limit
   }
+  def findindexPredicate(predicate: Array[NFPredicate], labels: Set[String]):(Array[NFPredicate], Array[NFPredicate]) = {
+  /*  var npsWithIndex: ArrayBuffer[NFPredicate] = ArrayBuffer[NFPredicate]()
+    var nps: ArrayBuffer[NFPredicate] = ArrayBuffer[NFPredicate]()
+    predicate.foreach(u => {
+      if
+    })*/
+    predicate.filter(isNFPredicateWithIndex(_, labels)) -> predicate.filter(!isNFPredicateWithIndex(_, labels))
+  }
 
 
 
-/*  def findFirstPredicate(predicate: Array[NFPredicate]): ( Array[NFPredicate], NFPredicate) = {
 
-  }*/
+  /*  def findFirstPredicate(predicate: Array[NFPredicate]): ( Array[NFPredicate], NFPredicate) = {
+
+    }*/
 
   def isOkNodes(p: NFPredicate, node: Node[Id]): Boolean = {
     p match {
@@ -92,7 +101,8 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
   }
 
   def filterByPredicates(node: Node[Id], predicate: Array[NFPredicate]): Boolean = {
-    predicate.map(isOkNodes(_, node)).reduce(_&&_)
+    if (predicate.nonEmpty) predicate.map(isOkNodes(_, node)).reduce(_&&_)
+    else true
   }
 
   def getNodesByFilter(predicate: Array[NFPredicate], name: String, nodeCypherType: CTNode): LynxRecords = {
@@ -110,11 +120,21 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
 
     val nodes = {
       if (predicateNew.nonEmpty) {
-        val tempnodes: Iterable[Node[Id]] = scan.allNodes(labels.toSet, false)
+        val (indexNfp, nfp) = findindexPredicate(predicateNew, labels.toSet)
+
+        //getnodes by index
+        val tempnodes = {
+          if (indexNfp.nonEmpty) indexNfp.map(scan.allNodes(_, labels.distinct.toSet).toSeq).reduce(_.intersect(_))
+          else scan.allNodes(labels.toSet, false)
+        }
+        //if (nfp.nonEmpty)
+        //val tempnodes: Iterable[Node[Id]] = scan.allNodes(labels.toSet, false)
+
+        //filternodes by noneindex
         if (size > 0 )
-          tempnodes.filter(filterByPredicates(_, predicateNew)).take(size.toInt)
+          tempnodes.filter(filterByPredicates(_, nfp)).take(size.toInt)
         else
-          tempnodes.filter(filterByPredicates(_, predicateNew))
+          tempnodes.filter(filterByPredicates(_, nfp))
         //tempnodes
       }
       else scan.allNodes(labels.toSet, false)
