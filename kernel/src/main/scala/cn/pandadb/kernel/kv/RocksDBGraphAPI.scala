@@ -52,8 +52,8 @@ class RocksDBGraphAPI(dbPath: String) {
 //    nodeStore.set(t.id, t.labelIds, t.properties)
 //  }
 
-  def addNode(nodeId: Long, labelIds: Array[Int], propeties: Map[String, Any]): Unit = {
-    nodeStore.set(nodeId, labelIds, propeties)
+  def addNode(nodeId: Long, labelIds: Array[Int], properties: Map[String, Any]): Unit = {
+    nodeStore.set(nodeId, labelIds, properties)
     labelIds.foreach(labelId => nodeLabelIndex.add(labelId, nodeId))
   }
 

@@ -127,10 +127,11 @@ class PandaPropertyGraphScanImpl(    nodeLabelStore: TokenStore,
         val propertyNameId = propertyNameStore.id(p.propName)
         var indexId = -1
         loop.breakable({
-          labelIds.foreach(labelId => {
+          for (labelId <- labelIds) {
             indexId = graphStore.getNodeIndexId(labelId, Array[Int](propertyNameId))
-            loop.break()
-          })
+            if (indexId != -1)
+              loop.break()
+          }
         })
         if (indexId != -1) {
           var bytes: Array[Byte] = PropertyValueConverter.toBytes(p.value)
@@ -138,7 +139,32 @@ class PandaPropertyGraphScanImpl(    nodeLabelStore: TokenStore,
           nodes.map(node => nodeAt(node)).toIterable
         }
         else {
-          null
+          val nodes = graphStore.findNodes(labelIds.head)
+          val itr = new Iterator[Node[Id]]{
+            var tmpNode: StoredNodeWithProperty = null
+            private def doNext(): Unit = {
+              tmpNode = null
+              loop.breakable({
+                while (nodes.hasNext) {
+                  val nid = nodes.next()
+                  tmpNode = graphStore.nodeAt(nid)
+                  if (tmpNode.properties.contains(p.propName) && tmpNode.properties(p.propName) == p.value ) {
+                    loop.break()
+                  }
+                  else {
+                    tmpNode = null
+                  }
+                }
+              })
+            }
+            override def hasNext: Boolean = {
+              doNext()
+              tmpNode != null
+            }
+
+            override def next(): Node[Id] = mapNode(tmpNode)
+          }
+          itr.toIterable
         }
       }
     }
