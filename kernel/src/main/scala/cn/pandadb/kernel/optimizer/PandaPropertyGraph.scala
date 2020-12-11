@@ -1,6 +1,6 @@
 package cn.pandadb.kernel.optimizer
 
-import cn.pandadb.kernel.kv.{NFEquals, NFGreaterThan, NFGreaterThanOrEqual, NFLabels, NFLessThan, NFLessThanOrEqual, NFPredicate}
+import cn.pandadb.kernel.kv.{NFEquals, NFGreaterThan, NFGreaterThanOrEqual, NFLabels, NFLessThan, NFLessThanOrEqual, NFLimit, NFPredicate}
 import cn.pandadb.kernel.optimizer.costore.LynxNode
 import org.opencypher.lynx.{LynxPlannerContext, LynxRecords, LynxSession, LynxTable, PropertyGraphScan, RecordHeader}
 import org.opencypher.lynx.graph.{LynxPropertyGraph, ScanGraph}
@@ -54,41 +54,68 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
     nps.toArray -> labels
   }
 
+  def findLimitPredicate(predicate: Array[NFPredicate]):(Array[NFPredicate], Long) = {
+    var nps: ArrayBuffer[NFPredicate] = ArrayBuffer[NFPredicate]()
+    var limit: Long = -1
+    predicate.foreach(u => {
+      u match {
+        case x: NFLimit => {
+          limit = x.size
+        }
+        case x: NFPredicate => nps += x
+      }
+    })
+    nps.toArray -> limit
+  }
+
+
 
 /*  def findFirstPredicate(predicate: Array[NFPredicate]): ( Array[NFPredicate], NFPredicate) = {
 
   }*/
 
+  def isOkNodes(p: NFPredicate, node: Node[Id]): Boolean = {
+    p match {
+      case x:NFGreaterThanOrEqual => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] >= x.value.asInstanceOf[Int]) true else false
+      case x:NFLessThanOrEqual => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] <= x.value.asInstanceOf[Int]) true else false
+      case x:NFEquals => {
+        if(node.properties.get(x.propName).get.getValue.get.equals(x.value.anyValue) ) {
+          true
+        }
+        else {
+          false
+        }
+      }
+      case x:NFLessThan => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] < x.value.asInstanceOf[Int]) true else false
+      case x:NFGreaterThan => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] > x.value.asInstanceOf[Int]) true else false
+    }
+  }
 
+  def filterByPredicates(node: Node[Id], predicate: Array[NFPredicate]): Boolean = {
+    predicate.map(isOkNodes(_, node)).reduce(_&&_)
+  }
 
   def getNodesByFilter(predicate: Array[NFPredicate], name: String, nodeCypherType: CTNode): LynxRecords = {
 
 
-    val (predicateNew, labels) = findLabelPredicate(predicate)
+    val (predicateNew1, labels) = findLabelPredicate(predicate)
+    val (predicateNew, size) = findLimitPredicate(predicateNew1)
 /*    val nodes = {
       if(predicateNew.nonEmpty) predicateNew.map(scan.allNodes(_,  labels.distinct.toSet).toSeq).reduce(_.intersect(_))
       else scan.allNodes(labels.toSet, false)
     }*/
 
     //val (predicateNew2, firstpredicate) =
-    def isOkNodes(p: NFPredicate, node: Node[Id]): Boolean = {
-      p match {
-        case x:NFGreaterThanOrEqual => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] >= x.value.asInstanceOf[Int]) true else false
-        case x:NFLessThanOrEqual => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] <= x.value.asInstanceOf[Int]) true else false
-        case x:NFEquals => if(node.properties.get(x.propName).get.getValue.get == x.value) true else false
-        case x:NFLessThan => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] < x.value.asInstanceOf[Int]) true else false
-        case x:NFGreaterThan => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] > x.value.asInstanceOf[Int]) true else false
-      }
-    }
 
-    def filterByPredicates(node: Node[Id], predicate: Array[NFPredicate]): Boolean = {
-      predicateNew.map(isOkNodes(_, node)).reduce(_&_)
-    }
 
     val nodes = {
       if (predicateNew.nonEmpty) {
-        val nodes: Iterable[Node[Id]] = scan.allNodes(labels.toSet, false)
-        nodes.filter(filterByPredicates(_, predicateNew) == true)
+        val tempnodes: Iterable[Node[Id]] = scan.allNodes(labels.toSet, false)
+        if (size > 0 )
+          tempnodes.filter(filterByPredicates(_, predicateNew)).take(size.toInt)
+        else
+          tempnodes.filter(filterByPredicates(_, predicateNew))
+        //tempnodes
       }
       else scan.allNodes(labels.toSet, false)
     }

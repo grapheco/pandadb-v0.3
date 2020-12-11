@@ -1,14 +1,14 @@
 package cn.pandadb.kernel.optimizer
 
-import cn.pandadb.kernel.kv.{AnyValue, NFEquals, NFGreaterThan, NFGreaterThanOrEqual, NFLabels, NFLessThan, NFLessThanOrEqual, NFPredicate}
+import cn.pandadb.kernel.kv.{AnyValue, NFEquals, NFGreaterThan, NFGreaterThanOrEqual, NFLabels, NFLessThan, NFLessThanOrEqual, NFLimit, NFPredicate}
 import cn.pandadb.kernel.optimizer.costore.LynxNode
 import org.opencypher.lynx.graph.LynxPropertyGraph
 import org.opencypher.lynx.{LynxRecords, LynxTable, RecordHeader}
-import org.opencypher.lynx.planning.{EmptyRecords, Filter, PhysicalOperator}
+import org.opencypher.lynx.planning.{EmptyRecords, Filter, Limit, PhysicalOperator}
 import org.opencypher.okapi.api.types.{CTNode, CypherType}
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue, Node}
-import org.opencypher.okapi.ir.api.expr.{BoolLit, ElementProperty, Equals, Expr, GreaterThan, GreaterThanOrEqual, Id, LessThan, LessThanOrEqual, NodeVar, Param}
+import org.opencypher.okapi.ir.api.expr.{BoolLit, ElementProperty, Equals, Expr, GreaterThan, GreaterThanOrEqual, Id, IntegerLit, LessThan, LessThanOrEqual, NodeVar, Param}
 
 import scala.collection.Seq
 import scala.collection.mutable.ArrayBuffer
@@ -40,6 +40,7 @@ object PpdFilter {
       case x:Filter => {
         expr2predicate(x.expr, x.context.parameters)
       }
+      case x:Limit => NFLimit(x.expr.asInstanceOf[IntegerLit].v)
     }
   }
 
@@ -64,6 +65,10 @@ object PpdFilter {
               x.lhs.asInstanceOf[ElementProperty].propertyOwner.asInstanceOf[NodeVar].cypherType
         }
       case x: EmptyRecords => x.fields.head.name -> x.fields.head.asInstanceOf[NodeVar].cypherType.asInstanceOf[CTNode]
+      case x: Limit =>{
+        val nodevar = x.recordHeader.exprToColumn.head._1.asInstanceOf[NodeVar]
+        nodevar.name -> nodevar.cypherType.asInstanceOf[CTNode]
+      }
     }
   }
 }

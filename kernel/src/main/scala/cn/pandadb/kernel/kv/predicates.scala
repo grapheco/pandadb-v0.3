@@ -17,6 +17,10 @@ trait NFPredicate extends NFExpression {
 case class NFLabels(labels: Seq[String] ) extends NFPredicate {
 
 }
+
+case class NFLimit(size: Long) extends NFPredicate {
+
+}
 case class NFGreaterThan(propName: String, value: AnyValue) extends NFPredicate {
 }
 
