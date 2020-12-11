@@ -54,12 +54,42 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
     nps.toArray -> labels
   }
 
+
+/*  def findFirstPredicate(predicate: Array[NFPredicate]): ( Array[NFPredicate], NFPredicate) = {
+
+  }*/
+
+
+
   def getNodesByFilter(predicate: Array[NFPredicate], name: String, nodeCypherType: CTNode): LynxRecords = {
 
 
     val (predicateNew, labels) = findLabelPredicate(predicate)
-    val nodes = {
+/*    val nodes = {
       if(predicateNew.nonEmpty) predicateNew.map(scan.allNodes(_,  labels.distinct.toSet).toSeq).reduce(_.intersect(_))
+      else scan.allNodes(labels.toSet, false)
+    }*/
+
+    //val (predicateNew2, firstpredicate) =
+    def isOkNodes(p: NFPredicate, node: Node[Id]): Boolean = {
+      p match {
+        case x:NFGreaterThanOrEqual => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] >= x.value.asInstanceOf[Int]) true else false
+        case x:NFLessThanOrEqual => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] <= x.value.asInstanceOf[Int]) true else false
+        case x:NFEquals => if(node.properties.get(x.propName).get.getValue.get == x.value) true else false
+        case x:NFLessThan => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] < x.value.asInstanceOf[Int]) true else false
+        case x:NFGreaterThan => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] > x.value.asInstanceOf[Int]) true else false
+      }
+    }
+
+    def filterByPredicates(node: Node[Id], predicate: Array[NFPredicate]): Boolean = {
+      predicateNew.map(isOkNodes(_, node)).reduce(_&_)
+    }
+
+    val nodes = {
+      if (predicateNew.nonEmpty) {
+        val nodes: Iterable[Node[Id]] = scan.allNodes(labels.toSet, false)
+        nodes.filter(filterByPredicates(_, predicateNew) == true)
+      }
       else scan.allNodes(labels.toSet, false)
     }
     new LynxRecords(
