@@ -80,7 +80,7 @@ object PandaPhysicalOptimizer {
         val join = Join(op1, op2, x.joinExprs, x.joinType)
         generatePhysicalPlan(filterOps, ordinaryOps, join)
       case x: Limit =>
-        ordinaryOps += x
+        filterOps += x
         extractFilter(filterOps, ordinaryOps, x.in)
       case x: OrderBy =>
         ordinaryOps += x
