@@ -121,7 +121,7 @@ class GraphFacadePerformanceTest {
 
   @Test
   def testTime(): Unit = {
-    var cyphers: Array[String] = Array("match (n:person) return n",
+    var cyphers1: Array[String] = Array("match (n:person) return n",
       "match (n) return n",
       "match (n:person) return n",
       "match (n:person) where n.name = 'joe' return n",
@@ -135,9 +135,26 @@ class GraphFacadePerformanceTest {
       "match (n:person) return n",
       "match (n:person) return n")
 
+    var cyphers: Array[String] = Array(
+
+    "match (n) where n.id_p=1 return n limit 1",
+    "match (n) where n.id_p=1 return n",
+    "match (n) where n.id_p<1 return n limit 1",
+    "match (n) where n.id_p<1 return n limit 10",
+    "match (n) where n.id_p<1 return n",
+    "match (f)-[r]->(t) where f.id_p=1 return count(t)",
+    "match (f)-[r:label1]->(t) where f.id_p=1 return count(t)"
+    )
+
+    val querys = new QueryTemplate
+
+    //querys.genBatchQuery(10).map(println)
+
+    querys.genBatchQuery(10).map(timing(_)).map(x => println(s"${x._1} cost time: ${x._2}"))
+
 
     //var res = graphFacade.cypher("match (n:person) return n")
 
-    var res2 = cyphers.map(timing(_)).map(x => println(s"${x._1} cost time: ${x._2}"))
+    //var res2 = cyphers.map(timing(_)).map(x => println(s"${x._1} cost time: ${x._2}"))
   }
 }
