@@ -1,19 +1,21 @@
 package cn.pandadb.kv.performance
 
+import org.junit.Test
+
 import scala.collection.mutable
 import scala.util.Random
 
-object querys {
+class QueryTemplate {
   def getCypherCreateNode(id: Long, idStr: String, flag: Boolean, labels: Array[String] = Array()): String = {
     var labelStr = new StringBuilder()
-    labels.foreach(labelStr += s":${_}")
+    labels.foreach(l => {labelStr ++= s":${l}"})
     s"create(n${labelStr}:{id_p: ${id}, idStr: '${idStr}', flag: ${flag}})"
   }
 
   def getCypherCreateRel(fromIdStr: Long, toIdStr: Long, labels: Array[String] = Array()): String = {
     var labelStr = new StringBuilder()
-    labels.foreach(labelStr += s":${_}")
-    s"match (f), (t) where f.idStr='${fromIdStr}' AND t.idStr='${toIdStr}' CREATE (f)-[rel${labelStr}]->(s)"
+    labels.foreach(l => {labelStr ++= s":${l}"})
+    s"match (f), (t) where f.idStr='${fromIdStr}' AND t.idStr='${toIdStr}' CREATE (f)-[rel${labelStr}]->(t)"
   }
 
   def getCypherQueryByAttrEqual(equalString: String, limit: Int = 0): String = {
@@ -34,8 +36,8 @@ object querys {
 
   def getCypherQueryByRelFrom(fromId_p: Long, labels: Array[String] = Array()): String = {
     var labelStr = new StringBuilder()
-    labels.foreach(labelStr += s":${_}")
-    s"match (f)-[r${labelStr}]->(t) where f.id_p=${fromId_p} return Count(t)"
+    labels.foreach(l => {labelStr ++= s":${l}"})
+    s"match (f)-[r${labelStr}]->(t) where f.id_p=${fromId_p} return count(t)"
   }
 
   def genBatchCreation(startId: Long, endId: Long): Array[String] = {
@@ -63,6 +65,10 @@ object querys {
     resArray+=getCypherQueryByRelFrom(id, Array(s"label${id%10}"))
     resArray.toArray
   }
-  val demoQuerys = genBatchCreation(1, 5) ++ genBatchQuery(5)
-  println(demoQuerys)
+
+  @Test
+  def demoQuerys(): Unit = {
+    println(genBatchCreation(1, 5).mkString("\n"))
+    println(genBatchQuery(5).mkString("\n"))
+  }
 }
