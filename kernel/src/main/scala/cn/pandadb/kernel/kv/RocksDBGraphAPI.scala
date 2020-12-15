@@ -74,7 +74,7 @@ class RocksDBGraphAPI(dbPath: String) {
     nodeLabelIndex.getNodes(labelId)
   }
 
-  def allNodes(): Iterator[StoredNode] = {
+  def allNodes(): Iterator[StoredNodeWithProperty] = {
     nodeStore.all()
   }
 

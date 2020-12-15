@@ -110,7 +110,7 @@ class PandaPropertyGraphScanImpl(    nodeLabelStore: TokenStore,
     val labelIds = nodeLabelStore.ids(labels)
     loop.breakable({
       labelIds.foreach(label => {
-        val indexId = graphStore.getNodeIndexId(label, new Array[Int](propertyNameStore.id(propertyName)))
+        val indexId = graphStore.getNodeIndexId(label, Array[Int](propertyNameStore.id(propertyName)))
         if (indexId != -1) {
           res = true
           loop.break()
