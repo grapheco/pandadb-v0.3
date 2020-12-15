@@ -66,9 +66,12 @@ class QueryTemplate {
     resArray.toArray
   }
 
+  def demoQuerys(range: Int = 10): Array[String] = {
+    genBatchCreation(1, range) ++ genBatchQuery(range)
+  }
+
   @Test
-  def demoQuerys(): Unit = {
-    println(genBatchCreation(1, 5).mkString("\n"))
-    println(genBatchQuery(5).mkString("\n"))
+  def showDemoQuerys(): Unit = {
+    println(demoQuerys().mkString("\n"))
   }
 }

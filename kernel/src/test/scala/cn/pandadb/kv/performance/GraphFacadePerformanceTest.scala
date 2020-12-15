@@ -111,4 +111,33 @@ class GraphFacadePerformanceTest {
 //    var res = graphFacade.cypher("match (n) return sum(n.id_p)")
 //    res.show
   }
+
+  def timing(cy: String): (String, Long) = {
+    val t1 = System.currentTimeMillis()
+    graphFacade.cypher(cy)
+    val t2 = System.currentTimeMillis()
+    cy->(t2-t1)
+  }
+
+  @Test
+  def testTime(): Unit = {
+    var cyphers: Array[String] = Array("match (n:person) return n",
+      "match (n) return n",
+      "match (n:person) return n",
+      "match (n:person) where n.name = 'joe' return n",
+      "match (n:student) where n.age = 100 return n",
+      "match (n:person) return n",
+      "match (n:person) return n",
+      "match (n:person) return n",
+      "match (n:person) return n",
+      "match (n:person) return n",
+      "match (n:person) return n",
+      "match (n:person) return n",
+      "match (n:person) return n")
+
+
+    //var res = graphFacade.cypher("match (n:person) return n")
+
+    var res2 = cyphers.map(timing(_)).map(x => println(s"${x._1} cost time: ${x._2}"))
+  }
 }
