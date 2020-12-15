@@ -24,22 +24,27 @@ class IndexAndNodePerformanceTest {
   def indexTest():Unit = {
     val db:RocksDB = if(!READONLE) RocksDB.open(path+"\\nodeIndex") else RocksDB.openReadOnly(path+"\\nodeIndex")
     // exact find
-    // 10 times, each times random find 10000 records
-    for (i <- 0 to 10 ){
+    val epoch = 10
+    var time:Long = 0
+    for (i <- 1 to epoch ){
+      val t0 = System.currentTimeMillis()
       val keys = new Array[Int](10000).map { i =>
         val id = Random.nextInt(100000000)
         val str = id.toString.map { c => (Char.char2int(c) + 49).toChar }
         KeyHandler.nodePropertyIndexKeyToBytes(id % 10, str.getBytes(), Array(str.getBytes().length.toByte), id.toLong)
       }
       val t1 = System.currentTimeMillis()
+      println(s"create 10000 keys cost: ${t1 - t0} ms" )
       keys.foreach {
         key =>
           db.get(key).length
       }
       val t2 = System.currentTimeMillis()
       println(s"exact find 10000 records cost: ${t2 - t1} ms" )
-
+      time += t2 - t1
     }
+    println(s"avg: ${time/epoch} ms" )
+    return 0
 
     val keys = new Array[Int](10).map {
       i =>
@@ -73,10 +78,14 @@ class IndexAndNodePerformanceTest {
     val db:RocksDB = if(!READONLE) RocksDB.open(path+"\\nodes") else RocksDB.openReadOnly(path+"\\nodes")
 
     // 10 times, each times random find 10000 records
-    for (i <- 0 to 1 ){
+    val epoch = 10
+    var allRead:Long = 0
+    var allParse:Long = 0
+    for (i <- 1 to epoch ){
       val keys = new Array[Int](10000).map { i =>
         val id = Random.nextInt(100000000)
-        KeyHandler.nodeKeyToBytes(id)
+//        println(id)
+        KeyHandler.nodeKeyToBytes(id.toLong)
       }
       val t1 = System.currentTimeMillis()
       val values = keys.map {
@@ -85,13 +94,16 @@ class IndexAndNodePerformanceTest {
       }
       val t2 = System.currentTimeMillis()
       println(s"read 10000 nodes cost: ${t2 - t1} ms" )
+      allRead += t2 - t1
       values.foreach {
         v =>
         NodeValue.parseFromBytes(v)
       }
       val t3 = System.currentTimeMillis()
       println(s"parse 10000 nodes cost: ${t3 - t2} ms" )
+      allParse += t3 - t2
     }
+    println(s"avg read: ${allRead/epoch} ms, avg parse: ${allParse/epoch} ms" )
   }
 
   @Test
