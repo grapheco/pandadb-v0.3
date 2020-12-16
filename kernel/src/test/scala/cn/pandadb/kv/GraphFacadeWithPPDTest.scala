@@ -101,6 +101,7 @@ class GraphFacadeWithPPDTest {
     res.show
     Assert.assertEquals(2, res.records.size)
 
+    return
     res = graphFacade.cypher("match (n:person) where n.name='alex' return n")
     res.show
     Assert.assertEquals(1, res.records.size)
@@ -125,17 +126,10 @@ class GraphFacadeWithPPDTest {
     val n2: Long = graphFacade.addNode2(Map("name" -> "alex", "age" -> 20), "person")
     val n3: Long = graphFacade.addNode2(Map("name" -> "simba", "age" -> 10), "worker")
 
-//    for(i<-1 to 110000){
-//      graphFacade.addNode2(Map("name" -> "simba", "age" -> 10), "worker")
-//    }
-    var res = graphFacade.cypher("match (n: worker)  return n")
+    val res = graphFacade.cypher("match (n: person) where n.age=21  return n")
+    res.show
+    Assert.assertEquals(1, res.records.size)
 
-    cn.pandadb.kernel.util.Profiler.timing({ graphFacade.cypher("match (n: worker)  return n")})
-
-
-
-
-//    Assert.assertEquals(2, res.records.size)
   }
 
 
