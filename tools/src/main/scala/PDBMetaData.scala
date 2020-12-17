@@ -6,8 +6,11 @@
  */
 object PDBMetaData {
   private var _propIdMap: Map[String, Int] = Map[String, Int]()
+  private var _rPropIdMap: Map[Int, String] = Map[Int, String]()
   private var _labelIdMap: Map[String, Int] = Map[String, Int]()
+  private var _rLabelIdMap: Map[Int, String] = Map[Int, String]()
   private var _typeIdMap: Map[String, Int] = Map[String, Int]()
+  private var _rTypeIdMap: Map[Int, String] = Map[Int, String]()
 
   private var _propCounter: Int = 0
   private var _labelCounter: Int = 0
@@ -20,6 +23,7 @@ object PDBMetaData {
   def addProp(prop: String): Int = {
     if(!isPropExists(prop)){
       _propIdMap += (prop -> _propCounter)
+      _rPropIdMap += (_propCounter -> prop)
       _propCounter += 1
       _propCounter - 1
     } else _propIdMap(prop)
@@ -28,6 +32,7 @@ object PDBMetaData {
   def addLabel(label: String): Int = {
     if(!isLabelExists(label)){
       _labelIdMap += (label -> _labelCounter)
+      _rLabelIdMap += (_labelCounter -> label)
       _labelCounter += 1
       _labelCounter - 1
     } else _labelIdMap(label)
@@ -36,6 +41,7 @@ object PDBMetaData {
   def addType(edgeType: String): Int = {
     if(!isTypeExists(edgeType)){
       _typeIdMap += (edgeType -> _typeCounter)
+      _rTypeIdMap += (_typeCounter -> edgeType)
       _typeCounter += 1
       _typeCounter - 1
     } else _typeIdMap(edgeType)
@@ -45,14 +51,23 @@ object PDBMetaData {
     if (isPropExists(prop)) _propIdMap.get(prop).get
     else addProp(prop)
   }
+  def getPropName(propId: Int): String = {
+    _rPropIdMap.get(propId).get
+  }
 
   def getLabelId(label: String): Int = {
     if (isLabelExists(label)) _labelIdMap.get(label).get
     else addLabel(label)
   }
+  def getLabelName(labelId: Int): String = {
+    _rLabelIdMap.get(labelId).get
+  }
 
   def getTypeId(edgeType: String): Int = {
     if (isTypeExists(edgeType)) _typeIdMap.get(edgeType).get
     else addType(edgeType)
+  }
+  def getTypeName(typeId: Int): String = {
+    _rTypeIdMap.get(typeId).get
   }
 }
