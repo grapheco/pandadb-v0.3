@@ -1,6 +1,6 @@
 package cn.pandadb.kv.performance
 
-import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler, NodeIndex, NodeValue, RocksDBStorage}
+import cn.pandadb.kernel.kv.{ByteUtils, IndexValue, KeyHandler, NodeIndex, NodeValue, RocksDBStorage}
 import org.junit.Test
 import org.rocksdb
 import org.rocksdb.RocksDB
@@ -18,41 +18,46 @@ import scala.util.Random
 class IndexAndNodePerformanceTest {
 
   val path = "F:\\PandaDB_rocksDB\\base_1B_bak"
-  val READONLE = true
+  val READONLE = false
 
   @Test
   def indexTest():Unit = {
-    val db:RocksDB = if(!READONLE) RocksDB.open(path+"\\nodeIndex") else RocksDB.openReadOnly(path+"\\nodeIndex")
+    val db: RocksDB = if (!READONLE) RocksDB.open(path + "\\nodeIndex") else RocksDB.openReadOnly(path + "\\nodeIndex")
     // exact find
     val epoch = 10
-    var time:Long = 0
-    for (i <- 1 to epoch ){
+    var time: Long = 0
+    for (i <- 1 to epoch) {
       val t0 = System.currentTimeMillis()
       val keys = new Array[Int](10000).map { i =>
         val id = Random.nextInt(100000000)
         val str = id.toString.map { c => (Char.char2int(c) + 49).toChar }
-        KeyHandler.nodePropertyIndexKeyToBytes(id % 10, str.getBytes(), Array(str.getBytes().length.toByte), id.toLong)
+        KeyHandler.nodePropertyIndexKeyToBytes(id % 10, IndexValue.STRING_CODE, IndexValue.encode(str), id.toLong)
       }
       val t1 = System.currentTimeMillis()
-      println(s"create 10000 keys cost: ${t1 - t0} ms" )
+      println(s"create 10000 keys cost: ${t1 - t0} ms")
       keys.foreach {
         key =>
           db.get(key).length
       }
       val t2 = System.currentTimeMillis()
-      println(s"exact find 10000 records cost: ${t2 - t1} ms" )
+      println(s"exact find 10000 records cost: ${t2 - t1} ms")
       time += t2 - t1
     }
-    println(s"avg: ${time/epoch} ms" )
-    return 0
+    println(s"avg: ${time / epoch} ms")
+  }
 
-    val keys = new Array[Int](10).map {
+  @Test
+  def indexRangeTest():Unit = {
+    val db: RocksDB = if (!READONLE) RocksDB.open(path + "\\nodeIndex") else RocksDB.openReadOnly(path + "\\nodeIndex")
+    val epoche2 = 10
+    val keys = new Array[Int](epoche2).map {
       i =>
-        val id = Random.nextInt(10000)
+        val id = Random.nextInt(10)
         val str = id.toString.map { c => (Char.char2int(c) + 49).toChar }
-//        println(str)
-        KeyHandler.nodePropertyIndexPrefixToBytes(id % 10, str.getBytes(), Array.emptyByteArray)
+        println(str)
+        KeyHandler.nodePropertyIndexKeyToBytes(id % 10, IndexValue.STRING_CODE, IndexValue.encode(str), id.toLong)
     }
+    var time2:Long = 0
     keys.foreach {
       key =>
         val t3 = System.currentTimeMillis()
@@ -60,17 +65,18 @@ class IndexAndNodePerformanceTest {
         iter.seek(key)
         var num = 0
         var ids:Long = 0
-        while (iter.isValid && iter.key().startsWith(key)){
+        while (iter.isValid && iter.key().startsWith(key) && iter.key().length-key.length>=9){
           num += 1
           val k = iter.key()
-          ids += ByteUtils.getLong(k, k.length - 8)
+          ids += ByteUtils.getLong(k, k.length - 8) % 10
 //          println(ByteUtils.getLong(k, k.length - 8))
           iter.next()
         }
         val t4 = System.currentTimeMillis()
         println(s"prefix find ${num} records cost: ${t4 - t3} ms, ids = ${ids}")
+        time2 += t4 -t3
     }
-
+    println(s"avg: ${time2/epoche2} ms")
   }
 
   @Test

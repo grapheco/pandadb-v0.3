@@ -104,31 +104,62 @@ object KeyHandler {
   }
 
   // [keyType(1Bytes),indexId(4),propValue(xBytes),valueLength(xBytes),nodeId(8Bytes)]
-  def nodePropertyIndexKeyToBytes(indexId:Int, value: Array[Byte], length: Array[Byte], nodeId: Long): Array[Byte] = {
-    val bytesLength = 13+value.length+length.length
+//  def nodePropertyIndexKeyToBytes(indexId:Int, value: Array[Byte], length: Array[Byte], nodeId: Long): Array[Byte] = {
+//    val bytesLength = 13+value.length+length.length
+//    val bytes = new Array[Byte](bytesLength)
+//    ByteUtils.setByte(bytes, 0, KeyType.NodePropertyIndex.id.toByte)
+//    ByteUtils.setInt(bytes, 1, indexId)
+//    for (i <- value.indices)
+//      bytes(5+i) = value(i)
+//    for (i <- length.indices)
+//      bytes(5+value.length+i) = length(i)
+//    ByteUtils.setLong(bytes, bytesLength-8, nodeId)
+//    bytes
+//  }
+
+  // [indexId(4),typeCode(1),propValue(xBytes),nodeId(8Bytes)]
+  def nodePropertyIndexKeyToBytes(indexId:Int, typeCode:Byte, value: Array[Byte], nodeId: Long): Array[Byte] = {
+    val bytesLength = 13 + value.length
     val bytes = new Array[Byte](bytesLength)
-    ByteUtils.setByte(bytes, 0, KeyType.NodePropertyIndex.id.toByte)
-    ByteUtils.setInt(bytes, 1, indexId)
+    ByteUtils.setInt(bytes, 0, indexId)
+    ByteUtils.setByte(bytes, 4, typeCode)
     for (i <- value.indices)
       bytes(5+i) = value(i)
-    for (i <- length.indices)
-      bytes(5+value.length+i) = length(i)
     ByteUtils.setLong(bytes, bytesLength-8, nodeId)
     bytes
   }
 
-  // [keyType(1Bytes),indexId(4),propValue(xBytes),valueLength(xBytes),nodeId(8Bytes)]
-  def nodePropertyIndexPrefixToBytes(indexId:Int, value: Array[Byte], length: Array[Byte]): Array[Byte] = {
-    val bytesLength = 5+value.length+length.length
+  // [indexId(4),typeCode(1),propValue(xBytes)]
+  def nodePropertyIndexPrefixToBytes(indexId:Int, typeCode:Byte, value: Array[Byte]): Array[Byte] = {
+    val bytesLength = 5 + value.length
     val bytes = new Array[Byte](bytesLength)
-    ByteUtils.setByte(bytes, 0, KeyType.NodePropertyIndex.id.toByte)
-    ByteUtils.setInt(bytes, 1, indexId)
+    ByteUtils.setInt(bytes, 0, indexId)
+    ByteUtils.setByte(bytes, 4, typeCode)
     for (i <- value.indices)
       bytes(5+i) = value(i)
-    for (i <- length.indices)
-      bytes(5+value.length+i) = length(i)
     bytes
   }
+
+  // [indexId(4),typeCode(1)]
+  def nodePropertyIndexTypePrefix(indexId:Int, typeCode:Byte): Array[Byte] = {
+    val bytes = new Array[Byte](5)
+    ByteUtils.setInt(bytes, 0, indexId)
+    ByteUtils.setByte(bytes, 4, typeCode)
+    bytes
+  }
+
+  // [keyType(1Bytes),indexId(4),propValue(xBytes),valueLength(xBytes),nodeId(8Bytes)]
+//  def nodePropertyIndexPrefixToBytes(indexId:Int, value: Array[Byte], length: Array[Byte]): Array[Byte] = {
+//    val bytesLength = 5+value.length+length.length
+//    val bytes = new Array[Byte](bytesLength)
+//    ByteUtils.setByte(bytes, 0, KeyType.NodePropertyIndex.id.toByte)
+//    ByteUtils.setInt(bytes, 1, indexId)
+//    for (i <- value.indices)
+//      bytes(5+i) = value(i)
+//    for (i <- length.indices)
+//      bytes(5+value.length+i) = length(i)
+//    bytes
+//  }
 
   // [keyType(1Byte),relationId(8Bytes)]
   def relationKeyToBytes(relationId: Long): Array[Byte] = {
