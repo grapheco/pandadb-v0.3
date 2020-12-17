@@ -41,8 +41,8 @@ class PIndexImporterTest {
       val indexId = rocksDBGraphAPI.createNodeIndex(label, Array[Int](6))
       rocksDBGraphAPI.insertNodeIndexRecordsBatch(indexId, rocksDBGraphAPI.allNodes().filter(_.labelIds.contains(label)).map{
         node=>
-          val value = node.properties("id_p").toString.getBytes()
-          (value, Array(value.length.toByte), node.id)
+          val value = node.properties("id_p").toString
+          (value, node.id)
       })
       println("label "+i+" finish")
     }
@@ -73,7 +73,7 @@ class PIndexImporterTest {
 
   @Test
   def searchIndexStartWith(): Unit = {
-    val indexId_str = rocksDBGraphAPI.getNodeIndexId(1,Array[Int](5))
+    val indexId_str = rocksDBGraphAPI.getNodeIndexId(0,Array[Int](5))
     val indexId_p = rocksDBGraphAPI.getNodeIndexId(1,Array[Int](6))
     val time0 = System.currentTimeMillis()
     println(rocksDBGraphAPI.findStringStartWithByIndex(indexId_str,"ga").count(_=>true))
@@ -94,12 +94,19 @@ class PIndexImporterTest {
   def searchIndex2(): Unit = {
     val indexId_str = rocksDBGraphAPI.getNodeIndexId(1,Array[Int](5))
     val indexId_p = rocksDBGraphAPI.getNodeIndexId(1,Array[Int](6))
-    println(indexId_str)
+//    println(indexId_str)
     val time0 = System.currentTimeMillis()
-    val id = rocksDBGraphAPI.findNodeIndexRecords(indexId_str,"ha".getBytes()).next()
-    println(id)
-    rocksDBGraphAPI.nodeAt(id)
+
+//    val id = rocksDBGraphAPI.findStringStartWithByIndex(indexId_str,"hccccc")
+    val id = rocksDBGraphAPI.findNodeIndexRecords(indexId_str,"hccccc".getBytes())
+
+    val time2 = System.currentTimeMillis()
+    println(s"find  records takes ${time2-time0} ms.")
+
+    while (id.hasNext) {
+      println(rocksDBGraphAPI.nodeAt(id.next()).id)
+    }
     val time1 = System.currentTimeMillis()
-    println(s"find 1 records takes ${time1-time0} ms.")
+    println(s" takes ${time1-time2} ms.")
   }
 }

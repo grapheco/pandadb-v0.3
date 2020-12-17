@@ -2,16 +2,10 @@ package cn.pandadb.kernel.kv
 
 import java.nio.ByteBuffer
 
-import cn.pandadb.kernel.kv.KeyHandler.KeyType
+import cn.pandadb.kernel.kv.KeyHandler.{KeyType}
 import cn.pandadb.kernel.kv.NodeIndex.{IndexId, NodeId, metaIdKey}
 import org.rocksdb.{RocksDB, WriteBatch, WriteOptions}
-import java.lang.Float._
-import java.lang.Double._
 
-import scala.Byte.byte2int
-import scala.collection.mutable
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
-import scala.util.Random
 
 object NodeIndex{
   type IndexId   = Int
@@ -21,8 +15,6 @@ object NodeIndex{
 }
 
 class NodeIndex(db: RocksDB){
-  
-
 
   /**
    * Index MetaData
@@ -33,7 +25,7 @@ class NodeIndex(db: RocksDB){
    * ║ label ║ props ║   indexId    ║
    * ╚═══════╩═══════╩══════════════╝
    */
-  def addIndexMeta(label: Int, props: Array[Int]): IndexId = {
+  private def addIndexMeta(label: Int, props: Array[Int]): IndexId = {
     val key = KeyHandler.nodePropertyIndexMetaKeyToBytes(label, props)
     val id  = db.get(key)
     if (id == null || id.isEmpty){
@@ -48,7 +40,7 @@ class NodeIndex(db: RocksDB){
     }
   }
 
-  def getIncreasingId: IndexId ={
+  private def getIncreasingId: IndexId ={
     val increasingId = db.get(metaIdKey)
     var id:Int = 0
     if (increasingId != null && increasingId.nonEmpty){
@@ -59,17 +51,13 @@ class NodeIndex(db: RocksDB){
     id
   }
 
-  def deleteIndexMeta(label: Int, props: Array[Int]): Unit = {
+  private def deleteIndexMeta(label: Int, props: Array[Int]): Unit = {
     db.delete(KeyHandler.nodePropertyIndexMetaKeyToBytes(label, props))
   }
 
   def getIndexId(label: Int, props: Array[Int]): IndexId = {
     val v = db.get(KeyHandler.nodePropertyIndexMetaKeyToBytes(label, props))
-    if (v == null || v.length < 4) {
-      -1
-    }else{
-      ByteUtils.getInt(v, 0)
-    }
+    if (v == null || v.length < 4) -1 else ByteUtils.getInt(v, 0)
   }
 
   def getIndexId(label: Int, prop: Int): IndexId = {
@@ -77,25 +65,29 @@ class NodeIndex(db: RocksDB){
   }
 
   /**
-   * Index Data
+   * Single Column Index:
+   * ╔══════════════════════════════════════════╗
+   * ║                   key                    ║
+   * ╠═════════╦══════════╦══════════╦══════════╣
+   * ║ indexId ║ typeCode ║  value   ║  nodeId  ║
+   * ╚═════════╩══════════╩══════════╩══════════╝
    */
-  private def writeIndexRow(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: NodeId): Unit = {
-    db.put(KeyHandler.nodePropertyIndexKeyToBytes(indexId, value, length, nodeId), Array.emptyByteArray)
+
+  private def writeIndexRow(indexId: IndexId,typeCode:Byte, value: Array[Byte], nodeId: NodeId): Unit = {
+    db.put(KeyHandler.nodePropertyIndexKeyToBytes(indexId, typeCode, value, nodeId), Array.emptyByteArray)
   }
 
-  private def writeIndexRow(indexId: IndexId, value: Array[Byte], length: Byte, nodeId: NodeId): Unit = {
-    db.put(KeyHandler.nodePropertyIndexKeyToBytes(indexId, value, Array[Byte](length), nodeId), Array.emptyByteArray)
-  }
 
-  // TODO
-  private def writeIndexRowBatch(indexId: IndexId, data: Iterator[(Array[Byte],Array[Byte], Long)]): Unit ={
+  private def writeIndexRowBatch(indexId: IndexId, data: Iterator[(Any, Long)]): Unit ={
     val writeOpt = new WriteOptions()
     val batch = new WriteBatch()
     var i = 0
     while (data.hasNext){
       val d = data.next()
-      batch.put(KeyHandler.nodePropertyIndexKeyToBytes(indexId, d._1, d._2, d._3), Array.emptyByteArray)
-      if (i % 10000 == 0){
+      batch.put(
+        KeyHandler.nodePropertyIndexKeyToBytes(indexId, IndexValue.typeCode(d._1), IndexValue.encode(d._1), d._2),
+        Array.emptyByteArray)
+      if (i % 100000 == 0){
         db.write(writeOpt, batch)
         batch.clear()
       }
@@ -104,18 +96,19 @@ class NodeIndex(db: RocksDB){
     db.write(writeOpt, batch)
   }
 
-  private def deleteSingleIndexRow(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: NodeId): Unit = {
-    db.delete(KeyHandler.nodePropertyIndexKeyToBytes(indexId, value, length, nodeId))
+  private def deleteSingleIndexRow(indexId: IndexId, typeCode:Byte, value: Array[Byte], nodeId: NodeId): Unit = {
+    db.delete(KeyHandler.nodePropertyIndexKeyToBytes(indexId, typeCode, value, nodeId))
   }
 
   private def deleteIndexRows(indexId: IndexId): Unit = {
-    db.deleteRange(KeyHandler.nodePropertyIndexKeyToBytes(indexId, zeroByteArray(8), Array.emptyByteArray, 0.toLong),
-      KeyHandler.nodePropertyIndexKeyToBytes(indexId, oneByteArray(8), Array.emptyByteArray, -1.toLong))
+    db.deleteRange(KeyHandler.nodePropertyIndexKeyToBytes(indexId, 0, Array.emptyByteArray, 0.toLong),
+      KeyHandler.nodePropertyIndexKeyToBytes(indexId, Byte.MaxValue, Array.emptyByteArray, -1.toLong))
   }
 
-  private def updateIndexRow(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: NodeId, newValue: Array[Byte]): Unit = {
-    deleteSingleIndexRow(indexId, value, length, nodeId)
-    writeIndexRow(indexId, newValue, length, nodeId)
+  private def updateIndexRow(indexId: IndexId, typeCode:Byte, value: Array[Byte],
+                             nodeId: NodeId, newTypeCode:Byte, newValue: Array[Byte] ): Unit = {
+    deleteSingleIndexRow(indexId, typeCode, value,  nodeId)
+    writeIndexRow(indexId, newTypeCode, newValue, nodeId)
   }
 
   /**
@@ -125,27 +118,20 @@ class NodeIndex(db: RocksDB){
     addIndexMeta(label, props)
   }
 
-  def insertIndexRecord(indexId: IndexId, value: Array[Byte], nodeId: NodeId): Unit =  {
-    writeIndexRow(indexId, value, value.length.toByte, nodeId )
+  def insertIndexRecord(indexId: IndexId, data: Any, nodeId: NodeId): Unit = {
+    writeIndexRow(indexId, IndexValue.typeCode(data), IndexValue.encode(data), nodeId)
   }
 
-  def insertIndexRecord(indexId: IndexId, data: Iterator[(Array[Byte],Array[Byte], Long)]): Unit ={
-    while (data.hasNext){
-      val d = data.next()
-      writeIndexRow(indexId, d._1, d._2, d._3)
-    }
+  def insertIndexRecordBatch(indexId: IndexId, data: Iterator[(Any, Long)]): Unit =
+    writeIndexRowBatch(indexId, data)
+
+  def updateIndexRecord(indexId: IndexId, value: Any, nodeId: NodeId, newValue: Any): Unit = {
+    updateIndexRow(indexId, IndexValue.typeCode(value), IndexValue.encode(value),
+      nodeId, IndexValue.typeCode(newValue), IndexValue.encode(newValue))
   }
 
-  def insertIndexRecordBatch(indexId: IndexId, data: Iterator[(Array[Byte],Array[Byte], Long)]): Unit ={
-    writeIndexRowBatch(indexId: IndexId, data: Iterator[(Array[Byte],Array[Byte], Long)])
-  }
-
-  def updateIndexRecord(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: NodeId, newValue: Array[Byte]): Unit = {
-    updateIndexRow(indexId, value, length, nodeId, newValue)
-  }
-
-  def deleteIndexRecord(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: NodeId): Unit ={
-    deleteSingleIndexRow(indexId, value, length, nodeId)
+  def deleteIndexRecord(indexId: IndexId, value: Any, nodeId: NodeId): Unit ={
+    deleteSingleIndexRow(indexId, IndexValue.typeCode(value), IndexValue.encode(value), nodeId)
   }
 
   def dropIndex(label: Int, props: Array[Int]): Unit = {
@@ -153,13 +139,12 @@ class NodeIndex(db: RocksDB){
     deleteIndexMeta(label, props)
   }
 
-  def find(indexId: IndexId, value: Array[Byte], length: Array[Byte], strictLength: Boolean = true): Iterator[NodeId] = {
+  def findByPrefix(prefix: Array[Byte]): Iterator[NodeId] = {
     val iter = db.newIterator()
-    val prefix = KeyHandler.nodePropertyIndexPrefixToBytes(indexId, value, length)
     iter.seek(prefix)
     new Iterator[NodeId] (){
       override def hasNext: Boolean =
-        iter.isValid && iter.key().startsWith(prefix) && (!strictLength || iter.key().length-prefix.length==8)
+        iter.isValid && iter.key().startsWith(prefix)
 
       override def next(): NodeId = {
         val key = iter.key()
@@ -170,23 +155,23 @@ class NodeIndex(db: RocksDB){
     }
   }
 
-  def find(indexId: IndexId, value: Array[Byte]): Iterator[NodeId] = find(indexId, value, Array[Byte](value.length.toByte))
+  def find(indexId: IndexId, value: Any): Iterator[NodeId] =
+    findByPrefix(KeyHandler.nodePropertyIndexPrefixToBytes(indexId, IndexValue.typeCode(value), IndexValue.encode(value)))
 
-  def findStringStartWith(indexId: IndexId, stringByteArray: Array[Byte]): Iterator[NodeId] = find(indexId, stringByteArray, Array.emptyByteArray, strictLength = false)
-
-  def findIntRange(indexId: IndexId, startValue: Int = Int.MinValue, endValue: Int = Int.MaxValue): Iterator[NodeId] = {
+  private def findRange(indexId:IndexId, valueType: Byte, startValue: Array[Byte] , endValue: Array[Byte]): Iterator[NodeId] = {
+    val typePrefix  = KeyHandler.nodePropertyIndexTypePrefix(indexId, valueType)
+    val startPrefix = KeyHandler.nodePropertyIndexPrefixToBytes(indexId, valueType, startValue)
+    val endPrefix   = KeyHandler.nodePropertyIndexPrefixToBytes(indexId, valueType, endValue)
     val iter = db.newIterator()
-    val startPrefix = KeyHandler.nodePropertyIndexPrefixToBytes(indexId, NumberEncoder.encode(startValue), zeroByteArray(1))
-    val endPrefix   = KeyHandler.nodePropertyIndexPrefixToBytes(indexId, NumberEncoder.encode(endValue), oneByteArray(1))
     iter.seekForPrev(endPrefix)
     val endKey = iter.key()
     iter.seek(startPrefix)
     new Iterator[NodeId] (){
       var end = false
-      override def hasNext: Boolean = iter.isValid && !end
+      override def hasNext: Boolean = iter.isValid && iter.key().startsWith(typePrefix) && !end
       override def next(): NodeId = {
         val key = iter.key()
-        if(key.startsWith(endKey)) end = true
+        end = key.startsWith(endKey)
         val id = ByteBuffer.wrap(key).getLong(key.length-8)
         iter.next()
         id
@@ -194,51 +179,21 @@ class NodeIndex(db: RocksDB){
     }
   }
 
-  def findDoubleRange(indexId: IndexId, startValue: Double, endValue: Double): Iterator[NodeId] = {
-    val iter = db.newIterator()
+  def findStringStartWith(indexId: IndexId, string: Array[Byte]): Iterator[NodeId] = find(indexId, string)
 
-    val startPrefix = KeyHandler.nodePropertyIndexPrefixToBytes(indexId, NumberEncoder.encode(startValue), zeroByteArray(1))
-    val endPrefix   = KeyHandler.nodePropertyIndexPrefixToBytes(indexId, NumberEncoder.encode(endValue), oneByteArray(1))
+  def findStringStartWith(indexId: IndexId, string: String):  Iterator[NodeId] =
+    findByPrefix(
+      KeyHandler.nodePropertyIndexPrefixToBytes(
+        indexId,
+        IndexValue.STRING_CODE,
+        IndexValue.encode(string).take(string.getBytes().length / 8 + string.getBytes().length)))
 
-    val minPositive  = KeyHandler.nodePropertyIndexPrefixToBytes(indexId, Array[Byte](0), Array.emptyByteArray)
 
-    println("min",minPositive.mkString("Array(", ", ", ")"))
-    val across = startValue < 0 && endValue >= 0
-    var direct = startValue >= 0
-    val end_direct = endValue >= 0
+  def findIntRange(indexId: IndexId, startValue: Int = Int.MinValue, endValue: Int = Int.MaxValue): Iterator[NodeId] =
+    findRange(indexId, IndexValue.INT_CODE, IndexValue.encode(startValue), IndexValue.encode(endValue))
 
-    iter.seekForPrev(endPrefix)
-    if (!end_direct){
-      iter.next()
-    }
-    val end_key = iter.key()
-    println(end_key.foreach(print(_)))
-    iter.seek(startPrefix)
-    new Iterator[NodeId] (){
-      var end = false
-      override def hasNext: Boolean = iter.isValid && !end
-      override def next(): NodeId = {
-        val key = iter.key()
-        val symbol = if(direct) 0.toByte else Byte.MinValue
-        if (!key.startsWith(KeyHandler.nodePropertyIndexPrefixToBytes(indexId, Array[Byte](symbol), Array.emptyByteArray))){
-          // across
-          if(direct) end = true
-          else{
-            iter.seek(minPositive)
-            direct = true
-          }
-        }
-        if(key.startsWith(end_key)) end = true
-        val id = ByteBuffer.wrap(key).getLong(key.length-8)
-        if (direct)
-          iter.next()
-        else
-          iter.prev()
-        id
-      }
-    }
-  }
-
+  def findFloatRange(indexId: IndexId, startValue: Float, endValue: Float): Iterator[NodeId] =
+    findRange(indexId, IndexValue.FLOAT_CODE, IndexValue.encode(startValue), IndexValue.encode(endValue))
 
   private def zeroByteArray(len: Int): Array[Byte] = {
     new Array[Byte](len)
@@ -252,19 +207,131 @@ class NodeIndex(db: RocksDB){
   }
 }
 
-object NumberEncoder{
+object IndexValue{
 
+  val NULL: Byte      = -1
+  val FALSE_CODE:Byte = 0
+  val TRUE_CODE:Byte  = 1
+  val INT_CODE :Byte  = 2
+  val FLOAT_CODE:Byte = 3
+  val LONG_CODE:Byte  = 4
+  val STRING_CODE:Byte= 5
 
-  def encode(number: Any): Array[Byte] = {
-    number match {
-      case number:Byte => ByteUtils.byteToBytes((number^Byte.MinValue).toByte)
-      case number: Short => ByteUtils.shortToBytes((number^Short.MinValue).toShort)
-      case number: Int => ByteUtils.intToBytes(number^Int.MinValue)
-      case number: Float => ByteUtils.floatToBytes(number)
-      case number: Long => ByteUtils.longToBytes(number^Long.MinValue)
-      case number: Double => ByteUtils.doubleToBytes(number)
-      case v1: Any => throw new Exception(s"this value type: ${v1.getClass} is not number")
+  /**
+   * support dataType : boolean, byte, short, int, float, long, double, string
+   * ╔═══════════════╦══════════════╦══════════════╗
+   * ║    dataType   ║  storageType ║    typeCode  ║
+   * ╠═══════════════╬══════════════╬══════════════╣
+   * ║      Null     ║    Empty     ║      -1      ║  ==> TODO
+   * ╠═══════════════╬══════════════╬══════════════╣
+   * ║      False    ║    Empty     ║      0       ║
+   * ╠═══════════════╬══════════════╬══════════════╣
+   * ║      True     ║    Empty     ║      1       ║
+   * ╠═══════════════╬══════════════╬══════════════╣
+   * ║      Byte     ║    *Int*     ║      2       ║
+   * ╠═══════════════╬══════════════╬══════════════╣
+   * ║      Short    ║    *Int*     ║      2       ║
+   * ╠═══════════════╬══════════════╬══════════════╣
+   * ║      Int      ║     Int      ║      2       ║
+   * ╠═══════════════╬══════════════╬══════════════╣
+   * ║      Float    ║    Float     ║      3       ║
+   * ╠═══════════════╬══════════════╬══════════════╣
+   * ║     Double    ║   *Float*    ║      3       ║
+   * ╠═══════════════╬══════════════╬══════════════╣
+   * ║      Long     ║     Long     ║      4       ║
+   * ╠═══════════════╬══════════════╬══════════════╣
+   * ║     String    ║    String    ║      5       ║
+   * ╚═══════════════╩══════════════╩══════════════╝
+   *
+   * @param data the data to encode
+   * @return the bytes array after encode
+   */
+  def encode(data: Any): Array[Byte] = {
+    data match {
+      case data: Boolean => Array.emptyByteArray
+      case data: Byte => intEncode(data.toInt)
+      case data: Short => intEncode(data.toInt)
+      case data: Int => intEncode(data)
+      case data: Float => floatEncode(data)
+      case data: Long => longEncode(data)
+      case data: Double => floatEncode(data.toFloat)
+      case data: String =>stringEncode(data)
+      case data: Any => throw new Exception(s"this value type: ${data.getClass} is not supported")
     }
   }
+
+  def typeCode(data: Any): Byte = {
+    data match {
+      case data: Boolean if data => TRUE_CODE
+      case data: Boolean if !data => FALSE_CODE
+      case data: Byte => INT_CODE
+      case data: Short => INT_CODE
+      case data: Int => INT_CODE
+      case data: Float => FLOAT_CODE
+      case data: Long => LONG_CODE
+      case data: Double => FLOAT_CODE
+      case data: String =>STRING_CODE
+      case data: Any => throw new Exception(s"this value type: ${data.getClass} is not supported")
+    }
+  }
+
+
+  private def intEncode(int: Int): Array[Byte] = {
+    ByteUtils.intToBytes(int^Int.MinValue)
+  }
+
+  /**
+   * if float greater than or equal 0, the highest bit set to 1
+   * else NOT each bit
+   */
+  private def floatEncode(float: Float): Array[Byte] = {
+    val buf = ByteUtils.floatToBytes(float)
+    if (float >= 0) {
+      // 0xxxxxxx => 1xxxxxxx
+      ByteUtils.setInt(buf, 0, ByteUtils.getInt(buf, 0)^Int.MinValue)
+    } else {
+      // ~
+      ByteUtils.setInt(buf, 0, ~ ByteUtils.getInt(buf, 0))
+    }
+    buf
+  }
+
+  private def longEncode(long: Long): Array[Byte] = {
+    ByteUtils.longToBytes(long^Long.MinValue)
+  }
+
+  private def stringEncode_old(string: String): Array[Byte] = {
+    ByteUtils.stringToBytes(string)
+  }
+
+
+  /**
+   * The string is divided into groups according to 8 bytes.
+   * The last group is less than 8 bytes, and several zeros bytes are supplemented.
+   * Add a byte to the end of each group. The value of the byte is 255 minus the number of 0 bytes filled by the group.
+   * eg:
+   * []                   =>  [0,0,0,0,0,0,0,0,247]
+   * [1,2,3]              =>  [1,2,3,0,0,0,0,0,250]
+   * [1,2,3,0]            =>  [1,2,3,0,0,0,0,0,251]
+   * [1,2,3,4,5,6,7,8]    =>  [1,2,3,4,5,6,7,8,255,0,0,0,0,0,0,0,0,247]
+   * [1,2,3,4,5,6,7,8,9]  =>  [1,2,3,4,5,6,7,8,255,9,0,0,0,0,0,0,0,248]
+   */
+  private def stringEncode(string: String): Array[Byte] = {
+    val buf = ByteUtils.stringToBytes(string)
+    val group = buf.length/8 +1
+    val res = new Array[Byte](group*9)
+    // set value Bytes
+    for (i <- buf.indices){
+      res(i+i/8) = buf(i)
+    }
+    // set length Bytes
+    for (i <- 1 to group-1) {
+      res(9*i -1) = 255.toByte
+    }
+    // set last Bytes
+    res(res.length-1) = (247 + buf.length%8).toByte
+    res
+  }
+
 
 }
