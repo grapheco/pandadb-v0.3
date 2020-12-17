@@ -74,4 +74,9 @@ class QueryTemplate {
   def showDemoQuerys(): Unit = {
     println(demoQuerys().mkString("\n"))
   }
+
+  @Test
+  def creatTest(): Unit = {
+    val q = demoQuerys().head
+  }
 }
