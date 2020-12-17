@@ -218,7 +218,9 @@ class RocksDBGraphAPI(dbPath: String) {
     nodeIndex.findStringStartWith(indexId, startWith.getBytes())
   }
 
-
+  def getCountsByLabel(label: String): Int = ???  //return counts ex: student->100, person-> 1000
+  def getCountsByLabel(labels: Set[String]): Array[(String, Int)] = ???  //return counts ex: student->100, person-> 1000
+  def getCountsByProperty(labels: Set[String], propertyName: String): Int = ??? //return counts ex: student with age :5000
 
 
 //  // below is the code added by zhaozihao, for possible further use.
