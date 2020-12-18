@@ -57,12 +57,12 @@ class GraphFacade(
 
         override def properties: CypherMap = {
           var props: Map[String, Any] = null
-          if (node.isInstanceOf[StoredNodeWithProperty]) {
-            props = node.asInstanceOf[StoredNodeWithProperty].properties
+          if (node.isInstanceOf[StoredNodeWithProperty_tobe_deprecated]) {
+            props = node.asInstanceOf[StoredNodeWithProperty_tobe_deprecated].properties
           }
           else {
             val n = graphStore.nodeAt(node.id)
-            props = n.asInstanceOf[StoredNodeWithProperty].properties
+            props = n.asInstanceOf[StoredNodeWithProperty_tobe_deprecated].properties
           }
           CypherMap(props.toSeq: _*)
         }

@@ -1,24 +1,28 @@
 package cn.pandadb.kernel.kv
 
-import cn.pandadb.kernel.store.StoredNodeWithProperty
+import cn.pandadb.kernel.store.{StoredNodeWithProperty, StoredNodeWithProperty_tobe_deprecated}
 import org.rocksdb.{ReadOptions, RocksDB}
 
 import scala.collection.mutable
 
-class NodeValue(override val id:Long, override val labelIds: Array[Int], override val  properties: Map[String, Any])
+class NodeValue(override val id:Long, override val labelIds: Array[Int], override val  properties: Map[Int, Any])
   extends StoredNodeWithProperty(id, labelIds, properties ) {
 }
 
-object NodeValue {
-  def parseFromBytes(bytes: Array[Byte]): NodeValue = {
+class NodeValue_tobe_deprecatedTobedeprecated(override val id:Long, override val labelIds: Array[Int], override val  properties: Map[String, Any])
+  extends StoredNodeWithProperty_tobe_deprecated(id, labelIds, properties ) {
+}
+
+object NodeValue_tobe_deprecatedTobedeprecated {
+  def parseFromBytes(bytes: Array[Byte]): NodeValue_tobe_deprecatedTobedeprecated = {
     val valueMap = ByteUtils.mapFromBytes(bytes)
     val id = valueMap.get("_id").get.asInstanceOf[Long]
     val labels = valueMap.get("_labels").get.asInstanceOf[Array[Int]]
     val props = valueMap.get("_props").get.asInstanceOf[Map[String, Any]]
-    new NodeValue(id, labels, props)
+    new NodeValue_tobe_deprecatedTobedeprecated(id, labels, props)
   }
 
-  def toBytes(nodeValue: NodeValue): Array[Byte] = {
+  def toBytes(nodeValue: NodeValue_tobe_deprecatedTobedeprecated): Array[Byte] = {
     ByteUtils.mapToBytes(Map[String,Any]("_id"->nodeValue.id,
                                           "_labels"->nodeValue.labelIds,
                                           "_props"->nodeValue.properties ))
@@ -35,24 +39,24 @@ class NodeStore(db: RocksDB)  {
 
   def set(id: Long, labels: Array[Int], properties: Map[String, Any]): Unit = {
     val keyBytes = KeyHandler.nodeKeyToBytes(id)
-    db.put(keyBytes, NodeValue.toBytes(id, labels, properties ))
+    db.put(keyBytes, NodeValue_tobe_deprecatedTobedeprecated.toBytes(id, labels, properties ))
   }
 
-  def delete(id: Long): NodeValue = {
+  def delete(id: Long): NodeValue_tobe_deprecatedTobedeprecated = {
     val keyBytes = KeyHandler.nodeKeyToBytes(id)
     val valueBytes = db.get(keyBytes)
-    val node = NodeValue.parseFromBytes(valueBytes)
+    val node = NodeValue_tobe_deprecatedTobedeprecated.parseFromBytes(valueBytes)
     db.delete(keyBytes)
     node
   }
 
-  def get(id: Long): NodeValue = {
+  def get(id: Long): NodeValue_tobe_deprecatedTobedeprecated = {
     val keyBytes = KeyHandler.nodeKeyToBytes(id)
     val valueBytes = db.get(keyBytes)
-    NodeValue.parseFromBytes(valueBytes)
+    NodeValue_tobe_deprecatedTobedeprecated.parseFromBytes(valueBytes)
   }
 
-  def all() : Iterator[NodeValue] = {
+  def all() : Iterator[NodeValue_tobe_deprecatedTobedeprecated] = {
     val keyPrefix = KeyHandler.nodeKeyPrefix()
     val readOptions = new ReadOptions()
     readOptions.setPrefixSameAsStart(true)
@@ -60,11 +64,11 @@ class NodeStore(db: RocksDB)  {
     val iter = db.newIterator(readOptions)
     iter.seek(keyPrefix)
 
-    new Iterator[NodeValue] (){
+    new Iterator[NodeValue_tobe_deprecatedTobedeprecated] (){
       override def hasNext: Boolean = iter.isValid() && iter.key().startsWith(keyPrefix)
 
-      override def next(): NodeValue = {
-        val node = NodeValue.parseFromBytes(iter.value())
+      override def next(): NodeValue_tobe_deprecatedTobedeprecated = {
+        val node = NodeValue_tobe_deprecatedTobedeprecated.parseFromBytes(iter.value())
         iter.next()
         node
       }
@@ -107,13 +111,3 @@ class NodeStore(db: RocksDB)  {
   }
 
 }
-
-//trait NodeWriter {
-//  def deleteNode(nodeId: Long);
-//
-//  def addNode(nodeId: Long);
-//
-//  def addLabel(nodeId: Long, label: Label): Unit;
-//
-//  def removeLabel(nodeId: Long, label: Label): Unit;
-//}

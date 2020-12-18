@@ -5,7 +5,7 @@ import java.nio.file.Path
 
 import cn.pandadb.kernel.kv.NodeIndex.IndexId
 import cn.pandadb.kernel.{GraphRAM, NodeId, PropertyStore, TypedId}
-import cn.pandadb.kernel.store.{MergedChanges, StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
+import cn.pandadb.kernel.store.{MergedChanges, StoredNode, StoredNodeWithProperty_tobe_deprecated, StoredRelation, StoredRelationWithProperty}
 import org.rocksdb.RocksDB
 import sun.security.util.Length
 
@@ -26,6 +26,9 @@ class RocksDBGraphAPI(dbPath: String) {
   private val relationOutEdgeIndex = new RelationOutEdgeIndexStore(outEdgeDB)
   private val nodeIndexDB = RocksDBStorage.getDB(s"${dbPath}/nodeIndex")
   private val nodeIndex = new NodeIndex(nodeIndexDB)
+
+  private val statInfoDB = RocksDBStorage.getDB(s"${dbPath}/statinfo")
+  private val statInoStore = new StatInfo(statInfoDB)
 
   def getRocksDB: RocksDB = rocksDB
 
@@ -62,7 +65,7 @@ class RocksDBGraphAPI(dbPath: String) {
     node.labelIds.foreach(labelId => nodeLabelIndex.delete(labelId, id))
   }
 
-  def nodeAt(id: Long): StoredNodeWithProperty = {
+  def nodeAt(id: Long): StoredNodeWithProperty_tobe_deprecated = {
     nodeStore.get(id)
   }
 
@@ -74,7 +77,7 @@ class RocksDBGraphAPI(dbPath: String) {
     nodeLabelIndex.getNodes(labelId)
   }
 
-  def allNodes(): Iterator[StoredNodeWithProperty] = {
+  def allNodes(): Iterator[StoredNodeWithProperty_tobe_deprecated] = {
     nodeStore.all()
   }
 
@@ -174,6 +177,10 @@ class RocksDBGraphAPI(dbPath: String) {
     nodeIndex.createIndex(nodeLabel, nodePropertyIds)
   }
 
+  def createNodeIndex(nodeLabel: Int, nodePropertyId: Int): NodeIndex.IndexId = {
+    nodeIndex.createIndex(nodeLabel, Array(nodePropertyId))
+  }
+
   def getNodeIndexId(nodeLabel: Int, nodePropertyIds: Array[Int]): NodeIndex.IndexId = {
     nodeIndex.getIndexId(nodeLabel, nodePropertyIds)
   }
@@ -182,31 +189,23 @@ class RocksDBGraphAPI(dbPath: String) {
     nodeIndex.dropIndex(nodeLabel, nodePropertyIds)
   }
 
-  def insertNodeIndexRecord(indexId: IndexId, nodeId: Long, propertyValue: Array[Byte]): Unit = {
+  def insertNodeIndexRecord(indexId: IndexId, nodeId: Long, propertyValue: Any): Unit = {
     nodeIndex.insertIndexRecord(indexId, propertyValue, nodeId)
   }
 
-  def insertNodeIndexRecords(indexId: IndexId, data:Iterator[(Array[Byte], Array[Byte], Long)]): Unit = {
-    nodeIndex.insertIndexRecord(indexId, data)
-  }
-
-  def insertNodeIndexRecordsBatch(indexId: IndexId, data:Iterator[(Array[Byte], Array[Byte], Long)]): Unit = {
+  def insertNodeIndexRecordsBatch(indexId: IndexId, data:Iterator[(Any, Long)]): Unit = {
     nodeIndex.insertIndexRecordBatch(indexId, data)
   }
 
-  def deleteNodeIndexRecord(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: Int): Unit = {
-    nodeIndex.deleteIndexRecord(indexId, value, length, nodeId)
+  def deleteNodeIndexRecord(indexId: IndexId, value: Any, nodeId: Int): Unit = {
+    nodeIndex.deleteIndexRecord(indexId, value, nodeId)
   }
 
-  def updateNodeIndexRecord(indexId: IndexId, value: Array[Byte], length: Array[Byte], nodeId: Int, newValue: Array[Byte]): Unit = {
-    nodeIndex.updateIndexRecord(indexId, value, length, nodeId, newValue)
+  def updateNodeIndexRecord(indexId: IndexId, value: Any, nodeId: Int, newValue: Any): Unit = {
+    nodeIndex.updateIndexRecord(indexId, value, nodeId, newValue)
   }
 
-  def findNodeIndexRecords(indexId: IndexId, value: Array[Byte], length: Array[Byte]): Iterator[Long] = {
-    nodeIndex.find(indexId, value, length)
-  }
-
-  def findNodeIndexRecords(indexId: IndexId, value: Array[Byte]): Iterator[Long] = {
+  def findNodeIndexRecords(indexId: IndexId, value: Any): Iterator[Long] = {
     nodeIndex.find(indexId, value)
   }
 
@@ -215,9 +214,32 @@ class RocksDBGraphAPI(dbPath: String) {
   }
 
   def findStringStartWithByIndex(indexId: IndexId, startWith: String): Iterator[Long] = {
-    nodeIndex.findStringStartWith(indexId, startWith.getBytes())
+    nodeIndex.findStringStartWith(indexId, startWith)
   }
 
+  def findFloatRangeByIndex(indexId: IndexId, startValue: Float = Float.MinValue, endValue: Float = Float.MaxValue): Iterator[Long] = {
+    nodeIndex.findFloatRange(indexId, startValue, endValue)
+  }
+
+  def getRelCountsByLabel(label: String): Option[Long] = {
+    statInoStore.getRelLabelCnt(label)
+  }
+
+  def getCountsByLabel(label: String): Option[Long] = {
+    statInoStore.getLabelCnt(label)
+  }  //return counts ex: student->100, person-> 1000
+
+  def getCountsByProperty(label: String, propertyName: String): Option[Long] = {
+    statInoStore.getPropertyIndexCnt(label, propertyName)
+  } //return counts ex: student with age :5000
+
+  def getAllNodesCnt(): Long ={
+    statInoStore.getAllNodesCnt()
+  }
+
+  def getAllRelsCnt(): Long ={
+    statInoStore.getAllRelCnt()
+  }
 
 
 

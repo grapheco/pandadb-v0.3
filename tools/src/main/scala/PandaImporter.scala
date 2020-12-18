@@ -16,7 +16,7 @@ object PandaImporter {
   val headNodeFile = new File("G://dataset//nodes-1k-wrapped-head.csv")
   val headEdgeFile = new File("G://dataset//edges-1k-wrapped-head.csv")
 
-  val dbPath = "I:\\PandaDB\\base_1B"
+  val dbPath = "C:\\PandaDB\\base_1B"
   val rocksDBGraphAPI = new RocksDBGraphAPI(dbPath)
 
   def main(args: Array[String]): Unit = {

@@ -3,7 +3,7 @@ package cn.pandadb.kv
 import java.io.File
 
 import cn.pandadb.kernel.kv.{GraphFacade, RocksDBGraphAPI}
-import cn.pandadb.kernel.store.{FileBasedIdGen, LabelStore, StoredNodeWithProperty}
+import cn.pandadb.kernel.store.{FileBasedIdGen, LabelStore, StoredNodeWithProperty_tobe_deprecated}
 import org.apache.commons.io.FileUtils
 import org.junit.{After, Assert, Before, Test}
 import org.opencypher.okapi.api.graph.CypherResult
