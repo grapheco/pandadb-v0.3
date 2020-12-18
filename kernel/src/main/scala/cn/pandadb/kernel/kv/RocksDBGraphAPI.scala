@@ -27,6 +27,9 @@ class RocksDBGraphAPI(dbPath: String) {
   private val nodeIndexDB = RocksDBStorage.getDB(s"${dbPath}/nodeIndex")
   private val nodeIndex = new NodeIndex(nodeIndexDB)
 
+  private val statInfoDB = RocksDBStorage.getDB(s"${dbPath}/statinfo")
+  private val statInoStore = new StatInfo(statInfoDB)
+
   def getRocksDB: RocksDB = rocksDB
 
   def clear(): Unit = {
@@ -218,9 +221,26 @@ class RocksDBGraphAPI(dbPath: String) {
     nodeIndex.findFloatRange(indexId, startValue, endValue)
   }
 
-  def getCountsByLabel(label: String): Int = ???  //return counts ex: student->100, person-> 1000
-  def getCountsByLabel(labels: Set[String]): Array[(String, Int)] = ???  //return counts ex: student->100, person-> 1000
-  def getCountsByProperty(labels: Set[String], propertyName: String): Int = ??? //return counts ex: student with age :5000
+  def getRelCountsByLabel(label: String): Option[Long] = {
+    statInoStore.getRelLabelCnt(label)
+  }
+
+  def getCountsByLabel(label: String): Option[Long] = {
+    statInoStore.getLabelCnt(label)
+  }  //return counts ex: student->100, person-> 1000
+
+  def getCountsByProperty(label: String, propertyName: String): Option[Long] = {
+    statInoStore.getPropertyIndexCnt(label, propertyName)
+  } //return counts ex: student with age :5000
+
+  def getAllNodesCnt(): Long ={
+    statInoStore.getAllNodesCnt()
+  }
+
+  def getAllRelsCnt(): Long ={
+    statInoStore.getAllRelCnt()
+  }
+
 
 
 //  // below is the code added by zhaozihao, for possible further use.

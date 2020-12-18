@@ -26,6 +26,9 @@ object KeyHandler {
     val NodeLabel = Value(10) // [KeyType(1Byte), LabelId(4Byte)] --> LabelName(String)
     val RelationLabel = Value(11) // [KeyType(1Byte), LabelId(4Byte)] --> LabelName(String)
     val PropertyName = Value(12) // [KeyType(1Byte),PropertyId(4Byte)] --> propertyName(String)
+
+    val NewNode = Value(13)     // [keyType(1Byte),labelId(4Bytes),nodeId(8Bytes)] -> nodeValue(id, labels, properties)
+
   }
 
 
@@ -41,6 +44,23 @@ object KeyHandler {
   def nodeKeyPrefix(): Array[Byte] = {
     val bytes = new Array[Byte](1)
     ByteUtils.setByte(bytes, 0, KeyType.Node.id.toByte)
+    bytes
+  }
+
+  // [keyType(1Byte),labelId(4Bytes),nodeId(8Bytes)]
+  def newNodeKeyToBytes(labelId: Int, nodeId: Long): Array[Byte] = {
+    val bytes = new Array[Byte](13)
+    ByteUtils.setByte(bytes, 0, KeyType.NewNode.id.toByte)
+    ByteUtils.setInt(bytes, 1, labelId)
+    ByteUtils.setLong(bytes, 5, nodeId)
+    bytes
+  }
+
+  // [keyType(1Byte),--,--]
+  def newNodeKeyPrefixToBytes(labelId: Int): Array[Byte] = {
+    val bytes = new Array[Byte](5)
+    ByteUtils.setByte(bytes, 0, KeyType.NewNode.id.toByte)
+    ByteUtils.setInt(bytes, 1, labelId)
     bytes
   }
 
@@ -454,6 +474,7 @@ object ByteUtils {
 //    ois.readObject.asInstanceOf[Map[String, Any]]
     conf.asObject(bytes).asInstanceOf[Map[String, Any]]
   }
+
 
   def longToBytes(num: Long): Array[Byte] = {
     val bytes = new Array[Byte](8)
