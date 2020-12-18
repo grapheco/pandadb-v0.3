@@ -36,16 +36,22 @@ class StatInfo(rocksDB: RocksDB) {
 
   def start(): Unit = {
 
-    rocksDB.get(ByteUtils.longToBytes(0)).toString.split(",").foreach(nodeLabelSchema += _)
-    rocksDB.get(ByteUtils.longToBytes(1)).toString.split(",").foreach(relLabelSchema += _)
-    rocksDB.get(ByteUtils.longToBytes(2)).toString.split(",").foreach(indexPropertySchema += _)
+    //KeyHandler
 
-    nodeLabelSchema.foreach(u => labelCnt += u->rocksDB.get(u.getBytes).toString.toLong)
-    relLabelSchema.foreach(u => relLabelCnt += u->rocksDB.get(u.getBytes).toString.toLong)
-    indexPropertySchema.foreach(u => propertyIndexCnt += u->rocksDB.get(u.getBytes).toString.toLong)
+    ByteUtils.stringFromBytes(rocksDB.get(ByteUtils.longToBytes(0))).split(",").foreach(nodeLabelSchema += _)
+    ByteUtils.stringFromBytes(rocksDB.get(ByteUtils.longToBytes(1))).split(",").foreach(relLabelSchema += _)
+    ByteUtils.stringFromBytes(rocksDB.get(ByteUtils.longToBytes(2))).split(",").foreach(indexPropertySchema += _)
+    //rocksDB.get(ByteUtils.longToBytes(0)).toString.split(",").foreach(nodeLabelSchema += _)
+    //rocksDB.get(ByteUtils.longToBytes(1)).toString.split(",").foreach(relLabelSchema += _)
+    //rocksDB.get(ByteUtils.longToBytes(2)).toString.split(",").foreach(indexPropertySchema += _)
 
-    allNodesCnt = rocksDB.get(ByteUtils.longToBytes(3)).toString.toLong
-    allRelCnt = rocksDB.get(ByteUtils.longToBytes(4)).toString.toLong
+    //nodeLabelSchema.foreach(u => labelCnt += u->rocksDB.get(u.getBytes).toString.toLong)
+    nodeLabelSchema.foreach(u => labelCnt += u->ByteUtils.getLong(rocksDB.get(u.getBytes), 0))
+    relLabelSchema.foreach(u => relLabelCnt += u->ByteUtils.getLong(rocksDB.get(u.getBytes), 0))
+    indexPropertySchema.foreach(u => propertyIndexCnt += u->ByteUtils.getLong(rocksDB.get(u.getBytes), 0))
+
+    allNodesCnt = ByteUtils.getLong(rocksDB.get(ByteUtils.longToBytes(3)), 0)
+    allRelCnt = ByteUtils.getLong(rocksDB.get(ByteUtils.longToBytes(4)), 0)
 
 
 
@@ -53,15 +59,21 @@ class StatInfo(rocksDB: RocksDB) {
 
 
   def save(): Unit = {
-    rocksDB.put(ByteUtils.longToBytes(0), nodeLabelSchema.mkString(",").getBytes)
-    rocksDB.put(ByteUtils.longToBytes(1), relLabelSchema.mkString(",").getBytes)
+    rocksDB.put(ByteUtils.longToBytes(0), ByteUtils.stringToBytes(nodeLabelSchema.mkString(",")))
+    rocksDB.put(ByteUtils.longToBytes(1), ByteUtils.stringToBytes(relLabelSchema.mkString(",")))
+    rocksDB.put(ByteUtils.longToBytes(2), ByteUtils.stringToBytes(indexPropertySchema.mkString(",")))
+    rocksDB.put(ByteUtils.longToBytes(3), ByteUtils.longToBytes(allNodesCnt))
+    rocksDB.put(ByteUtils.longToBytes(4), ByteUtils.longToBytes(allRelCnt))
+
+   /* rocksDB.put(ByteUtils.longToBytes(1), relLabelSchema.mkString(",").getBytes)
     rocksDB.put(ByteUtils.longToBytes(2), indexPropertySchema.mkString(",").getBytes)
     rocksDB.put(ByteUtils.longToBytes(3), allNodesCnt.toString.getBytes)
-    rocksDB.put(ByteUtils.longToBytes(4), allRelCnt.toString.getBytes)
+    rocksDB.put(ByteUtils.longToBytes(4), allRelCnt.toString.getBytes)*/
 
-    labelCnt.foreach(u => rocksDB.put(u._1.getBytes, u._2.toString.getBytes))
-    relLabelCnt.foreach(u => rocksDB.put(u._1.getBytes, u._2.toString.getBytes))
-    propertyIndexCnt.foreach(u => rocksDB.put(u._1.getBytes, u._2.toString.getBytes))
+
+    labelCnt.foreach(u => rocksDB.put(ByteUtils.stringToBytes(u._1), ByteUtils.longToBytes(u._2)))
+    relLabelCnt.foreach(u => rocksDB.put(ByteUtils.stringToBytes(u._1), ByteUtils.longToBytes(u._2)))
+    propertyIndexCnt.foreach(u => rocksDB.put(ByteUtils.stringToBytes(u._1), ByteUtils.longToBytes(u._2)))
 
   }
 
@@ -70,8 +82,25 @@ class StatInfo(rocksDB: RocksDB) {
     allNodesCnt
   }
 
+  def addNodes(cnt: Long): Unit ={
+    allNodesCnt += cnt
+  }
+
+  def addRels(cnt: Long): Unit ={
+    allRelCnt += cnt
+  }
+
   def getAllRelCnt(): Long = {
     allRelCnt
+  }
+
+  def delNodes(cnt: Long): Unit ={
+    allNodesCnt -= cnt
+  }
+
+
+  def delRels(cnt: Long): Unit ={
+    allRelCnt -= cnt
   }
 
   def getLabelCnt(label: String): Option[Long] = {
@@ -94,14 +123,14 @@ class StatInfo(rocksDB: RocksDB) {
       nodeLabelSchema += label
       labelCnt += label -> cnt
     }
-    allNodesCnt += cnt
+    addNodes(cnt)
   }
 
   def delNodeLabelCnt(label: String, cnt: Long): Unit = {
     if (nodeLabelSchema.contains(label)){
       labelCnt += label -> (labelCnt.get(label).get - cnt)
     }
-    allNodesCnt -= cnt
+    delNodes(cnt)
   }
 
   def addRelLabelCnt(label: String, cnt: Long): Unit = {
@@ -113,7 +142,7 @@ class StatInfo(rocksDB: RocksDB) {
       relLabelCnt += label -> cnt
     }
 
-    allRelCnt += cnt
+    addRels(cnt)
 
   }
 
@@ -121,7 +150,7 @@ class StatInfo(rocksDB: RocksDB) {
     if (relLabelSchema.contains(label)){
       relLabelCnt += label -> (relLabelCnt.get(label).get - cnt)
     }
-    allRelCnt -= cnt
+    delRels(cnt)
   }
 
   def addPropertyIndexCnt(label: String, property: String, cnt : Long): Unit = {
@@ -135,11 +164,9 @@ class StatInfo(rocksDB: RocksDB) {
   }
 
   def delPropertyIndexCnt(label: String, property: String, cnt : Long): Unit = {
-    if (relLabelSchema.contains(label)){
+    if (indexPropertySchema.contains(label+property)){
       propertyIndexCnt += (label+property)->(propertyIndexCnt.get(label+property).get - cnt)
     }
   }
-  //def setLabelCnt
-  //def addNodes()
 
 }
