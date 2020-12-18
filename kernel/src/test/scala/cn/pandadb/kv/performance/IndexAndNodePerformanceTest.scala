@@ -1,6 +1,6 @@
 package cn.pandadb.kv.performance
 
-import cn.pandadb.kernel.kv.{ByteUtils, IndexValue, KeyHandler, NodeIndex, NodeValue, RocksDBStorage}
+import cn.pandadb.kernel.kv.{ByteUtils, IndexValue, KeyHandler, NodeIndex, NodeValue_tobe_deprecatedTobedeprecated, RocksDBStorage}
 import org.junit.Test
 import org.rocksdb
 import org.rocksdb.RocksDB
@@ -103,7 +103,7 @@ class IndexAndNodePerformanceTest {
       allRead += t2 - t1
       values.foreach {
         v =>
-        NodeValue.parseFromBytes(v)
+        NodeValue_tobe_deprecatedTobedeprecated.parseFromBytes(v)
       }
       val t3 = System.currentTimeMillis()
       println(s"parse 10000 nodes cost: ${t3 - t2} ms" )
@@ -121,7 +121,7 @@ class IndexAndNodePerformanceTest {
     iter.seek(keyPrefix)
     var num:Long = 0
     while (iter.isValid) {
-      val node = NodeValue.parseFromBytes(iter.value())
+      val node = NodeValue_tobe_deprecatedTobedeprecated.parseFromBytes(iter.value())
       num += 1
       if(num % 1000000 == 0) println(s"scan ${num} nodes ${System.currentTimeMillis() - t0}" )
       iter.next()

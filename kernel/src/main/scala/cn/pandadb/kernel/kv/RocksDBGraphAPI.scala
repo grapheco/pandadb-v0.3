@@ -5,7 +5,7 @@ import java.nio.file.Path
 
 import cn.pandadb.kernel.kv.NodeIndex.IndexId
 import cn.pandadb.kernel.{GraphRAM, NodeId, PropertyStore, TypedId}
-import cn.pandadb.kernel.store.{MergedChanges, StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
+import cn.pandadb.kernel.store.{MergedChanges, StoredNode, StoredNodeWithProperty_tobe_deprecated, StoredRelation, StoredRelationWithProperty}
 import org.rocksdb.RocksDB
 import sun.security.util.Length
 
@@ -62,7 +62,7 @@ class RocksDBGraphAPI(dbPath: String) {
     node.labelIds.foreach(labelId => nodeLabelIndex.delete(labelId, id))
   }
 
-  def nodeAt(id: Long): StoredNodeWithProperty = {
+  def nodeAt(id: Long): StoredNodeWithProperty_tobe_deprecated = {
     nodeStore.get(id)
   }
 
@@ -74,7 +74,7 @@ class RocksDBGraphAPI(dbPath: String) {
     nodeLabelIndex.getNodes(labelId)
   }
 
-  def allNodes(): Iterator[StoredNodeWithProperty] = {
+  def allNodes(): Iterator[StoredNodeWithProperty_tobe_deprecated] = {
     nodeStore.all()
   }
 

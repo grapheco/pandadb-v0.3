@@ -3,7 +3,7 @@ package cn.pandadb.kv.performance
 import java.io.File
 
 import cn.pandadb.kernel.kv.{ByteUtils, GraphFacadeWithPPD, NodeLabelStore, PandaPropertyGraphScanImpl, PropertyNameStore, RelationLabelStore, RocksDBGraphAPI, TokenStore}
-import cn.pandadb.kernel.store.{FileBasedIdGen, StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
+import cn.pandadb.kernel.store.{FileBasedIdGen, StoredNode, StoredNodeWithProperty_tobe_deprecated, StoredRelation, StoredRelationWithProperty}
 import cn.pandadb.kernel.util.Profiler
 import org.junit.{Before, Test}
 import org.opencypher.okapi.api.value.CypherValue
@@ -234,12 +234,12 @@ class RelationPerformanceTest {
 
         override def properties: CypherMap = {
           var props: Map[String, Any] = null
-          if (node.isInstanceOf[StoredNodeWithProperty]) {
-            props = node.asInstanceOf[StoredNodeWithProperty].properties
+          if (node.isInstanceOf[StoredNodeWithProperty_tobe_deprecated]) {
+            props = node.asInstanceOf[StoredNodeWithProperty_tobe_deprecated].properties
           }
           else {
             val n = graphStore.nodeAt(node.id)
-            props = n.asInstanceOf[StoredNodeWithProperty].properties
+            props = n.asInstanceOf[StoredNodeWithProperty_tobe_deprecated].properties
           }
           CypherMap(props.toSeq: _*)
         }

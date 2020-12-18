@@ -2,8 +2,10 @@ package cn.pandadb.kernel.store
 
 import java.io.File
 import java.nio.charset.StandardCharsets
+
 import cn.pandadb.kernel.util.StreamExLike._
 import io.netty.buffer.ByteBuf
+
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -94,7 +96,13 @@ case class StoredNode(id: Long, labelIds: Array[Int]=null) {
 
 class StoredNodeWithProperty(override val id: Long,
                              override val labelIds: Array[Int],
-                             val properties:Map[String,Any])
+                             val properties:Map[Int,Any])
+  extends StoredNode(id, labelIds){
+}
+
+class StoredNodeWithProperty_tobe_deprecated(override val id: Long,
+                                             override val labelIds: Array[Int],
+                                             val properties:Map[String,Any])
   extends StoredNode(id, labelIds){
 }
 

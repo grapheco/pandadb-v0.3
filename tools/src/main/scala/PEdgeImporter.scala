@@ -35,7 +35,7 @@ class PEdgeImporter(edgeFile: File, hFile: File, rocksDBGraphAPI: RocksDBGraphAP
       }
       i += 1
       val tempEdge = _wrapEdge(iter.next().replace("\n", "").split(","))
-      rocksDBGraphAPI.addRelation(tempEdge.relId, tempEdge.fromId, tempEdge.toId, tempEdge.edgeType, tempEdge.propMap)
+//      rocksDBGraphAPI.addRelation(tempEdge.relId, tempEdge.fromId, tempEdge.toId, tempEdge.edgeType, tempEdge.propMap)
     }
   }
 
