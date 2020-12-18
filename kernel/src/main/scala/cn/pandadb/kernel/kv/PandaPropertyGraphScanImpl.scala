@@ -1,7 +1,7 @@
 package cn.pandadb.kernel.kv
 
 import cn.pandadb.kernel.optimizer.PandaPropertyGraphScan
-import cn.pandadb.kernel.store.{FileBasedIdGen, LabelStore, StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
+import cn.pandadb.kernel.store.{FileBasedIdGen, LabelStore, StoredNode, StoredNodeWithProperty_tobe_deprecated, StoredRelation, StoredRelationWithProperty}
 import org.opencypher.lynx.PropertyGraphScan
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship}
@@ -53,12 +53,12 @@ class PropertyGraphScanImpl(nodeLabelStore: TokenStore,
 
       override def properties: CypherMap = {
         var props: Map[String, Any] = null
-        if (node.isInstanceOf[StoredNodeWithProperty]) {
-          props = node.asInstanceOf[StoredNodeWithProperty].properties
+        if (node.isInstanceOf[StoredNodeWithProperty_tobe_deprecated]) {
+          props = node.asInstanceOf[StoredNodeWithProperty_tobe_deprecated].properties
         }
         else {
           val n = graphStore.nodeAt(node.id)
-          props = n.asInstanceOf[StoredNodeWithProperty].properties
+          props = n.asInstanceOf[StoredNodeWithProperty_tobe_deprecated].properties
         }
         CypherMap(props.toSeq: _*)
       }
@@ -141,7 +141,7 @@ class PandaPropertyGraphScanImpl(    nodeLabelStore: TokenStore,
         else {
           val nodes = graphStore.findNodes(labelIds.head)
           val itr = new Iterator[Node[Id]]{
-            var tmpNode: StoredNodeWithProperty = null
+            var tmpNode: StoredNodeWithProperty_tobe_deprecated = null
             private def doNext(): Unit = {
               tmpNode = null
               loop.breakable({
