@@ -50,10 +50,19 @@ class RelationPerformanceTest {
   }
 
   @Test
+  def temp(): Unit ={
+    val iter = Source.fromFile(new File("D:\\data\\graph500\\graph500-22-node-wrapped.csv")).getLines()
+    println(iter.next())
+    println(iter.next())
+
+  }
+
+  @Test
   def degree1Test(): Unit = {
     Profiler.timing(
       {
-        val degree1 = graphStore.findOutEdgeRelations(3543605)
+//        val degree1 = graphStore.findOutEdgeRelations(3543605) // 109ms
+        val degree1 = graphStore.findToNodes(3543605) // 57ms
         print(degree1.size)
       }
     )
@@ -62,9 +71,48 @@ class RelationPerformanceTest {
   @Test
   def degree2Test(): Unit = {
     Profiler.timing(
-
+      {
+        var count1 = 0
+        var count2 = 0
+        val degree1 = graphStore.findToNodes(3543605)
+        while (degree1.hasNext){
+          count1 += 1
+          val degree2 = graphStore.findToNodes(degree1.next())
+          while (degree2.hasNext){
+            degree2.next()
+            count2 += 1
+          }
+        }
+        println(count1, count2)
+      }
     )
   }
+  @Test
+  def degree2TestCache(): Unit = {
+    val cache = ArrayBuffer[Long]()
+    var count1 = 0
+    var count2 = 0
+    Profiler.timing(
+      {
+        val degree1 = graphStore.findToNodes(3543605)
+        while (degree1.hasNext){
+          count1 += 1
+          cache += degree1.next()
+        }
+        cache.foreach(
+          nodeId => {
+            val iter2 = graphStore.findToNodes(nodeId)
+            while (iter2.hasNext){
+              iter2.next()
+              count2 += 1
+            }
+          }
+        )
+        println(count1, count2)
+      }
+    )
+  }
+
 
   @Test
   def degree3Test(): Unit = {
@@ -140,7 +188,7 @@ class RelationPerformanceTest {
     }
     println(s"cost time: ${System.currentTimeMillis() - start} ms")
   }
-
+///////////
   @Test
   def getNodesByLabelIdTest(): Unit = {
     // 10 million nodes, total time: 2,730 ms
