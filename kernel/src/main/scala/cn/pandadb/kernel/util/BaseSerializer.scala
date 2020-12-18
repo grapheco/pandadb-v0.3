@@ -2,6 +2,7 @@ package cn.pandadb.kernel.util
 
 import java.io.ByteArrayOutputStream
 
+import cn.pandadb.kernel.util.BaseSerializer.{_writeKV, allocator}
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
 
 /**
@@ -11,51 +12,76 @@ import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
  * @Modified By:
  */
 
-// Map("String"->1, "Int" -> 2, "Long" -> 3, "Double" -> 4, "Float" -> 5, "Boolean" -> 6)
-class Serializer {
 
-  val allocator: ByteBufAllocator = ByteBufAllocator.DEFAULT
-  // [byte:len][arr(0)][arr(1)]...
-  def intArr2Bytes(arr: Array[Int]): Array[Byte] = {
+object BaseSerializer extends BaseSerializer {
+
+  override val allocator: ByteBufAllocator = ByteBufAllocator.DEFAULT
+  def intArray2Bytes(array: Array[Int]): Array[Byte] = {
     val byteBuf: ByteBuf = allocator.heapBuffer()
-    val len = arr.length
-    byteBuf.writeByte(len)
-    arr.foreach(item => byteBuf.writeInt(item))
-    val bos = new ByteArrayOutputStream()
-    val offset = byteBuf.writerIndex()
-    byteBuf.readBytes(bos, offset)
+    _writeIntArray(array, byteBuf)
+    val bytes = _exportBytes(byteBuf)
     byteBuf.release()
-    bos.toByteArray
+    bytes
   }
 
-  def bytes2IntArr(bytesArr: Array[Byte]): Array[Int] = {
-    val byteBuf: ByteBuf = allocator.buffer()
-    byteBuf.writeBytes(bytesArr)
-    val len = byteBuf.readByte().toInt
-    val arr = new Array[Int](len).map(item => byteBuf.readInt())
+  def bytes2IntArray(bytesArr: Array[Byte]): Array[Int] = {
+    val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytesArr)
+    val array = _bytes2IntArray(byteBuf)
     byteBuf.release()
-    arr
+    array
   }
 
   // [size][key1][type1][len(if needed)][value1]
   def map2Bytes(map: Map[Int, Any]): Array[Byte] = {
     val byteBuf: ByteBuf = allocator.buffer()
-    val size: Int = map.size
-    byteBuf.writeByte(size)
-    map.foreach(kv => _writeKV(kv._1, kv._2, byteBuf))
-    val offset = byteBuf.writerIndex()
-    val bos = new ByteArrayOutputStream()
-    byteBuf.readBytes(bos, offset)
+    _writeMap(map, byteBuf)
+    val bytes = _exportBytes(byteBuf)
     byteBuf.release()
-    bos.toByteArray
+    bytes
   }
 
   def bytes2Map(bytesArr: Array[Byte]): Map[Int, Any] = {
     val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytesArr)
-//    byteBuf.writeBytes(bytesArr)
     val map = _bytes2Map(byteBuf)
     byteBuf.release()
     map
+  }
+
+  def intArrayMap2Bytes(array: Array[Int], map: Map[Int, Any]): Array[Byte] = {
+    val byteBuf: ByteBuf = allocator.heapBuffer()
+    _writeIntArray(array, byteBuf)
+    _writeMap(map, byteBuf)
+    val bytes = _exportBytes(byteBuf)
+    byteBuf.release()
+    bytes
+  }
+
+  def bytes2IntArrayMap(bytes: Array[Byte]): (Array[Int], Map[Int, Any]) = {
+    val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytes)
+    val intArray: Array[Int] = _bytes2IntArray(byteBuf)
+    val map: Map[Int, Any] = _bytes2Map(byteBuf)
+    byteBuf.release()
+    (intArray, map)
+  }
+
+
+}
+
+
+// Map("String"->1, "Int" -> 2, "Long" -> 3, "Double" -> 4, "Float" -> 5, "Boolean" -> 6)
+trait BaseSerializer {
+
+  val allocator: ByteBufAllocator
+  // [byte:len][arr(0)][arr(1)]...
+
+
+//  def nodeKey2Bytes(nodeId: Long): Array[Byte] = {
+//
+//  }
+//  def outEdgeKeyToBytes()
+  protected def _bytes2IntArray(byteBuf: ByteBuf): Array[Int] = {
+    val len = byteBuf.readByte().toInt
+    new Array[Int](len).map(item => byteBuf.readInt())
   }
 
   protected def _bytes2Map(byteBuf: ByteBuf): Map[Int, Any] = {
@@ -128,6 +154,24 @@ class Serializer {
       case s: Long => _writeLong(value.asInstanceOf[Long], byteBuf)
       case _ => _writeString(value.asInstanceOf[String], byteBuf)
     }
+  }
+
+  protected def _writeIntArray(array: Array[Int], byteBuf: ByteBuf): Unit = {
+    val len = array.length
+    byteBuf.writeByte(len)
+    array.foreach(item => byteBuf.writeInt(item))
+  }
+
+  protected def _writeMap(map: Map[Int, Any], byteBuf: ByteBuf): Unit = {
+    val size: Int = map.size
+    byteBuf.writeByte(size)
+    map.foreach(kv => _writeKV(kv._1, kv._2, byteBuf))
+  }
+
+  protected def _exportBytes(byteBuf: ByteBuf): Array[Byte] = {
+    val dst = new Array[Byte](byteBuf.writerIndex())
+    byteBuf.readBytes(dst)
+    dst
   }
 
 }

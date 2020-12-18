@@ -11,7 +11,7 @@ import org.junit.{Assert, Test}
  * @Date: Created at 16:31 2020/12/17
  * @Modified By:
  */
-class NodeValueSerializerTest {
+class NodeValueBaseSerializerTest {
   val nodeValue = new NodeValue(123456, Array(1), Map(1->1, 2->"dasd", 3->true))
   val nodeValueSerializer = new NodeValueSerializer
 
