@@ -1,6 +1,6 @@
 package cn.pandadb.kernel.kv
 
-import cn.pandadb.kernel.store.StoredNodeWithProperty
+import cn.pandadb.kernel.util.BaseSerializer
 import org.rocksdb.{ReadOptions, RocksDB}
 
 import scala.collection.mutable
@@ -10,14 +10,12 @@ class NodeStore2(db: RocksDB)  {
   // [type,nodeId]->[labelIds]
 
 
-  private def labelIdsToBytes(obj: Array[Int]): Array[Byte] = {
-    // mock
-    Array[Byte]()
+  private def labelIdsToBytes(labelIds: Array[Int]): Array[Byte] = {
+    BaseSerializer.intArray2Bytes(labelIds)
   }
 
   private def labelIdsFromBytes(bytes: Array[Byte]): Array[Int] = {
-    // mock
-    Array[Int]()
+    BaseSerializer.bytes2IntArray(bytes)
   }
 
   def set(id: Long, labels: Array[Int]): Unit = {

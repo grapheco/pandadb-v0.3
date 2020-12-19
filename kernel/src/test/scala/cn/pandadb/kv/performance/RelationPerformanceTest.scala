@@ -29,7 +29,8 @@ class RelationPerformanceTest {
     //    new File("./testdata/output/rellabels").createNewFile()
 
 //        graphStore = new RocksDBGraphAPI("D:\\data\\rocksdb")
-    graphStore = new RocksDBGraphAPI("D:\\data\\rocksdbGraph500")
+//    graphStore = new RocksDBGraphAPI("D:\\data\\rocksdbGraph500")
+    graphStore = new RocksDBGraphAPI("F:\\PandaDB_rocksDB\\graph500")
 
     nodeLabelStore = new NodeLabelStore(graphStore.getRocksDB)
     relLabelStore = new RelationLabelStore(graphStore.getRocksDB)
@@ -59,58 +60,92 @@ class RelationPerformanceTest {
 
   @Test
   def degree1Test(): Unit = {
-    Profiler.timing(
-      {
-//        val degree1 = graphStore.findOutEdgeRelations(3543605) // 109ms
-        val degree1 = graphStore.findToNodes(3543605) // 57ms
-        print(degree1.size)
-      }
-    )
+    Array[Long](1298177, 2925502, 5282, 3583116, 3543605).foreach{
+      id=>
+        Profiler.timing(
+          {
+            //        val degree1 = graphStore.findOutEdgeRelations(3543605) // 109ms
+            val degree1 = graphStore.findToNodes(id) // 57ms
+            print(s"id ${id} degree: ${degree1.length}")
+
+          }
+        )
+    }
+
   }
 
   @Test
   def degree2Test(): Unit = {
-    Profiler.timing(
-      {
-        var count1 = 0
-        var count2 = 0
-        val degree1 = graphStore.findToNodes(3543605)
-        while (degree1.hasNext){
-          count1 += 1
-          val degree2 = graphStore.findToNodes(degree1.next())
-          while (degree2.hasNext){
-            degree2.next()
-            count2 += 1
-          }
-        }
-        println(count1, count2)
-      }
-    )
-  }
-  @Test
-  def degree2TestCache(): Unit = {
-    val cache = ArrayBuffer[Long]()
-    var count1 = 0
-    var count2 = 0
-    Profiler.timing(
-      {
-        val degree1 = graphStore.findToNodes(3543605)
-        while (degree1.hasNext){
-          count1 += 1
-          cache += degree1.next()
-        }
-        cache.foreach(
-          nodeId => {
-            val iter2 = graphStore.findToNodes(nodeId)
-            while (iter2.hasNext){
-              iter2.next()
+    //1161ms
+    Array[Long](1298177, 2925502, 5282, 3583116, 3543605).foreach {
+      id=>
+      Profiler.timing(
+        {
+          var count1 = 0
+          var count2 = 0
+          val degree1 = graphStore.findToNodes(id)
+          while (degree1.hasNext) {
+            count1 += 1
+            val degree2 = graphStore.findToNodes(degree1.next())
+            while (degree2.hasNext) {
+              degree2.next()
               count2 += 1
             }
           }
+          println(count1, count2)
+        }
+      )
+    }
+  }
+
+  @Test
+  def degree2TestCache(): Unit = {
+    //1173ms
+    Array[Long](1298177, 2925502, 5282, 3583116, 3543605).foreach {
+      id=>
+      val cache = ArrayBuffer[Long]()
+      var count1 = 0
+      var count2 = 0
+      Profiler.timing(
+        {
+          val degree1 = graphStore.findToNodes(id)
+          while (degree1.hasNext) {
+            count1 += 1
+            cache += degree1.next()
+          }
+          cache.foreach(
+            nodeId => {
+              val iter2 = graphStore.findToNodes(nodeId)
+              while (iter2.hasNext) {
+                iter2.next()
+                count2 += 1
+              }
+            }
+          )
+          println(count1, count2)
+        }
+      )
+    }
+  }
+
+  @Test
+  def degree2TestCache2(): Unit = {
+    //1167ms
+    Array[Long](1298177, 2925502, 5282, 3583116, 3543605).foreach {
+      id=>
+        Profiler.timing(
+          {
+            println(
+              graphStore
+                .findToNodes(id)
+                .toList
+                .map {
+                  graphStore.findToNodes(_).length
+                }
+                .sum)
+          }
         )
-        println(count1, count2)
-      }
-    )
+    }
   }
 
 

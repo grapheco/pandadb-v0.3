@@ -2,7 +2,7 @@ package cn.pandadb.kernel.kv
 
 import java.nio.ByteBuffer
 
-import cn.pandadb.kernel.kv.KeyHandler.{KeyType}
+import cn.pandadb.kernel.kv.KeyHandler.KeyType
 import cn.pandadb.kernel.kv.NodeIndex.{IndexId, NodeId, metaIdKey}
 import org.rocksdb.{RocksDB, WriteBatch, WriteOptions}
 
@@ -179,7 +179,6 @@ class NodeIndex(db: RocksDB){
     }
   }
 
-  def findStringStartWith(indexId: IndexId, string: Array[Byte]): Iterator[NodeId] = find(indexId, string)
 
   def findStringStartWith(indexId: IndexId, string: String):  Iterator[NodeId] =
     findByPrefix(

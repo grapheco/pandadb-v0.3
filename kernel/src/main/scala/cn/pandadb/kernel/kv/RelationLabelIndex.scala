@@ -24,7 +24,7 @@ class RelationLabelIndex(db: RocksDB) {
     iter.seek(keyPrefix)
 
     new Iterator[Long] (){
-      override def hasNext: Boolean = iter.isValid() && iter.key().startsWith(keyPrefix)
+      override def hasNext: Boolean = iter.isValid && iter.key().startsWith(keyPrefix)
 
       override def next(): Long = {
         val relId: Long = ByteUtils.getLong(iter.key(), keyPrefix.length)

@@ -72,6 +72,11 @@ object KeyHandler {
     (ByteUtils.getLong(bytes, 1))
   }
 
+  // return (labelID: Int, nodeId:Long)
+  def parseNewNodeKeyFromBytes(bytes: Array[Byte]): (Int, Long) = {
+    (ByteUtils.getInt(bytes, 1), ByteUtils.getLong(bytes, 5))
+  }
+
   // [keyType(1Byte),labelId(4Bytes),nodeId(8Bytes)]
   def nodeLabelIndexKeyToBytes(labelId: Int, nodeId: Long): Array[Byte] = {
     val bytes = new Array[Byte](13)
