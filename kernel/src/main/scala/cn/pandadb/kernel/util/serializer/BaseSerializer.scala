@@ -1,8 +1,7 @@
-package cn.pandadb.kernel.util
+package cn.pandadb.kernel.util.serializer
 
 import java.io.ByteArrayOutputStream
 
-import cn.pandadb.kernel.util.BaseSerializer.{_writeKV, allocator}
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
 
 /**
@@ -11,7 +10,6 @@ import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
  * @Date: Created at 19:15 2020/12/17
  * @Modified By:
  */
-
 
 object BaseSerializer extends BaseSerializer {
 
@@ -26,7 +24,7 @@ object BaseSerializer extends BaseSerializer {
 
   def bytes2IntArray(bytesArr: Array[Byte]): Array[Int] = {
     val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytesArr)
-    val array = _bytes2IntArray(byteBuf)
+    val array = _readIntArray(byteBuf)
     byteBuf.release()
     array
   }
@@ -42,7 +40,7 @@ object BaseSerializer extends BaseSerializer {
 
   def bytes2Map(bytesArr: Array[Byte]): Map[Int, Any] = {
     val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytesArr)
-    val map = _bytes2Map(byteBuf)
+    val map = _readMap(byteBuf)
     byteBuf.release()
     map
   }
@@ -58,50 +56,18 @@ object BaseSerializer extends BaseSerializer {
 
   def bytes2IntArrayMap(bytes: Array[Byte]): (Array[Int], Map[Int, Any]) = {
     val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytes)
-    val intArray: Array[Int] = _bytes2IntArray(byteBuf)
-    val map: Map[Int, Any] = _bytes2Map(byteBuf)
+    val intArray: Array[Int] = _readIntArray(byteBuf)
+    val map: Map[Int, Any] = _readMap(byteBuf)
     byteBuf.release()
     (intArray, map)
   }
-
-
 }
 
-
-// Map("String"->1, "Int" -> 2, "Long" -> 3, "Double" -> 4, "Float" -> 5, "Boolean" -> 6)
 trait BaseSerializer {
 
+
+  // data type:  Map("String"->1, "Int" -> 2, "Long" -> 3, "Double" -> 4, "Float" -> 5, "Boolean" -> 6)
   val allocator: ByteBufAllocator
-  // [byte:len][arr(0)][arr(1)]...
-
-
-//  def nodeKey2Bytes(nodeId: Long): Array[Byte] = {
-//
-//  }
-//  def outEdgeKeyToBytes()
-  protected def _bytes2IntArray(byteBuf: ByteBuf): Array[Int] = {
-    val len = byteBuf.readByte().toInt
-    new Array[Int](len).map(item => byteBuf.readInt())
-  }
-
-  protected def _bytes2Map(byteBuf: ByteBuf): Map[Int, Any] = {
-    val propNum: Int = byteBuf.readByte().toInt
-    val propsMap: Map[Int, Any] = new Array[Int](propNum).map(item => {
-      val propId: Int = byteBuf.readByte().toInt
-      val propType: Int = byteBuf.readByte().toInt
-      val propValue = propType match {
-        case 1 => _readString(byteBuf)
-        case 2 => byteBuf.readInt()
-        case 3 => byteBuf.readLong()
-        case 4 => byteBuf.readDouble()
-        case 5 => byteBuf.readFloat()
-        case 6 => byteBuf.readBoolean()
-        case _ => _readString(byteBuf)
-      }
-      propId -> propValue
-    }).toMap
-    propsMap
-  }
 
   protected def _writeString(value: String, byteBuf: ByteBuf): Unit = {
     val strInBytes: Array[Byte] = value.getBytes
@@ -137,13 +103,6 @@ trait BaseSerializer {
     byteBuf.writeBoolean(value)
   }
 
-  protected def _readString(byteBuf: ByteBuf): String = {
-    val len: Int = byteBuf.readByte().toInt
-    val bos: ByteArrayOutputStream = new ByteArrayOutputStream()
-    byteBuf.readBytes(bos, len)
-    bos.toString
-  }
-
   protected def _writeKV(keyId: Int, value: Any, byteBuf: ByteBuf) = {
     byteBuf.writeByte(keyId)
     value match {
@@ -156,6 +115,7 @@ trait BaseSerializer {
     }
   }
 
+  // [byte:len][arr(0)][arr(1)]...
   protected def _writeIntArray(array: Array[Int], byteBuf: ByteBuf): Unit = {
     val len = array.length
     byteBuf.writeByte(len)
@@ -168,6 +128,34 @@ trait BaseSerializer {
     map.foreach(kv => _writeKV(kv._1, kv._2, byteBuf))
   }
 
+  protected def _readString(byteBuf: ByteBuf): String = {
+    val len: Int = byteBuf.readByte().toInt
+    val bos: ByteArrayOutputStream = new ByteArrayOutputStream()
+    byteBuf.readBytes(bos, len)
+    bos.toString
+  }
+  protected def _readIntArray(byteBuf: ByteBuf): Array[Int] = {
+    val len = byteBuf.readByte().toInt
+    new Array[Int](len).map(item => byteBuf.readInt())
+  }
+  protected def _readMap(byteBuf: ByteBuf): Map[Int, Any] = {
+    val propNum: Int = byteBuf.readByte().toInt
+    val propsMap: Map[Int, Any] = new Array[Int](propNum).map(item => {
+      val propId: Int = byteBuf.readByte().toInt
+      val propType: Int = byteBuf.readByte().toInt
+      val propValue = propType match {
+        case 1 => _readString(byteBuf)
+        case 2 => byteBuf.readInt()
+        case 3 => byteBuf.readLong()
+        case 4 => byteBuf.readDouble()
+        case 5 => byteBuf.readFloat()
+        case 6 => byteBuf.readBoolean()
+        case _ => _readString(byteBuf)
+      }
+      propId -> propValue
+    }).toMap
+    propsMap
+  }
   protected def _exportBytes(byteBuf: ByteBuf): Array[Byte] = {
     val dst = new Array[Byte](byteBuf.writerIndex())
     byteBuf.readBytes(dst)

@@ -1,8 +1,8 @@
-package cn.pandadb.util
+package cn.pandadb.util.serializer
 
 import cn.pandadb.kernel.kv.NodeValue
-import cn.pandadb.kernel.util.NodeValueSerializer
 import cn.pandadb.kernel.util.Profiler.timing
+import cn.pandadb.kernel.util.serializer.NodeSerializer
 import org.junit.{Assert, Test}
 
 /**
@@ -11,9 +11,9 @@ import org.junit.{Assert, Test}
  * @Date: Created at 16:31 2020/12/17
  * @Modified By:
  */
-class NodeValueBaseSerializerTest {
+class NodeSerializerTest {
   val nodeValue = new NodeValue(123456, Array(1), Map(1->1, 2->"dasd", 3->true))
-  val nodeValueSerializer = new NodeValueSerializer
+  val nodeValueSerializer = NodeSerializer
 
   @Test
   def serializePERF(): Unit = {
@@ -24,16 +24,18 @@ class NodeValueBaseSerializerTest {
   def deSerializePERF(): Unit = {
     println("deserialize")
     val bytesArr = nodeValueSerializer.serialize(nodeValue)
-    timing(for (i<-1 to 10000000) nodeValueSerializer.deserialize(bytesArr))
-
+    timing(for (i<-1 to 10000000) nodeValueSerializer.deserializeNodeValue(bytesArr))
   }
 
   @Test
   def correntTest(): Unit = {
-    val bytesArr = nodeValueSerializer.serialize(nodeValue)
-    val node = nodeValueSerializer.deserialize(bytesArr)
+    val valueBytes = nodeValueSerializer.serialize(nodeValue)
+    val keyBytes = nodeValueSerializer.serialize(nodeValue.id)
+    val node = nodeValueSerializer.deserializeNodeValue(valueBytes)
+    val id = nodeValueSerializer.deserializeNodeKey(keyBytes)
     Assert.assertEquals(nodeValue.id, node.id)
     Assert.assertArrayEquals(nodeValue.labelIds, node.labelIds)
     Assert.assertEquals(nodeValue.properties, node.properties)
+    Assert.assertEquals(nodeValue.id, id)
   }
 }

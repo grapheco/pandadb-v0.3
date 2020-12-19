@@ -1,7 +1,7 @@
-package cn.pandadb.util
+package cn.pandadb.util.serializer
 
 import cn.pandadb.kernel.util.Profiler.timing
-import cn.pandadb.kernel.util.{BaseSerializer}
+import cn.pandadb.kernel.util.serializer.BaseSerializer
 import org.junit.{Assert, Test}
 
 /**
