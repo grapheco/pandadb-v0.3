@@ -1,5 +1,6 @@
-package cn.pandadb.kernel.kv
+package cn.pandadb.kernel.kv.relation
 
+import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler}
 import org.rocksdb.{ReadOptions, RocksDB}
 
 class RelationLabelIndex(db: RocksDB) {

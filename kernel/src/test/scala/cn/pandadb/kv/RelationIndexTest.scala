@@ -2,7 +2,8 @@ package cn.pandadb.kv
 
 import java.io.File
 
-import cn.pandadb.kernel.kv.{RelationInEdgeIndexStore, RelationOutEdgeIndexStore, RocksDBStorage}
+import cn.pandadb.kernel.kv.RocksDBStorage
+import cn.pandadb.kernel.kv.relation.{RelationInEdgeIndexStore, RelationOutEdgeIndexStore}
 import org.apache.commons.io.FileUtils
 import org.junit.{After, Assert, Before, Test}
 import org.rocksdb.RocksDB

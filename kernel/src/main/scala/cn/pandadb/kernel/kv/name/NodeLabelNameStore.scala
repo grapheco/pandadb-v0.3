@@ -1,7 +1,9 @@
-package cn.pandadb.kernel.kv
+package cn.pandadb.kernel.kv.name
+
+import cn.pandadb.kernel.kv.KeyHandler
 import org.rocksdb.RocksDB
 
-class NodeLabelStore(rocksDB: RocksDB)  extends TokenStore {
+class NodeLabelNameStore(rocksDB: RocksDB)  extends NameStore {
   override val db: RocksDB = rocksDB
   override val key2ByteArrayFunc: Int => Array[Byte] = KeyHandler.nodeLabelKeyToBytes
   override val keyPrefixFunc: () => Array[Byte] = KeyHandler.nodeLabelKeyPrefixToBytes

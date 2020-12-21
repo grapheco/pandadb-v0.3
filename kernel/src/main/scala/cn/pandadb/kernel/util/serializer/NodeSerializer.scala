@@ -1,7 +1,7 @@
 package cn.pandadb.kernel.util.serializer
 
 import cn.pandadb.kernel.kv.KeyHandler.KeyType
-import cn.pandadb.kernel.kv.NodeValue
+import cn.pandadb.kernel.kv.node.NodeValue
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
 
 /**

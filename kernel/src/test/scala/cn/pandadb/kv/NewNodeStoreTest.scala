@@ -1,10 +1,11 @@
 package cn.pandadb.kv
 
-import cn.pandadb.kernel.kv.{NewNodeStore, RocksDBStorage}
+import cn.pandadb.kernel.kv.RocksDBStorage
 import org.junit.{After, Assert, Before, Test}
 import org.rocksdb.RocksDB
-
 import java.io.File
+
+import cn.pandadb.kernel.kv.node.NewNodeStore
 
 class NewNodeStoreTest {
 

@@ -1,10 +1,11 @@
-package cn.pandadb.kernel.kv
+package cn.pandadb.kernel.kv.relation
 
-import cn.pandadb.kernel.store.{StoredRelationWithProperty}
+import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler}
+import cn.pandadb.kernel.store.StoredRelationWithProperty
 import org.rocksdb.RocksDB
 
 class RelationInEdgeIndexStore(db: RocksDB) {
-  ""/**""
+  /**
    * in edge data structure
    * ------------------------
    * type(1Byte),toNodeId(8Bytes),relationLabel(4Bytes),category(8Bytes),fromNodeId(8Bytes)-->relationValue(id, properties)

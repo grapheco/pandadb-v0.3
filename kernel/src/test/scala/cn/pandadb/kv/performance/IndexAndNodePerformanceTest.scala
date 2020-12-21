@@ -1,6 +1,8 @@
 package cn.pandadb.kv.performance
 
-import cn.pandadb.kernel.kv.{ByteUtils, IndexValue, KeyHandler, NodeIndex, NodeValue_tobe_deprecated, RocksDBStorage}
+import cn.pandadb.kernel.kv.index.IndexEncoder
+import cn.pandadb.kernel.kv.node.NodeValue_tobe_deprecated
+import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler, RocksDBStorage}
 import org.junit.Test
 import org.rocksdb
 import org.rocksdb.RocksDB
@@ -31,7 +33,7 @@ class IndexAndNodePerformanceTest {
       val keys = new Array[Int](10000).map { i =>
         val id = Random.nextInt(100000000)
         val str = id.toString.map { c => (Char.char2int(c) + 49).toChar }
-        KeyHandler.nodePropertyIndexKeyToBytes(id % 10, IndexValue.STRING_CODE, IndexValue.encode(str), id.toLong)
+        KeyHandler.nodePropertyIndexKeyToBytes(id % 10, IndexEncoder.STRING_CODE, IndexEncoder.encode(str), id.toLong)
       }
       val t1 = System.currentTimeMillis()
       println(s"create 10000 keys cost: ${t1 - t0} ms")
@@ -55,7 +57,7 @@ class IndexAndNodePerformanceTest {
         val id = Random.nextInt(10)
         val str = id.toString.map { c => (Char.char2int(c) + 49).toChar }
         println(str)
-        KeyHandler.nodePropertyIndexKeyToBytes(id % 10, IndexValue.STRING_CODE, IndexValue.encode(str), id.toLong)
+        KeyHandler.nodePropertyIndexKeyToBytes(id % 10, IndexEncoder.STRING_CODE, IndexEncoder.encode(str), id.toLong)
     }
     var time2:Long = 0
     keys.foreach {

@@ -2,7 +2,9 @@ package cn.pandadb.kv.performance
 
 import java.io.File
 
-import cn.pandadb.kernel.kv.{NodeStore, RelationStore, RocksDBStorage}
+import cn.pandadb.kernel.kv.node.NodeStore
+import cn.pandadb.kernel.kv.RocksDBStorage
+import cn.pandadb.kernel.kv.relation.RelationStore
 import org.junit.Before
 import org.rocksdb.RocksDB
 

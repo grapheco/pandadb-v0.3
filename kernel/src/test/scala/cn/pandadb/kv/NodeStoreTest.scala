@@ -2,7 +2,8 @@ package cn.pandadb.kv
 
 import java.io.File
 
-import cn.pandadb.kernel.kv.{ByteUtils, NodeStore, RocksDBStorage}
+import cn.pandadb.kernel.kv.node.NodeStore
+import cn.pandadb.kernel.kv.{ByteUtils, RocksDBStorage}
 import org.junit.{After, Assert, Before, Test}
 import org.rocksdb.RocksDB
 

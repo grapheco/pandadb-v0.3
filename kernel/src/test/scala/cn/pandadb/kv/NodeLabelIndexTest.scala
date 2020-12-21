@@ -2,7 +2,8 @@ package cn.pandadb.kv
 
 import java.io.File
 
-import cn.pandadb.kernel.kv.{NodeLabelIndex, RocksDBStorage}
+import cn.pandadb.kernel.kv.RocksDBStorage
+import cn.pandadb.kernel.kv.node.NodeLabelIndex
 import org.junit.{After, Assert, Before, Test}
 import org.rocksdb.RocksDB
 

@@ -1,6 +1,7 @@
-package cn.pandadb.kernel.kv
+package cn.pandadb.kernel.kv.node
 
-import org.rocksdb.{ReadOptions, RocksDB}
+import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler}
+import org.rocksdb.RocksDB
 
 class NodeLabelIndex2(db: RocksDB) {
   // [type,labelId,nodeId]->[properties]
