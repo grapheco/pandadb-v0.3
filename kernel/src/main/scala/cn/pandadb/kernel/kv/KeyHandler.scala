@@ -4,6 +4,7 @@ import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, 
 import java.nio.charset.{Charset, StandardCharsets}
 
 import cn.pandadb.kernel.kv.KeyHandler.KeyType.{KeyType, Value}
+import cn.pandadb.kernel.util.serializer.NodeSerializer
 
 class IllegalKeyException(s: String) extends RuntimeException(s) {
 }
@@ -34,10 +35,11 @@ object KeyHandler {
 
   // [keyType(1Byte),nodeId(8Bytes)]
   def nodeKeyToBytes(nodeId: Long): Array[Byte] = {
-    val bytes = new Array[Byte](9)
-    ByteUtils.setByte(bytes, 0, KeyType.Node.id.toByte)
-    ByteUtils.setLong(bytes, 1, nodeId)
-    bytes
+    NodeSerializer.serialize(nodeId)
+//    val bytes = new Array[Byte](9)
+//    ByteUtils.setByte(bytes, 0, KeyType.Node.id.toByte)
+//    ByteUtils.setLong(bytes, 1, nodeId)
+//    bytes
   }
 
   // [keyType(1Byte),--]
@@ -49,11 +51,12 @@ object KeyHandler {
 
   // [keyType(1Byte),labelId(4Bytes),nodeId(8Bytes)]
   def newNodeKeyToBytes(labelId: Int, nodeId: Long): Array[Byte] = {
-    val bytes = new Array[Byte](13)
-    ByteUtils.setByte(bytes, 0, KeyType.NewNode.id.toByte)
-    ByteUtils.setInt(bytes, 1, labelId)
-    ByteUtils.setLong(bytes, 5, nodeId)
-    bytes
+    NodeSerializer.serialize(labelId, nodeId)
+//    val bytes = new Array[Byte](13)
+//    ByteUtils.setByte(bytes, 0, KeyType.NewNode.id.toByte)
+//    ByteUtils.setInt(bytes, 1, labelId)
+//    ByteUtils.setLong(bytes, 5, nodeId)
+//    bytes
   }
 
   // [keyType(1Byte),--,--]

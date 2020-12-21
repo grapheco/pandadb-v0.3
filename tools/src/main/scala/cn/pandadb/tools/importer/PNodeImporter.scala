@@ -1,12 +1,14 @@
+package cn.pandadb.tools.importer
+
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import cn.pandadb.kernel.kv.{NodeStore, RocksDBGraphAPI}
-import org.rocksdb.RocksDB
+import cn.pandadb.kernel.PDBMetaData
+import cn.pandadb.kernel.kv.{KeyHandler, NodeValue, RocksDBGraphAPI}
+import cn.pandadb.kernel.util.serializer.NodeSerializer
+import org.rocksdb.{WriteBatch, WriteOptions}
 
-import scala.Array.concat
-import scala.collection.{SortedMap, mutable}
 import scala.io.Source
 
 /**
@@ -21,32 +23,45 @@ import scala.io.Source
   headMap(propName1 -> type, propName2 -> type ...)
  */
 // protocol: :ID :LABELS propName1:type1 proName2:type2
-case class TempNode(id: Long, labels: Array[Int], properties: Map[String, Any])
+class PNodeImporter(nodeFile: File, hFile : File, rocksDBGraphAPI: RocksDBGraphAPI) extends Importer {
 
-class PNodeImporter(nodeFile: File, hFile : File, rocksDBGraphAPI: RocksDBGraphAPI) {
-//  val db: RocksDB = rocksDB
   val file: File = nodeFile
   val headFile: File = hFile
+
   // record the propId sort in the file, example: Array(2, 4, 1, 3)
   var propSortArr: Array[String] = null
   val headMap: Map[String, String] = _setNodeHead()
 
-  //todo: automatically print progress.
   def importNodes(): Unit = {
+    val estNodeCount: Long = estLineCount(nodeFile)
     val iter = Source.fromFile(file).getLines()
     var i = 0
+
+    val writeOpt = new WriteOptions()
+    val batch = new WriteBatch()
+    val nodeValueSerializer = NodeSerializer
+
     while (iter.hasNext) {
       if(i % 10000000 == 0) {
         val time1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
-        println(s"${i/10000000}% nodes imported. $time1")
+        println(s"${i/10000000}kw of $estNodeCount(est) nodes imported. $time1")
       }
       i += 1;
-      val tempNode = _wrapNode(iter.next().replace("\n", "").split(","))
-      rocksDBGraphAPI.addNode(tempNode.id, tempNode.labels, tempNode.properties)
+      val lineArr = iter.next().replace("\n", "").split(",")
+      val nodeKey = KeyHandler.nodeKeyToBytes(lineArr(0).toLong)
+      val nodeValue = _wrapNode(lineArr)
+      val serializedNodeValue = nodeValueSerializer.serialize(nodeValue)
+      batch.put(nodeKey, serializedNodeValue)
+      if(i%1000000 ==0) {
+        rocksDBGraphAPI.getNodeStoreDB.write(writeOpt, batch)
+        batch.clear()
+      }
+
     }
   }
 
   private def _setNodeHead(): Map[String, String] = {
+    //head map: propName -> type
     var hMap: Map[String, String] = Map[String, String]()
     val headArr = Source.fromFile(hFile).getLines().next().replace("\n", "").split(",")
     propSortArr = new Array[String](headArr.length-2)
@@ -61,15 +76,16 @@ class PNodeImporter(nodeFile: File, hFile : File, rocksDBGraphAPI: RocksDBGraphA
     hMap
   }
 
-  private def _wrapNode(lineArr: Array[String]): TempNode = {
+  private def _wrapNode(lineArr: Array[String]): NodeValue = {
     val id = lineArr(0).toLong
-//  TODO：modify the labels import mechanism, enable real array
-    val labels: Array[Int] = Array(PDBMetaData.getLabelId(lineArr(1)))
-    var propMap: Map[String, Any] = Map[String, Any]()
+    val labels: Array[String] = lineArr(1).split(";")
+    val labelIds: Array[Int] = labels.map(label => PDBMetaData.getLabelId(label))
+    var propMap: Map[Int, Any] = Map[Int, Any]()
     for(i <-2 to lineArr.length -1) {
       val propName = propSortArr(i - 2)
       val propValue: Any = {
         headMap(propName) match {
+          case "float" => lineArr(i).toFloat
           case "long" => lineArr(i).toLong
           case "int" => lineArr(i).toInt
           case "boolean" => lineArr(i).toBoolean
@@ -77,9 +93,9 @@ class PNodeImporter(nodeFile: File, hFile : File, rocksDBGraphAPI: RocksDBGraphA
           case _ => lineArr(i).replace("\"", "")
         }
       }
-      propMap += (propName -> propValue)
+      propMap += (PDBMetaData.getPropId(propName) -> propValue)
     }
-    TempNode(id, labels, propMap)
+    new NodeValue(id, labelIds, propMap)
   }
 
 }

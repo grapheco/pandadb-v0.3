@@ -1,7 +1,7 @@
 package cn.pandadb.kernel.kv
 
 import cn.pandadb.kernel.store.StoredNodeWithProperty
-import cn.pandadb.kernel.util.BaseSerializer
+import cn.pandadb.kernel.util.serializer.BaseSerializer
 import org.rocksdb.{ReadOptions, RocksDB}
 
 class NewNodeStore(db: RocksDB) {

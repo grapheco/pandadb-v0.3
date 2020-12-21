@@ -1,6 +1,8 @@
 import java.io.File
 
+import cn.pandadb.kernel.PDBMetaData
 import cn.pandadb.kernel.kv.{RelationStore, RocksDBGraphAPI, RocksDBStorage}
+import cn.pandadb.tools.importer.PEdgeImporter
 import org.junit.{Assert, Test}
 
 /**
@@ -28,7 +30,7 @@ class PEdgeImporterTest {
     Assert.assertEquals(2, edge.id)
     Assert.assertEquals(2303395, edge.from)
     Assert.assertEquals(1298177, edge.to)
-    Assert.assertEquals(PDBMetaData.getTypeId("type5"), edge.labelId)
+    Assert.assertEquals(PDBMetaData.getTypeId("type5"), edge.typeId)
 //    Assert.assertEquals(Map("fromId_num" -> 2303395, "toId_str" -> "1298177", "weight" -> 5), edge.properties)
   }
 

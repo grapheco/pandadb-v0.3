@@ -27,14 +27,14 @@ class PropertyGraphScanImpl(nodeLabelStore: TokenStore,
 
       override def endId: Id = rel.to
 
-      override def relType: String = relLabelStore.key(rel.labelId).get
+      override def relType: String = relLabelStore.key(rel.typeId).get
 
       override def copy(id: Id, source: Id, target: Id, relType: String, properties: CypherMap): this.type = ???
 
       override def properties: CypherMap = {
         var props: Map[String, Any] = null
         if (rel.isInstanceOf[StoredRelationWithProperty]) {
-          props = rel.asInstanceOf[StoredRelationWithProperty].properties
+          props = rel.asInstanceOf[StoredRelationWithProperty].properties.asInstanceOf[Map[String, Any]]
         }
         CypherMap(props.toSeq: _*)
       }

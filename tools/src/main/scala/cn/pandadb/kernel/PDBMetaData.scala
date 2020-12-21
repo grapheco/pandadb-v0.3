@@ -1,3 +1,5 @@
+package cn.pandadb.kernel
+
 /**
  * @Author: Airzihao
  * @Description:
@@ -17,11 +19,13 @@ object PDBMetaData {
   private var _typeCounter: Int = 0
 
   def isPropExists(prop: String): Boolean = _propIdMap.contains(prop)
+
   def isLabelExists(label: String): Boolean = _labelIdMap.contains(label)
+
   def isTypeExists(edgeType: String): Boolean = _typeIdMap.contains(edgeType)
 
   def addProp(prop: String): Int = {
-    if(!isPropExists(prop)){
+    if (!isPropExists(prop)) {
       _propIdMap += (prop -> _propCounter)
       _rPropIdMap += (_propCounter -> prop)
       _propCounter += 1
@@ -30,7 +34,7 @@ object PDBMetaData {
   }
 
   def addLabel(label: String): Int = {
-    if(!isLabelExists(label)){
+    if (!isLabelExists(label)) {
       _labelIdMap += (label -> _labelCounter)
       _rLabelIdMap += (_labelCounter -> label)
       _labelCounter += 1
@@ -39,7 +43,7 @@ object PDBMetaData {
   }
 
   def addType(edgeType: String): Int = {
-    if(!isTypeExists(edgeType)){
+    if (!isTypeExists(edgeType)) {
       _typeIdMap += (edgeType -> _typeCounter)
       _rTypeIdMap += (_typeCounter -> edgeType)
       _typeCounter += 1
@@ -51,6 +55,7 @@ object PDBMetaData {
     if (isPropExists(prop)) _propIdMap.get(prop).get
     else addProp(prop)
   }
+
   def getPropName(propId: Int): String = {
     _rPropIdMap.get(propId).get
   }
@@ -59,6 +64,7 @@ object PDBMetaData {
     if (isLabelExists(label)) _labelIdMap.get(label).get
     else addLabel(label)
   }
+
   def getLabelName(labelId: Int): String = {
     _rLabelIdMap.get(labelId).get
   }
@@ -67,6 +73,7 @@ object PDBMetaData {
     if (isTypeExists(edgeType)) _typeIdMap.get(edgeType).get
     else addType(edgeType)
   }
+
   def getTypeName(typeId: Int): String = {
     _rTypeIdMap.get(typeId).get
   }

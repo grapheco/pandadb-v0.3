@@ -3,18 +3,6 @@ package cn.pandadb.kernel.kv
 import cn.pandadb.kernel.store.{StoredRelationWithProperty}
 import org.rocksdb.RocksDB
 
-case class StoredRelation(id: Long, from: Long, to: Long, typeId: Int, category: Int) {
-}
-
-class StoredRelationWithProperty(override val id: Long,
-                                 override val from: Long,
-                                 override val to: Long,
-                                 override val typeId: Int,
-                                 override val category: Int,
-                                 val properties:Map[Int,Any])
-  extends StoredRelation(id, from, to, typeId, category) {
-}
-
 class RelationInEdgeIndexStore(db: RocksDB) {
   ""/**""
    * in edge data structure
@@ -102,7 +90,7 @@ class RelationInEdgeIndexStore(db: RocksDB) {
       val values = ByteUtils.mapFromBytes(db.get(iter.key()))
       val keys = KeyHandler.parseInEdgeKeyFromBytes(iter.key())
       val relation = new StoredRelationWithProperty(values(RELATION_ID).asInstanceOf[Long], keys._4, keys._1, keys._2,
-        values(RELATION_PROPERTY).asInstanceOf[Map[String, Any]], keys._3)
+        keys._3.toInt, values(RELATION_PROPERTY).asInstanceOf[Map[Int, Any]])
       iter.next()
       relation
     }
@@ -197,7 +185,7 @@ class RelationOutEdgeIndexStore(db: RocksDB) {
       val values = ByteUtils.mapFromBytes(db.get(iter.key()))
       val keys = KeyHandler.parseOutEdgeKeyFromBytes(iter.key())
       val relation = new StoredRelationWithProperty(values(RELATION_ID).asInstanceOf[Long],
-        keys._1, keys._4, keys._2, values(RELATION_PROPERTY).asInstanceOf[Map[String, Any]], keys._3)
+        keys._1, keys._4, keys._2, keys._3.toInt, values(RELATION_PROPERTY).asInstanceOf[Map[Int, Any]])
       iter.next()
       relation
     }
@@ -224,8 +212,8 @@ class RelationStore(db: RocksDB) {
     if (res != null) {
       val relation = ByteUtils.mapFromBytes(res)
       new StoredRelationWithProperty(relationId, relation("from").asInstanceOf[Long], relation("to").asInstanceOf[Long],
-        relation("labelId").asInstanceOf[Int], relation("property").asInstanceOf[Map[String, Any]],
-        relation("category").asInstanceOf[Long])
+        relation("labelId").asInstanceOf[Int],
+        relation("category").asInstanceOf[Int], relation("property").asInstanceOf[Map[Int, Any]])
     }
     else throw new NoRelationGetException
   }
@@ -253,8 +241,8 @@ class RelationStore(db: RocksDB) {
 
           val relationId = ByteUtils.getLong(keyBytes, 1)
           new StoredRelationWithProperty(relationId, relation("from").asInstanceOf[Long], relation("to").asInstanceOf[Long],
-            relation("labelId").asInstanceOf[Int], relation("property").asInstanceOf[Map[String, Any]],
-            relation("category").asInstanceOf[Long]
+            relation("labelId").asInstanceOf[Int], relation("category").asInstanceOf[Int],
+            relation("property").asInstanceOf[Map[Int, Any]]
           )
         }
         iter.next()

@@ -1,9 +1,12 @@
+package cn.pandadb.tools.importer
+
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import cn.pandadb.kernel.kv.{RelationStore, RocksDBGraphAPI}
-import org.rocksdb.RocksDB
+import cn.pandadb.kernel.PDBMetaData
+import cn.pandadb.kernel.kv.RocksDBGraphAPI
+import org.rocksdb.{WriteBatch, WriteOptions}
 
 import scala.io.Source
 
@@ -19,23 +22,28 @@ import scala.io.Source
  * protocol: :relId(long), :fromId(long), :toId(long), :edgetype(string), propName1:type, ...
  */
 case class TempEdge(relId: Long, fromId: Long, toId: Long, edgeType: Int, propMap: Map[String, Any])
-class PEdgeImporter(edgeFile: File, hFile: File, rocksDBGraphAPI: RocksDBGraphAPI) {
+class PEdgeImporter(edgeFile: File, hFile: File, rocksDBGraphAPI: RocksDBGraphAPI) extends Importer {
   val file: File = edgeFile
   val headFile: File = hFile
   var propSortArr: Array[String] = null
   val headMap: Map[String, String] = _setEdgeHead()
 
   def importEdges(): Unit ={
+    val estEdgeCount: Long = estLineCount(file)
     val iter = Source.fromFile(edgeFile).getLines()
     var i = 0
+
+    val writeOpt = new WriteOptions()
+    val batch = new WriteBatch()
+
     while (iter.hasNext) {
-      if(i%20000000 == 0){
+      if(i%10000000 == 0){
         val time1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
-        println(s"${i/20000000}% edges imported. $time1")
+        println(s"${i/10000000}kw of $estEdgeCount(est) edges imported. $time1")
       }
       i += 1
       val tempEdge = _wrapEdge(iter.next().replace("\n", "").split(","))
-//      rocksDBGraphAPI.addRelation(tempEdge.relId, tempEdge.fromId, tempEdge.toId, tempEdge.edgeType, tempEdge.propMap)
+      rocksDBGraphAPI.addRelation(tempEdge.relId, tempEdge.fromId, tempEdge.toId, tempEdge.edgeType, tempEdge.propMap)
     }
   }
 

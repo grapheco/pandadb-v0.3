@@ -1,3 +1,5 @@
+package cn.pandadb.tools.importer
+
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -11,12 +13,12 @@ import cn.pandadb.kernel.kv.RocksDBGraphAPI
  * @Modified By:
  */
 object PandaImporter {
-  val srcNodeFile = new File("G://dataset//nodes-1B-wrapped.csv")
+  val srcNodeFile = new File("D://GitSpace//ScalaUtils//nodes50M-wrapped.csv")
   val srcEdgeFile = new File("G://dataset//edges-1B-wrapped.csv")
   val headNodeFile = new File("G://dataset//nodes-1k-wrapped-head.csv")
   val headEdgeFile = new File("G://dataset//edges-1k-wrapped-head.csv")
 
-  val dbPath = "C:\\PandaDB\\base_1B"
+  val dbPath = "C:\\PandaDB\\base_g500"
   val rocksDBGraphAPI = new RocksDBGraphAPI(dbPath)
 
   def main(args: Array[String]): Unit = {
@@ -27,7 +29,7 @@ object PandaImporter {
     nodeImporter.importNodes()
     val time2 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
     println(time2)
-    edgeImporter.importEdges()
+    //    edgeImporter.importEdges()
     val time3 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
     println(time3)
   }

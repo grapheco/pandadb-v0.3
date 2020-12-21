@@ -11,7 +11,7 @@ trait GraphService {
 
   def addNode(nodeProps: Map[String, Any], labels: String*): this.type
 
-  def addRelation(label: String, from: Long, to: Long, relProps: Map[String, Any]): this.type
+  def addRelation(label: String, from: Long, to: Long, category: Int, relProps: Map[String, Any]): this.type
 
   def deleteNode(id: Id): this.type
 

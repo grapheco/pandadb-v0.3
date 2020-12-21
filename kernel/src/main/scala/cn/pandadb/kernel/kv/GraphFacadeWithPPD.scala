@@ -56,7 +56,7 @@ class GraphFacadeWithPPD(
     nodeId
   }
 
-  override def addRelation(label: String, from: Long, to: Long, relProps: Map[String, Any]): this.type = {
+  override def addRelation(label: String, from: Long, to: Long, category: Int, relProps: Map[String, Any]): this.type = {
     val rid = relIdGen.nextId()
     val labelId = relLabelStore.id(label)
 //    val rel = StoredRelation(rid, from, to, labelId)
