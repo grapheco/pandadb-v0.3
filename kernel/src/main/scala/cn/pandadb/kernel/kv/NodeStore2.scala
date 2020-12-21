@@ -1,6 +1,6 @@
 package cn.pandadb.kernel.kv
 
-import cn.pandadb.kernel.util.BaseSerializer
+import cn.pandadb.kernel.util.serializer.BaseSerializer
 import org.rocksdb.{ReadOptions, RocksDB}
 
 import scala.collection.mutable

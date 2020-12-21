@@ -24,17 +24,34 @@ class NodeLabelIndex2(db: RocksDB) {
   def seek(labelId: Int): Iterator[(Long, Array[Byte])] = {
     val keyPrefix = KeyHandler.nodeLabelIndexKeyPrefixToBytes(labelId)
 
-    val readOptions = new ReadOptions()
-    readOptions.setPrefixSameAsStart(true)
-    readOptions.setTotalOrderSeek(true)
-    val iter = db.newIterator(readOptions)
+//    val readOptions = new ReadOptions()
+//    readOptions.setPrefixSameAsStart(true)
+//    readOptions.setTotalOrderSeek(true)
+//    val iter = db.newIterator(readOptions)
+    val iter = db.newIterator()
     iter.seek(keyPrefix)
 
     new Iterator[(Long, Array[Byte])] (){
-      override def hasNext: Boolean = iter.isValid() && iter.key().startsWith(keyPrefix)
+      override def hasNext: Boolean = iter.isValid && iter.key().startsWith(keyPrefix)
 
       override def next(): (Long, Array[Byte]) = {
         val ret = (ByteUtils.getLong(iter.key(), keyPrefix.length), iter.value())
+        iter.next()
+        ret
+      }
+    }
+  }
+
+  def seekKey(labelId: Int): Iterator[Long] = {
+    val keyPrefix = KeyHandler.nodeLabelIndexKeyPrefixToBytes(labelId)
+    val iter = db.newIterator()
+    iter.seek(keyPrefix)
+
+    new Iterator[Long] (){
+      override def hasNext: Boolean = iter.isValid && iter.key().startsWith(keyPrefix)
+
+      override def next(): Long = {
+        val ret = ByteUtils.getLong(iter.key(), keyPrefix.length)
         iter.next()
         ret
       }
