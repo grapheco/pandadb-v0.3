@@ -1,7 +1,7 @@
 import java.io.File
 
 import cn.pandadb.kernel.PDBMetaData
-import cn.pandadb.kernel.kv.{RelationStore, RocksDBGraphAPI, RocksDBStorage}
+import cn.pandadb.kernel.kv.{RocksDBGraphAPI, RocksDBStorage}
 import cn.pandadb.tools.importer.PEdgeImporter
 import org.junit.{Assert, Test}
 

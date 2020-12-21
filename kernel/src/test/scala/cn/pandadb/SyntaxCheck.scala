@@ -1,18 +1,19 @@
 package cn.pandadb
 
-import cn.pandadb.kernel.kv.{GraphFacadeWithPPD, NodeLabelStore, PropertyNameStore, RelationLabelStore, RocksDBGraphAPI, TokenStore}
+import cn.pandadb.kernel.kv.{GraphFacadeWithPPD, RocksDBGraphAPI}
 import cn.pandadb.kernel.store.FileBasedIdGen
 import org.apache.commons.io.FileUtils
 import org.junit.{After, Before, Test}
 import org.apache.commons.csv.CSVFormat
 import java.io.FileReader
-
 import java.io.File
 
+import cn.pandadb.kernel.kv.name.{NodeLabelNameStore, PropertyNameStore, RelationTypeNameStore, NameStore}
+
 class SyntaxCheck {
-  var nodeLabelStore: TokenStore = _
-  var relLabelStore: TokenStore = _
-  var propNameStore: TokenStore = _
+  var nodeLabelStore: NameStore = _
+  var relLabelStore: NameStore = _
+  var propNameStore: NameStore = _
   var graphStore: RocksDBGraphAPI = _
   var graphFacade: GraphFacadeWithPPD = _
 
@@ -23,8 +24,8 @@ class SyntaxCheck {
     new File("./testdata/output/nodelabels").createNewFile()
     new File("./testdata/output/rellabels").createNewFile()
     graphStore = new RocksDBGraphAPI("./testdata/output/rocksdb")
-    nodeLabelStore = new NodeLabelStore(graphStore.getRocksDB)
-    relLabelStore = new RelationLabelStore(graphStore.getRocksDB)
+    nodeLabelStore = new NodeLabelNameStore(graphStore.getRocksDB)
+    relLabelStore = new RelationTypeNameStore(graphStore.getRocksDB)
     propNameStore = new PropertyNameStore(graphStore.getRocksDB)
     graphFacade = new GraphFacadeWithPPD( nodeLabelStore, relLabelStore, propNameStore,
       new FileBasedIdGen(new File("./testdata/output/nodeid"), 100),

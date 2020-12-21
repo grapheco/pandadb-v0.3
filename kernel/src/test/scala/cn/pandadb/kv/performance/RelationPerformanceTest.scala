@@ -2,7 +2,8 @@ package cn.pandadb.kv.performance
 
 import java.io.File
 
-import cn.pandadb.kernel.kv.{ByteUtils, GraphFacadeWithPPD, NodeLabelStore, PandaPropertyGraphScanImpl, PropertyNameStore, RelationLabelStore, RocksDBGraphAPI, TokenStore}
+import cn.pandadb.kernel.kv.name.{NodeLabelNameStore, PropertyNameStore, RelationTypeNameStore, NameStore}
+import cn.pandadb.kernel.kv.{ByteUtils, GraphFacadeWithPPD, PandaPropertyGraphScanImpl, RocksDBGraphAPI}
 import cn.pandadb.kernel.store.{FileBasedIdGen, StoredNode, StoredNodeWithProperty_tobe_deprecated, StoredRelation, StoredRelationWithProperty}
 import cn.pandadb.kernel.util.Profiler
 import org.junit.{Before, Test}
@@ -14,9 +15,9 @@ import scala.io.Source
 import scala.util.Random
 
 class RelationPerformanceTest {
-  var nodeLabelStore: TokenStore = _
-  var relLabelStore: TokenStore = _
-  var propNameStore: TokenStore = _
+  var nodeLabelStore: NameStore = _
+  var relLabelStore: NameStore = _
+  var propNameStore: NameStore = _
   var graphStore: RocksDBGraphAPI = _
 
   var graphFacade: GraphFacadeWithPPD = _
@@ -32,8 +33,8 @@ class RelationPerformanceTest {
 //    graphStore = new RocksDBGraphAPI("D:\\data\\rocksdbGraph500")
     graphStore = new RocksDBGraphAPI("F:\\PandaDB_rocksDB\\graph500")
 
-    nodeLabelStore = new NodeLabelStore(graphStore.getRocksDB)
-    relLabelStore = new RelationLabelStore(graphStore.getRocksDB)
+    nodeLabelStore = new NodeLabelNameStore(graphStore.getRocksDB)
+    relLabelStore = new RelationTypeNameStore(graphStore.getRocksDB)
     propNameStore = new PropertyNameStore(graphStore.getRocksDB)
 
     graphFacade = new GraphFacadeWithPPD(nodeLabelStore, relLabelStore, propNameStore,

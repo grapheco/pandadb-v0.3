@@ -1,5 +1,6 @@
 package cn.pandadb.kernel.kv
 
+import cn.pandadb.kernel.kv.name.NameStore
 import cn.pandadb.kernel.optimizer.PandaPropertyGraphScan
 import cn.pandadb.kernel.store.{FileBasedIdGen, LabelStore, StoredNode, StoredNodeWithProperty_tobe_deprecated, StoredRelation, StoredRelationWithProperty}
 import org.opencypher.lynx.PropertyGraphScan
@@ -8,11 +9,11 @@ import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship
 
 import scala.util.control._
 
-class PropertyGraphScanImpl(nodeLabelStore: TokenStore,
-                                relLabelStore: TokenStore,
-                                nodeIdGen: FileBasedIdGen,
-                                relIdGen: FileBasedIdGen,
-                                graphStore: RocksDBGraphAPI) extends PropertyGraphScan[Long] {
+class PropertyGraphScanImpl(nodeLabelStore: NameStore,
+                            relLabelStore: NameStore,
+                            nodeIdGen: FileBasedIdGen,
+                            relIdGen: FileBasedIdGen,
+                            graphStore: RocksDBGraphAPI) extends PropertyGraphScan[Long] {
   type Id = Long
 
   val loop = new Breaks
@@ -96,12 +97,12 @@ class PropertyGraphScanImpl(nodeLabelStore: TokenStore,
   }
 }
 
-class PandaPropertyGraphScanImpl(    nodeLabelStore: TokenStore,
-                                     relLabelStore: TokenStore,
-                                     propertyNameStore: TokenStore,
-                                     nodeIdGen: FileBasedIdGen,
-                                     relIdGen: FileBasedIdGen,
-                                     graphStore: RocksDBGraphAPI)
+class PandaPropertyGraphScanImpl(nodeLabelStore: NameStore,
+                                 relLabelStore: NameStore,
+                                 propertyNameStore: NameStore,
+                                 nodeIdGen: FileBasedIdGen,
+                                 relIdGen: FileBasedIdGen,
+                                 graphStore: RocksDBGraphAPI)
       extends PropertyGraphScanImpl(nodeLabelStore, relLabelStore, nodeIdGen, relIdGen, graphStore)
       with PandaPropertyGraphScan[Long] {
 

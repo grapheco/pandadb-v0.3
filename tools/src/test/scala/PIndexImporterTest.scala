@@ -1,6 +1,6 @@
 import java.io.File
 
-import cn.pandadb.kernel.kv.{NodeIndex, NodeStore, RocksDBGraphAPI, RocksDBStorage}
+import cn.pandadb.kernel.kv.{RocksDBGraphAPI, RocksDBStorage}
 import cn.pandadb.tools.importer.PNodeImporter
 import org.junit.{Assert, Test}
 

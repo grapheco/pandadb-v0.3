@@ -5,7 +5,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 import cn.pandadb.kernel.PDBMetaData
-import cn.pandadb.kernel.kv.{KeyHandler, NodeValue, RocksDBGraphAPI}
+import cn.pandadb.kernel.kv.node.NodeValue
+import cn.pandadb.kernel.kv.{KeyHandler, RocksDBGraphAPI}
 import cn.pandadb.kernel.util.serializer.NodeSerializer
 import org.rocksdb.{WriteBatch, WriteOptions}
 

@@ -1,5 +1,6 @@
-package cn.pandadb.kernel.kv
+package cn.pandadb.kernel.kv.node
 
+import cn.pandadb.kernel.kv.RocksDBStorage
 import cn.pandadb.kernel.store.StoredNodeWithProperty
 
 class NodeStoreAPI(dbPath: String) {

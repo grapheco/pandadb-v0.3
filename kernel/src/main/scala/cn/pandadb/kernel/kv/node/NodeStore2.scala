@@ -1,5 +1,6 @@
-package cn.pandadb.kernel.kv
+package cn.pandadb.kernel.kv.node
 
+import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler}
 import cn.pandadb.kernel.util.serializer.BaseSerializer
 import org.rocksdb.{ReadOptions, RocksDB}
 
@@ -7,7 +8,7 @@ import scala.collection.mutable
 
 
 class NodeStore2(db: RocksDB)  {
-  // [type,nodeId]->[labelIds]
+  // [type,nodeId,labelId] -> []
 
 
   private def labelIdsToBytes(labelIds: Array[Int]): Array[Byte] = {
@@ -46,7 +47,7 @@ class NodeStore2(db: RocksDB)  {
     iter.seek(keyPrefix)
 
     new Iterator[(Long, Array[Int])] (){
-      override def hasNext: Boolean = iter.isValid() && iter.key().startsWith(keyPrefix)
+      override def hasNext: Boolean = iter.isValid && iter.key().startsWith(keyPrefix)
 
       override def next(): (Long, Array[Int]) = {
         val ret = (ByteUtils.getLong(iter.key(), keyPrefix.length), labelIdsFromBytes(iter.value()))

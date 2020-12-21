@@ -3,7 +3,10 @@ package cn.pandadb.kernel.kv
 import java.io.File
 import java.nio.file.Path
 
-import cn.pandadb.kernel.kv.NodeIndex.IndexId
+import cn.pandadb.kernel.kv.index.NodeIndex
+import cn.pandadb.kernel.kv.index.NodeIndex.IndexId
+import cn.pandadb.kernel.kv.node.{NodeLabelIndex, NodeStore}
+import cn.pandadb.kernel.kv.relation.{RelationInEdgeIndexStore, RelationLabelIndex, RelationOutEdgeIndexStore, RelationStore}
 import cn.pandadb.kernel.{GraphRAM, NodeId, PropertyStore, TypedId}
 import cn.pandadb.kernel.store.{MergedChanges, StoredNode, StoredNodeWithProperty_tobe_deprecated, StoredRelation, StoredRelationWithProperty}
 import org.rocksdb.RocksDB

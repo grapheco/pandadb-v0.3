@@ -1,6 +1,6 @@
 package cn.pandadb.util.serializer
 
-import cn.pandadb.kernel.kv.NodeValue
+import cn.pandadb.kernel.kv.node.NodeValue
 import cn.pandadb.kernel.util.serializer.ChillSerializer
 import org.junit.{Assert, Test}
 

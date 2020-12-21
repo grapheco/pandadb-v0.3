@@ -2,7 +2,8 @@ package cn.pandadb.kv
 
 import java.io.File
 
-import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler, NoRelationGetException, RelationStore, RocksDBStorage}
+import cn.pandadb.kernel.kv.relation.{NoRelationGetException, RelationStore}
+import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler, RocksDBStorage}
 import org.apache.commons.io.FileUtils
 import org.junit.{After, Assert, Before, Test}
 import org.rocksdb.RocksDB

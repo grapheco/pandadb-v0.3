@@ -2,7 +2,8 @@ package cn.pandadb.kv
 
 import java.nio.ByteBuffer
 
-import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler, NodeIndex, RocksDBStorage}
+import cn.pandadb.kernel.kv.index.NodeIndex
+import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler, RocksDBStorage}
 import org.junit.{After, Assert, Before, Test}
 import org.rocksdb.{ReadOptions, RocksDB}
 import org.apache.commons.lang3.RandomStringUtils

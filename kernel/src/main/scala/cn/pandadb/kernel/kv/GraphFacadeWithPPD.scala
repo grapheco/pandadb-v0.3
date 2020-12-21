@@ -1,6 +1,7 @@
 package cn.pandadb.kernel.kv
 
 import cn.pandadb.kernel.GraphService
+import cn.pandadb.kernel.kv.name.NameStore
 import cn.pandadb.kernel.optimizer.PandaCypherSession
 import cn.pandadb.kernel.store._
 import org.apache.logging.log4j.scala.Logging
@@ -10,13 +11,13 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship}
 
 class GraphFacadeWithPPD(
-                   nodeLabelStore: TokenStore,
-                   relLabelStore: TokenStore,
-                   propertyNameStore: TokenStore,
-                   nodeIdGen: FileBasedIdGen,
-                   relIdGen: FileBasedIdGen,
-                   graphStore: RocksDBGraphAPI,
-                   onClose: => Unit
+                          nodeLabelStore: NameStore,
+                          relLabelStore: NameStore,
+                          propertyNameStore: NameStore,
+                          nodeIdGen: FileBasedIdGen,
+                          relIdGen: FileBasedIdGen,
+                          graphStore: RocksDBGraphAPI,
+                          onClose: => Unit
                  ) extends Logging with GraphService {
 
   private val propertyGraph = new PandaCypherSession().createPropertyGraph(new PandaPropertyGraphScanImpl(
