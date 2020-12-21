@@ -36,6 +36,10 @@ object RelationSerializer extends BaseSerializer {
     bytes
   }
 
+  def serialize(relation: StoredRelationWithProperty): Array[Byte] = {
+    serialize(relation.id, relation.from, relation.to, relation.typeId, relation.typeId, relation.properties)
+  }
+
   def deserializeRelWithProps(bytesArray: Array[Byte]): StoredRelationWithProperty = {
     val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytesArray)
     val relationId: Long = byteBuf.readLong()
