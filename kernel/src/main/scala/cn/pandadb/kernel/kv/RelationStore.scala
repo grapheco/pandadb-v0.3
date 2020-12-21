@@ -3,6 +3,18 @@ package cn.pandadb.kernel.kv
 import cn.pandadb.kernel.store.{StoredRelationWithProperty}
 import org.rocksdb.RocksDB
 
+case class StoredRelation(id: Long, from: Long, to: Long, typeId: Int, category: Int) {
+}
+
+class StoredRelationWithProperty(override val id: Long,
+                                 override val from: Long,
+                                 override val to: Long,
+                                 override val typeId: Int,
+                                 override val category: Int,
+                                 val properties:Map[Int,Any])
+  extends StoredRelation(id, from, to, typeId, category) {
+}
+
 class RelationInEdgeIndexStore(db: RocksDB) {
   ""/**""
    * in edge data structure

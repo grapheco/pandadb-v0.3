@@ -24,7 +24,7 @@ object RelationSerializer extends ObjectSerializer[StoredRelation] {
     StoredRelation(buf.readInt40(), buf.readInt40(), buf.readInt40(), buf.readInt())
 
   override def writeObject(buf: ByteBuf, t: StoredRelation): Unit = {
-    buf.writeInt40(t.id).writeInt40(t.from).writeInt40(t.to).writeInt(t.labelId)
+    buf.writeInt40(t.id).writeInt40(t.from).writeInt40(t.to).writeInt(t.typeId)
   }
 }
 
@@ -104,18 +104,6 @@ class StoredNodeWithProperty_tobe_deprecated(override val id: Long,
                                              override val labelIds: Array[Int],
                                              val properties:Map[String,Any])
   extends StoredNode(id, labelIds){
-}
-
-case class StoredRelation(id: Long, from: Long, to: Long, labelId: Int) {
-}
-
-class StoredRelationWithProperty(override val id: Long,
-                                 override val from: Long,
-                                 override val to: Long,
-                                 override val labelId: Int,
-                                 val properties:Map[String,Any],
-                                 val category: Long)
-  extends StoredRelation(id, from, to, labelId) {
 }
 
 case class StoredLabel(key: String, value: Int) {
