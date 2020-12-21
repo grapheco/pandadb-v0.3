@@ -1,3 +1,4 @@
+import cn.pandadb.kernel.PDBMetaData
 import org.junit.Test
 
 /**

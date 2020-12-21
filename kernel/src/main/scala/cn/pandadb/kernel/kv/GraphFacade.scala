@@ -30,7 +30,7 @@ class GraphFacade(
 
         override def endId: Id = rel.to
 
-        override def relType: String = relLabelStore.key(rel.labelId).get
+        override def relType: String = relLabelStore.key(rel.typeId).get
 
         override def copy(id: Id, source: Id, target: Id, relType: String, properties: CypherMap): this.type = ???
 
@@ -38,7 +38,7 @@ class GraphFacade(
         override def properties: CypherMap = {
           var props: Map[String, Any] = null
           if (rel.isInstanceOf[StoredRelationWithProperty]) {
-            props = rel.asInstanceOf[StoredRelationWithProperty].properties
+            props = rel.asInstanceOf[StoredRelationWithProperty].properties.asInstanceOf[Map[String, Any]]
           }
           CypherMap(props.toSeq: _*)
         }
@@ -137,7 +137,7 @@ class GraphFacade(
     this
   }
 
-  override def addRelation(label: String, from: Long, to: Long, relProps: Map[String, Any]): this.type = {
+  override def addRelation(label: String, from: Long, to: Long, category: Int, relProps: Map[String, Any]): this.type = {
     val rid = relIdGen.nextId()
     val labelId = relLabelStore.id(label)
 //    val rel = StoredRelation(rid, from, to, labelId)

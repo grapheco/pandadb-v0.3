@@ -1,5 +1,6 @@
 package cn.pandadb.kernel
 
+//import cn.pandadb.kernel.kv.StoredRelation
 import cn.pandadb.kernel.store.{MergedGraphChanges, _}
 import org.apache.logging.log4j.scala.Logging
 import org.opencypher.lynx.{LynxSession, PropertyGraphScan}
@@ -31,7 +32,7 @@ class GraphFacade(
 
         override def endId: Id = rel.to
 
-        override def relType: String = relLabelStore.key(rel.labelId).get
+        override def relType: String = relLabelStore.key(rel.typeId).get
 
         override def copy(id: Id, source: Id, target: Id, relType: String, properties: CypherMap): this.type = ???
 
@@ -114,10 +115,10 @@ class GraphFacade(
     this
   }
 
-  override def addRelation(label: String, from: Long, to: Long, relProps: Map[String, Any]): this.type = {
+  override def addRelation(label: String, from: Long, to: Long, category: Int, relProps: Map[String, Any]): this.type = {
     val rid = relIdGen.nextId()
     val labelId = relLabelStore.id(label)
-    val rel = StoredRelation(rid, from, to, labelId)
+    val rel = StoredRelation(rid, from, to, labelId, category)
     //TODO: transaction safe
     logStore.append(CreateRelation(rel))
     props.insert(RelationId(rid), relProps)

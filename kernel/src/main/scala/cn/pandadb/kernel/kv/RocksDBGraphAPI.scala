@@ -32,6 +32,10 @@ class RocksDBGraphAPI(dbPath: String) {
 
   def getRocksDB: RocksDB = rocksDB
 
+  def getNodeStoreDB: RocksDB = nodeDB
+  def getInEdgeStoreDB: RocksDB = inEdgeDB
+  def getOutEdgeStoreDB: RocksDB = outEdgeDB
+
   def clear(): Unit = {
   }
 
@@ -45,6 +49,7 @@ class RocksDBGraphAPI(dbPath: String) {
     nodeIndexDB.close()
     rocksDB.close()
   }
+
 
   // node operations
 //  def addNode(t: StoredNode): Unit = {
@@ -69,10 +74,6 @@ class RocksDBGraphAPI(dbPath: String) {
     nodeStore.get(id)
   }
 
-//  def nodes(): Iterator[StoredNode] = {
-//    nodeStore.all()
-//  }
-
   def findNodes(labelId: Int): Iterator[Long] = {
     nodeLabelIndex.getNodes(labelId)
   }
@@ -83,17 +84,17 @@ class RocksDBGraphAPI(dbPath: String) {
 
   // relation operations
   def addRelation(t: StoredRelation): Unit = {
-    relationStore.setRelation(t.id, t.from, t.to, t.labelId, 0, null)
+    relationStore.setRelation(t.id, t.from, t.to, t.typeId, 0, null)
 
-    relationInEdgeIndex.setIndex(t.from, t.labelId, 0, t.to, t.id, null)
-    relationOutEdgeIndex.setIndex(t.from, t.labelId, 0, t.to, t.id, null)
+    relationInEdgeIndex.setIndex(t.from, t.typeId, 0, t.to, t.id, null)
+    relationOutEdgeIndex.setIndex(t.from, t.typeId, 0, t.to, t.id, null)
   }
 
   def addRelation(t: StoredRelationWithProperty): Unit = {
-    relationStore.setRelation(t.id, t.from, t.to, t.labelId, t.category, t.properties)
+    relationStore.setRelation(t.id, t.from, t.to, t.typeId, t.category, t.properties.asInstanceOf[Map[String, Any]])
 
-    relationInEdgeIndex.setIndex(t.from, t.labelId, 0, t.to, t.id, t.properties)
-    relationOutEdgeIndex.setIndex(t.from, t.labelId, 0, t.to, t.id, t.properties)
+    relationInEdgeIndex.setIndex(t.from, t.typeId, 0, t.to, t.id, t.properties.asInstanceOf[Map[String, Any]])
+    relationOutEdgeIndex.setIndex(t.from, t.typeId, 0, t.to, t.id, t.properties.asInstanceOf[Map[String, Any]])
   }
 
   def addRelation(relId: Long, from: Long, to: Long, labelId: Int, propeties: Map[String, Any]): Unit = {
@@ -107,13 +108,10 @@ class RocksDBGraphAPI(dbPath: String) {
     val relation = relationStore.getRelation(id)
     relationStore.deleteRelation(id)
 
-    relationInEdgeIndex.deleteIndex(relation.from, relation.labelId, relation.category, relation.to)
-    relationOutEdgeIndex.deleteIndex(relation.from, relation.labelId, relation.category, relation.to)
+    relationInEdgeIndex.deleteIndex(relation.from, relation.typeId, relation.category, relation.to)
+    relationOutEdgeIndex.deleteIndex(relation.from, relation.typeId, relation.category, relation.to)
 
   }
-//
-//  def deleteRelation(fromNode: Long, toNode: Long, labelId: Long, category: Long): Unit= {
-//  }
 
   def relationAt(id: Long): StoredRelation = {
     relationStore.getRelation(id)
@@ -240,31 +238,4 @@ class RocksDBGraphAPI(dbPath: String) {
   def getAllRelsCnt(): Long ={
     statInoStore.getAllRelCnt()
   }
-
-
-
-//  // below is the code added by zhaozihao, for possible further use.
-//  def relsFrom(id: Long): Iterable[StoredRelation] = ???
-//  def relsTo(id: Long): Iterable[StoredRelation] = ???
-//
-//  def searchByLabel(label: Label): Iterable[StoredNode] = ???
-//  def searchByType(t: Type): Iterable[StoredRelation] = ???
-//
-//  //essential? could check whether index available in implemantion.
-//  def searchByIndexedProperty(stat: Stat): Iterable[StoredNode] = ???
-//  def searchByCategory(category: Category): Iterable[StoredRelation] = ???
-//
-//  def searchByProp(stat: Stat): Iterable[StoredNode] = ???
-
-
-
-
-
 }
-
-
-//case class Label(label: String)
-//case class Type(t: String)
-//
-//case class Stat()
-//case class Category()
