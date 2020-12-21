@@ -1,6 +1,7 @@
 import java.io.File
 
 import cn.pandadb.kernel.PDBMetaData
+import cn.pandadb.kernel.kv.RocksDBGraphAPI
 import org.junit.{Assert, FixMethodOrder, Test}
 
 /**
@@ -15,6 +16,7 @@ class PDBMetaDataTest {
   pdbMetaData.addProp("name")
   val mmap: Map[String, Int] = Map[String, Int]("name" -> 0)
   val persistFile: File = new File("./src/test/output/metadata.bin")
+  val api: RocksDBGraphAPI = new RocksDBGraphAPI("./src/test/output/testdb")
 
   @Test
   def getPerformace(): Unit = {
@@ -38,12 +40,13 @@ class PDBMetaDataTest {
     pdbMetaData.getPropId("age")
     pdbMetaData.getLabelId("label0")
     pdbMetaData.getLabelId("label1")
-    pdbMetaData.persist(persistFile)
+    pdbMetaData.persist(api.getMetaDB)
   }
 
+  // write and read rocksDB takes much time. Better to persist the PDBMetaData in a naive file.
   @Test
   def test2(): Unit = {
-    pdbMetaData.init(persistFile)
+    pdbMetaData.init(api.getMetaDB)
     Assert.assertEquals(0, pdbMetaData.getLabelId("label0"))
     Assert.assertEquals(1, pdbMetaData.getLabelId("label1"))
     Assert.assertEquals(0, pdbMetaData.getPropId("name"))

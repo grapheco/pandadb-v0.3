@@ -3,6 +3,7 @@ package cn.pandadb.kernel
 import java.io.{File, FileInputStream, FileOutputStream}
 
 import cn.pandadb.kernel.util.serializer.ChillSerializer
+import org.rocksdb.RocksDB
 
 /**
  * @Author: Airzihao
@@ -22,30 +23,27 @@ object PDBMetaData {
   private var _labelCounter: Int = 0
   private var _typeCounter: Int = 0
 
-  def persist(persistFile: File): Unit = {
+  def persist(rocksDB: RocksDB): Unit = {
     val metaData: Map[String, Any] = Map("_propIdMap" -> _propIdMap, "_rPropIdMap" -> _rPropIdMap,
       "_labelIdMap" -> _labelIdMap, "_rLabelIdMap" -> _rLabelIdMap,
       "_typeIdMap" -> _typeIdMap, "_rTypeIdMap" -> _rTypeIdMap,
       "_propCounter" -> _propCounter, "_labelCounter" -> _labelCounter, "_typeCounter" -> _typeCounter)
     val bytes: Array[Byte] = ChillSerializer.serialize(metaData)
-    persistFile.delete()
-    new FileOutputStream(persistFile).write(bytes)
+    rocksDB.put("meta".getBytes(), bytes)
   }
-  def init(persistFile: File): Unit = {
-    if(persistFile.exists()) {
-      val bytes: Array[Byte] = new Array[Byte](persistFile.length().toInt)
-      new FileInputStream(persistFile).read(bytes)
-      val metaData: Map[String, Any] = ChillSerializer.deserialize(bytes, classOf[Map[String, Any]])
-      _propIdMap = metaData.get("_propIdMap").get.asInstanceOf[Map[String, Int]]
-      _rPropIdMap = metaData.get("_rPropIdMap").get.asInstanceOf[Map[Int, String]]
-      _labelIdMap = metaData.get("_labelIdMap").get.asInstanceOf[Map[String, Int]]
-      _rLabelIdMap = metaData.get("_rLabelIdMap").get.asInstanceOf[Map[Int, String]]
-      _typeIdMap = metaData.get("_typeIdMap").get.asInstanceOf[Map[String, Int]]
-      _rTypeIdMap = metaData.get("_rTypeIdMap").get.asInstanceOf[Map[Int, String]]
-      _propCounter = metaData.get("_propCounter").get.asInstanceOf[Int]
-      _labelCounter = metaData.get("_labelCounter").get.asInstanceOf[Int]
-      _typeCounter = metaData.get("_typeCounter").get.asInstanceOf[Int]
-    }
+
+  def init(rocksDB: RocksDB): Unit = {
+    val bytes: Array[Byte] = rocksDB.get("meta".getBytes())
+    val metaData: Map[String, Any] = ChillSerializer.deserialize(bytes, classOf[Map[String, Any]])
+    _propIdMap = metaData.get("_propIdMap").get.asInstanceOf[Map[String, Int]]
+    _rPropIdMap = metaData.get("_rPropIdMap").get.asInstanceOf[Map[Int, String]]
+    _labelIdMap = metaData.get("_labelIdMap").get.asInstanceOf[Map[String, Int]]
+    _rLabelIdMap = metaData.get("_rLabelIdMap").get.asInstanceOf[Map[Int, String]]
+    _typeIdMap = metaData.get("_typeIdMap").get.asInstanceOf[Map[String, Int]]
+    _rTypeIdMap = metaData.get("_rTypeIdMap").get.asInstanceOf[Map[Int, String]]
+    _propCounter = metaData.get("_propCounter").get.asInstanceOf[Int]
+    _labelCounter = metaData.get("_labelCounter").get.asInstanceOf[Int]
+    _typeCounter = metaData.get("_typeCounter").get.asInstanceOf[Int]
   }
 
   def isPropExists(prop: String): Boolean = _propIdMap.contains(prop)

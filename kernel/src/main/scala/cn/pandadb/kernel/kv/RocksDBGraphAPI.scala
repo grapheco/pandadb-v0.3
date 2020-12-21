@@ -38,6 +38,7 @@ class RocksDBGraphAPI(dbPath: String) {
   def getNodeStoreDB: RocksDB = nodeDB
   def getInEdgeStoreDB: RocksDB = inEdgeDB
   def getOutEdgeStoreDB: RocksDB = outEdgeDB
+  def getMetaDB: RocksDB = rocksDB
 
   def clear(): Unit = {
   }
