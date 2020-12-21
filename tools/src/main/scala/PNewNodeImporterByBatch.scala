@@ -52,10 +52,13 @@ class PNewNodeImporterByBatch(dbPath: String, nodeFile: File, nodeHeadFile: File
       i += 1;
 
       val tempNode = _wrapNode(iter.next().replace("\n", "").split(","))
+      val valueBytes = BaseSerializer.intArrayMap2Bytes(tempNode.labels, tempNode.properties)
       tempNode.labels.foreach(labelId => {
         val keyBytes = KeyHandler.newNodeKeyToBytes(labelId, tempNode.id)
-        batchNode.put(keyBytes, BaseSerializer.intArrayMap2Bytes(tempNode.labels, tempNode.properties))
+        batchNode.put(keyBytes, valueBytes)
       })
+      val keyBytes = KeyHandler.newNodeKeyToBytes(NONE_LABEL_ID, tempNode.id)
+      batchNode.put(keyBytes, valueBytes)
 
       if (i % 100000 == 0) {
         nodeDB.write(writeOptions, batchNode)
