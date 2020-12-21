@@ -1,1 +1,1 @@
-relId,fromId:START_ID,toId:END_ID,type:TYPE,fromId_num:long,toId_str,weight:int
+relId,fromId:START_ID,toId:END_ID,type:TYPE,category:int,fromId_num:long,toId_str,weight:int

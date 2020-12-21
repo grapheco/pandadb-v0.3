@@ -65,6 +65,4 @@ object RelationSerializer extends BaseSerializer {
   // todo: add below funcs
   // only from
   // only to
-
-
 }

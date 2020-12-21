@@ -57,8 +57,9 @@ class PNodeImporter(nodeFile: File, hFile : File, rocksDBGraphAPI: RocksDBGraphA
         rocksDBGraphAPI.getNodeStoreDB.write(writeOpt, batch)
         batch.clear()
       }
-
     }
+    rocksDBGraphAPI.getNodeStoreDB.write(writeOpt, batch)
+    batch.clear()
   }
 
   private def _setNodeHead(): Map[String, String] = {
