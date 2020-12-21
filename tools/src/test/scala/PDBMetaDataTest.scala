@@ -1,5 +1,7 @@
+import java.io.File
+
 import cn.pandadb.kernel.PDBMetaData
-import org.junit.Test
+import org.junit.{Assert, FixMethodOrder, Test}
 
 /**
  * @Author: Airzihao
@@ -7,10 +9,12 @@ import org.junit.Test
  * @Date: Created at 20:08 2020/12/3
  * @Modified By:
  */
+@FixMethodOrder
 class PDBMetaDataTest {
   val pdbMetaData = PDBMetaData
   pdbMetaData.addProp("name")
   val mmap: Map[String, Int] = Map[String, Int]("name" -> 0)
+  val persistFile: File = new File("./src/test/output/metadata.bin")
 
   @Test
   def getPerformace(): Unit = {
@@ -26,6 +30,24 @@ class PDBMetaDataTest {
     val time2 = System.currentTimeMillis()
     println(time1 - time0)
     println(time2 - time1)
+  }
+
+  @Test
+  def test1(): Unit = {
+    pdbMetaData.getPropId("name")
+    pdbMetaData.getPropId("age")
+    pdbMetaData.getLabelId("label0")
+    pdbMetaData.getLabelId("label1")
+    pdbMetaData.persist(persistFile)
+  }
+
+  @Test
+  def test2(): Unit = {
+    pdbMetaData.init(persistFile)
+    Assert.assertEquals(0, pdbMetaData.getLabelId("label0"))
+    Assert.assertEquals(1, pdbMetaData.getLabelId("label1"))
+    Assert.assertEquals(0, pdbMetaData.getPropId("name"))
+    Assert.assertEquals("age", pdbMetaData.getPropName(1))
   }
 
 
