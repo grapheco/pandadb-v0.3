@@ -1,6 +1,6 @@
 package cn.pandadb.kernel.store
 
-import cn.pandadb.kernel.util.BaseSerializer
+import cn.pandadb.kernel.util.serializer.BaseSerializer
 
 
 trait ReadOnlyNode {
@@ -42,7 +42,6 @@ class LazyWritableNode(id: Long, nodeStoreSpi: NodeStoreSPI) extends LazyNode(id
   }
 
 }
-
 
 class SerializedNode(id:Long,
                      override val labelIdsBytes: Array[Byte],
