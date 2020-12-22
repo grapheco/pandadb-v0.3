@@ -1,7 +1,7 @@
 package cn.pandadb.kernel.util.serializer
 
 import cn.pandadb.kernel.kv.KeyHandler.KeyType
-import cn.pandadb.kernel.kv.node.NodeValue
+import cn.pandadb.kernel.store.StoredNodeWithProperty
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
 
 /**
@@ -18,7 +18,6 @@ object NodeSerializer extends BaseSerializer {
 
   def serialize(nodeId: Long): Array[Byte] = {
     val byteBuf: ByteBuf = allocator.heapBuffer()
-    byteBuf.writeByte(KeyType.Node.id.toByte)
     byteBuf.writeLong(nodeId)
     val bytes = _exportBytes(byteBuf)
     byteBuf.release()
@@ -27,7 +26,6 @@ object NodeSerializer extends BaseSerializer {
 
   def serialize(labelId: Int, nodeId: Long): Array[Byte] = {
     val byteBuf: ByteBuf = allocator.heapBuffer()
-    byteBuf.writeByte(KeyType.Node.id.toByte)
     byteBuf.writeInt(labelId)
     byteBuf.writeLong(nodeId)
     val bytes = _exportBytes(byteBuf)
@@ -35,7 +33,7 @@ object NodeSerializer extends BaseSerializer {
     bytes
   }
 
-  def serialize(nodeValue: NodeValue): Array[Byte] = {
+  def serialize(nodeValue: StoredNodeWithProperty): Array[Byte] = {
     val byteBuf: ByteBuf = allocator.heapBuffer()
     byteBuf.writeLong(nodeValue.id)
     _writeLabels(nodeValue.labelIds, byteBuf)
@@ -46,18 +44,17 @@ object NodeSerializer extends BaseSerializer {
     bytes
   }
 
-  def deserializeNodeValue(byteArr: Array[Byte]): NodeValue = {
+  def deserializeNodeValue(byteArr: Array[Byte]): StoredNodeWithProperty = {
     val byteBuf = Unpooled.wrappedBuffer(byteArr)
     val id = byteBuf.readLong()
     val labels: Array[Int] = _readLabels(byteBuf)
     val props: Map[Int, Any] = _readProps(byteBuf)
     byteBuf.release()
-    new NodeValue(id, labels, props)
+    new StoredNodeWithProperty(id, labels, props)
   }
 
   def deserializeNodeKey(byteArr: Array[Byte]): Long = {
     val byteBuf = Unpooled.wrappedBuffer(byteArr)
-    byteBuf.readByte()
     byteBuf.readLong()
   }
 

@@ -2,7 +2,7 @@ package cn.pandadb.kernel.kv
 
 import cn.pandadb.kernel.kv.name.NameStore
 import cn.pandadb.kernel.optimizer.PandaPropertyGraphScan
-import cn.pandadb.kernel.store.{FileBasedIdGen, LabelStore, StoredNode, StoredNodeWithProperty_tobe_deprecated, StoredRelation, StoredRelationWithProperty}
+import cn.pandadb.kernel.store.{FileBasedIdGen, LabelStore, StoredNode, StoredNodeWithProperty, StoredNodeWithProperty_tobe_deprecated, StoredRelation, StoredRelationWithProperty}
 import org.opencypher.lynx.PropertyGraphScan
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship}
@@ -92,7 +92,7 @@ class PropertyGraphScanImpl(nodeLabelStore: NameStore,
     if (relTypes.size>1){
       throw new Exception("PandaDB doesn't support multiple label matching at the same time")
     }
-    val relations: Iterator[Id] = graphStore.findRelations(relLabelStore.ids(relTypes).head)
+    val relations: Iterator[Id] = graphStore.getRelationsByType(relLabelStore.ids(relTypes).head)
     relations.map(relId => mapRelation(graphStore.relationAt(relId))).toIterable
   }
 }
@@ -142,14 +142,15 @@ class PandaPropertyGraphScanImpl(nodeLabelStore: NameStore,
         else {
           val nodes = graphStore.findNodes(labelIds.head)
           val itr = new Iterator[Node[Id]]{
-            var tmpNode: StoredNodeWithProperty_tobe_deprecated = null
+            var tmpNode: StoredNodeWithProperty = null
             private def doNext(): Unit = {
               tmpNode = null
               loop.breakable({
                 while (nodes.hasNext) {
                   val nid = nodes.next()
                   tmpNode = graphStore.nodeAt(nid)
-                  if (tmpNode.properties.contains(p.propName) && tmpNode.properties(p.propName) == p.value ) {
+                  // fixme nodeLabelStore => propStore
+                  if (tmpNode.properties.contains(nodeLabelStore.id(p.propName)) && tmpNode.properties(nodeLabelStore.id(p.propName)) == p.value ) {
                     loop.break()
                   }
                   else {

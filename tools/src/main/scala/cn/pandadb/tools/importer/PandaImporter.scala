@@ -22,8 +22,8 @@ object PandaImporter {
   val rocksDBGraphAPI = new RocksDBGraphAPI(dbPath)
 
   def main(args: Array[String]): Unit = {
-    val nodeImporter = new PNodeImporter(srcNodeFile, headNodeFile, rocksDBGraphAPI)
-    val edgeImporter = new PRelationImporter(srcEdgeFile, headEdgeFile, rocksDBGraphAPI)
+    val nodeImporter = new PNodeImporter(dbPath, srcNodeFile, headNodeFile)
+    val edgeImporter = new PRelationImporter(dbPath, srcEdgeFile, headEdgeFile)
     val time1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
     println(time1)
     nodeImporter.importNodes()

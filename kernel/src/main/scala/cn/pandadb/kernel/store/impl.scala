@@ -22,7 +22,7 @@ object NodeSerializer extends ObjectSerializer[StoredNode] {
 
 object RelationSerializer extends ObjectSerializer[StoredRelation] {
   override def readObject(buf: ByteBuf): StoredRelation =
-    StoredRelation(buf.readInt40(), buf.readInt40(), buf.readInt40(), buf.readInt(), buf.readInt())
+    StoredRelation(buf.readInt40(), buf.readInt40(), buf.readInt40(), buf.readInt())
 
   override def writeObject(buf: ByteBuf, t: StoredRelation): Unit = {
     buf.writeInt40(t.id).writeInt40(t.from).writeInt40(t.to).writeInt(t.typeId)
@@ -111,16 +111,15 @@ case class StoredLabel(key: String, value: Int) {
 
 }
 
-case class StoredRelation(id: Long, from: Long, to: Long, typeId: Int, category: Int) {
+case class StoredRelation(id: Long, from: Long, to: Long, typeId: Int) {
 }
 
 class StoredRelationWithProperty(override val id: Long,
                                  override val from: Long,
                                  override val to: Long,
                                  override val typeId: Int,
-                                 override val category: Int,
                                  val properties:Map[Int,Any])
-  extends StoredRelation(id, from, to, typeId, category) {
+  extends StoredRelation(id, from, to, typeId) {
 }
 
 ///////////////////////////////

@@ -5,28 +5,18 @@ import java.nio.file.Path
 
 import cn.pandadb.kernel.kv.index.NodeIndex
 import cn.pandadb.kernel.kv.index.NodeIndex.IndexId
-import cn.pandadb.kernel.kv.node.{NodeLabelIndex, NodeStore}
-import cn.pandadb.kernel.kv.relation.{RelationInEdgeIndexStore, RelationLabelIndex, RelationOutEdgeIndexStore, RelationStore}
+import cn.pandadb.kernel.kv.node.NodeStoreAPI
+import cn.pandadb.kernel.kv.relation.{ RelationLabelIndex, RelationPropertyStore, RelationStoreAPI}
 import cn.pandadb.kernel.{GraphRAM, NodeId, PropertyStore, TypedId}
-import cn.pandadb.kernel.store.{MergedChanges, StoredNode, StoredNodeWithProperty_tobe_deprecated, StoredRelation, StoredRelationWithProperty}
+import cn.pandadb.kernel.store.{MergedChanges, StoredNode, StoredNodeWithProperty, StoredNodeWithProperty_tobe_deprecated, StoredRelation, StoredRelationWithProperty}
 import org.rocksdb.RocksDB
 import sun.security.util.Length
 
 class RocksDBGraphAPI(dbPath: String) {
   private val rocksDB = RocksDBStorage.getDB(s"${dbPath}/meta")
 
-  private val nodeDB = RocksDBStorage.getDB(s"${dbPath}/nodes")
-  private val nodeStore = new NodeStore(nodeDB)
-  private val relDB = RocksDBStorage.getDB(s"${dbPath}/rels")
-  private val relationStore = new RelationStore(relDB)
-  private val labelIndexDB = RocksDBStorage.getDB(s"${dbPath}/nodeLabelIndex")
-  private val nodeLabelIndex = new NodeLabelIndex(labelIndexDB)
-  private val relIndexDB = RocksDBStorage.getDB(s"${dbPath}/relLabelIndex")
-  private val relationLabelIndex = new RelationLabelIndex(relIndexDB)
-  private val inEdgeDB = RocksDBStorage.getDB(s"${dbPath}/inEdge")
-  private val relationInEdgeIndex = new RelationInEdgeIndexStore(inEdgeDB)
-  private val outEdgeDB = RocksDBStorage.getDB(s"${dbPath}/outEdge")
-  private val relationOutEdgeIndex = new RelationOutEdgeIndexStore(outEdgeDB)
+  private val nodeAPI = new NodeStoreAPI(dbPath)
+  private val relationAPI = new RelationStoreAPI(dbPath)
   private val nodeIndexDB = RocksDBStorage.getDB(s"${dbPath}/nodeIndex")
   private val nodeIndex = new NodeIndex(nodeIndexDB)
 
@@ -35,144 +25,58 @@ class RocksDBGraphAPI(dbPath: String) {
 
   def getRocksDB: RocksDB = rocksDB
 
-  def getNodeStoreDB: RocksDB = nodeDB
-  def getInEdgeStoreDB: RocksDB = inEdgeDB
-  def getOutEdgeStoreDB: RocksDB = outEdgeDB
   def getMetaDB: RocksDB = rocksDB
 
   def clear(): Unit = {
   }
 
   def close(): Unit = {
-    nodeDB.close()
-    relDB.close()
-    labelIndexDB.close()
-    relIndexDB.close()
-    inEdgeDB.close()
-    outEdgeDB.close()
+    nodeAPI.close()
+    relationAPI.close()
     nodeIndexDB.close()
     rocksDB.close()
   }
 
+  def addNode(node: StoredNodeWithProperty): Unit = nodeAPI.addNode(node)
 
-  // node operations
-//  def addNode(t: StoredNode): Unit = {
-//    nodeStore.set(t.id, t.labelIds, null)
-//  }
-//
-//  def addNode(t: StoredNodeWithProperty): Unit = {
-//    nodeStore.set(t.id, t.labelIds, t.properties)
-//  }
+  def deleteNode(id: Long): Unit = nodeAPI.deleteNode(id)
 
-  def addNode(nodeId: Long, labelIds: Array[Int], properties: Map[String, Any]): Unit = {
-    nodeStore.set(nodeId, labelIds, properties)
-    labelIds.foreach(labelId => nodeLabelIndex.add(labelId, nodeId))
-  }
+  def nodeAt(id: Long): StoredNodeWithProperty = nodeAPI.getNode(id)
 
-  def deleteNode(id: Long): Unit = {
-    val node = nodeStore.delete(id)
-    node.labelIds.foreach(labelId => nodeLabelIndex.delete(labelId, id))
-  }
+  def findNodes(labelId: Int): Iterator[Long] = nodeAPI.getNodeIdsByLabel(labelId)
 
-  def nodeAt(id: Long): StoredNodeWithProperty_tobe_deprecated = {
-    nodeStore.get(id)
-  }
+  // fixme 重复获取
+  def allNodes(): Iterator[StoredNodeWithProperty] = nodeAPI.allNodes()
 
-  def findNodes(labelId: Int): Iterator[Long] = {
-    nodeLabelIndex.getNodes(labelId)
-  }
+  def addRelation(relation: StoredRelation): Unit = relationAPI.addRelation(relation)
 
-  def allNodes(): Iterator[StoredNodeWithProperty_tobe_deprecated] = {
-    nodeStore.all()
-  }
+  def addRelation(relation: StoredRelationWithProperty): Unit = relationAPI.addRelation(relation)
 
-  // relation operations
-  def addRelation(t: StoredRelation): Unit = {
-    relationStore.setRelation(t.id, t.from, t.to, t.typeId, 0, null)
+  def deleteRelation(id: Long): Unit = relationAPI.deleteRelation(id)
 
-    relationInEdgeIndex.setIndex(t.from, t.typeId, 0, t.to, t.id, null)
-    relationOutEdgeIndex.setIndex(t.from, t.typeId, 0, t.to, t.id, null)
-  }
+  def relationAt(id: Long): StoredRelation = relationAPI.relationAt(id)
 
-  def addRelation(t: StoredRelationWithProperty): Unit = {
-    relationStore.setRelation(t.id, t.from, t.to, t.typeId, t.category, t.properties.asInstanceOf[Map[String, Any]])
+  def allRelations(): Iterator[StoredRelation] = relationAPI.allRelations()
 
-    relationInEdgeIndex.setIndex(t.from, t.typeId, 0, t.to, t.id, t.properties.asInstanceOf[Map[String, Any]])
-    relationOutEdgeIndex.setIndex(t.from, t.typeId, 0, t.to, t.id, t.properties.asInstanceOf[Map[String, Any]])
-  }
+  def getRelationsByType(typeId: Int): Iterator[Long] = relationAPI.getRelationsByType(typeId)
 
-  def addRelation(relId: Long, from: Long, to: Long, labelId: Int, propeties: Map[String, Any]): Unit = {
-    relationStore.setRelation(relId, from, to, labelId, 0, propeties)
+  def findOutRelations(fromNodeId: Long): Iterator[StoredRelation] = relationAPI.findOutRelations(fromNodeId)
 
-    relationInEdgeIndex.setIndex(from, labelId, 0, to, relId, propeties)
-    relationOutEdgeIndex.setIndex(from, labelId, 0, to, relId, propeties)
-  }
+  def findOutRelations(fromNodeId: Long, edgeType: Int): Iterator[StoredRelation] =
+    relationAPI.findOutRelations(fromNodeId, edgeType)
 
-  def deleteRelation(id: Long): Unit = {
-    val relation = relationStore.getRelation(id)
-    relationStore.deleteRelation(id)
+  def findToNodes(fromNodeId: Long): Iterator[Long] = relationAPI.findToNodes(fromNodeId)
 
-    relationInEdgeIndex.deleteIndex(relation.from, relation.typeId, relation.category, relation.to)
-    relationOutEdgeIndex.deleteIndex(relation.from, relation.typeId, relation.category, relation.to)
+  def findToNodes(fromNodeId: Long, edgeType: Int): Iterator[Long] = relationAPI.findToNodes(fromNodeId, edgeType)
 
-  }
+  def findInRelations(toNodeId: Long): Iterator[StoredRelation] = relationAPI.findInRelations(toNodeId)
 
-  def relationAt(id: Long): StoredRelation = {
-    relationStore.getRelation(id)
-  }
+  def findInRelations(toNodeId: Long, edgeType: Int): Iterator[StoredRelation] =
+    relationAPI.findInRelations(toNodeId, edgeType)
 
-  def allRelations(): Iterator[StoredRelation] = {
-    relationStore.getAll()
-  }
+  def findFromNodes(toNodeId: Long): Iterator[Long] = relationAPI.findFromNodes(toNodeId)
 
-  def findRelations(labelId: Int): Iterator[Long] = {
-    relationLabelIndex.getRelations(labelId)
-  }
-  // out
-  def findOutEdgeRelations(fromNodeId: Long): Iterator[StoredRelation] = {
-    relationOutEdgeIndex.getRelations(fromNodeId)
-  }
-  def findOutEdgeRelations(fromNodeId: Long, edgeType: Int): Iterator[StoredRelation] = {
-    relationOutEdgeIndex.getRelations(fromNodeId, edgeType)
-  }
-  def findOutEdgeRelations(fromNodeId: Long, edgeType: Int, category: Long): Iterator[StoredRelation] = {
-    relationOutEdgeIndex.getRelations(fromNodeId, edgeType, category)
-  }
-
-  def findToNodes(fromNodeId: Long): Iterator[Long] = {
-    relationOutEdgeIndex.findNodes(fromNodeId)
-  }
-  def findToNodes(fromNodeId: Long, edgeType: Int): Iterator[Long] = {
-    relationOutEdgeIndex.findNodes(fromNodeId, edgeType)
-  }
-  def findToNodes(fromNodeId: Long, edgeType: Int, category: Long): Iterator[Long] = {
-    relationOutEdgeIndex.findNodes(fromNodeId, edgeType, category)
-  }
-
-  // in
-  def findInEdgeRelations(toNodeId: Long): Iterator[StoredRelation] = {
-    relationInEdgeIndex.getRelations(toNodeId)
-  }
-
-  def findInEdgeRelations(toNodeId: Long, edgeType: Int): Iterator[StoredRelation] = {
-    relationInEdgeIndex.getRelations(toNodeId, edgeType)
-  }
-
-  def findInEdgeRelations(toNodeId: Long, edgeType: Int, category: Long): Iterator[StoredRelation] = {
-    relationInEdgeIndex.getRelations(toNodeId, edgeType, category)
-  }
-
-  def findFromNodes(toNodeId: Long): Iterator[Long] = {
-    relationInEdgeIndex.findNodes(toNodeId)
-  }
-
-  def findFromNodes(toNodeId: Long, edgeType: Int): Iterator[Long] = {
-    relationInEdgeIndex.findNodes(toNodeId, edgeType)
-  }
-
-  def findFromNodes(toNodeId: Long, edgeType: Int, category: Long): Iterator[Long] = {
-    relationInEdgeIndex.findNodes(toNodeId, edgeType, category)
-  }
+  def findFromNodes(toNodeId: Long, edgeType: Int): Iterator[Long] = relationAPI.findFromNodes(toNodeId)
 
   // Index
   def createNodeIndex(nodeLabel: Int, nodePropertyIds: Array[Int]): NodeIndex.IndexId = {
@@ -211,7 +115,8 @@ class RocksDBGraphAPI(dbPath: String) {
     nodeIndex.find(indexId, value)
   }
 
-  def findIntRangeByIndex(indexId: IndexId, startValue: Int = Int.MinValue, endValue: Int = Int.MaxValue): Iterator[Long] = {
+  def findIntRangeByIndex(indexId: IndexId, startValue: Int = Int.MinValue,
+                          endValue: Int = Int.MaxValue): Iterator[Long] = {
     nodeIndex.findIntRange(indexId, startValue, endValue)
   }
 
@@ -219,7 +124,8 @@ class RocksDBGraphAPI(dbPath: String) {
     nodeIndex.findStringStartWith(indexId, startWith)
   }
 
-  def findFloatRangeByIndex(indexId: IndexId, startValue: Float = Float.MinValue, endValue: Float = Float.MaxValue): Iterator[Long] = {
+  def findFloatRangeByIndex(indexId: IndexId, startValue: Float = Float.MinValue,
+                            endValue: Float = Float.MaxValue): Iterator[Long] = {
     nodeIndex.findFloatRange(indexId, startValue, endValue)
   }
 
@@ -235,11 +141,11 @@ class RocksDBGraphAPI(dbPath: String) {
     statInoStore.getPropertyIndexCnt(label, propertyName)
   } //return counts ex: student with age :5000
 
-  def getAllNodesCnt(): Long ={
+  def getAllNodesCnt: Long ={
     statInoStore.getAllNodesCnt()
   }
 
-  def getAllRelsCnt(): Long ={
+  def getAllRelsCnt: Long ={
     statInoStore.getAllRelCnt()
   }
 }

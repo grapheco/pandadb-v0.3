@@ -14,9 +14,9 @@ import org.junit.{Assert, Test}
 class PRelationImporterTest {
   val headFile = new File("src/test/resources/edgeHeadFile.csv")
   val edgeFile = new File("src/test/resources/s-edgeFile.csv")
-//  val rocksdb = RocksDBStorage.getDB("src/test/output/pnodeEdgeNodeTestDB")
+  val dbPath = "src/test/output/pnodeEdgeNodeTestDB"
   val rocksDBGraphAPI = new RocksDBGraphAPI("./src/test/resources/rocksdb")
-  val pEdgeImporter = new PRelationImporter(edgeFile, headFile, rocksDBGraphAPI)
+  val pEdgeImporter = new PRelationImporter(dbPath, edgeFile, headFile)
 
   @Test
   def importEdges(): Unit = {
@@ -29,7 +29,6 @@ class PRelationImporterTest {
     Assert.assertEquals(2303395, relation.from)
     Assert.assertEquals(1298177, relation.to)
     Assert.assertEquals(PDBMetaData.getTypeId("type5"), relation.typeId)
-    Assert.assertEquals(300, relation.category)
 
   }
 
