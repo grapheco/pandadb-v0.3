@@ -14,8 +14,9 @@ import org.junit.{Assert, Test}
 class PIndexImporterTest {
   val headFile = new File("F:\\graph500-22_unique_node-wrapped-head.csv")
   val nodeFile = new File("F:\\graph500-22-node-wrapped.csv")
-  val rocksDBGraphAPI = new RocksDBGraphAPI("F:\\PandaDB_rocksDB\\base_1B_bak")
-  val pNodeImporter = new PNodeImporter(nodeFile, headFile, rocksDBGraphAPI)
+  val dbPath = "F:\\PandaDB_rocksDB\\base_1B_bak"
+  val rocksDBGraphAPI = new RocksDBGraphAPI(dbPath)
+  val pNodeImporter = new PNodeImporter(dbPath, nodeFile, headFile)
 
   @Test
   def importNode(): Unit = {
@@ -33,24 +34,24 @@ class PIndexImporterTest {
   def createIndex(): Unit = {
 
     // start batch
-    val time2 = System.currentTimeMillis()
-//    val indexIds = new Array[Int](10)
-    for (i <- 0 to 9) {
-      println("label "+i+" start")
-      val label = if(i==0) 9 else i-1
-
-      val indexId = rocksDBGraphAPI.createNodeIndex(label, Array[Int](6))
-      rocksDBGraphAPI.insertNodeIndexRecordsBatch(indexId, rocksDBGraphAPI.allNodes().filter(_.labelIds.contains(label)).map{
-        node=>
-          val value = node.properties("id_p").toString
-          (value, node.id)
-      })
-      println("label "+i+" finish")
-    }
-
-    val time3 = System.currentTimeMillis()
-    println(s"create index takes ${time3-time2} ms.")
-//      rocksDBGraphAPI.dropNodeIndex(1, Array[Int](5))
+//    val time2 = System.currentTimeMillis()
+////    val indexIds = new Array[Int](10)
+//    for (i <- 0 to 9) {
+//      println("label "+i+" start")
+//      val label = if(i==0) 9 else i-1
+//
+//      val indexId = rocksDBGraphAPI.createNodeIndex(label, Array[Int](6))
+//      rocksDBGraphAPI.insertNodeIndexRecordsBatch(indexId, rocksDBGraphAPI.allNodes().filter(_.labelIds.contains(label)).map{
+//        node=>
+//          val value = node.properties("id_p").toString
+//          (value, node.id)
+//      })
+////      println("label "+i+" finish")
+//    }
+//
+//    val time3 = System.currentTimeMillis()
+//    println(s"create index takes ${time3-time2} ms.")
+////      rocksDBGraphAPI.dropNodeIndex(1, Array[Int](5))
   }
 
   @Test

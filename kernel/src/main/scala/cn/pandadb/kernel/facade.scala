@@ -115,10 +115,10 @@ class GraphFacade(
     this
   }
 
-  override def addRelation(label: String, from: Long, to: Long, category: Int, relProps: Map[String, Any]): this.type = {
+  override def addRelation(label: String, from: Long, to: Long, relProps: Map[String, Any]): this.type = {
     val rid = relIdGen.nextId()
     val labelId = relLabelStore.id(label)
-    val rel = StoredRelation(rid, from, to, labelId, category)
+    val rel = StoredRelation(rid, from, to, labelId)
     //TODO: transaction safe
     logStore.append(CreateRelation(rel))
     props.insert(RelationId(rid), relProps)

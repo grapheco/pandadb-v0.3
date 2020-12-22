@@ -41,9 +41,11 @@ class GraphFacadeWithPPD(
   override def addNode(nodeProps: Map[String, Any], labels: String*): this.type = {
     val nodeId = nodeIdGen.nextId()
     val labelIds = nodeLabelStore.ids(labels.toSet).toArray
-//    val node = StoredNode(nodeId, labelIds)
-    //TODO: transaction safe
-    graphStore.addNode(nodeId, labelIds, nodeProps )
+    //TODO: string name to id
+    val props = nodeProps.map{
+      v => ( propertyNameStore.id(v._1),v._2)
+    }
+    graphStore.addNode(new StoredNodeWithProperty(nodeId, labelIds, props))
 
     this
   }
@@ -51,18 +53,20 @@ class GraphFacadeWithPPD(
   def addNode2(nodeProps: Map[String, Any], labels: String*): Long = {
     val nodeId = nodeIdGen.nextId()
     val labelIds = nodeLabelStore.ids(labels.toSet).toArray
-    //    val node = StoredNode(nodeId, labelIds)
-    //TODO: transaction safe
-    graphStore.addNode(nodeId, labelIds, nodeProps )
+    //TODO: string name to id
+    val props = nodeProps.map{
+      v => ( propertyNameStore.id(v._1),v._2)
+    }
+    graphStore.addNode(new StoredNodeWithProperty(nodeId, labelIds, props))
     nodeId
   }
 
-  override def addRelation(label: String, from: Long, to: Long, category: Int, relProps: Map[String, Any]): this.type = {
+  override def addRelation(label: String, from: Long, to: Long, relProps: Map[String, Any]): this.type = {
     val rid = relIdGen.nextId()
     val labelId = relLabelStore.id(label)
-//    val rel = StoredRelation(rid, from, to, labelId)
+    val rel = StoredRelation(rid, from, to, labelId)
     //TODO: transaction safe
-    graphStore.addRelation(rid, from, to, labelId, relProps)
+    graphStore.addRelation(rel)
     this
   }
 

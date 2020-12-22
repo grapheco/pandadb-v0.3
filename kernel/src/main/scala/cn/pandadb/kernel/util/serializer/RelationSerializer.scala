@@ -23,21 +23,16 @@ object RelationSerializer extends BaseSerializer {
     bytes
   }
 
-  def serialize(relationId: Long, fromId: Long, toId: Long, typeId: Int, category: Int, props: Map[Int, Any]): Array[Byte] = {
+  def serialize(r: StoredRelationWithProperty): Array[Byte] = {
     val byteBuf: ByteBuf = allocator.heapBuffer()
-    byteBuf.writeLong(relationId)
-    byteBuf.writeLong(fromId)
-    byteBuf.writeLong(toId)
-    byteBuf.writeByte(typeId)
-    byteBuf.writeInt(category)
-    _writeMap(props, byteBuf)
+    byteBuf.writeLong(r.id)
+    byteBuf.writeLong(r.from)
+    byteBuf.writeLong(r.to)
+    byteBuf.writeByte(r.typeId)
+    _writeMap(r.properties, byteBuf)
     val bytes = _exportBytes(byteBuf)
     byteBuf.release()
     bytes
-  }
-
-  def serialize(relation: StoredRelationWithProperty): Array[Byte] = {
-    serialize(relation.id, relation.from, relation.to, relation.typeId, relation.typeId, relation.properties)
   }
 
   def deserializeRelWithProps(bytesArray: Array[Byte]): StoredRelationWithProperty = {
@@ -46,10 +41,9 @@ object RelationSerializer extends BaseSerializer {
     val fromId: Long = byteBuf.readLong()
     val toId: Long = byteBuf.readLong()
     val typeId: Int = byteBuf.readByte().toInt
-    val category: Int = byteBuf.readInt()
     val props: Map[Int, Any] = _readMap(byteBuf)
     byteBuf.release()
-    new StoredRelationWithProperty(relationId, fromId, toId, typeId, category, props)
+    new StoredRelationWithProperty(relationId, fromId, toId, typeId, props)
   }
 
   def deserializeRelWithoutProps(bytesArray: Array[Byte]): StoredRelation = {
@@ -58,11 +52,12 @@ object RelationSerializer extends BaseSerializer {
     val fromId: Long = byteBuf.readLong()
     val toId: Long = byteBuf.readLong()
     val typeId: Int = byteBuf.readByte().toInt
-    val category: Int = byteBuf.readInt()
-    StoredRelation(relationId, fromId, toId, typeId, category)
+    StoredRelation(relationId, fromId, toId, typeId)
   }
 
   // todo: add below funcs
   // only from
   // only to
+
+
 }

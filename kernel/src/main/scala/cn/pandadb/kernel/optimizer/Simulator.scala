@@ -11,7 +11,7 @@ class RelationSimulator(api: RocksDBGraphAPI){
     var result: Long = 0
     if(leftFirst){
       api.findNodes(leftLabelId).map(nodeId => {
-        api.findOutEdgeRelations(nodeId, relationTypeId).map(r=>{
+        api.findOutRelations(nodeId, relationTypeId).map(r=>{
           if (api.nodeAt(r.to).labelIds.contains(rightLabelId)){
             result += 1
           }
@@ -20,7 +20,7 @@ class RelationSimulator(api: RocksDBGraphAPI){
     }
     else{
       api.findNodes(rightLabelId).map(nodeId => {
-        api.findInEdgeRelations(nodeId, relationTypeId).map(r=>{
+        api.findInRelations(nodeId, relationTypeId).map(r=>{
           if (api.nodeAt(r.from).labelIds.contains(leftLabelId)){
             result += 1
           }
@@ -31,7 +31,7 @@ class RelationSimulator(api: RocksDBGraphAPI){
   }
   def OnTheFlyRelationFirst(): Long ={
     var result: Long = 0
-    api.findRelations(relationTypeId).map(rId=>{
+    api.getRelationsByType(relationTypeId).map(rId=>{
       val r = api.relationAt(rId)
       if(api.nodeAt(r.from).labelIds.contains(leftLabelId) &&
         api.nodeAt(r.to).labelIds.contains(rightLabelId)){
@@ -45,7 +45,7 @@ class RelationSimulator(api: RocksDBGraphAPI){
     var result: Long = 0
     val leftNodeIds = api.findNodes(leftLabelId).toArray[Long]
     val rightNodeIds = api.findNodes(rightLabelId).toArray[Long]
-    api.findRelations(relationTypeId).map(rId=>{
+    api.getRelationsByType(relationTypeId).map(rId=>{
       val r = api.relationAt(rId)
       if(leftNodeIds.contains(r.from) && rightNodeIds.contains(r.to)){
         result += 1

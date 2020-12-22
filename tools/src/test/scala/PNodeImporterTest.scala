@@ -14,9 +14,9 @@ import org.rocksdb.RocksDB
 class PNodeImporterTest {
   val headFile = new File("G://dataset//nodes-1k-wrapped-head.csv")
   val nodeFile = new File("G://dataset//nodes-1B-wrapped.csv")
-//  val rocksdb = RocksDBStorage.getDB("src/test/output/pnodeNodeTestDB")
-  val rocksDBGraphAPI = new RocksDBGraphAPI("I://PandaDB//base_1B")
-  val pNodeImporter = new PNodeImporter(nodeFile, headFile, rocksDBGraphAPI)
+  val dbPath = "F:\\PandaDB_rocksDB\\base_1B_bak"
+  val rocksDBGraphAPI = new RocksDBGraphAPI(dbPath)
+  val pNodeImporter = new PNodeImporter(dbPath, nodeFile, headFile)
 
 
   @Test

@@ -5,8 +5,8 @@ import org.rocksdb.RocksDB
 
 class RelationTypeNameStore(rocksDB: RocksDB) extends NameStore {
   override val db: RocksDB = rocksDB
-  override val key2ByteArrayFunc: Int => Array[Byte] = KeyHandler.relationLabelKeyToBytes
-  override val keyPrefixFunc: () => Array[Byte] = KeyHandler.relationLabelKeyPrefixToBytes
+  override val key2ByteArrayFunc: Int => Array[Byte] = KeyHandler.relationTypeKeyToBytes
+  override val keyPrefixFunc: () => Array[Byte] = KeyHandler.relationTypeKeyPrefixToBytes
 
   loadAll()
 }

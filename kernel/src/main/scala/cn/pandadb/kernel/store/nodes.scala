@@ -43,12 +43,12 @@ class LazyWritableNode(id: Long, nodeStoreSpi: NodeStoreSPI) extends LazyNode(id
 
 }
 
-class SerializedNode(id:Long,
-                     override val labelIdsBytes: Array[Byte],
-                     override val propertiesBytes: Array[Byte],
-                     nodeStoreSpi: NodeStoreSPI)
-  extends LazyNode(id, nodeStoreSpi) {
-}
+//class SerializedNode(id:Long,
+//                     override val labelIdsBytes: Array[Byte],
+//                     override val propertiesBytes: Array[Byte],
+//                     nodeStoreSpi: NodeStoreSPI)
+//  extends LazyNode(id, nodeStoreSpi) {
+//}
 
 class LazyNode(id: Long, nodeStoreSpi: NodeStoreSPI) extends ReadOnlyNode {
 
@@ -82,17 +82,17 @@ class LazyNode(id: Long, nodeStoreSpi: NodeStoreSPI) extends ReadOnlyNode {
 
 }
 
-class NodeWithProperty(id:Long,
-                     override val propertiesBytes: Array[Byte],
-                     nodeStoreSpi: NodeStoreSPI)
-  extends LazyNode(id, nodeStoreSpi) {
-}
+//class NodeWithProperty(id:Long,
+//                     override val propertiesBytes: Array[Byte],
+//                     nodeStoreSpi: NodeStoreSPI)
+//  extends LazyNode(id, nodeStoreSpi) {
+//}
 
-class NodeWithLabels(id:Long,
-                       override val labelIdsBytes: Array[Byte],
-                       nodeStoreSpi: NodeStoreSPI)
-  extends LazyNode(id, nodeStoreSpi) {
-}
+//class NodeWithLabels(id:Long,
+//                       override val labelIdsBytes: Array[Byte],
+//                       nodeStoreSpi: NodeStoreSPI)
+//  extends LazyNode(id, nodeStoreSpi) {
+//}
 
 
 trait NodeStoreSPI {

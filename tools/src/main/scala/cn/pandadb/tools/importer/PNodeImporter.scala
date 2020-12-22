@@ -5,89 +5,103 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 import cn.pandadb.kernel.PDBMetaData
-import cn.pandadb.kernel.kv.node.NodeValue
-import cn.pandadb.kernel.kv.{KeyHandler, RocksDBGraphAPI}
-import cn.pandadb.kernel.util.serializer.NodeSerializer
+import cn.pandadb.kernel.kv.node.{NodeLabelStore, NodeStore}
+import cn.pandadb.kernel.kv.{KeyHandler, RocksDBStorage}
+import cn.pandadb.kernel.store.StoredNodeWithProperty
+import cn.pandadb.kernel.util.serializer.{BaseSerializer, NodeSerializer}
 import org.rocksdb.{WriteBatch, WriteOptions}
 
 import scala.io.Source
 
-/**
- * @Author: Airzihao
- * @Description:
- * @Date: Created at 17:22 2020/12/3
- * @Modified By:
- */
+object NewNodeTest {
+  /*
+  100w: 7s
+  1yi: 12 min
+   */
+  def main(args: Array[String]): Unit = {
+    val dbPath =  "D:\\PandaDB-tmp\\bench\\newNodeStore"
+    val nodeFile = new File("D:\\PandaDB-tmp\\bench\\csv\\nodes_output.csv")
+    val nodeHeadFile = new File("D:\\PandaDB-tmp\\bench\\csv\\nodeHeadFile.csv")
+    val importer = new PNodeImporter(dbPath, nodeFile, nodeHeadFile)
+    importer.importNodes()
+  }
+}
+// TODO 1.label String->Int 2.propName String->Int
+class PNodeImporter(dbPath: String, nodeFile: File, nodeHeadFile: File) {
 
-/**
- *
-  headMap(propName1 -> type, propName2 -> type ...)
- */
-// protocol: :ID :LABELS propName1:type1 proName2:type2
-class PNodeImporter(nodeFile: File, hFile : File, rocksDBGraphAPI: RocksDBGraphAPI) extends Importer {
-
-  val file: File = nodeFile
-  val headFile: File = hFile
-
-  // record the propId sort in the file, example: Array(2, 4, 1, 3)
+  val NONE_LABEL_ID:Int = -1
   var propSortArr: Array[String] = null
   val headMap: Map[String, String] = _setNodeHead()
 
+  private val nodeDB = RocksDBStorage.getDB(s"${dbPath}/nodes")
+  private val nodeStore = new NodeStore(nodeDB)
+  private val nodeLabelDB = RocksDBStorage.getDB(s"${dbPath}/nodeLabel")
+  private val nodeLabelStore = new NodeLabelStore(nodeLabelDB)
+
   def importNodes(): Unit = {
-    val estNodeCount: Long = estLineCount(nodeFile)
-    val iter = Source.fromFile(file).getLines()
+    val writeOptions: WriteOptions = new WriteOptions()
+    writeOptions.setDisableWAL(true)
+    writeOptions.setIgnoreMissingColumnFamilies(true)
+    writeOptions.setSync(false)
+
+
+    val iter = Source.fromFile(nodeFile).getLines()
     var i = 0
+    val batchNode: WriteBatch = new WriteBatch()
+    val batchLabel: WriteBatch = new WriteBatch()
 
-    val writeOpt = new WriteOptions()
-    val batch = new WriteBatch()
-    val nodeValueSerializer = NodeSerializer
-
+    var sstime = System.currentTimeMillis()
     while (iter.hasNext) {
-      if(i % 10000000 == 0) {
+      if (i % 10000000 == 0) {
         val time1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
-        println(s"${i/10000000}kw of $estNodeCount(est) nodes imported. $time1")
+        println(s"${i / 10000000}% nodes imported. $time1")
       }
       i += 1;
-      val lineArr = iter.next().replace("\n", "").split(",")
-      val nodeKey = KeyHandler.nodeKeyToBytes(lineArr(0).toLong)
-      val nodeValue = _wrapNode(lineArr)
-      val serializedNodeValue = nodeValueSerializer.serialize(nodeValue)
-      batch.put(nodeKey, serializedNodeValue)
-      if(i%1000000 ==0) {
-        rocksDBGraphAPI.getNodeStoreDB.write(writeOpt, batch)
-        batch.clear()
+
+      val tempNode = _wrapNode(iter.next().replace("\n", "").split(","))
+
+      tempNode.labelIds.foreach{labelId =>
+        batchNode.put(KeyHandler.nodeKeyToBytes(labelId, tempNode.id), NodeSerializer.serialize(tempNode))
+        batchLabel.put(KeyHandler.nodeLabelToBytes(tempNode.id, labelId), Array.emptyByteArray)
+      }
+      if (tempNode.labelIds.isEmpty) {
+        batchNode.put(KeyHandler.nodeKeyToBytes(NONE_LABEL_ID, tempNode.id), NodeSerializer.serialize(tempNode))
+        batchLabel.put(KeyHandler.nodeLabelToBytes(tempNode.id, NONE_LABEL_ID), Array.emptyByteArray)
+      }
+
+      if (i % 100000 == 0) {
+        nodeDB.write(writeOptions, batchNode)
+        batchNode.clear()
+        println(s"coming~~~10w :${System.currentTimeMillis() - sstime} ms")
+        sstime = System.currentTimeMillis()
       }
     }
-    rocksDBGraphAPI.getNodeStoreDB.write(writeOpt, batch)
-    batch.clear()
   }
 
   private def _setNodeHead(): Map[String, String] = {
-    //head map: propName -> type
     var hMap: Map[String, String] = Map[String, String]()
-    val headArr = Source.fromFile(hFile).getLines().next().replace("\n", "").split(",")
-    propSortArr = new Array[String](headArr.length-2)
+    val headArr = Source.fromFile(nodeHeadFile).getLines().next().replace("\n", "").split(",")
+    propSortArr = new Array[String](headArr.length - 2)
     // headArr(0) is :ID, headArr(1) is :LABELS
-    for(i <- 2 to headArr.length - 1) {
+    for (i <- 2 to headArr.length - 1) {
       val fieldArr = headArr(i).split(":")
       val propName: String = fieldArr(0)
-      propSortArr(i-2) = propName
+      propSortArr(i - 2) = propName
       val propType: String = fieldArr(1).toLowerCase()
       hMap += (propName -> propType)
     }
     hMap
   }
 
-  private def _wrapNode(lineArr: Array[String]): NodeValue = {
+  private def _wrapNode(lineArr: Array[String]): StoredNodeWithProperty = {
     val id = lineArr(0).toLong
-    val labels: Array[String] = lineArr(1).split(";")
-    val labelIds: Array[Int] = labels.map(label => PDBMetaData.getLabelId(label))
+    //  TODO：modify the labels import mechanism, enable real array
+    val labels: Array[Int] = Array(PDBMetaData.getLabelId(lineArr(1)))
     var propMap: Map[Int, Any] = Map[Int, Any]()
-    for(i <-2 to lineArr.length -1) {
+    for (i <- 2 to lineArr.length - 1) {
       val propName = propSortArr(i - 2)
       val propValue: Any = {
         headMap(propName) match {
-          case "float" => lineArr(i).toFloat
           case "long" => lineArr(i).toLong
           case "int" => lineArr(i).toInt
           case "boolean" => lineArr(i).toBoolean
@@ -95,9 +109,8 @@ class PNodeImporter(nodeFile: File, hFile : File, rocksDBGraphAPI: RocksDBGraphA
           case _ => lineArr(i).replace("\"", "")
         }
       }
-      propMap += (PDBMetaData.getPropId(propName) -> propValue)
+      propMap += ((i - 2) -> propValue)
     }
-    new NodeValue(id, labelIds, propMap)
+    new StoredNodeWithProperty(id, labels, propMap)
   }
-
 }

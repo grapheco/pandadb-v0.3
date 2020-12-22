@@ -5,9 +5,9 @@ import org.rocksdb.{ReadOptions, RocksDB}
 
 class RelationLabelIndex(db: RocksDB) {
 
-  def add(labelId: Int, relId: Long): Unit ={
+  def set(labelId: Int, relId: Long): Unit ={
     val keyBytes = KeyHandler.relationLabelIndexKeyToBytes(labelId, relId)
-    db.put(keyBytes, Array[Byte]())
+    db.put(keyBytes, Array.emptyByteArray)
   }
 
   def delete(labelId: Int, relId: Long): Unit = {
@@ -17,11 +17,7 @@ class RelationLabelIndex(db: RocksDB) {
 
   def getRelations(labelId: Int): Iterator[Long] = {
     val keyPrefix = KeyHandler.relationLabelIndexKeyPrefixToBytes(labelId)
-
-    val readOptions = new ReadOptions()
-    readOptions.setPrefixSameAsStart(true)
-    readOptions.setTotalOrderSeek(true)
-    val iter = db.newIterator(readOptions)
+    val iter = db.newIterator()
     iter.seek(keyPrefix)
 
     new Iterator[Long] (){
@@ -34,5 +30,7 @@ class RelationLabelIndex(db: RocksDB) {
       }
     }
   }
+
+  def close(): Unit = db.close()
 
 }
