@@ -83,7 +83,7 @@ class PNodeImporter(dbPath: String, nodeFile: File, nodeHeadFile: File) {
     val headArr = Source.fromFile(nodeHeadFile).getLines().next().replace("\n", "").split(",")
     propSortArr = new Array[String](headArr.length - 2)
     // headArr(0) is :ID, headArr(1) is :LABELS
-    for (i <- 2 to headArr.length - 1) {
+    for (i <- 2 until headArr.length) {
       val fieldArr = headArr(i).split(":")
       val propName: String = fieldArr(0)
       propSortArr(i - 2) = propName

@@ -29,7 +29,7 @@ object PandaImporter {
     nodeImporter.importNodes()
     val time2 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
     println(time2)
-    edgeImporter.importEdges()
+//    edgeImporter.importEdges()
     val time3 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
     println(time3)
   }

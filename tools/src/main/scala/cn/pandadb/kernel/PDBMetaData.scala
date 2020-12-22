@@ -35,10 +35,10 @@ object PDBMetaData {
   def init(rocksDB: RocksDB): Unit = {
     val bytes: Array[Byte] = rocksDB.get("meta".getBytes())
     val metaData: Map[String, Any] = ChillSerializer.deserialize(bytes, classOf[Map[String, Any]])
-    _propIdMap = metaData.get("_propIdMap").get.asInstanceOf[Map[String, Int]]
-    _rPropIdMap = metaData.get("_rPropIdMap").get.asInstanceOf[Map[Int, String]]
-    _labelIdMap = metaData.get("_labelIdMap").get.asInstanceOf[Map[String, Int]]
-    _rLabelIdMap = metaData.get("_rLabelIdMap").get.asInstanceOf[Map[Int, String]]
+    _propIdMap = metaData("_propIdMap").asInstanceOf[Map[String, Int]]
+    _rPropIdMap = metaData("_rPropIdMap").asInstanceOf[Map[Int, String]]
+    _labelIdMap = metaData("_labelIdMap").asInstanceOf[Map[String, Int]]
+    _rLabelIdMap = metaData("_rLabelIdMap").asInstanceOf[Map[Int, String]]
     _typeIdMap = metaData.get("_typeIdMap").get.asInstanceOf[Map[String, Int]]
     _rTypeIdMap = metaData.get("_rTypeIdMap").get.asInstanceOf[Map[Int, String]]
     _propCounter = metaData.get("_propCounter").get.asInstanceOf[Int]
@@ -80,29 +80,29 @@ object PDBMetaData {
   }
 
   def getPropId(prop: String): Int = {
-    if (isPropExists(prop)) _propIdMap.get(prop).get
+    if (isPropExists(prop)) _propIdMap(prop)
     else addProp(prop)
   }
 
   def getPropName(propId: Int): String = {
-    _rPropIdMap.get(propId).get
+    _rPropIdMap(propId)
   }
 
   def getLabelId(label: String): Int = {
-    if (isLabelExists(label)) _labelIdMap.get(label).get
+    if (isLabelExists(label)) _labelIdMap(label)
     else addLabel(label)
   }
 
   def getLabelName(labelId: Int): String = {
-    _rLabelIdMap.get(labelId).get
+    _rLabelIdMap(labelId)
   }
 
   def getTypeId(edgeType: String): Int = {
-    if (isTypeExists(edgeType)) _typeIdMap.get(edgeType).get
+    if (isTypeExists(edgeType)) _typeIdMap(edgeType)
     else addType(edgeType)
   }
 
   def getTypeName(typeId: Int): String = {
-    _rTypeIdMap.get(typeId).get
+    _rTypeIdMap(typeId)
   }
 }
