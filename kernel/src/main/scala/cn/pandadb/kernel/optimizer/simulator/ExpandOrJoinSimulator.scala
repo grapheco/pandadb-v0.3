@@ -1,13 +1,10 @@
-package cn.pandadb.kernel.optimizer
+package cn.pandadb.kernel.optimizer.simulator
 
 import cn.pandadb.kernel.kv.RocksDBGraphAPI
 
-class RelationSimulator(api: RocksDBGraphAPI){
+class ExpandOrJoinSimulator(api: RocksDBGraphAPI, leftLabelId:Int=1, rightLabelId:Int=2, relationTypeId:Int=1){
   //cypher: String = "match (n:label1)->[r:type1]->(m: label2) return count(m)"
-  val leftLabelId=1
-  val rightLabelId=2
-  val relationTypeId=1
-  def OnTheFlyNodeFirst(leftFirst: Boolean = true): Long ={
+  def OnTheFlyExpandNodeFirst(leftFirst: Boolean = true): Long ={
     var result: Long = 0
     if(leftFirst){
       api.findNodes(leftLabelId).map(nodeId => {
@@ -29,7 +26,7 @@ class RelationSimulator(api: RocksDBGraphAPI){
     }
     result
   }
-  def OnTheFlyRelationFirst(): Long ={
+  def OnTheFlyExpandRelationFirst(): Long ={
     var result: Long = 0
     api.getRelationsByType(relationTypeId).map(rId=>{
       val r = api.relationAt(rId)
