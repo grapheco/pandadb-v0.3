@@ -28,7 +28,7 @@ object PandaImporter extends Logging{
     val edgeImporter = new PRelationImporter(dbPath, srcEdgeFile, headEdgeFile)
     logger.info("Import task started.")
     nodeImporter.importNodes()
-//    edgeImporter.importEdges()
+    edgeImporter.importEdges()
     PDBMetaData.persist(dbPath)
     logger.info("import task finished.")
   }
