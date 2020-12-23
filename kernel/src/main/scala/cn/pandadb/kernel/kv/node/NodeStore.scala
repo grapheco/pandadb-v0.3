@@ -15,10 +15,10 @@ class NodeStore(db: RocksDB) {
       db.put(KeyHandler.nodeKeyToBytes(labelId, nodeId), value))
 
   def set(labelId: LabelId, node: StoredNodeWithProperty): Unit =
-    db.put(KeyHandler.nodeKeyToBytes(labelId, node.id), NodeSerializer.serialize(node))
+    db.put(KeyHandler.nodeKeyToBytes(labelId, node.getId), NodeSerializer.serialize(node))
 
   def set(node: StoredNodeWithProperty): Unit =
-    set(node.id, node.labelIds, NodeSerializer.serialize(node))
+    set(node.getId, node.getLabels, NodeSerializer.serialize(node))
 
   def get(nodeId: NodeId, labelId: LabelId): StoredNodeWithProperty = {
     val value = db.get(KeyHandler.nodeKeyToBytes(labelId, nodeId))
@@ -81,6 +81,6 @@ class NodeStore(db: RocksDB) {
 
   def delete(nodeId:Long, labelIds: Array[LabelId]): Unit = labelIds.foreach(delete(nodeId, _))
 
-  def delete(node: StoredNodeWithProperty): Unit = delete(node.id, node.labelIds)
+  def delete(node: StoredNodeWithProperty): Unit = delete(node.getId, node.getLabels)
 
 }

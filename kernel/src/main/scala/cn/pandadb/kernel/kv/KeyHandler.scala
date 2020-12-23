@@ -35,7 +35,10 @@ object KeyHandler {
 
   // [labelId(4Bytes),nodeId(8Bytes)]
   def nodeKeyToBytes(labelId: Int, nodeId: Long): Array[Byte] = {
-    NodeSerializer.serialize(labelId, nodeId)
+    val bytes = new Array[Byte](12)
+    ByteUtils.setInt(bytes, 0, labelId)
+    ByteUtils.setLong(bytes, 4, nodeId)
+    bytes
   }
 
   // [labelId(4Bytes),----]

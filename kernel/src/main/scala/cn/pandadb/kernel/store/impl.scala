@@ -92,14 +92,14 @@ class LabelStore(labelFile: File, max: Int = Byte.MaxValue) {
   }
 }
 
-case class StoredNode(id: Long, labelIds: Array[Int]=null) {
-}
-
-class StoredNodeWithProperty(override val id: Long,
-                             override val labelIds: Array[Int],
-                             val properties:Map[Int,Any])
-  extends StoredNode(id, labelIds){
-}
+//case class StoredNode(id: Long, labelIds: Array[Int]=null) {
+//}
+//
+//class StoredNodeWithProperty(override val id: Long,
+//                             override val labelIds: Array[Int],
+//                             val properties:Map[Int,Any])
+//  extends StoredNode(id, labelIds){
+//}
 
 class StoredNodeWithProperty_tobe_deprecated(override val id: Long,
                                              override val labelIds: Array[Int],
