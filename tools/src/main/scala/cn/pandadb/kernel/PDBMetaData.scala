@@ -2,6 +2,7 @@ package cn.pandadb.kernel
 
 import java.io.{File, FileInputStream, FileOutputStream}
 
+import cn.pandadb.kernel.kv.RocksDBStorage
 import cn.pandadb.kernel.util.serializer.ChillSerializer
 import org.rocksdb.RocksDB
 
@@ -23,7 +24,8 @@ object PDBMetaData {
   private var _labelCounter: Int = 0
   private var _typeCounter: Int = 0
 
-  def persist(rocksDB: RocksDB): Unit = {
+  def persist(dbPath: String): Unit = {
+    val rocksDB = RocksDBStorage.getDB(s"${dbPath}/metadata")
     val metaData: Map[String, Any] = Map("_propIdMap" -> _propIdMap, "_rPropIdMap" -> _rPropIdMap,
       "_labelIdMap" -> _labelIdMap, "_rLabelIdMap" -> _rLabelIdMap,
       "_typeIdMap" -> _typeIdMap, "_rTypeIdMap" -> _rTypeIdMap,
@@ -32,7 +34,8 @@ object PDBMetaData {
     rocksDB.put("meta".getBytes(), bytes)
   }
 
-  def init(rocksDB: RocksDB): Unit = {
+  def init(dbPath: String): Unit = {
+    val rocksDB = RocksDBStorage.getDB(s"${dbPath}/metadata")
     val bytes: Array[Byte] = rocksDB.get("meta".getBytes())
     val metaData: Map[String, Any] = ChillSerializer.deserialize(bytes, classOf[Map[String, Any]])
     _propIdMap = metaData("_propIdMap").asInstanceOf[Map[String, Int]]
