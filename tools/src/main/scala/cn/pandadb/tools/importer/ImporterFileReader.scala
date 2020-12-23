@@ -14,7 +14,7 @@ import scala.io.Source
  */
 class ImporterFileReader(file: File ,batchSize: Int = 1000000) {
 
-  val fileIter = Source.fromFile(file).getLines()
+  val fileIter = this.synchronized(Source.fromFile(file).getLines())
 
   private def _prepareBatch(): Array[String] = {
     this.synchronized{
