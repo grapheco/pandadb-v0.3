@@ -42,15 +42,15 @@ class RelationInfo(id: Long, relationTypeId: Int, fromNodeId: Long, toNodeId: Lo
 }
 
 
-class RelationInfoWithProperty(id: Long,
-                                   relationTypeId: Int,
-                                   fromNodeId: Long,
-                                   toNodeId: Long,
-                                   override val propertyMap: Map[Int, Any],
-                                   relStoreSPI: RelationStoreSPI)
-  extends RelationInfo(id, relationTypeId, fromNodeId, toNodeId, relStoreSPI) {
-
-}
+//class RelationInfoWithProperty(id: Long,
+//                                   relationTypeId: Int,
+//                                   fromNodeId: Long,
+//                                   toNodeId: Long,
+//                                   override val propertyMap: Map[Int, Any],
+//                                   relStoreSPI: RelationStoreSPI)
+//  extends RelationInfo(id, relationTypeId, fromNodeId, toNodeId, relStoreSPI) {
+//
+//}
 
 
 class LazyRelation(id: Long, relStoreSPI: RelationStoreSPI) extends ReadOnlyRelation {

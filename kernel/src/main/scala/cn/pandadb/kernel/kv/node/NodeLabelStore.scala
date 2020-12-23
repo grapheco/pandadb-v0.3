@@ -38,39 +38,4 @@ class NodeLabelStore(db: RocksDB)  {
     }.toArray
   }
 
-//  def all() : Iterator[(Long, Array[Int])] = {
-//    val keyPrefix = KeyHandler.nodeKeyPrefix()
-//    val readOptions = new ReadOptions()
-//    readOptions.setPrefixSameAsStart(true)
-//    readOptions.setTotalOrderSeek(true)
-//    val iter = db.newIterator(readOptions)
-//    iter.seek(keyPrefix)
-//
-//    new Iterator[(Long, Array[Int])] (){
-//      override def hasNext: Boolean = iter.isValid && iter.key().startsWith(keyPrefix)
-//
-//      override def next(): (Long, Array[Int]) = {
-//        val ret = (ByteUtils.getLong(iter.key(), keyPrefix.length), labelIdsFromBytes(iter.value()))
-//        iter.next()
-//        ret
-//      }
-//    }
-//
-//  }
-
-//  def addLabel(nodeId: Long, labelId: Int): Unit = {
-//    val labelIds = this.get(nodeId)
-//    val newLabels = mutable.Set[Int]()
-//    labelIds.foreach(e => newLabels.add(e))
-//    newLabels.add(labelId)
-//    this.set(nodeId, newLabels.toArray[Int])
-//  }
-//
-//  def removeLabel(nodeId: Long, labelId: Int): Unit = {
-//    val labelIds = this.get(nodeId)
-//    val newLabels = mutable.Set[Int]()
-//    labelIds.foreach(e => if (e != labelId) newLabels.add(e))
-//    this.set(nodeId, newLabels.toArray[Int])
-//  }
-
 }

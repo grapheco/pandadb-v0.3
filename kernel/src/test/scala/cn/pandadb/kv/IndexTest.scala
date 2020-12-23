@@ -2,7 +2,7 @@ package cn.pandadb.kv
 
 import java.nio.ByteBuffer
 
-import cn.pandadb.kernel.kv.index.NodeIndex
+import cn.pandadb.kernel.kv.index.{IndexStore, IndexStoreAPI}
 import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler, RocksDBStorage}
 import org.junit.{After, Assert, Before, Test}
 import org.rocksdb.{ReadOptions, RocksDB}
@@ -13,56 +13,18 @@ import scala.tools.nsc.profile.Profiler
 import scala.util.Random
 
 @Test
-class NodeIndexTest extends Assert {
+class IndexTest extends Assert {
 
 
   val path = "C:\\rocksDB"
   val hddPath = "D:\\rocksDB"
 
   @Test
-  def rocksDBTest(): Unit = {
-    val db:RocksDB = RocksDBStorage.getDB(path+"/test1")
-    Assert.assertNotNull(db)
-
-    db.put("aaa".getBytes(),"bbb".getBytes())
-    db.put("hello".getBytes(),"world".getBytes())
-    db.put("hello1".getBytes(),"world1".getBytes())
-    db.put("hello2".getBytes(),"world2".getBytes())
-    db.put("eee".getBytes(),"fff".getBytes())
-    db.put("zzz".getBytes(),"zzzz".getBytes())
-    db.put("hello3".getBytes(),"world3".getBytes())
-    db.put("hhh".getBytes(),"hhh".getBytes())
-
-    Assert.assertArrayEquals(db.get("hello".getBytes()), "world".getBytes())
-    Assert.assertNull(db.get("hel".getBytes()))
-
-    val iter = db.newIterator()
-    val prefix = "hel".getBytes()
-    iter.seek(prefix)
-    while(iter.isValid) {
-      println(iter.value().length)
-      if (iter.value().length>0) {
-        println(new String(iter.value()))
-      }
-      //      Assert.assertArrayEquals(iter.value(), "world".getBytes())
-      iter.next()
-    }
-    iter.close()
-    db.close()
-  }
-
-  def long2Bytes(long: Long): Array[Byte] ={
-    val b = new Array[Byte](8)
-    ByteUtils.setLong(b,0,long)
-    b
-  }
-
-  @Test
   def indexBaseTest(): Unit= {
-    val db:RocksDB = RocksDBStorage.getDB(path+"/test2")
+//    val db:RocksDB = RocksDBStorage.getDB(path+"/test2")
     val LABEL = 1
     val PROPS = Array[Int](1)
-    val ni = new NodeIndex(db)
+    val ni = new IndexStoreAPI(path+"/test1")
 
     // drop index
     ni.dropIndex(LABEL, PROPS)
@@ -113,23 +75,6 @@ class NodeIndexTest extends Assert {
   }
 
   @Test
-  def indexBigTest(): Unit= {
-//    val db:RocksDB = RocksDBStorage.getDB(path+"/test3")
-//    val ni = new NodeIndex(db)
-//    val t0 = System.currentTimeMillis()
-//    for (node <- 0 until 10000000) {
-//      ni.writeIndexRow(1003, long2Bytes(scala.util.Random.nextInt(1000).toLong), node.toLong)
-//    }
-//    val t1 = System.currentTimeMillis()
-//    println("create time: ", t1-t0)//47624
-//    for (i <- 0 until 1000){
-//      ni.find(1003, long2Bytes(100.toLong)).toList.length
-//    }
-//    val t2 = System.currentTimeMillis()
-//    println("search 1000 time: ", t2-t1)//2774
-  }
-
-  @Test
   def stringIndexTest(): Unit = {
     val data = Map[Int,String](
       0->"张三",
@@ -145,9 +90,7 @@ class NodeIndexTest extends Assert {
       v=>
         (v._1.toLong, v._2)
     }.iterator
-//    println(data.length)
-    val db:RocksDB = RocksDBStorage.getDB(path+"/test5")
-    val ni = new NodeIndex(db)
+    val ni = new IndexStoreAPI(path+"/test2")
     // create and insert
     val indexId = ni.createIndex(5,Array[Int](5))
     data.foreach{d=>ni.insertIndexRecord(indexId, d._2, d._1)}
@@ -160,7 +103,6 @@ class NodeIndexTest extends Assert {
     Assert.assertArrayEquals(Array[Long](9), ni.find(indexId, "PandaDB is a Intelligent Graph Database.").toArray)
 
   }
-
 
   @Test
   def stringStartWithTest(): Unit = {
@@ -178,8 +120,7 @@ class NodeIndexTest extends Assert {
       v=>
         (v._1.toLong, v._2)
     }.iterator
-    val db:RocksDB = RocksDBStorage.getDB(path+"/test8")
-    val ni = new NodeIndex(db)
+    val ni = new IndexStoreAPI(path+"/test3")
     // create and insert
     val indexId = ni.createIndex(5,Array[Int](5))
     data.foreach(d=> ni.insertIndexRecord(indexId, d._2, d._1))
@@ -205,8 +146,7 @@ class NodeIndexTest extends Assert {
       v=>
         (v._2,  v._1.toLong)
     }.iterator
-    val db:RocksDB = RocksDBStorage.getDB(path+"/test6")
-    val ni = new NodeIndex(db)
+    val ni = new IndexStoreAPI(path+"/test4")
     val indexId = ni.createIndex(6,Array[Int](6))
     data.foreach{
       d=>
@@ -238,8 +178,8 @@ class NodeIndexTest extends Assert {
       v=>
         (v._2, v._1.toLong)
     }.iterator
-    val db:RocksDB = RocksDBStorage.getDB(path+"/test7")
-    val ni = new NodeIndex(db)
+
+    val ni = new IndexStoreAPI(path+"/test5")
     ni.dropIndex(7,Array[Int](7))
     val indexId = ni.createIndex(7,Array[Int](7))
     data.foreach(d => ni.insertIndexRecord(indexId,d._1, d._2))

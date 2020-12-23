@@ -123,13 +123,11 @@ object IndexEncoder {
     val group = buf.length / 8 + 1
     val res = new Array[Byte](group * 9)
     // set value Bytes
-    for (i <- buf.indices) {
+    for (i <- buf.indices)
       res(i + i / 8) = buf(i)
-    }
     // set length Bytes
-    for (i <- 1 to group - 1) {
+    for (i <- 1 until group)
       res(9 * i - 1) = 255.toByte
-    }
     // set last Bytes
     res(res.length - 1) = (247 + buf.length % 8).toByte
     res
