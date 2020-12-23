@@ -1,12 +1,12 @@
 package cn.pandadb.kv
 
-import cn.pandadb.kernel.kv.{ByteUtils, RocksDBStorage, Statistics}
+import cn.pandadb.kernel.kv.{ByteUtils, RocksDBStorage, StatInfo}
 import org.junit.{Assert, Test}
 
 class StatTest {
   val db = RocksDBStorage.getDB("./test/info")
 
-  val st = new Statistics(db)
+  val st = new StatInfo(db)
 
   Array("student", "person", "paper").foreach(st.nodeLabelSchema+=_)
   Array("knows", "fans", "follows").foreach(st.relLabelSchema+=_)
@@ -21,7 +21,7 @@ class StatTest {
 
   st.save()
 
-  val st2 = new Statistics(db)
+  val st2 = new StatInfo(db)
 
   st2.start()
 

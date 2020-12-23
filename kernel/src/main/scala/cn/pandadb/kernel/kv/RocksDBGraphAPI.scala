@@ -19,7 +19,7 @@ class RocksDBGraphAPI(dbPath: String) {
   private val indexAPI = new IndexStoreAPI(dbPath)
 
   private val statInfoDB = RocksDBStorage.getDB(s"${dbPath}/statinfo")
-  private val statInoStore = new Statistics(statInfoDB)
+  private val statInoStore = new StatInfo(statInfoDB)
 
   def getRocksDB: RocksDB = rocksDB
 
