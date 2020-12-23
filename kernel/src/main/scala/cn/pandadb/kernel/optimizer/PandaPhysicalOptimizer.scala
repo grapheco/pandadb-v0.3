@@ -15,7 +15,8 @@ object PandaPhysicalOptimizer {
 
   def process(input: PhysicalOperator)(implicit context: LynxPlannerContext): PhysicalOperator = {
     //InsertCachingOperators(input)
-    filterPushDown(input)
+    //filterPushDown(input)
+    input
   }
 
   def filterPushDown(input: PhysicalOperator): PhysicalOperator = {
@@ -123,7 +124,7 @@ object PandaPhysicalOptimizer {
     //todo figure out whether PPD is necessary
     val prediates = ArrayBuffer[NFPredicate]()
     filterops.foreach(u =>{
-      prediates += PpdFilter.getPredicate(u)
+      prediates += Transformer.getPredicate(u)
     })
 
     filterops.map(isLabel(_)).reduce(_|_) //&& graph.asInstanceOf[PandaPropertyGraph[Id]].isNFPredicatesWithIndex(prediates.toArray)
@@ -135,7 +136,7 @@ object PandaPhysicalOptimizer {
     //todo reorder pddfilter according to graph node counts
     val prediates = ArrayBuffer[NFPredicate]()
     filterops.foreach(u =>{
-      prediates += PpdFilter.getPredicate(u)
+      prediates += Transformer.getPredicate(u)
      })
     prediates.toArray
   }
@@ -145,7 +146,7 @@ object PandaPhysicalOptimizer {
   def generatePhysicalPlan(filterops: ArrayBuffer[PhysicalOperator], opseq: ArrayBuffer[PhysicalOperator], endOp: PhysicalOperator): PhysicalOperator = {
     if (!filterops.isEmpty) {
       if(isNecessaryPPD(filterops, endOp.graph)) {
-        var tempOp: PhysicalOperator = PpdFilter(filterops, endOp, reOrderPredicates(filterops, endOp.graph))
+        var tempOp: PhysicalOperator = Transformer(filterops, endOp, reOrderPredicates(filterops, endOp.graph))
         opseq.reverse.foreach(u => {
           tempOp = constructPhysicalPlan(u, tempOp)
         })

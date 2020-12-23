@@ -1,20 +1,20 @@
 package cn.pandadb.kernel.optimizer
 
 import cn.pandadb.kernel.kv.{AnyValue, NFEquals, NFGreaterThan, NFGreaterThanOrEqual, NFLabels, NFLessThan, NFLessThanOrEqual, NFLimit, NFPredicate}
-import cn.pandadb.kernel.optimizer.costore.LynxNode
+import cn.pandadb.kernel.optimizer.LynxType.LynxNode
 import org.opencypher.lynx.graph.LynxPropertyGraph
 import org.opencypher.lynx.{LynxRecords, LynxTable, RecordHeader}
 import org.opencypher.lynx.planning.{EmptyRecords, Filter, Limit, PhysicalOperator}
 import org.opencypher.okapi.api.types.{CTNode, CypherType}
 import org.opencypher.okapi.api.value.CypherValue
-import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue, Node}
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue, Node, Relationship}
 import org.opencypher.okapi.ir.api.expr.{BoolLit, ElementProperty, Equals, Expr, GreaterThan, GreaterThanOrEqual, Id, IntegerLit, LessThan, LessThanOrEqual, NodeVar, Param}
 
 import scala.collection.Seq
 import scala.collection.mutable.ArrayBuffer
 
 
-object PpdFilter {
+object Transformer {
   def expr2predicate(expr: Expr, parameters: CypherMap): NFPredicate = {
     //todo transform more Exprs to NFPredicates
     expr match {
@@ -73,7 +73,7 @@ object PpdFilter {
   }
 }
 
-object costore {
+object LynxType {
   case class LynxNode(id: Long, labels: Set[String], props: (String, CypherValue)*) extends Node[Long] {
     //lazy val properties = props.toMap
     val withIds = props.toMap + ("_id" -> CypherValue(id))
@@ -83,13 +83,20 @@ object costore {
 
     override def properties: CypherMap = props.toMap
   }
+  case class LynxRelationship(id: Long, startId: Long, endId: Long, relType: String, props: (String, CypherValue)*) extends Relationship[Long] {
+    val properties = props.toMap
+    val withIds = props.toMap ++ Map("_id" -> CypherValue(id), "_from" -> CypherValue(startId), "_to" -> CypherValue(endId))
+    override type I = this.type
+
+    override def copy(id: Long, source: Long, target: Long, relType: String, properties: CypherMap): LynxRelationship.this.type = this
+  }
 
   //def reorder
 
 
 }
 
-case class PpdFilter(ops: ArrayBuffer[PhysicalOperator], in: PhysicalOperator, prediates: Array[NFPredicate]) extends PhysicalOperator {
+case class Transformer(ops: ArrayBuffer[PhysicalOperator], in: PhysicalOperator, prediates: Array[NFPredicate]) extends PhysicalOperator {
 /*  lazy val prediates = ArrayBuffer[NFPredicate]()
   ops.foreach(u =>{
     prediates += PpdFilter.getPredicate(u)
@@ -98,7 +105,7 @@ case class PpdFilter(ops: ArrayBuffer[PhysicalOperator], in: PhysicalOperator, p
   //override lazy val graph:LynxPropertyGraph  = in.graph
 
 
-  lazy  val (name, ctype) = PpdFilter.getNodeVar(ops.head)
+  lazy  val (name, ctype) = Transformer.getNodeVar(ops.head)
   lazy val records = getRecordersFromPredicates(prediates, name, ctype.asInstanceOf[CTNode], this.graph)
 //  override lazy val _table: LynxTable = recorders.table
   override lazy val _table: LynxTable = records.table
