@@ -40,9 +40,10 @@ class PRelationImporter(dbPath: String, edgeFile: File, headFile: File) extends 
   var globalCount = 0
   val estEdgeCount: Long = estLineCount(edgeFile)
 
-  val inWriteOpt = new WriteOptions()
-  val outWriteOpt = new WriteOptions()
-  val storeWriteOpt = new WriteOptions()
+  val writeOptions = new WriteOptions()
+  writeOptions.setDisableWAL(true)
+  writeOptions.setIgnoreMissingColumnFamilies(true)
+  writeOptions.setSync(false)
 
   def importEdges(): Unit ={
     val f0 = Future{_importTask(0)}
@@ -116,22 +117,24 @@ class PRelationImporter(dbPath: String, edgeFile: File, headFile: File) extends 
           val time1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
           logger.info(s"${globalCount/10000000}kw of $estEdgeCount(est) edges imported. $time1")
         }
-        val relation = _wrapEdge(line.replace("\n", "").split(","))
-        storeBatch.put(KeyHandler.relationKeyToBytes(relation.id), serializer.serialize(relation))
+        val lineArr = line.replace("\n", "").split(",")
+        val relation = _wrapEdge(lineArr)
+        val serializedRel = serializer.serialize(relation)
+        storeBatch.put(KeyHandler.relationKeyToBytes(relation.id), serializedRel)
         inBatch.put(KeyHandler.edgeKeyToBytes(relation.to, relation.typeId, relation.from), ByteUtils.longToBytes(relation.id))
         outBatch.put(KeyHandler.edgeKeyToBytes(relation.from, relation.typeId, relation.to), ByteUtils.longToBytes(relation.id))
 
         if(globalCount%1000000 == 0) {
-          relationDB.write(storeWriteOpt, storeBatch)
-          inRelationDB.write(inWriteOpt, inBatch)
-          outRelationDB.write(outWriteOpt, outBatch)
+          relationDB.write(writeOptions, storeBatch)
+          inRelationDB.write(writeOptions, inBatch)
+          outRelationDB.write(writeOptions, outBatch)
           storeBatch.clear()
           inBatch.clear()
           outBatch.clear()
         }
-        relationDB.write(storeWriteOpt, storeBatch)
-        inRelationDB.write(inWriteOpt, inBatch)
-        outRelationDB.write(outWriteOpt, outBatch)
+        relationDB.write(writeOptions, storeBatch)
+        inRelationDB.write(writeOptions, inBatch)
+        outRelationDB.write(writeOptions, outBatch)
         storeBatch.clear()
         inBatch.clear()
         outBatch.clear()
@@ -143,5 +146,4 @@ class PRelationImporter(dbPath: String, edgeFile: File, headFile: File) extends 
     outRelationDB.flush(flushOptions)
     true
   }
-
 }
