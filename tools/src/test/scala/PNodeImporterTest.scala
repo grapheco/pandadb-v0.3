@@ -22,10 +22,28 @@ class PNodeImporterTest {
 
 
   @Test
-  def correctTest(): Unit = {
+  def countTest(): Unit = {
     PDBMetaData.init(dbPath)
-    val iter = rocksDBGraphAPI.nodeAt(1)
-    iter
+    val nodeIter = rocksDBGraphAPI.allNodes()
+    var nodeCount = 0
+    while (nodeIter.hasNext) {
+      nodeCount += 1
+      nodeIter.next()
+      if(nodeCount%10000000 == 0) println(nodeCount)
+    }
+    println(s"nodeCount: $nodeCount")
+    var relationCount = 0
+    val relIter = rocksDBGraphAPI.allRelations()
+    while (relIter.hasNext) {
+      relationCount += 1
+      relIter.next()
+      if(relationCount%10000000 == 0) println(relationCount)
+    }
+    println(s"relationCount: $relationCount")
+
+
+    Assert.assertEquals(50000000, nodeCount)
+    Assert.assertEquals(99999996, relationCount)
   }
 
 }

@@ -5,12 +5,11 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 import cn.pandadb.kernel.PDBMetaData
-import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler, RocksDBGraphAPI, RocksDBStorage}
-import cn.pandadb.kernel.kv.relation.{RelationDirection, RelationDirectionStore, RelationLabelIndex, RelationPropertyStore}
+import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler, RocksDBStorage}
 import cn.pandadb.kernel.store.StoredRelationWithProperty
 import cn.pandadb.kernel.util.serializer.RelationSerializer
 import org.apache.logging.log4j.scala.Logging
-import org.rocksdb.{RocksDB, WriteBatch, WriteOptions}
+import org.rocksdb.{FlushOptions, WriteBatch, WriteOptions}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -35,14 +34,9 @@ class PRelationImporter(dbPath: String, edgeFile: File, headFile: File) extends 
   var propSortArr: Array[Int] = null
   val headMap: Map[Int, String] = _setEdgeHead()
   val relationDB = RocksDBStorage.getDB(s"${dbPath}/rels")
-//  val relationStore = new RelationPropertyStore(relationDB)
   val inRelationDB = RocksDBStorage.getDB(s"${dbPath}/inEdge")
-//  val inRelationStore = new RelationDirectionStore(inRelationDB, RelationDirection.IN)
   val outRelationDB = RocksDBStorage.getDB(s"${dbPath}/outEdge")
-//  val outRelationStore = new RelationDirectionStore(outRelationDB, RelationDirection.OUT)
   val relationLabelDB = RocksDBStorage.getDB(s"${dbPath}/relLabelIndex")
-//  val relationLabelStore = new RelationLabelIndex(relationLabelDB)
-//  val relSerializer = RelationSerializer
   var globalCount = 0
   val estEdgeCount: Long = estLineCount(edgeFile)
 
@@ -51,11 +45,17 @@ class PRelationImporter(dbPath: String, edgeFile: File, headFile: File) extends 
   val storeWriteOpt = new WriteOptions()
 
   def importEdges(): Unit ={
-    val f1 = Future{_importTask(0)}
+    val f0 = Future{_importTask(0)}
+    val f1 = Future{_importTask(1)}
+    val f2 = Future{_importTask(2)}
+    val f3 = Future{_importTask(3)}
+
+    Await.result(f0, Duration.Inf)
     Await.result(f1, Duration.Inf)
+    Await.result(f2, Duration.Inf)
+    Await.result(f3, Duration.Inf)
 
-
-//    PDBMetaData.persist(rocksDBGraphAPI.getMetaDB)
+    logger.info(s"$globalCount relations imported.")
   }
 
   private def _setEdgeHead(): Map[Int, String] = {
@@ -108,35 +108,39 @@ class PRelationImporter(dbPath: String, edgeFile: File, headFile: File) extends 
     val storeBatch = new WriteBatch()
 
     while (importerFileReader.notFinished) {
-      if(globalCount%10000000 == 0){
-        val time1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
-        logger.info(s"${globalCount/10000000}kw of $estEdgeCount(est) edges imported. $time1")
-      }
       val array = importerFileReader.getLines()
       array.foreach(line => {
-        globalCount += 1
+        this.synchronized(globalCount += 1)
         innerCount += 1
+        if(globalCount%10000000 == 0){
+          val time1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
+          logger.info(s"${globalCount/10000000}kw of $estEdgeCount(est) edges imported. $time1")
+        }
         val relation = _wrapEdge(line.replace("\n", "").split(","))
         storeBatch.put(KeyHandler.relationKeyToBytes(relation.id), serializer.serialize(relation))
         inBatch.put(KeyHandler.edgeKeyToBytes(relation.to, relation.typeId, relation.from), ByteUtils.longToBytes(relation.id))
         outBatch.put(KeyHandler.edgeKeyToBytes(relation.from, relation.typeId, relation.to), ByteUtils.longToBytes(relation.id))
 
-//        if(globalCount%1000000 == 0) {
-//          relationDB.write(storeWriteOpt, storeBatch)
-//          inRelationDB.write(inWriteOpt, inBatch)
-//          outRelationDB.write(outWriteOpt, outBatch)
-//          storeBatch.clear()
-//          inBatch.clear()
-//          outBatch.clear()
-//        }
-//        relationDB.write(storeWriteOpt, storeBatch)
-//        inRelationDB.write(inWriteOpt, inBatch)
-//        outRelationDB.write(outWriteOpt, outBatch)
-//        storeBatch.clear()
-//        inBatch.clear()
-//        outBatch.clear()
+        if(globalCount%1000000 == 0) {
+          relationDB.write(storeWriteOpt, storeBatch)
+          inRelationDB.write(inWriteOpt, inBatch)
+          outRelationDB.write(outWriteOpt, outBatch)
+          storeBatch.clear()
+          inBatch.clear()
+          outBatch.clear()
+        }
+        relationDB.write(storeWriteOpt, storeBatch)
+        inRelationDB.write(inWriteOpt, inBatch)
+        outRelationDB.write(outWriteOpt, outBatch)
+        storeBatch.clear()
+        inBatch.clear()
+        outBatch.clear()
       })
     }
+    val flushOptions = new FlushOptions
+    relationDB.flush(flushOptions)
+    inRelationDB.flush(flushOptions)
+    outRelationDB.flush(flushOptions)
     true
   }
 

@@ -35,7 +35,7 @@ class ImporterFileReader(file: File ,batchSize: Int = 1000000) {
   }
 
   def notFinished: Boolean = {
-    fileIter.hasNext
+    this.synchronized(fileIter.hasNext)
   }
 
 }

@@ -5,12 +5,11 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 import cn.pandadb.kernel.PDBMetaData
-import cn.pandadb.kernel.kv.node.{NodeLabelStore, NodeStore}
 import cn.pandadb.kernel.kv.{KeyHandler, RocksDBStorage}
 import cn.pandadb.kernel.store.StoredNodeWithProperty
-import cn.pandadb.kernel.util.serializer.{BaseSerializer, NodeSerializer}
-import org.rocksdb.{FlushOptions, WriteBatch, WriteOptions}
+import cn.pandadb.kernel.util.serializer.NodeSerializer
 import org.apache.logging.log4j.scala.Logging
+import org.rocksdb.{FlushOptions, WriteBatch, WriteOptions}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -48,27 +47,32 @@ class PNodeImporter(dbPath: String, nodeFile: File, nodeHeadFile: File) extends 
   writeOptions.setSync(false)
 
   def importNodes(): Unit = {
-    val f1 = Future{_importTask(0)}
+    val f0 = Future{_importTask(0)}
+    val f1 = Future{_importTask(1)}
+    val f2 = Future{_importTask(2)}
+    val f3 = Future{_importTask(3)}
+    Await.result(f0, Duration.Inf)
     Await.result(f1, Duration.Inf)
+    Await.result(f2, Duration.Inf)
+    Await.result(f3, Duration.Inf)
+    logger.info(s"$globalCount nodes imported.")
   }
 
-  private def _importTask(threadId: Int): Boolean = {
-    val serializer = NodeSerializer
+  private def _importTask(taskId: Int): Boolean = {
+    val serializer: NodeSerializer = new NodeSerializer()
     var innerCount = 0
     val nodeBatch = new WriteBatch()
     val labelBatch = new WriteBatch()
 
     while (importerFileReader.notFinished) {
       val array = importerFileReader.getLines()
-      println(s"$threadId, ${array.length}")
       array.foreach(line => {
-        globalCount += 1
+        this.synchronized(globalCount += 1)
         innerCount += 1
         if (globalCount % 10000000 == 0) {
           val time1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
-          logger.info(s"${globalCount / 10000000}kw of $estNodeCount(est) nodes imported. $time1, thread$threadId")
+          logger.info(s"${globalCount / 10000000}kw of $estNodeCount(est) nodes imported. $time1, thread$taskId")
         }
-
         val lineArr = line.replace("\n", "").split(",")
         val node = _wrapNode(lineArr)
         val keys: Array[(Array[Byte], Array[Byte])] = _getNodeKeys(node)
@@ -92,7 +96,7 @@ class PNodeImporter(dbPath: String, nodeFile: File, nodeHeadFile: File) extends 
     val flushOptions = new FlushOptions
     nodeDB.flush(flushOptions)
     nodeLabelDB.flush(flushOptions)
-    logger.info(s"$innerCount, $threadId")
+    logger.info(s"$innerCount, $taskId")
     true
   }
 
