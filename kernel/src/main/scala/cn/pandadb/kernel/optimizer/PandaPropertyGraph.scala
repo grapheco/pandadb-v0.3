@@ -1,13 +1,14 @@
 package cn.pandadb.kernel.optimizer
 
 import cn.pandadb.kernel.kv.{NFEquals, NFGreaterThan, NFGreaterThanOrEqual, NFLabels, NFLessThan, NFLessThanOrEqual, NFLimit, NFPredicate}
-import cn.pandadb.kernel.optimizer.costore.LynxNode
+import cn.pandadb.kernel.optimizer.LynxType.{LynxNode, LynxRelationship}
 import org.opencypher.lynx.{LynxPlannerContext, LynxRecords, LynxSession, LynxTable, PropertyGraphScan, RecordHeader}
 import org.opencypher.lynx.graph.{LynxPropertyGraph, ScanGraph}
-import org.opencypher.lynx.planning.{PhysicalOperator, Start, TabularUnionAll}
+import org.opencypher.lynx.planning.{Filter, PhysicalOperator, Start, TabularUnionAll}
 import org.opencypher.okapi.api.graph.{Pattern, PatternElement, SourceEndNodeKey, SourceStartNodeKey}
 import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{Node, Relationship}
 import org.opencypher.okapi.ir.api.expr.{EndNode, NodeVar, RelationshipVar, StartNode}
 import org.parboiled.scala.utils.Predicate
@@ -105,6 +106,46 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
     else true
   }
 
+  def getNodeCnt(predicate: Array[NFPredicate], labels: Set[String]): Long = {
+    -1
+  }
+
+  def getRelCnt(predicate: Array[NFPredicate], label: String, direction: Int): Long = {
+    -1
+  }
+
+
+
+  def getNodesByFilter(predicate: Array[NFPredicate], labels: Set[String]): Iterable[Node[Id]] = {
+
+
+    //todo test
+    val nodes = {
+      if (labels.nonEmpty) {
+        if (predicate.nonEmpty) {
+          val (indexNfp, nfp) = findindexPredicate(predicate, labels)
+          val tempnodes = {
+            if (indexNfp.nonEmpty) indexNfp.map(scan.allNodes(_, labels).toSeq).reduce(_.intersect(_))
+            else scan.allNodes(labels, false)
+          }
+          tempnodes.filter(filterByPredicates(_, nfp))
+        }
+        else scan.allNodes(labels, false)
+      }
+      else scan.allNodes()
+    }
+    nodes
+  }
+
+  def getNodesByFilter(predicate: Array[NFPredicate], labels: Set[String], nodeVar: NodeVar): LynxRecords = {
+
+    new LynxRecords(
+      RecordHeader(Map(NodeVar(nodeVar.name)(CTNode) -> nodeVar.name)),
+      LynxTable(Seq(nodeVar.name -> CTNode), getNodesByFilter(predicate, labels).map(Seq(_)))
+    )
+
+  }
+
   def getNodesByFilter(predicate: Array[NFPredicate], name: String, nodeCypherType: CTNode): LynxRecords = {
 
 
@@ -144,6 +185,51 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
       LynxTable(Seq(name -> CTNode), nodes.map(Seq(_)))
     )
   }
+
+
+/*  def getRelByStartNodeId(sourceId: Long, direction:Int): Iterable[LynxRelationship] = {
+    scan.getRelByStartNodeId(sourceId, direction)
+  }*/
+
+  def isOkRel(rel: LynxRelationship, Ops: ArrayBuffer[Filter]) = ???
+  def getRelByStartNodeId(sourceId: Long, direction:Int, label: Set[String], Ops: ArrayBuffer[Filter]): Iterable[Relationship[Id]] = {
+
+    if (Ops.nonEmpty) {
+      //todo
+    }
+    null
+  }
+
+  def getRelByStartNodeId(sourceId: Long, direction:Int, label: Set[String]): Iterable[Relationship[Id]] = {
+    if (label.nonEmpty) scan.getRelByStartNodeId(sourceId, direction, label.head)
+    else scan.getRelByStartNodeId(sourceId, direction)
+  }
+
+  def getNodeById(Id: Long, labels: Set[String], Ops: ArrayBuffer[Filter]): Option[Node[Id]] = {
+    //todo filter nodes by label and Ops
+    //Option[getNodeById(Id)]
+    Some(getNodeById(Id: Long))
+
+  }
+  def getNodeById(Id: Long): Node[Id] = {
+    scan.getNodeById(Id)
+  }
+
+  def getRelsByFilter(labels: Set[String], direction: Int): Iterable[Relationship[Id]] = {
+    if (labels.nonEmpty) scan.getRelsByFilter(labels.head, direction)
+    else scan.getRelsByFilter(direction)
+  }
+
+  def getRelsByFilter(Ops: ArrayBuffer[Filter], labels: Set[String], direction: Int): Iterable[Relationship[Id]] = {
+    //todo filter rel
+    getRelsByFilter(labels, direction)
+  }
+
+  def getNodesByFilter(Ops: ArrayBuffer[Filter], labels: Set[String]): Iterable[Node[Id]] = {
+    //todo filter Nodes
+    scan.allNodes()
+  }
+
 }
 
 
@@ -160,6 +246,20 @@ trait PandaPropertyGraphScan[Id] extends PropertyGraphScan[Id] {
   //def getRecorderNumbersFromProperty(labels: Set[String], propertyName: String): Int = ???
 
  // def getRecorderNumbersFromLabel(label: String): Int = ???
+  /*
+  direction
+  0 -> Undirection
+  1 -> incoming
+  2 -> outgoing
+  */
+  def getRelByStartNodeId(sourceId: Long, direction:Int, label: String): Iterable[Relationship[Id]] = ???
+  def getRelByStartNodeId(sourceId: Long, direction:Int): Iterable[Relationship[Id]] = ???
+
+  def getRelsByFilter(labels: String, direction: Int): Iterable[Relationship[Id]] = ???
+
+  def getRelsByFilter(direction: Int): Iterable[Relationship[Id]] = ???
+
+  def getNodeById(Id: Long): Node[Id] = ???
 
   def allNodes(predicate: NFPredicate, labels: Set[String]): Iterable[Node[Id]] = ???
 

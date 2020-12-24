@@ -1,4 +1,4 @@
-package cn.pandadb.kernel.kv.name
+package cn.pandadb.kernel.kv.meta
 
 import java.util.concurrent.atomic.AtomicInteger
 

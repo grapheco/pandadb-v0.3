@@ -2,7 +2,7 @@ package cn.pandadb.kv
 
 import java.io.File
 
-import cn.pandadb.kernel.kv.name.NameStore
+import cn.pandadb.kernel.kv.meta.NameStore
 import cn.pandadb.kernel.kv.{KeyHandler, RocksDBStorage}
 import org.apache.commons.io.FileUtils
 import org.junit.{After, Assert, Before, Test}

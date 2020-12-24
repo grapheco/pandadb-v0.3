@@ -3,7 +3,7 @@ package cn.pandadb.kernel.optimizer
 import cn.pandadb.kernel.kv.{AnyValue, NFEquals, NFGreaterThan, NFGreaterThanOrEqual, NFLabels, NFLessThan, NFLessThanOrEqual, NFPredicate}
 import org.opencypher.lynx.graph.LynxPropertyGraph
 import org.opencypher.lynx.{LynxPlannerContext, LynxTable, RecordHeader}
-import org.opencypher.lynx.planning.{Add, AddInto, Aggregate, Alias, Cache, ConstructGraph, Distinct, Drop, EmptyRecords, Filter, FromCatalogGraph, GraphUnionAll, Join, Limit, OrderBy, PhysicalOperator, PrefixGraph, ReturnGraph, Select, Skip, Start, SwitchContext, TabularUnionAll}
+import org.opencypher.lynx.planning.{Add, AddInto, Aggregate, Alias, Cache, ConstructGraph, Distinct, Drop, EmptyRecords, Filter, FromCatalogGraph, GraphUnionAll, Join, Limit, OrderBy, PhysicalOperator, PrefixGraph, ReturnGraph, ScanNodes, ScanRels, Select, Skip, Start, SwitchContext, TabularUnionAll}
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api.expr.{ElementProperty, Equals, Expr, GreaterThan, GreaterThanOrEqual, Id, LessThan, LessThanOrEqual, Param}
@@ -16,6 +16,7 @@ object PandaPhysicalOptimizer {
   def process(input: PhysicalOperator)(implicit context: LynxPlannerContext): PhysicalOperator = {
     //InsertCachingOperators(input)
     filterPushDown(input)
+    //input
   }
 
   def filterPushDown(input: PhysicalOperator): PhysicalOperator = {
@@ -104,6 +105,8 @@ object PandaPhysicalOptimizer {
         val op2 = filterPushDown(x.rhs)
         val tabularUnionAll = TabularUnionAll(op1, op2)
         generatePhysicalPlan(filterOps, ordinaryOps, tabularUnionAll)
+     // case x: ScanNodes =>
+      //case x: ScanRels =>
     }
   }
 
@@ -123,7 +126,7 @@ object PandaPhysicalOptimizer {
     //todo figure out whether PPD is necessary
     val prediates = ArrayBuffer[NFPredicate]()
     filterops.foreach(u =>{
-      prediates += PpdFilter.getPredicate(u)
+      prediates += Transformer.getPredicate(u)
     })
 
     filterops.map(isLabel(_)).reduce(_|_) //&& graph.asInstanceOf[PandaPropertyGraph[Id]].isNFPredicatesWithIndex(prediates.toArray)
@@ -135,7 +138,7 @@ object PandaPhysicalOptimizer {
     //todo reorder pddfilter according to graph node counts
     val prediates = ArrayBuffer[NFPredicate]()
     filterops.foreach(u =>{
-      prediates += PpdFilter.getPredicate(u)
+      prediates += Transformer.getPredicate(u)
      })
     prediates.toArray
   }
@@ -145,7 +148,7 @@ object PandaPhysicalOptimizer {
   def generatePhysicalPlan(filterops: ArrayBuffer[PhysicalOperator], opseq: ArrayBuffer[PhysicalOperator], endOp: PhysicalOperator): PhysicalOperator = {
     if (!filterops.isEmpty) {
       if(isNecessaryPPD(filterops, endOp.graph)) {
-        var tempOp: PhysicalOperator = PpdFilter(filterops, endOp, reOrderPredicates(filterops, endOp.graph))
+        var tempOp: PhysicalOperator = Transformer(filterops, endOp, reOrderPredicates(filterops, endOp.graph))
         opseq.reverse.foreach(u => {
           tempOp = constructPhysicalPlan(u, tempOp)
         })
