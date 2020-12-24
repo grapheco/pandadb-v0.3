@@ -3,7 +3,7 @@ package cn.pandadb.kernel.optimizer
 import cn.pandadb.kernel.kv.{AnyValue, NFEquals, NFGreaterThan, NFGreaterThanOrEqual, NFLabels, NFLessThan, NFLessThanOrEqual, NFPredicate}
 import org.opencypher.lynx.graph.LynxPropertyGraph
 import org.opencypher.lynx.{LynxPlannerContext, LynxTable, RecordHeader}
-import org.opencypher.lynx.planning.{Add, AddInto, Aggregate, Alias, Cache, ConstructGraph, Distinct, Drop, EmptyRecords, Filter, FromCatalogGraph, GraphUnionAll, Join, Limit, OrderBy, PhysicalOperator, PrefixGraph, ReturnGraph, Select, Skip, Start, SwitchContext, TabularUnionAll}
+import org.opencypher.lynx.planning.{Add, AddInto, Aggregate, Alias, Cache, ConstructGraph, Distinct, Drop, EmptyRecords, Filter, FromCatalogGraph, GraphUnionAll, Join, Limit, OrderBy, PhysicalOperator, PrefixGraph, ReturnGraph, ScanNodes, ScanRels, Select, Skip, Start, SwitchContext, TabularUnionAll}
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api.expr.{ElementProperty, Equals, Expr, GreaterThan, GreaterThanOrEqual, Id, LessThan, LessThanOrEqual, Param}
@@ -15,8 +15,8 @@ object PandaPhysicalOptimizer {
 
   def process(input: PhysicalOperator)(implicit context: LynxPlannerContext): PhysicalOperator = {
     //InsertCachingOperators(input)
-    //filterPushDown(input)
-    input
+    filterPushDown(input)
+    //input
   }
 
   def filterPushDown(input: PhysicalOperator): PhysicalOperator = {
@@ -105,6 +105,8 @@ object PandaPhysicalOptimizer {
         val op2 = filterPushDown(x.rhs)
         val tabularUnionAll = TabularUnionAll(op1, op2)
         generatePhysicalPlan(filterOps, ordinaryOps, tabularUnionAll)
+     // case x: ScanNodes =>
+      //case x: ScanRels =>
     }
   }
 

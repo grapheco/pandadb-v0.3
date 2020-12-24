@@ -142,7 +142,7 @@ class GraphFacadeWithPPDTest {
       node=>
         println(node.id, node.labelIds.mkString(";"), node.properties)
     }
-    val res = graphFacade.cypher("match (n: person) where n.age=21  return n")
+    val res = graphFacade.cypher("match (n:person) where n.age=40  return n")
     res.show
     Assert.assertEquals(1, res.records.size)
 

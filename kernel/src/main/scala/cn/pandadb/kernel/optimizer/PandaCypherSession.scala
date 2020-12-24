@@ -15,7 +15,8 @@ class PandaCypherSession extends LynxSession{
   override protected val _tableOperator: TableOperator = new PandaTableOperator
 
   override protected val _createPhysicalPlan: (LogicalOperator, LynxPlannerContext) => PhysicalOperator =
-    (input: LogicalOperator, context: LynxPlannerContext) => PandaPhysicalPlanner.process(input)(context)
+    //(input: LogicalOperator, context: LynxPlannerContext) => PandaPhysicalPlanner.process(input)(context)
+    (input: LogicalOperator, context: LynxPlannerContext) => LynxPhysicalPlanner.process(input)(context)
 
   override protected val _optimizePhysicalPlan: (PhysicalOperator, LynxPlannerContext) => PhysicalOperator =
     (input: PhysicalOperator, context: LynxPlannerContext) => PandaPhysicalOptimizer.process(input)(context)

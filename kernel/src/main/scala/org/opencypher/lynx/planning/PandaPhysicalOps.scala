@@ -49,8 +49,19 @@ class PandaPhysicalOps {
 
 }
 
+trait PNode {
 
-final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, in: PhysicalOperator,rel: PhysicalOperator,  labels: Set[String], filterOP: ArrayBuffer[Filter]) extends PhysicalOperator{
+}
+
+case class StartNode() extends PNode{
+
+}
+
+case class EndNode() extends PNode{
+
+}
+
+final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, in: PhysicalOperator, next: PhysicalOperator, labels: Set[String], filterOP: ArrayBuffer[Filter]) extends PhysicalOperator{
 
   override lazy val recordHeader: RecordHeader = RecordHeader.from(nodeVar)
   val recordHeaderMe: RecordHeader = RecordHeader.from(nodeVar)
@@ -62,8 +73,8 @@ final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, in: PhysicalOperator,r
       LynxTable(Seq(nodeVar.name -> CTNode), records.map(Seq(_)))
     }
     else {
-      val records = rel.table.records.map(row => {
-        val id = rel.table.cell(row, rel.asInstanceOf[ScanRels].rel.name).asInstanceOf[Relationship[Long]].endId
+      val records = next.table.records.map(row => {
+        val id = next.table.cell(row, next.asInstanceOf[ScanRels].rel.name).asInstanceOf[Relationship[Long]].endId
 
         val node = in.graph.asInstanceOf[PandaPropertyGraph[Id]].getNodeById(id, labels, filterOP)
         node match {
@@ -72,7 +83,7 @@ final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, in: PhysicalOperator,r
         }
       })
 
-      LynxTable(rel.table.schema ++ Seq(nodeVar.name -> CTNode), records)
+      LynxTable(next.table.schema ++ Seq(nodeVar.name -> CTNode), records)
     }
   }
   def getRecords: LynxRecords = {
@@ -101,7 +112,7 @@ final case class  ScanRels(isEnd: Boolean,
                            rel: Var,
                            tVar: Var,
                            //scanType: ScanType,
-                           source: PhysicalOperator,
+                           next: PhysicalOperator,
                            direction: Direction, labels: Set[String],
                            filterOP: ArrayBuffer[Filter]) extends PhysicalOperator{
 
@@ -112,24 +123,24 @@ final case class  ScanRels(isEnd: Boolean,
 
   val dir: Int = direction match {
     case Undirected => 0
-    case Incoming => 1
-    case Outgoing => 2
+    case Incoming => 0
+    case Outgoing => 1
   }
 
   override lazy val table: LynxTable = {
     if (isEnd) {
-      val records = source.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelsByFilter(filterOP, labels, dir)
+      val records = next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelsByFilter(filterOP, labels, dir)
       LynxTable(Seq(rel.name -> CTRelationship), records.map(Seq(_)))
     }
     else {
-      val records = source.table.records.flatMap(row => {
-        val id = source.table.cell(row, sVar.name).asInstanceOf[Node[Long]].id
-        val rels = source.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelByStartNodeId(id, dir, labels)
+      val records = next.table.records.flatMap(row => {
+        val id = next.table.cell(row, sVar.name).asInstanceOf[Node[Long]].id
+        val rels = next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelByStartNodeId(id, dir, labels)
         rels.map(row ++ Seq(_))
 
       })
 
-      LynxTable(source.table.schema ++ Seq(rel.name -> CTRelationship), records)
+      LynxTable(next.table.schema ++ Seq(rel.name -> CTRelationship), records)
     }
   }
 

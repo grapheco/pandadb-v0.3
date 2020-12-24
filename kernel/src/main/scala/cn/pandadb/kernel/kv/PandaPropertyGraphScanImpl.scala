@@ -55,12 +55,18 @@ class PropertyGraphScanImpl(nodeIdGen: FileBasedIdGen,
 
       override def properties: CypherMap = {
         var props: Map[String, Any] = null
-        if (node.isInstanceOf[StoredNodeWithProperty_tobe_deprecated]) {
-          props = node.asInstanceOf[StoredNodeWithProperty_tobe_deprecated].properties
+        if (node.isInstanceOf[StoredNodeWithProperty]) {
+          props = node.asInstanceOf[StoredNodeWithProperty].properties.map{
+            kv=>
+              (nodeStore.getPropertyKeyName(kv._1), kv._2)
+          }
         }
         else {
           val n = nodeStore.getNodeById(node.id)
-          props = n.asInstanceOf[StoredNodeWithProperty_tobe_deprecated].properties
+          props = n.asInstanceOf[StoredNodeWithProperty].properties.map{
+            kv=>
+              (nodeStore.getPropertyKeyName(kv._1), kv._2)
+          }
         }
         CypherMap(props.toSeq: _*)
       }
