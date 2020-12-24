@@ -167,29 +167,29 @@ object PandaPhysicalPlanner {
         }
 
 
-//      case logical.ExpandInto(source, rel, target, direction, sourceOp, _) =>
-//        val in = process(sourceOp)
-//
-//        val relPattern = RelationshipPattern(rel.cypherType.toCTRelationship)
-//        val relationships = planScan(
-//          None,
-//          sourceOp.graph,
-//          relPattern,
-//          Map(rel -> relPattern.relElement)
-//        )
-//
-//        val startNode = StartNode(rel)(CTNode)
-//        val endNode = EndNode(rel)(CTNode)
-//
-//        direction match {
-//          case Outgoing | Incoming =>
-//            in.join(relationships, Seq(source -> startNode, target -> endNode), InnerJoin)
-//
-//          case Undirected =>
-//            val outgoing = in.join(relationships, Seq(source -> startNode, target -> endNode), InnerJoin)
-//            val incoming = in.join(relationships, Seq(target -> startNode, source -> endNode), InnerJoin)
-//            planning.TabularUnionAll(outgoing, incoming)
-//        }
+      case logical.ExpandInto(source, rel, target, direction, sourceOp, _) =>
+        val in = process(sourceOp)
+
+        val relPattern = RelationshipPattern(rel.cypherType.toCTRelationship)
+        val relationships = planScan(
+          None,
+          sourceOp.graph,
+          relPattern,
+          Map(rel -> relPattern.relElement)
+        )
+
+        val startNode = StartNode(rel)(CTAny)
+        val endNode = EndNode(rel)(CTAny)
+
+        direction match {
+          case Outgoing | Incoming =>
+            in.join(relationships, Seq(source -> startNode, target -> endNode), InnerJoin)
+
+          case Undirected =>
+            val outgoing = in.join(relationships, Seq(source -> startNode, target -> endNode), InnerJoin)
+            val incoming = in.join(relationships, Seq(target -> startNode, source -> endNode), InnerJoin)
+            planning.TabularUnionAll(outgoing, incoming)
+        }
 
       case logical.BoundedVarLengthExpand(source, list, target, edgeScanType, direction, lower, upper, sourceOp, targetOp, _) =>
 

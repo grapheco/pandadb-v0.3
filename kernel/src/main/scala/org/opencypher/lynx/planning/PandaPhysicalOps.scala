@@ -53,11 +53,11 @@ trait PNode {
 
 }
 
-case class StartNode() extends PNode{
+case class FromNode() extends PNode{
 
 }
 
-case class EndNode() extends PNode{
+case class ToNode() extends PNode{
 
 }
 
