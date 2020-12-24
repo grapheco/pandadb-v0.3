@@ -1,19 +1,20 @@
 package cn.pandadb.kernel.kv
 
+import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.name.NameStore
 import cn.pandadb.kernel.optimizer.PandaPropertyGraphScan
-import cn.pandadb.kernel.store.{FileBasedIdGen, LabelStore, StoredNode, StoredNodeWithProperty, StoredNodeWithProperty_tobe_deprecated, StoredRelation, StoredRelationWithProperty}
+import cn.pandadb.kernel.store.{FileBasedIdGen, LabelStore, NodeStoreSPI, RelationStoreSPI, StoredNode, StoredNodeWithProperty, StoredNodeWithProperty_tobe_deprecated, StoredRelation, StoredRelationWithProperty}
 import org.opencypher.lynx.PropertyGraphScan
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship}
 
 import scala.util.control._
 
-class PropertyGraphScanImpl(nodeLabelStore: NameStore,
-                            relLabelStore: NameStore,
-                            nodeIdGen: FileBasedIdGen,
+class PropertyGraphScanImpl(nodeIdGen: FileBasedIdGen,
                             relIdGen: FileBasedIdGen,
-                            graphStore: RocksDBGraphAPI) extends PropertyGraphScan[Long] {
+                            nodeStore: NodeStoreSPI,
+                            relationStore: RelationStoreSPI,
+                            indexStore: IndexStoreAPI) extends PropertyGraphScan[Long] {
   type Id = Long
 
   val loop = new Breaks
@@ -28,7 +29,7 @@ class PropertyGraphScanImpl(nodeLabelStore: NameStore,
 
       override def endId: Id = rel.to
 
-      override def relType: String = relLabelStore.key(rel.typeId).get
+      override def relType: String = relationStore.getRelationTypeName(rel.typeId)
 
       override def copy(id: Id, source: Id, target: Id, relType: String, properties: CypherMap): this.type = ???
 
@@ -48,7 +49,7 @@ class PropertyGraphScanImpl(nodeLabelStore: NameStore,
 
       override def id: Id = node.id
 
-      override def labels: Set[String] = node.labelIds.toSet.map((id: Int) => nodeLabelStore.key(id).get)
+      override def labels: Set[String] = node.labelIds.toSet.map((id: Int) => nodeStore.getLabelName(id))
 
       override def copy(id: Long, labels: Set[String], properties: CypherValue.CypherMap): this.type = ???
 
@@ -58,7 +59,7 @@ class PropertyGraphScanImpl(nodeLabelStore: NameStore,
           props = node.asInstanceOf[StoredNodeWithProperty_tobe_deprecated].properties
         }
         else {
-          val n = graphStore.nodeAt(node.id)
+          val n = nodeStore.getNodeById(node.id)
           props = n.asInstanceOf[StoredNodeWithProperty_tobe_deprecated].properties
         }
         CypherMap(props.toSeq: _*)
@@ -67,51 +68,51 @@ class PropertyGraphScanImpl(nodeLabelStore: NameStore,
   }
 
   override def nodeAt(id: Long): CypherValue.Node[Long] = mapNode(
-    graphStore.nodeAt(id)
+    nodeStore.getNodeById(id)
   )
 
   override def allNodes(labels: Set[String], exactLabelMatch: Boolean): Iterable[Node[Id]] = {
     if (labels.size>1){
       throw new Exception("PandaDB doesn't support multiple label matching at the same time")
     }
-    val labelIds = nodeLabelStore.ids(labels)
-    val nodes: Iterator[Id] = graphStore.findNodes(labelIds.head)
-    nodes.map(nodeId => mapNode(graphStore.nodeAt(nodeId))).toIterable
+    val labelIds = nodeStore.getLabelIds(labels)
+    val nodes = nodeStore.getNodesByLabel(labelIds.head)
+    nodes.map(mapNode(_)).toIterable
   }
 
 
   override def allNodes(): Iterable[Node[Id]] = {
-    graphStore.allNodes().map(node => mapNode(node)).toIterable
+    nodeStore.allNodes().map(node => mapNode(node)).toIterable
   }
 
   override def allRelationships(): Iterable[CypherValue.Relationship[Id]] = {
-    graphStore.allRelations().map(rel => mapRelation(rel)).toIterable
+    relationStore.allRelations().map(rel => mapRelation(rel)).toIterable
   }
 
   override def allRelationships(relTypes: Set[String]): Iterable[Relationship[Id]] = {
     if (relTypes.size>1){
       throw new Exception("PandaDB doesn't support multiple label matching at the same time")
     }
-    val relations: Iterator[Id] = graphStore.getRelationsByType(relLabelStore.ids(relTypes).head)
-    relations.map(relId => mapRelation(graphStore.relationAt(relId))).toIterable
+    val relations: Iterator[Id] = relationStore.getRelationIdsByRelationType(relationStore.getRelationTypeId(relTypes.head))
+    relations.map(relId => mapRelation(relationStore.getRelationById(relId))).toIterable
   }
 }
 
-class PandaPropertyGraphScanImpl(nodeLabelStore: NameStore,
-                                 relLabelStore: NameStore,
-                                 propertyNameStore: NameStore,
-                                 nodeIdGen: FileBasedIdGen,
+class PandaPropertyGraphScanImpl(nodeIdGen: FileBasedIdGen,
                                  relIdGen: FileBasedIdGen,
-                                 graphStore: RocksDBGraphAPI)
-      extends PropertyGraphScanImpl(nodeLabelStore, relLabelStore, nodeIdGen, relIdGen, graphStore)
+                                 nodeStore: NodeStoreSPI,
+                                 relationStore: RelationStoreSPI,
+                                 indexStore: IndexStoreAPI)
+      extends PropertyGraphScanImpl(nodeIdGen, relIdGen, nodeStore, relationStore, indexStore)
       with PandaPropertyGraphScan[Long] {
 
   override def isPropertyWithIndex(labels: Set[String], propertyName: String): Boolean = {
     var res = false
-    val labelIds = nodeLabelStore.ids(labels)
+    val labelIds = nodeStore.getLabelIds(labels)
+    val propId = nodeStore.getPropertyKeyId(propertyName)
     loop.breakable({
       labelIds.foreach(label => {
-        val indexId = graphStore.getNodeIndexId(label, Array[Int](propertyNameStore.id(propertyName)))
+        val indexId = indexStore.getIndexId(label, Array(propId))
         if (indexId != -1) {
           res = true
           loop.break()
@@ -124,49 +125,46 @@ class PandaPropertyGraphScanImpl(nodeLabelStore: NameStore,
   override def allNodes(predicate: NFPredicate, labels: Set[String]): Iterable[Node[Id]] = {
     predicate match {
       case p: NFEquals => {
-        val labelIds = nodeLabelStore.ids(labels)
-        val propertyNameId = propertyNameStore.id(p.propName)
+        val labelIds = nodeStore.getLabelIds(labels)
+        val propertyNameId = nodeStore.getPropertyKeyId(p.propName)
         var indexId = -1
         loop.breakable({
           for (labelId <- labelIds) {
-            indexId = graphStore.getNodeIndexId(labelId, Array[Int](propertyNameId))
+            indexId = indexStore.getIndexId(labelId, Array[Int](propertyNameId))
             if (indexId != -1)
               loop.break()
           }
         })
         if (indexId != -1) {
-          var bytes: Array[Byte] = PropertyValueConverter.toBytes(p.value)
-          val nodes = graphStore.findNodeIndexRecords(indexId, bytes)
+          val nodes = indexStore.find(indexId, p.value)
           nodes.map(node => nodeAt(node)).toIterable
-        }
-        else {
-          val nodes = graphStore.findNodes(labelIds.head)
-          val itr = new Iterator[Node[Id]]{
-            var tmpNode: StoredNodeWithProperty = null
-            private def doNext(): Unit = {
-              tmpNode = null
-              loop.breakable({
-                while (nodes.hasNext) {
-                  val nid = nodes.next()
-                  tmpNode = graphStore.nodeAt(nid)
-                  // fixme nodeLabelStore => propStore
-                  if (tmpNode.properties.contains(nodeLabelStore.id(p.propName)) && tmpNode.properties(nodeLabelStore.id(p.propName)) == p.value ) {
-                    loop.break()
-                  }
-                  else {
-                    tmpNode = null
-                  }
-                }
-              })
-            }
-            override def hasNext: Boolean = {
-              doNext()
-              tmpNode != null
-            }
-
-            override def next(): Node[Id] = mapNode(tmpNode)
-          }
-          itr.toIterable
+        } else {
+          nodeStore.getNodesByLabel(labelIds.head)
+            .filter(_.properties.getOrElse(propertyNameId, null)==p.value)
+            .map(mapNode)
+            .toIterable
+//          val itr = new Iterator[Node[Id]]{
+//            private def doNext(): Unit = {
+//              tmpNode = null
+//              loop.breakable({
+//                while (nodes.hasNext) {
+//                  val node = nodes.next()
+//                  // fixme nodeLabelStore => propStore
+//                  if (tmpNode.properties.contains(nodeLabelStore.id(p.propName)) && tmpNode.properties(nodeLabelStore.id(p.propName)) == p.value ) {
+//                    loop.break()
+//                  }
+//                  else {
+//                    tmpNode = null
+//                  }
+//                }
+//              })
+//            }
+//            override def hasNext: Boolean = nodes.hasNext
+//
+//
+//            override def next(): Node[Id] = mapNode(tmpNode)
+//          }
+//          itr.toIterable
         }
       }
     }

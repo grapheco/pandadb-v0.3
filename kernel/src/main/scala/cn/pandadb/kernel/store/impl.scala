@@ -92,14 +92,7 @@ class LabelStore(labelFile: File, max: Int = Byte.MaxValue) {
   }
 }
 
-case class StoredNode(id: Long, labelIds: Array[Int]=null) {
-}
 
-class StoredNodeWithProperty(override val id: Long,
-                             override val labelIds: Array[Int],
-                             val properties:Map[Int,Any])
-  extends StoredNode(id, labelIds){
-}
 
 class StoredNodeWithProperty_tobe_deprecated(override val id: Long,
                                              override val labelIds: Array[Int],
@@ -111,16 +104,6 @@ case class StoredLabel(key: String, value: Int) {
 
 }
 
-case class StoredRelation(id: Long, from: Long, to: Long, typeId: Int) {
-}
-
-class StoredRelationWithProperty(override val id: Long,
-                                 override val from: Long,
-                                 override val to: Long,
-                                 override val typeId: Int,
-                                 val properties:Map[Int,Any])
-  extends StoredRelation(id, from, to, typeId) {
-}
 
 ///////////////////////////////
 trait StoreWithMap[T] {
