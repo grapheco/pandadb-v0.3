@@ -1,13 +1,9 @@
 package cn.pandadb.tools.importer
 
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
 
 import cn.pandadb.kernel.PDBMetaData
-import cn.pandadb.kernel.kv.RocksDBGraphAPI
 import org.apache.logging.log4j.scala.Logging
-import org.rocksdb.DbPath
 
 /**
  * @Author: Airzihao
@@ -17,15 +13,16 @@ import org.rocksdb.DbPath
  */
 object PandaImporter extends Logging{
 
-//  val srcNodeFile = new File("D://GitSpace//ScalaUtils//nodes500.csv")
-//  val srcEdgeFile = new File("D://GitSpace//ScalaUtils//edges500.csv")
-//  val headNodeFile = new File("D://GitSpace//ScalaUtils//nodeHead.csv")
-//  val headEdgeFile = new File("D://GitSpace//ScalaUtils//relationHead.csv")
+  val srcNodeFile = new File("D://GitSpace//ScalaUtils//nodes5kw.csv")
+//  val srcNodeFile = new File("C://PandaDB//nodes5kw.csv")
+  val srcEdgeFile = new File("D://GitSpace//ScalaUtils//edges5kw.csv")
+  val headNodeFile = new File("D://GitSpace//ScalaUtils//nodeHead.csv")
+  val headEdgeFile = new File("D://GitSpace//ScalaUtils//relationHead.csv")
 
-  val srcNodeFile = new File("D://GitSpace//ScalaUtils//nodes50M-wrapped.csv")
-  val srcEdgeFile = new File("D://GitSpace//ScalaUtils//edges50M-wrapped.csv")
-  val headNodeFile = new File("G:\\dataset/nodes-1k-wrapped-head.csv")
-  val headEdgeFile = new File("G:\\dataset/edges-1k-wrapped-head.csv")
+//  val srcNodeFile = new File("D://GitSpace//ScalaUtils//nodes50M-wrapped.csv")
+//  val srcEdgeFile = new File("D://GitSpace//ScalaUtils//edges50M-wrapped.csv")
+//  val headNodeFile = new File("G:\\dataset/nodes-1k-wrapped-head.csv")
+//  val headEdgeFile = new File("G:\\dataset/edges-1k-wrapped-head.csv")
   val dbPath = "C:\\PandaDB\\base_50M"
 
   def main(args: Array[String]): Unit = {
@@ -34,7 +31,7 @@ object PandaImporter extends Logging{
     val edgeImporter = new PRelationImporter(dbPath, srcEdgeFile, headEdgeFile)
     logger.info("Import task started.")
     nodeImporter.importNodes()
-//    edgeImporter.importEdges()
+    edgeImporter.importRelations()
     PDBMetaData.persist(dbPath)
     logger.info("import task finished.")
   }

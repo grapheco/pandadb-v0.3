@@ -21,7 +21,7 @@ class PRelationImporterTest {
   @Test
   def importEdges(): Unit = {
     val time0 = System.currentTimeMillis()
-    pEdgeImporter.importEdges()
+    pEdgeImporter.importData()
     val time1 = System.currentTimeMillis()
 
     val relation = rocksDBGraphAPI.relationAt(2)

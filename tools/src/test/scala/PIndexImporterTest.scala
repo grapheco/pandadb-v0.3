@@ -21,7 +21,7 @@ class PIndexImporterTest {
   @Test
   def importNode(): Unit = {
     val time0 = System.currentTimeMillis()
-    pNodeImporter.importNodes()
+    pNodeImporter.importData()
     val time1 = System.currentTimeMillis()
     println(s"import 240W nodes takes ${time1-time0} ms.")
     val node = rocksDBGraphAPI.nodeAt(1)

@@ -101,6 +101,18 @@ class NodeSerializer()  extends BaseSerializer {
     bytes
   }
 
+  def serialize(id: Long, labelIds: Array[Int], props: Map[Int, Any]): Array[Byte] = {
+    val byteBuf: ByteBuf = allocator.heapBuffer()
+    byteBuf.writeLong(id)
+    _writeLabels(labelIds, byteBuf)
+    byteBuf.writeByte(props.size)
+    props.foreach(kv => _writeProp(kv._1, kv._2, byteBuf))
+    val bytes = _exportBytes(byteBuf)
+    byteBuf.release()
+    bytes
+  }
+
+
   def serialize(nodeValue: StoredNodeWithProperty): Array[Byte] = {
     val byteBuf: ByteBuf = allocator.heapBuffer()
     byteBuf.writeLong(nodeValue.id)

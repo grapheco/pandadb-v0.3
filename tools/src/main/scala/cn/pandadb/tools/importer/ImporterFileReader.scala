@@ -1,9 +1,9 @@
 package cn.pandadb.tools.importer
 
 import java.io.File
-import java.util.concurrent.locks.ReentrantLock
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.io.Source
 
 /**
@@ -12,30 +12,45 @@ import scala.io.Source
  * @Date: Created at 16:39 2020/12/22
  * @Modified By:
  */
+
 class ImporterFileReader(file: File ,batchSize: Int = 1000000) {
 
   val fileIter = this.synchronized(Source.fromFile(file).getLines())
 
-  private def _prepareBatch(): Array[String] = {
-    this.synchronized{
-      var innercount = 0
-      val arrayBuf: ArrayBuffer[String] = new ArrayBuffer[String]()
-      while (fileIter.hasNext && innercount < batchSize) {
-        arrayBuf.append(fileIter.next())
-        innercount += 1
+  val supposedQueueLength: Int = Runtime.getRuntime().availableProcessors()/2
+  var batchQueue: mutable.Queue[List[String]] = new mutable.Queue[List[String]]()
+
+  var arr: Array[String] = new Array[String](batchSize)
+  var flag: Boolean = false
+
+  val fillQueue = new Runnable {
+    override def run(): Unit = {
+      if(batchQueue.length<supposedQueueLength && fileIter.hasNext){
+        for(i<-1 to supposedQueueLength-batchQueue.length) batchQueue.enqueue(_prepareBatch())
       }
-      arrayBuf.toArray
     }
   }
 
-  def getLines(): Array[String] = {
+  private def _prepareBatch(): List[String] = {
     this.synchronized{
-      _prepareBatch()
+      var innercount = 0
+      val listBuf: ListBuffer[String] = new ListBuffer[String]()
+      while (fileIter.hasNext && innercount < batchSize) {
+        listBuf.append(fileIter.next())
+        innercount += 1
+      }
+      listBuf.toList
+    }
+  }
+
+  def getLines(): List[String] = {
+    this.synchronized{
+      if(batchQueue.nonEmpty) batchQueue.dequeue()
+      else List[String]()
     }
   }
 
   def notFinished: Boolean = {
-    this.synchronized(fileIter.hasNext)
+    this.synchronized(fileIter.hasNext || batchQueue.nonEmpty)
   }
-
 }
