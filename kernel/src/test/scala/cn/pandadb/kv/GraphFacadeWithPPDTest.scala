@@ -2,7 +2,7 @@ package cn.pandadb.kv
 
 import java.io.File
 
-import cn.pandadb.kernel.kv.name.{NameStore, NodeLabelNameStore, PropertyNameStore, RelationTypeNameStore}
+import cn.pandadb.kernel.kv.meta.{NameStore, NodeLabelNameStore, PropertyNameStore, RelationTypeNameStore}
 import cn.pandadb.kernel.kv.GraphFacadeWithPPD
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
@@ -33,7 +33,7 @@ class GraphFacadeWithPPDTest {
     new File("./testdata/output/nodelabels").createNewFile()
     new File("./testdata/output/rellabels").createNewFile()
 
-    val dbPath = "./test"
+    val dbPath = "./testdata"
     var nodeStore = new NodeStoreAPI(dbPath)
     var relationStore = new RelationStoreAPI(dbPath)
     var indexStore = new IndexStoreAPI(dbPath)
@@ -142,11 +142,23 @@ class GraphFacadeWithPPDTest {
       node=>
         println(node.id, node.labelIds.mkString(";"), node.properties)
     }
+    val indexid = graphFacade.createNodePropertyIndex("person", Set("age"))
+
     val res = graphFacade.cypher("match (n:person) where n.age=40  return n")
     res.show
     Assert.assertEquals(1, res.records.size)
 
   }
 
+  @Test
+  def testQueryRelation(): Unit = {
+    val n1: Long = graphFacade.addNode2(Map("name" -> "bob", "age" -> 40), "person")
+    val n2: Long = graphFacade.addNode2(Map("name" -> "alex", "age" -> 20), "person")
+    val n3: Long = graphFacade.addNode2(Map("name" -> "simba", "age" -> 10), "worker")
+    graphFacade.addRelation("friend", 1L, 2L, Map())
+    graphFacade.allRelations().foreach(println)
+    val res = graphFacade.cypher("match (n)-[r]->(m) return r")
+    res.show
+  }
 
 }

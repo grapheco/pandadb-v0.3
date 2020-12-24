@@ -1,7 +1,7 @@
 package cn.pandadb.kernel.kv
 
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
-import cn.pandadb.kernel.kv.name.NameStore
+import cn.pandadb.kernel.kv.meta.NameStore
 import cn.pandadb.kernel.optimizer.PandaPropertyGraphScan
 import cn.pandadb.kernel.store.{FileBasedIdGen, LabelStore, NodeStoreSPI, RelationStoreSPI, StoredNode, StoredNodeWithProperty, StoredNodeWithProperty_tobe_deprecated, StoredRelation, StoredRelationWithProperty}
 import org.opencypher.lynx.PropertyGraphScan
@@ -34,7 +34,7 @@ class PropertyGraphScanImpl(nodeIdGen: FileBasedIdGen,
       override def copy(id: Id, source: Id, target: Id, relType: String, properties: CypherMap): this.type = ???
 
       override def properties: CypherMap = {
-        var props: Map[String, Any] = null
+        var props: Map[String, Any] = Map.empty[String, Any]
         if (rel.isInstanceOf[StoredRelationWithProperty]) {
           props = rel.asInstanceOf[StoredRelationWithProperty].properties.asInstanceOf[Map[String, Any]]
         }

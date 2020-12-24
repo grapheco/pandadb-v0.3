@@ -1,7 +1,7 @@
 package cn.pandadb.kernel.kv.node
 
 import cn.pandadb.kernel.kv.RocksDBStorage
-import cn.pandadb.kernel.kv.name.{NodeLabelNameStore, PropertyNameStore}
+import cn.pandadb.kernel.kv.meta.{NodeLabelNameStore, PropertyNameStore}
 import cn.pandadb.kernel.store.{NodeStoreSPI, StoredNodeWithProperty}
 
 /**
@@ -99,10 +99,17 @@ class NodeStoreAPI(dbPath: String) extends NodeStoreSPI {
     nodeLabelStore.delete(nodeId)
   }
 
+  // big cost
   override def deleteNodesByLabel(labelId: Int): Unit = {
     val ids = nodeStore.getNodeIdsByLabel(labelId)
-    ids.foreach(nodeLabelStore.delete(_,labelId))
     nodeStore.deleteByLabel(labelId)
+    ids.foreach{
+      nodeid=>
+        val labels = nodeLabelStore.get(nodeid)
+        nodeLabelStore.delete(nodeid)
+        if (labels.length>1)
+          nodeStore.delete(nodeid, labels)
+    }
   }
 
   //  // Big cost!!!

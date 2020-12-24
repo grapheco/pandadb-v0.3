@@ -1,7 +1,7 @@
 package cn.pandadb.kernel.kv.relation
 
 import cn.pandadb.kernel.kv.RocksDBStorage
-import cn.pandadb.kernel.kv.name.{NodeLabelNameStore, PropertyNameStore, RelationTypeNameStore}
+import cn.pandadb.kernel.kv.meta.{NodeLabelNameStore, PropertyNameStore, RelationTypeNameStore}
 import cn.pandadb.kernel.store.{RelationStoreSPI, StoredRelation, StoredRelationWithProperty}
 
 /**
