@@ -17,6 +17,7 @@
         <module>tools</module>
         <module>server</module>
         <module>driver</module>
+        <module>grpc</module>
     </modules>
 
     <build>
