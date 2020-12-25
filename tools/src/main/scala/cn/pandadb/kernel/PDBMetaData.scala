@@ -1,10 +1,9 @@
 package cn.pandadb.kernel
 
-import java.io.{File, FileInputStream, FileOutputStream}
+import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 
 import cn.pandadb.kernel.kv.RocksDBStorage
 import cn.pandadb.kernel.util.serializer.ChillSerializer
-import org.rocksdb.RocksDB
 
 /**
  * @Author: Airzihao
@@ -23,6 +22,16 @@ object PDBMetaData {
   private var _propCounter: Int = 0
   private var _labelCounter: Int = 0
   private var _typeCounter: Int = 0
+
+  private var _nodeIdAllocator: AtomicLong = new AtomicLong(0)
+  private var _relationIdAllocator: AtomicLong = new AtomicLong(0)
+  private var _indexIdAllocator: AtomicInteger = new AtomicInteger(0)
+
+  def availableNodeId: Long = _nodeIdAllocator.getAndIncrement()
+
+  def availableRelId: Long = _relationIdAllocator.getAndIncrement()
+
+  def availabelIndexId: Int = _indexIdAllocator.getAndIncrement()
 
   def persist(dbPath: String): Unit = {
     val rocksDB = RocksDBStorage.getDB(s"${dbPath}/metadata")

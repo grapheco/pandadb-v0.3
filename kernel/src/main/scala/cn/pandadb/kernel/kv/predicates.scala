@@ -14,6 +14,10 @@ trait NFExpression {
 trait NFPredicate extends NFExpression {
 }
 
+trait NFBinaryPredicate extends NFPredicate{
+
+}
+
 case class NFLabels(labels: Seq[String] ) extends NFPredicate {
 
 }
@@ -21,22 +25,22 @@ case class NFLabels(labels: Seq[String] ) extends NFPredicate {
 case class NFLimit(size: Long) extends NFPredicate {
 
 }
-case class NFGreaterThan(propName: String, value: AnyValue) extends NFPredicate {
+case class NFGreaterThan(propName: String, value: AnyValue) extends NFBinaryPredicate{
 }
 
-case class NFGreaterThanOrEqual(propName: String, value: AnyValue) extends NFPredicate {
+case class NFGreaterThanOrEqual(propName: String, value: AnyValue) extends NFBinaryPredicate {
 }
 
-case class NFLessThan(propName: String, value: AnyValue) extends NFPredicate {
+case class NFLessThan(propName: String, value: AnyValue) extends NFBinaryPredicate {
 }
 
-case class NFLessThanOrEqual(propName: String, value: AnyValue) extends NFPredicate {
+case class NFLessThanOrEqual(propName: String, value: AnyValue) extends NFBinaryPredicate {
 }
 
-case class NFEquals(propName: String, value: AnyValue) extends NFPredicate {
+case class NFEquals(propName: String, value: AnyValue) extends NFBinaryPredicate {
 }
 
-case class NFNotEquals(propName: String, value: AnyValue) extends NFPredicate {
+case class NFNotEquals(propName: String, value: AnyValue) extends NFBinaryPredicate {
 }
 
 case class NFNotNull(propName: String) extends NFPredicate {

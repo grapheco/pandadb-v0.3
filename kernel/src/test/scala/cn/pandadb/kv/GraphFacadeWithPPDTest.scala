@@ -156,8 +156,9 @@ class GraphFacadeWithPPDTest {
     val n2: Long = graphFacade.addNode2(Map("name" -> "alex", "age" -> 20), "person")
     val n3: Long = graphFacade.addNode2(Map("name" -> "simba", "age" -> 10), "worker")
     graphFacade.addRelation("friend", 1L, 2L, Map())
-    graphFacade.allRelations().foreach(println)
-    val res = graphFacade.cypher("match (n)-[r]->(m) return r")
+    //graphFacade.allRelations().foreach(println)
+    val res = graphFacade.cypher("match (n:person)-[r]->(m:person) where n.age=40 and m.age = 20 return n")
+    //val res = graphFacade.cypher("match (n)-[r]->(m) return r")
     res.show
   }
 

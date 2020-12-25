@@ -1,22 +1,205 @@
 package cn.pandadb.kernel.optimizer
 
-import cn.pandadb.kernel.kv.{AnyValue, NFEquals, NFGreaterThan, NFGreaterThanOrEqual, NFLabels, NFLessThan, NFLessThanOrEqual, NFPredicate}
+import cn.pandadb.kernel.kv.{AnyValue, NFBinaryPredicate, NFEquals, NFGreaterThan, NFGreaterThanOrEqual, NFLabels, NFLessThan, NFLessThanOrEqual, NFPredicate}
 import org.opencypher.lynx.graph.LynxPropertyGraph
 import org.opencypher.lynx.{LynxPlannerContext, LynxTable, RecordHeader}
 import org.opencypher.lynx.planning.{Add, AddInto, Aggregate, Alias, Cache, ConstructGraph, Distinct, Drop, EmptyRecords, Filter, FromCatalogGraph, GraphUnionAll, Join, Limit, OrderBy, PhysicalOperator, PrefixGraph, ReturnGraph, ScanNodes, ScanRels, Select, Skip, Start, SwitchContext, TabularUnionAll}
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.ir.api.expr.{ElementProperty, Equals, Expr, GreaterThan, GreaterThanOrEqual, Id, LessThan, LessThanOrEqual, Param}
+import org.opencypher.okapi.ir.api.expr.{BinaryPredicate, ElementProperty, Equals, Expr, GreaterThan, GreaterThanOrEqual, Id, LessThan, LessThanOrEqual, NodeVar, Param}
 import org.opencypher.okapi.trees.TopDown
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 object PandaPhysicalOptimizer {
 
   def process(input: PhysicalOperator)(implicit context: LynxPlannerContext): PhysicalOperator = {
     //InsertCachingOperators(input)
-    filterPushDown(input)
-    //input
+    //filterPushDown(input)
+    filterPushDown2(new ArrayBuffer[PhysicalOperator](), new ArrayBuffer[PhysicalOperator](), input)
+  }
+
+  def filterPushDown2(filterOps: ArrayBuffer[PhysicalOperator], ordinaryOps: ArrayBuffer[PhysicalOperator], input: PhysicalOperator): PhysicalOperator = {
+    input match {
+      case x: Filter => {
+        filterOps += x
+        filterPushDown2(filterOps, ordinaryOps, x.in)
+      }
+      /*    case x: LabelRecorders => {
+            filterOps += x
+            extractFilter(filterOps, ordinaryOps, x.in)
+          }*/
+      case x: Start =>
+        generatePhysicalPlan(filterOps, ordinaryOps, x)
+        //todo throw exception
+      case x: Select =>
+        ordinaryOps += x
+        filterPushDown2(filterOps, ordinaryOps, x.in)
+
+      case x: Add =>
+        ordinaryOps += x
+        filterPushDown2(filterOps, ordinaryOps, x.in)
+      case x: AddInto =>
+        ordinaryOps += x
+        filterPushDown2(filterOps, ordinaryOps, x.in)
+      case x: Aggregate =>
+        ordinaryOps += x
+        filterPushDown2(filterOps, ordinaryOps, x.in)
+      case x: Alias =>
+        ordinaryOps += x
+        filterPushDown2(filterOps, ordinaryOps, x.in)
+      case x: Cache =>
+        ordinaryOps += x
+        filterPushDown2(filterOps, ordinaryOps, x.in)
+      case x: ConstructGraph =>
+        ordinaryOps += x
+        filterPushDown2(filterOps, ordinaryOps, x.in)
+      case x: Distinct =>
+        ordinaryOps += x
+        filterPushDown2(filterOps, ordinaryOps, x.in)
+      case x: Drop[Any] =>
+        ordinaryOps += x
+        filterPushDown2(filterOps, ordinaryOps, x.in)
+      case x: EmptyRecords =>
+        if (x.fields.size >= 1) filterOps += x
+        else ordinaryOps += x
+        filterPushDown2(filterOps, ordinaryOps, x.in)
+        //todo throw exception
+      case x: FromCatalogGraph =>
+        ordinaryOps += x
+        filterPushDown2(filterOps, ordinaryOps, x.in)
+      case x: GraphUnionAll =>
+        generatePhysicalPlan(filterOps, ordinaryOps, x)
+      //todo throw exception
+      case x: Join =>
+        val op1 = filterPushDown(x.lhs)
+        val op2 = filterPushDown(x.rhs)
+        val join = Join(op1, op2, x.joinExprs, x.joinType)
+        generatePhysicalPlan(filterOps, ordinaryOps, join)
+      //todo throw exception
+      case x: Limit =>
+        filterOps += x
+        filterPushDown2(filterOps, ordinaryOps, x.in)
+      case x: OrderBy =>
+        ordinaryOps += x
+        filterPushDown2(filterOps, ordinaryOps, x.in)
+      case x: PrefixGraph =>
+        ordinaryOps += x
+        filterPushDown2(filterOps, ordinaryOps, x.in)
+      case x: ReturnGraph =>
+        ordinaryOps += x
+        filterPushDown2(filterOps, ordinaryOps, x.in)
+      case x: Skip =>
+        ordinaryOps += x
+        filterPushDown2(filterOps, ordinaryOps, x.in)
+      case x: SwitchContext =>
+        ordinaryOps += x
+        filterPushDown2(filterOps, ordinaryOps, x.in)
+      case x: TabularUnionAll =>
+        //val op1 = extractFilter(new ArrayBuffer[PhysicalOperator](), new ArrayBuffer[PhysicalOperator](), x.lhs)
+        val op1 = filterPushDown(x.lhs)
+        //val op2 = extractFilter(new ArrayBuffer[PhysicalOperator](), new ArrayBuffer[PhysicalOperator](), x.rhs)
+        val op2 = filterPushDown(x.rhs)
+        val tabularUnionAll = TabularUnionAll(op1, op2)
+        generatePhysicalPlan(filterOps, ordinaryOps, tabularUnionAll)
+        //todo throw exception
+      case x: ScanRels => handlePhyOpWithStat(filterOps.map(Transformer.getPredicate(_)), ordinaryOps, mutable.Map[PhysicalOperator, Long](), x)
+      case x: ScanNodes => handlePhyOpWithStat(filterOps.map(Transformer.getPredicate(_)), ordinaryOps, mutable.Map[PhysicalOperator, Long](), x)
+    }
+  }
+
+  def handlePhyOpWithStat(filterOps: ArrayBuffer[NFPredicate], ordinaryOps: ArrayBuffer[PhysicalOperator], scanOps:mutable.Map[PhysicalOperator, Long], input: PhysicalOperator): PhysicalOperator = {
+    input match {
+      case x:ScanNodes => {
+        //ScanNodes(isEnd: Boolean, nodeVar: Var, varMap: Map[Var, TNode], in: PhysicalOperator, next: PhysicalOperator, labels: Set[String], filterOP: ArrayBuffer[NFPredicate])
+        val xop = filterOps.filter(u => u.isInstanceOf[NFBinaryPredicate] && u.asInstanceOf[NFEquals].propName.equals(x.nodeVar.name))
+        val newXop = ScanNodes(x.isEnd, x.nodeVar, x.varMap, x.in, x.next, x.labels, x.filterOP ++ xop)
+
+        if (newXop.isEnd){
+          generationPlan(newXop.asInstanceOf[ScanNodes].in, filterOps, ordinaryOps, scanOps += newXop -> newXop.getRecordsNumbers)
+        }
+        else handlePhyOpWithStat(filterOps, ordinaryOps, scanOps += newXop -> newXop.getRecordsNumbers, newXop.next)
+      }
+        //todo add graph for rels
+      case x:ScanRels =>{
+        //ScanRels(isEnd: Boolean,
+        //                           sVar: Var,
+        //                           rel: Var,
+        //                           tVar: Var,
+        //                           //scanType: ScanType,
+        //                           next: PhysicalOperator,
+        //                           direction: Direction, labels: Set[String],
+        //                           filterOP: ArrayBuffer[NFPredicate])
+        val xop = filterOps.filter(u => u.isInstanceOf[NFBinaryPredicate] && u.asInstanceOf[NFEquals].propName.equals(x.rel.name))
+        val newXop = ScanRels(x.isEnd, x.sVar, x.rel, x.tVar, x.next, x.direction,  x.labels, x.filterOP ++ xop)
+        if (newXop.isEnd){
+          generationPlan(newXop.asInstanceOf[ScanNodes].in, filterOps, ordinaryOps, scanOps += newXop -> newXop.getRecordsNumbers)
+        }
+        else handlePhyOpWithStat(filterOps, ordinaryOps, scanOps += newXop -> newXop.getRecordsNumbers, newXop.next)
+      }
+    }
+  }
+
+  def generationPlan(in: PhysicalOperator, filterOps: ArrayBuffer[NFPredicate], ordinaryOps: ArrayBuffer[PhysicalOperator], scanOps:mutable.Map[PhysicalOperator, Long]): PhysicalOperator ={
+    val lop = filterOps.filter(_.isInstanceOf[Limit])
+    val limit = if(lop.nonEmpty) lop.head else null
+    //var opWithCnt: mutable.Map[PhysicalOperator, Long] = mutable.Map[PhysicalOperator, Long]()
+
+    val (op, cnt) = scanOps.toArray.minBy(_._2)
+
+    val index = scanOps.values.toArray.zipWithIndex.filter(_._1 == cnt).head._2
+
+    val leftOPs = scanOps.take(index).toArray.reverse.toBuffer
+    val rigthOps = scanOps.takeRight(scanOps.size - 1 - index).toArray.toBuffer
+    var tempOp: PhysicalOperator = op match {
+      case x: ScanRels => ScanRels(true, x.sVar, x.rel, x.tVar, in , x.direction,  x.labels, x.filterOP)
+      case x: ScanNodes => ScanNodes(true, x.nodeVar, x.varMap, x.in, null, x.labels, x.filterOP)
+    }
+    while (leftOPs.nonEmpty && rigthOps.nonEmpty){
+      if (leftOPs.head._2 >= rigthOps.head._2){
+        rigthOps.head._1 match {
+          case x: ScanNodes => tempOp = ScanNodes(false, x.nodeVar, x.varMap, x.in, tempOp, x.labels, x.filterOP)
+          case x: ScanRels => tempOp = ScanRels(false, x.sVar, x.rel, x.tVar, tempOp, x.direction,  x.labels, x.filterOP)
+        }
+        rigthOps.remove(0)
+      }
+      else{
+        leftOPs.head._1 match {
+          case x: ScanNodes => tempOp = ScanNodes(false, x.nodeVar, x.varMap, x.in, tempOp, x.labels, x.filterOP)
+          case x: ScanRels => tempOp = ScanRels(false, x.sVar, x.rel, x.tVar, tempOp, x.direction,  x.labels, x.filterOP)
+        }
+        leftOPs.remove(0)
+      }
+    }
+    while(leftOPs.nonEmpty){
+      leftOPs.head._1 match {
+        case x: ScanNodes => tempOp = ScanNodes(false, x.nodeVar, x.varMap, x.in, tempOp, x.labels, x.filterOP)
+        case x: ScanRels => tempOp = ScanRels(false, x.sVar, x.rel, x.tVar, tempOp, x.direction,  x.labels, x.filterOP)
+      }
+      leftOPs.remove(0)
+    }
+    while(rigthOps.nonEmpty){
+      rigthOps.head._1 match {
+        case x: ScanNodes => tempOp = ScanNodes(false, x.nodeVar, x.varMap, x.in, tempOp, x.labels, x.filterOP)
+        case x: ScanRels => tempOp = ScanRels(false, x.sVar, x.rel, x.tVar, tempOp, x.direction,  x.labels, x.filterOP)
+      }
+      rigthOps.remove(0)
+    }
+
+    if (limit != null){
+      tempOp match {
+        case x: ScanNodes => tempOp = ScanNodes(x.isEnd, x.nodeVar, x.varMap, x.in, x.next, x.labels, x.filterOP += limit)
+        case x: ScanRels => tempOp = ScanRels(x.isEnd, x.sVar, x.rel, x.tVar, x.next, x.direction,  x.labels, x.filterOP += limit)
+      }
+    }
+    //ordinaryOps.reverse
+    //var tempOp: PhysicalOperator = Transformer(filterops, endOp, reOrderPredicates(filterops, endOp.graph))
+    ordinaryOps.reverse.foreach(u => {
+      tempOp = constructPhysicalPlan(u, tempOp)
+    })
+    tempOp
+
   }
 
   def filterPushDown(input: PhysicalOperator): PhysicalOperator = {

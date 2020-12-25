@@ -14,6 +14,7 @@ import org.opencypher.okapi.ir.api.{Label, RelType}
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.logical.{impl => logical}
 import ConstructGraphPlanner._
+import cn.pandadb.kernel.kv.NFPredicate
 import org.opencypher.lynx.graph.LynxPropertyGraph
 import org.opencypher.okapi.ir.impl.util.VarConverters.RichPatternElement
 
@@ -94,7 +95,7 @@ object PandaPhysicalPlanner {
 
       case logical.EmptyRecords(fields, in, _) =>
         //planning.EmptyRecords(process(in), fields)
-        ScanNodes(true, fields.head, process(in), null, fields.head.asInstanceOf[NodeVar].cypherType.asInstanceOf[CTNode].labels, new ArrayBuffer[Filter]())
+        ScanNodes(true, fields.head, Map(), process(in), null, fields.head.asInstanceOf[NodeVar].cypherType.asInstanceOf[CTNode].labels, new ArrayBuffer[NFPredicate]())
 
       case logical.Start(graph, _) =>
         planning.Start(graph.qualifiedGraphName)
@@ -116,7 +117,7 @@ object PandaPhysicalPlanner {
 
       case logical.PatternScan(pattern, mapping, in, _) =>
         if (pattern.isInstanceOf[NodePattern]) {
-          ScanNodes(true, mapping.head._1, process(in), null, pattern.asInstanceOf[NodePattern].nodeType.labels, new ArrayBuffer[Filter]())
+          ScanNodes(true, mapping.head._1, Map(), process(in), null, pattern.asInstanceOf[NodePattern].nodeType.labels, new ArrayBuffer[NFPredicate]())
         }
         else planScan(Some(process(in)), in.graph, pattern, mapping)
 
@@ -149,21 +150,31 @@ object PandaPhysicalPlanner {
         val third = process(targetOp)
         if (first.asInstanceOf[ScanNodes].isEnd){
           if (third.asInstanceOf[ScanNodes].isEnd){
-            val relOp = ScanRels(false, source, rel, target, first,  direction, rel.cypherType.asInstanceOf[CTRelationship].types, new ArrayBuffer[Filter]())
+            //taregt -> rel -> source
+            //ScanNodes(isEnd: Boolean, nodeVar: Var, varMap: Map[Var, TNode], in: PhysicalOperator, next: PhysicalOperator, labels: Set[String], filterOP: ArrayBuffer[Filter])
+            val left = first.asInstanceOf[ScanNodes]
+            val newLeft = ScanNodes(left.isEnd, left.nodeVar, left.varMap ++ Map(rel -> SourceNode()), left.in, left.next, left.labels, left.filterOP)
+
+            val relOp = ScanRels(false, source, rel, target, newLeft,  direction, rel.cypherType.asInstanceOf[CTRelationship].types, new ArrayBuffer[NFPredicate]())
             val firstScan = third.asInstanceOf[ScanNodes]
-            //ScanNodes(isEnd: Boolean, nodeVar: Var, in: PhysicalOperator,rel: PhysicalOperator,  labels: Set[String], filterOP: ArrayBuffer[Filter])
-            ScanNodes(false, firstScan.nodeVar, firstScan.in, relOp, firstScan.labels, firstScan.filterOP)
+            ScanNodes(false, firstScan.nodeVar, Map(rel->TargetNode()), firstScan.in, relOp, firstScan.labels, firstScan.filterOP)
           }
           else{
-            val relOp = ScanRels(false, source, rel, target, third,  direction, rel.cypherType.asInstanceOf[CTRelationship].types, new ArrayBuffer[Filter]())
+            //source -> rel -> target
+            val right = third.asInstanceOf[ScanNodes]
+            val newRight = ScanNodes(right.isEnd, right.nodeVar, right.varMap ++ Map(rel -> TargetNode()), right.in, right.next, right.labels, right.filterOP)
+            val relOp = ScanRels(false, source, rel, target, newRight,  direction, rel.cypherType.asInstanceOf[CTRelationship].types, new ArrayBuffer[NFPredicate]())
             val firstScan = first.asInstanceOf[ScanNodes]
-            ScanNodes(false, firstScan.nodeVar, firstScan.in, relOp, firstScan.labels, firstScan.filterOP)
+            ScanNodes(false, firstScan.nodeVar, Map(rel ->SourceNode()), firstScan.in, relOp, firstScan.labels, firstScan.filterOP)
           }
         }
         else {
-          val relOp = ScanRels(false, source, rel, target, first,  direction, rel.cypherType.asInstanceOf[CTRelationship].types, new ArrayBuffer[Filter]())
+          //target -> rel -> source
+          val left = first.asInstanceOf[ScanNodes]
+          val newLeft = ScanNodes(left.isEnd, left.nodeVar, left.varMap ++ Map(rel -> SourceNode()), left.in, left.next, left.labels, left.filterOP)
+          val relOp = ScanRels(false, source, rel, target, newLeft,  direction, rel.cypherType.asInstanceOf[CTRelationship].types, new ArrayBuffer[NFPredicate]())
           val firstScan = third.asInstanceOf[ScanNodes]
-          ScanNodes(false, firstScan.nodeVar, firstScan.in, relOp, firstScan.labels, firstScan.filterOP)
+          ScanNodes(false, firstScan.nodeVar, Map(rel ->TargetNode()), firstScan.in, relOp, firstScan.labels, firstScan.filterOP)
         }
 
 
@@ -297,6 +308,7 @@ object PandaPhysicalPlanner {
     scanOp
       .assignScanName(varPatternElementMapping.mapValues(_.toVar).map(_.swap))
       .switchContext(inOp.context)
+
   }
 
   // TODO: process operator outside of def
