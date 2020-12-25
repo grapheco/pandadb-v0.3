@@ -40,6 +40,18 @@ class RelationDirectionStore(db: RocksDB, DIRECTION: Direction) {
     db.delete(keyBytes)
   }
 
+  def deleteRange(firstId: Long): Unit = {
+    db.deleteRange(
+      KeyHandler.edgeKeyPrefixToBytes(firstId,0),
+      KeyHandler.edgeKeyPrefixToBytes(firstId, -1))
+  }
+
+  def deleteRange(firstId: Long, typeId: Int): Unit = {
+    db.deleteRange(
+      KeyHandler.edgeKeyToBytes(firstId, typeId, 0),
+      KeyHandler.edgeKeyToBytes(firstId, typeId, -1))
+  }
+
   def get(node1: Long, edgeType: Int, node2: Long): Long = {
     val keyBytes = KeyHandler.edgeKeyToBytes(node1, edgeType, node2)
     ByteUtils.getLong(db.get(keyBytes), 0)
