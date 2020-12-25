@@ -134,6 +134,8 @@ final case class  ScanRels(isEnd: Boolean,
                            direction: Direction, labels: Set[String],
                            filterOP: ArrayBuffer[NFPredicate]) extends PhysicalOperator{
 
+  override val graph = next.graph
+
   override lazy val recordHeader: RecordHeader = {
     if (isEnd) RecordHeader(Map(NodeVar(rel.name)(CTRelationship) -> rel.name))
     else next.recordHeader ++ RecordHeader(Map(NodeVar(rel.name)(CTRelationship) -> rel.name))
@@ -171,7 +173,7 @@ final case class  ScanRels(isEnd: Boolean,
   }
 
   def getRecordsNumbers: Long = {
-    graph.asInstanceOf[PandaPropertyGraph[Id]].getNodeCnt(filterOP.toArray, labels)
+    next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelCnt(filterOP.toArray, labels.headOption.orNull, dir)
 
   }
 
