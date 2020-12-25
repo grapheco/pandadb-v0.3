@@ -55,6 +55,25 @@ trait Importer {
     }
     hMap
   }
+
+  protected def _getPropMap(lineArr: Array[String], propSortArr: Array[Int], startIndex: Int) = {
+    var propMap: Map[Int, Any] = Map[Int, Any]()
+    for(i <-startIndex to lineArr.length -1) {
+      val propId: Int = propSortArr(i - startIndex)
+      val propValue: Any = {
+        headMap(propId) match {
+          case "long" => lineArr(i).toLong
+          case "int" => lineArr(i).toInt
+          case "boolean" => lineArr(i).toBoolean
+          case "double" => lineArr(i).toDouble
+          case _ => lineArr(i).replace("\"", "")
+        }
+      }
+      propMap += (propId -> propValue)
+    }
+    propMap
+  }
+
   def estLineCount(file: File): Long = {
     val fileSize: Long = file.length() // count by Byte
     if(fileSize < 1024*1024) {

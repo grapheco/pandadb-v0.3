@@ -13,16 +13,16 @@ import org.apache.logging.log4j.scala.Logging
  */
 object PandaImporter extends Logging{
 
-  val srcNodeFile = new File("D://GitSpace//ScalaUtils//nodes5kw.csv")
+//  val srcNodeFile = new File("D://GitSpace//ScalaUtils//nodes5kw.csv")
 //  val srcNodeFile = new File("C://PandaDB//nodes5kw.csv")
-  val srcEdgeFile = new File("D://GitSpace//ScalaUtils//edges5kw.csv")
-  val headNodeFile = new File("D://GitSpace//ScalaUtils//nodeHead.csv")
-  val headEdgeFile = new File("D://GitSpace//ScalaUtils//relationHead.csv")
+//  val srcEdgeFile = new File("D://GitSpace//ScalaUtils//edges5kw.csv")
+//  val headNodeFile = new File("D://GitSpace//ScalaUtils//nodeHead.csv")
+//  val headEdgeFile = new File("D://GitSpace//ScalaUtils//relationHead.csv")
 
-//  val srcNodeFile = new File("D://GitSpace//ScalaUtils//nodes50M-wrapped.csv")
-//  val srcEdgeFile = new File("D://GitSpace//ScalaUtils//edges50M-wrapped.csv")
-//  val headNodeFile = new File("G:\\dataset/nodes-1k-wrapped-head.csv")
-//  val headEdgeFile = new File("G:\\dataset/edges-1k-wrapped-head.csv")
+  val srcNodeFile = new File("D://GitSpace//ScalaUtils//nodes50M-wrapped.csv")
+  val srcEdgeFile = new File("D://GitSpace//ScalaUtils//edges50M-wrapped.csv")
+  val headNodeFile = new File("G:\\dataset/nodes-1k-wrapped-head.csv")
+  val headEdgeFile = new File("G:\\dataset/edges-1k-wrapped-head.csv")
   val dbPath = "C:\\PandaDB\\base_50M"
 
   def main(args: Array[String]): Unit = {
