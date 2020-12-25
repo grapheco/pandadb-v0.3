@@ -282,18 +282,18 @@ object ByteUtils {
     bytes(index)
   }
 
-  import org.nustaq.serialization.FSTConfiguration
-  val conf: FSTConfiguration = FSTConfiguration.createDefaultConfiguration
-  def mapToBytes(map: Map[String, Any]): Array[Byte] = {
-      conf.asByteArray(map)
-    }
-
-  def mapFromBytes(bytes: Array[Byte]): Map[String, Any] = {
-//    val bis=new ByteArrayInputStream(bytes)
-//    val ois=new ObjectInputStream(bis)
-//    ois.readObject.asInstanceOf[Map[String, Any]]
-    conf.asObject(bytes).asInstanceOf[Map[String, Any]]
-  }
+//  import org.nustaq.serialization.FSTConfiguration
+//  val conf: FSTConfiguration = FSTConfiguration.createDefaultConfiguration
+//  def mapToBytes(map: Map[String, Any]): Array[Byte] = {
+//      conf.asByteArray(map)
+//    }
+//
+//  def mapFromBytes(bytes: Array[Byte]): Map[String, Any] = {
+////    val bis=new ByteArrayInputStream(bytes)
+////    val ois=new ObjectInputStream(bis)
+////    ois.readObject.asInstanceOf[Map[String, Any]]
+//    conf.asObject(bytes).asInstanceOf[Map[String, Any]]
+//  }
 
 
   def longToBytes(num: Long): Array[Byte] = {

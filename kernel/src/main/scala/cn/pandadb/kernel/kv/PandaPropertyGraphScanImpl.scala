@@ -3,7 +3,7 @@ package cn.pandadb.kernel.kv
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.NameStore
 import cn.pandadb.kernel.optimizer.PandaPropertyGraphScan
-import cn.pandadb.kernel.store.{FileBasedIdGen, LabelStore, NodeStoreSPI, RelationStoreSPI, StoredNode, StoredNodeWithProperty, StoredNodeWithProperty_tobe_deprecated, StoredRelation, StoredRelationWithProperty}
+import cn.pandadb.kernel.store.{FileBasedIdGen, NodeStoreSPI, RelationStoreSPI, StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
 import org.opencypher.lynx.PropertyGraphScan
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship}
