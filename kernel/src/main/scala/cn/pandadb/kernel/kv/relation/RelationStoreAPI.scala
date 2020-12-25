@@ -77,15 +77,17 @@ class RelationStoreAPI(dbPath: String) extends RelationStoreSPI{
     inRelationStore.getNodeIds(toNodeId, relationType)
 
   override def addRelation(relation: StoredRelation): Unit = {
-    relationStore.set(relation.id)
+    relationStore.set(relation)
     inRelationStore.set(relation)
     outRelationStore.set(relation)
+    relationLabelStore.set(relation.typeId, relation.id)
   }
 
   override def addRelation(relation: StoredRelationWithProperty): Unit = {
     relationStore.set(relation)
     inRelationStore.set(relation)
     outRelationStore.set(relation)
+    relationLabelStore.set(relation.typeId, relation.id)
   }
 
   override def deleteRelation(id: Long): Unit = {
@@ -93,6 +95,7 @@ class RelationStoreAPI(dbPath: String) extends RelationStoreSPI{
     relationStore.delete(id)
     inRelationStore.delete(relation)
     outRelationStore.delete(relation)
+    relationLabelStore.delete(relation.typeId, relation.id)
   }
 
   override def allRelationsWithProperty(): Iterator[StoredRelationWithProperty] = relationStore.all()
