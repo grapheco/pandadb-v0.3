@@ -4,6 +4,7 @@ import cn.pandadb.dbms.GraphDatabaseManager
 import cn.pandadb.server.common.Logging
 import cn.pandadb.server.common.configuration.Config
 import cn.pandadb.server.common.lifecycle.LifecycleSupport
+import cn.pandadb.server.rpc.PandaRpcServer
 
 
 class PandaServer(config: Config) extends Logging {
@@ -14,7 +15,7 @@ class PandaServer(config: Config) extends Logging {
 
   val graphDatabaseManager: GraphDatabaseManager = null
 
-//  life.add(new PandaRpcServer(config, graphDatabaseManager) )
+  life.add(new PandaRpcServer(config, graphDatabaseManager) )
 
   def start(): Unit = {
     logger.info("==== PandaDB Server Starting... ====")
