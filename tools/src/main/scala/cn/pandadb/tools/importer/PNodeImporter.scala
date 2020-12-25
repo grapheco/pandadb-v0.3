@@ -9,7 +9,7 @@ import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
 import cn.pandadb.kernel.PDBMetaData
 import cn.pandadb.kernel.kv.{KeyHandler, RocksDBStorage}
 import cn.pandadb.kernel.util.serializer.NodeSerializer
-import cn.pandadb.tools.importer.IFReader.reader
+//import cn.pandadb.tools.importer.IFReader.reader
 import org.apache.logging.log4j.scala.Logging
 import org.rocksdb.{FlushOptions, WriteBatch, WriteOptions}
 
@@ -107,21 +107,7 @@ class PNodeImporter(dbPath: String, nodeFile: File, nodeHeadFile: File) extends 
     val id = lineArr(0).toLong
     val labels: Array[String] = lineArr(1).split(";")
     val labelIds: Array[Int] = labels.map(label => PDBMetaData.getLabelId(label))
-    var propMap: Map[Int, Any] = Map[Int, Any]()
-    for (i <- 2 to lineArr.length - 1) {
-      val propId: Int = propSortArr(i - 2)
-      val propValue: Any = {
-        headMap(propId) match {
-          case "float" => lineArr(i).toFloat
-          case "long" => lineArr(i).toLong
-          case "int" => lineArr(i).toInt
-          case "boolean" => lineArr(i).toBoolean
-          case "double" => lineArr(i).toDouble
-          case _ => lineArr(i).replace("\"", "")
-        }
-      }
-      propMap += (propId -> propValue)
-    }
+    val propMap: Map[Int, Any] = _getPropMap(lineArr, propSortArr, 2)
     (id, labelIds, propMap)
   }
 

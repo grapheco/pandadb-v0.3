@@ -104,16 +104,16 @@ object PandaPhysicalOptimizer {
         val tabularUnionAll = TabularUnionAll(op1, op2)
         generatePhysicalPlan(filterOps, ordinaryOps, tabularUnionAll)
         //todo throw exception
-      case x: ScanRels => handlePhyOpWithStat(filterOps.map(Transformer.getPredicate(_)), ordinaryOps, mutable.Map[PhysicalOperator, Long](), x)
-      case x: ScanNodes => handlePhyOpWithStat(filterOps.map(Transformer.getPredicate(_)), ordinaryOps, mutable.Map[PhysicalOperator, Long](), x)
+      case x: ScanRels => handlePhyOpWithStat(filterOps.map(Transformer.getPredicate(_)), ordinaryOps, mutable.ListMap[PhysicalOperator, Long](), x)
+      case x: ScanNodes => handlePhyOpWithStat(filterOps.map(Transformer.getPredicate(_)), ordinaryOps, mutable.ListMap[PhysicalOperator, Long](), x)
     }
   }
 
-  def handlePhyOpWithStat(filterOps: ArrayBuffer[NFPredicate], ordinaryOps: ArrayBuffer[PhysicalOperator], scanOps:mutable.Map[PhysicalOperator, Long], input: PhysicalOperator): PhysicalOperator = {
+  def handlePhyOpWithStat(filterOps: ArrayBuffer[NFPredicate], ordinaryOps: ArrayBuffer[PhysicalOperator], scanOps:mutable.ListMap[PhysicalOperator, Long], input: PhysicalOperator): PhysicalOperator = {
     input match {
       case x:ScanNodes => {
         //ScanNodes(isEnd: Boolean, nodeVar: Var, varMap: Map[Var, TNode], in: PhysicalOperator, next: PhysicalOperator, labels: Set[String], filterOP: ArrayBuffer[NFPredicate])
-        val xop = filterOps.filter(u => u.isInstanceOf[NFBinaryPredicate] && u.asInstanceOf[NFEquals].propName.equals(x.nodeVar.name))
+        val xop = filterOps.filter(u => u.isInstanceOf[NFBinaryPredicate] && u.asInstanceOf[NFBinaryPredicate].getName().equals(x.nodeVar.name))
         val newXop = ScanNodes(x.isEnd, x.nodeVar, x.varMap, x.in, x.next, x.labels, x.filterOP ++ xop)
 
         if (newXop.isEnd){
@@ -131,7 +131,7 @@ object PandaPhysicalOptimizer {
         //                           next: PhysicalOperator,
         //                           direction: Direction, labels: Set[String],
         //                           filterOP: ArrayBuffer[NFPredicate])
-        val xop = filterOps.filter(u => u.isInstanceOf[NFBinaryPredicate] && u.asInstanceOf[NFEquals].propName.equals(x.rel.name))
+        val xop = filterOps.filter(u => u.isInstanceOf[NFBinaryPredicate] && u.asInstanceOf[NFBinaryPredicate].getName().equals(x.rel.name))
         val newXop = ScanRels(x.isEnd, x.sVar, x.rel, x.tVar, x.next, x.direction,  x.labels, x.filterOP ++ xop)
         if (newXop.isEnd){
           generationPlan(newXop.asInstanceOf[ScanNodes].in, filterOps, ordinaryOps, scanOps += newXop -> newXop.getRecordsNumbers)
@@ -141,7 +141,7 @@ object PandaPhysicalOptimizer {
     }
   }
 
-  def generationPlan(in: PhysicalOperator, filterOps: ArrayBuffer[NFPredicate], ordinaryOps: ArrayBuffer[PhysicalOperator], scanOps:mutable.Map[PhysicalOperator, Long]): PhysicalOperator ={
+  def generationPlan(in: PhysicalOperator, filterOps: ArrayBuffer[NFPredicate], ordinaryOps: ArrayBuffer[PhysicalOperator], scanOps:mutable.ListMap[PhysicalOperator, Long]): PhysicalOperator ={
     val lop = filterOps.filter(_.isInstanceOf[Limit])
     val limit = if(lop.nonEmpty) lop.head else null
     //var opWithCnt: mutable.Map[PhysicalOperator, Long] = mutable.Map[PhysicalOperator, Long]()

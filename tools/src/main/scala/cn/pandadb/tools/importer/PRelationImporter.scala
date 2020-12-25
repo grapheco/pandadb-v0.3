@@ -23,7 +23,7 @@ import org.rocksdb.{FlushOptions, WriteBatch, WriteOptions}
 
 /**
  *
- * protocol: :relId(long), :fromId(long), :toId(long), :edgetype(string), category(Int), propName1:type, ...
+ * protocol: :relId(long), :fromId(long), :toId(long), :edgetype(string), propName1:type, ...
  */
 class PRelationImporter(dbPath: String, edgeFile: File, headFile: File) extends Importer with Logging{
 
@@ -103,7 +103,7 @@ class PRelationImporter(dbPath: String, edgeFile: File, headFile: File) extends 
   }
 
   private def _setEdgeHead(): Map[Int, String] = {
-    _setHead(5, headFile)
+    _setHead(4, headFile)
   }
 
   private def _wrapEdge(lineArr: Array[String]): StoredRelationWithProperty = {
@@ -111,21 +111,8 @@ class PRelationImporter(dbPath: String, edgeFile: File, headFile: File) extends 
     val fromId: Long = lineArr(1).toLong
     val toId: Long = lineArr(2).toLong
     val edgeType: Int = PDBMetaData.getTypeId(lineArr(3))
+    val propMap: Map[Int, Any] = _getPropMap(lineArr, propSortArr, 4)
 
-    var propMap: Map[Int, Any] = Map[Int, Any]()
-    for(i <-5 to lineArr.length -1) {
-      val propId: Int = propSortArr(i - 5)
-      val propValue: Any = {
-        headMap(propId) match {
-          case "long" => lineArr(i).toLong
-          case "int" => lineArr(i).toInt
-          case "boolean" => lineArr(i).toBoolean
-          case "double" => lineArr(i).toDouble
-          case _ => lineArr(i).replace("\"", "")
-        }
-      }
-      propMap += (propId -> propValue)
-    }
     new StoredRelationWithProperty(relId, fromId, toId, edgeType, propMap)
   }
 }

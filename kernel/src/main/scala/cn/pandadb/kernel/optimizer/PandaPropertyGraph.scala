@@ -107,16 +107,23 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
   }
 
   def getNodeCnt(predicate: Array[NFPredicate], labels: Set[String]): Long = {
-    23
+    200
   }
 
   def getRelCnt(predicate: Array[NFPredicate], label: String, direction: Int): Long = {
     24
   }
 
+  def getNodesByFilter(predicate: Array[NFPredicate], labels: Set[String]): Iterable[Node[Id]] ={
+    val node1 = LynxNode(1,Set("person"), "name" -> CypherValue("bob"), "age" -> CypherValue(40))
+    val node2 = LynxNode(1,Set("person"), "name" -> CypherValue("alex"), "age" -> CypherValue(20))
+    val node3 = LynxNode(1,Set("worker"), "name" -> CypherValue("simba"), "age" -> CypherValue(10))
+    val nodes:Map[Long, LynxNode] = Map(1L->node1, 2L -> node2, 3L->node3)
+    nodes.values.map(_.asInstanceOf[Node[Id]]).filter(filterByPredicates(_, predicate))
+  }
 
 
-  def getNodesByFilter(predicate: Array[NFPredicate], labels: Set[String]): Iterable[Node[Id]] = {
+  def getNodesByFilter(predicate: Array[NFPredicate], labels: Set[String], sk: Int): Iterable[Node[Id]] = {
 
 
     //todo test
@@ -201,8 +208,10 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
   }
 
   def getRelByStartNodeId(sourceId: Long, direction:Int, label: Set[String]): Iterable[Relationship[Id]] = {
-    if (label.nonEmpty) scan.getRelByStartNodeId(sourceId, direction, label.head)
-    else scan.getRelByStartNodeId(sourceId, direction)
+    //todo test
+    Array(LynxRelationship(1, 1, 2, "knows")).filter(_.startId ==sourceId).map(_.asInstanceOf[Relationship[Id]])
+    //if (label.nonEmpty) scan.getRelByStartNodeId(sourceId, direction, label.head)
+    //else scan.getRelByStartNodeId(sourceId, direction)
   }
 
   def getRelByEndNodeId(targetId: Long, direction:Int, label: Set[String]): Iterable[Relationship[Id]] = {
