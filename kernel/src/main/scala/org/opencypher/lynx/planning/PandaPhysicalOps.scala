@@ -1,13 +1,16 @@
 package org.opencypher.lynx.planning
 
+import cn.pandadb.kernel.kv.NFPredicate
 import cn.pandadb.kernel.optimizer.LynxType.LynxNode
 import cn.pandadb.kernel.optimizer.{PandaPropertyGraph, Transformer}
 import org.opencypher.lynx.{LynxRecords, LynxTable, RecordHeader}
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
-import org.opencypher.okapi.api.value.CypherValue.{Node, Relationship}
+import org.opencypher.okapi.api.value.CypherValue
+import org.opencypher.okapi.api.value.CypherValue.{CypherNull, CypherValue, Node, Relationship}
 import org.opencypher.okapi.ir.api.expr.{Id, NodeVar, RelationshipVar, Var}
 import org.opencypher.okapi.logical.impl.{Directed, Direction, Incoming, LogicalOperator, Outgoing, SolvedQueryModel, Undirected}
 
+import scala.collection.Seq
 import scala.collection.mutable.ArrayBuffer
 
 /*
@@ -49,22 +52,29 @@ class PandaPhysicalOps {
 
 }
 
-trait PNode {
+trait TNode {
 
 }
 
-case class FromNode() extends PNode{
+case class SourceNode() extends TNode{
 
 }
 
-case class ToNode() extends PNode{
+case class TargetNode() extends TNode{
 
 }
 
-final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, in: PhysicalOperator, next: PhysicalOperator, labels: Set[String], filterOP: ArrayBuffer[Filter]) extends PhysicalOperator{
+final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, varMap: Map[Var, TNode], in: PhysicalOperator, next: PhysicalOperator, labels: Set[String], filterOP: ArrayBuffer[NFPredicate]) extends PhysicalOperator{
 
-  override lazy val recordHeader: RecordHeader = RecordHeader.from(nodeVar)
-  val recordHeaderMe: RecordHeader = RecordHeader.from(nodeVar)
+  override lazy val recordHeader: RecordHeader = {
+    if (isEnd) RecordHeader(Map(NodeVar(nodeVar.name)(CTNode) -> nodeVar.name))
+    else next.recordHeader ++ RecordHeader(Map(NodeVar(nodeVar.name)(CTNode) -> nodeVar.name))
+  }
+  val recordHeaderMe: RecordHeader = RecordHeader.from(getNodeVar)
+
+  def getNodeVar(): NodeVar = {
+    NodeVar(nodeVar.name)(CTNode)
+  }
 
 
   override lazy val table: LynxTable = {
@@ -73,22 +83,30 @@ final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, in: PhysicalOperator, 
       LynxTable(Seq(nodeVar.name -> CTNode), records.map(Seq(_)))
     }
     else {
-      val records = next.table.records.map(row => {
-        val id = next.table.cell(row, next.asInstanceOf[ScanRels].rel.name).asInstanceOf[Relationship[Long]].endId
+      val (rel, tNode) = varMap.filter(x => next.table.physicalColumns.contains(x._1.name)).head
+      val records:Iterable[Seq[_ <: CypherValue]]  = next.table.records.map(row => {
+
+        val id = tNode match {
+          case SourceNode() => next.table.cell(row, rel.name).asInstanceOf[Relationship[Long]].startId
+          case TargetNode() => next.table.cell(row, rel.name).asInstanceOf[Relationship[Long]].endId
+        }
+
 
         val node = in.graph.asInstanceOf[PandaPropertyGraph[Id]].getNodeById(id, labels, filterOP)
         node match {
             //rels.map(row ++ Seq(_))
           case Some(value) => row ++ Seq(value)
+          case None => Seq(CypherNull)
         }
       })
 
-      LynxTable(next.table.schema ++ Seq(nodeVar.name -> CTNode), records)
+
+      LynxTable(next.table.schema ++ Seq(nodeVar.name -> CTNode), records.filter(!_.equals(Seq(CypherNull))))
     }
   }
   def getRecords: LynxRecords = {
     if (graph.isInstanceOf[PandaPropertyGraph[Id]]) {
-      graph.asInstanceOf[PandaPropertyGraph[Id]].getNodesByFilter(filterOP.toArray.map(Transformer.getPredicate(_)), labels, nodeVar.asInstanceOf[NodeVar])
+      graph.asInstanceOf[PandaPropertyGraph[Id]].getNodesByFilter(filterOP.toArray, labels, nodeVar.asInstanceOf[NodeVar])
 
     }
     else {
@@ -97,12 +115,12 @@ final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, in: PhysicalOperator, 
   }
 
   def getNodes(): Iterable[Node[Id]] = {
-    graph.asInstanceOf[PandaPropertyGraph[Id]].getNodesByFilter(filterOP.toArray.map(Transformer.getPredicate(_)), labels)
+    graph.asInstanceOf[PandaPropertyGraph[Id]].getNodesByFilter(filterOP.toArray, labels)
 
   }
 
   def getRecordsNumbers: Long = {
-    graph.asInstanceOf[PandaPropertyGraph[Id]].getNodeCnt(filterOP.toArray.map(Transformer.getPredicate(_)), labels)
+    graph.asInstanceOf[PandaPropertyGraph[Id]].getNodeCnt(filterOP.toArray, labels)
   }
 
 }
@@ -114,17 +132,19 @@ final case class  ScanRels(isEnd: Boolean,
                            //scanType: ScanType,
                            next: PhysicalOperator,
                            direction: Direction, labels: Set[String],
-                           filterOP: ArrayBuffer[Filter]) extends PhysicalOperator{
+                           filterOP: ArrayBuffer[NFPredicate]) extends PhysicalOperator{
 
-  override lazy val recordHeader: RecordHeader = RecordHeader.from(rel)
-  val recordHeaderMe: RecordHeader = RecordHeader.from(rel)
-  val sourceRcordHeader = RecordHeader.from(sVar)
-  val targetRcordHeader = RecordHeader.from(tVar)
+  override val graph = next.graph
+
+  override lazy val recordHeader: RecordHeader = {
+    if (isEnd) RecordHeader(Map(NodeVar(rel.name)(CTRelationship) -> rel.name))
+    else next.recordHeader ++ RecordHeader(Map(NodeVar(rel.name)(CTRelationship) -> rel.name))
+  }
 
   val dir: Int = direction match {
     case Undirected => 0
-    case Incoming => 0
-    case Outgoing => 1
+    case Incoming => 1
+    case Outgoing => 2
   }
 
   override lazy val table: LynxTable = {
@@ -133,10 +153,18 @@ final case class  ScanRels(isEnd: Boolean,
       LynxTable(Seq(rel.name -> CTRelationship), records.map(Seq(_)))
     }
     else {
+      val isFirst = next.table.physicalColumns.contains(sVar.name)
       val records = next.table.records.flatMap(row => {
-        val id = next.table.cell(row, sVar.name).asInstanceOf[Node[Long]].id
-        val rels = next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelByStartNodeId(id, dir, labels)
-        rels.map(row ++ Seq(_))
+        if (isFirst) {
+          val id = next.table.cell(row, sVar.name).asInstanceOf[Node[Long]].id
+          val rels = next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelByStartNodeId(id, dir, labels)
+          rels.map(row ++ Seq(_))
+        }
+        else {
+          val id = next.table.cell(row, tVar.name).asInstanceOf[Node[Long]].id
+          val rels = next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelByEndNodeId(id, dir, labels)
+          rels.map(row ++ Seq(_))
+        }
 
       })
 
@@ -145,7 +173,7 @@ final case class  ScanRels(isEnd: Boolean,
   }
 
   def getRecordsNumbers: Long = {
-    graph.asInstanceOf[PandaPropertyGraph[Id]].getNodeCnt(filterOP.toArray.map(Transformer.getPredicate(_)), labels)
+    next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelCnt(filterOP.toArray, labels.headOption.orNull, dir)
 
   }
 

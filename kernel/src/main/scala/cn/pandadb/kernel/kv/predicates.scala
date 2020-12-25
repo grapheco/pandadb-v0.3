@@ -14,6 +14,13 @@ trait NFExpression {
 trait NFPredicate extends NFExpression {
 }
 
+trait NFBinaryPredicate extends NFPredicate{
+  //def propName: String
+  def getName(): String
+  //def value: AnyValue
+}
+
+
 case class NFLabels(labels: Seq[String] ) extends NFPredicate {
 
 }
@@ -21,22 +28,28 @@ case class NFLabels(labels: Seq[String] ) extends NFPredicate {
 case class NFLimit(size: Long) extends NFPredicate {
 
 }
-case class NFGreaterThan(propName: String, value: AnyValue) extends NFPredicate {
+case class NFGreaterThan(propName: String, value: AnyValue, name: String) extends NFBinaryPredicate{
+  override def getName(): String = name
 }
 
-case class NFGreaterThanOrEqual(propName: String, value: AnyValue) extends NFPredicate {
+case class NFGreaterThanOrEqual(propName: String, value: AnyValue, name: String) extends NFBinaryPredicate {
+  override def getName(): String = name
 }
 
-case class NFLessThan(propName: String, value: AnyValue) extends NFPredicate {
+case class NFLessThan(propName: String, value: AnyValue, name: String) extends NFBinaryPredicate {
+  override def getName(): String = name
 }
 
-case class NFLessThanOrEqual(propName: String, value: AnyValue) extends NFPredicate {
+case class NFLessThanOrEqual(propName: String, value: AnyValue, name: String) extends NFBinaryPredicate {
+  override def getName(): String = name
 }
 
-case class NFEquals(propName: String, value: AnyValue) extends NFPredicate {
+case class NFEquals(propName: String, value: AnyValue, name: String) extends NFBinaryPredicate {
+  override def getName(): String = name
 }
 
-case class NFNotEquals(propName: String, value: AnyValue) extends NFPredicate {
+case class NFNotEquals(propName: String, value: AnyValue, name: String) extends NFBinaryPredicate {
+  override def getName(): String = name
 }
 
 case class NFNotNull(propName: String) extends NFPredicate {
