@@ -10,4 +10,12 @@ object Profiler extends Logging {
     logger.debug(s"time cost: ${t2 - t1} ms")
     t
   }
+
+  def timingByMicroSec[T](f: => T): T = {
+    val t1 = System.nanoTime()
+    val t = f
+    val t2 = System.nanoTime()
+    logger.debug(s"time cost: ${((t2 - t1)/1000).toInt} us")
+    t
+  }
 }
