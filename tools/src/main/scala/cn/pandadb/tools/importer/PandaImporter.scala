@@ -38,13 +38,9 @@ object PandaImporter extends Logging{
 
   def isEnvAvailable(dbPath: String): Boolean = {
     val dbFile = new File(dbPath)
-    if (!dbFile.exists()){
-      true
-    } else if (dbFile.isDirectory && dbFile.listFiles().length==0) {
-      true
-    } else {
-      false
-    }
+    val isEmptyDirectory: Boolean = dbFile.isDirectory && dbFile.listFiles().length == 0
+    val notExist: Boolean = !dbFile.exists()
+    isEmptyDirectory || notExist
   }
 
 }

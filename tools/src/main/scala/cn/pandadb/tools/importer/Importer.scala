@@ -2,6 +2,7 @@ package cn.pandadb.tools.importer
 
 import java.io.{File, FileInputStream}
 import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.atomic.AtomicInteger
 
 import cn.pandadb.kernel.PDBMetaData
 
@@ -27,14 +28,16 @@ trait Importer {
   val service: ScheduledExecutorService
   val closer = new Runnable {
     override def run(): Unit = {
-      if(!importerFileReader.notFinished) service.shutdown()
+      if(!importerFileReader.notFinished) {
+        service.shutdown()
+      }
     }
   }
 
   def importData(): Unit = {
-    var taskId: Int = -1
-    val taskArray: Array[Future[Boolean]] = new Array[Int](coreNum/2).map(item => Future{taskId += 1; _importTask(taskId)})
-    taskArray.foreach(task => Await.result(task, Duration.Inf))
+    val taskId: AtomicInteger = new AtomicInteger(0)
+    val taskArray: Array[Future[Boolean]] = new Array[Int](coreNum/2).map(item => Future{_importTask(taskId.getAndIncrement())})
+    taskArray.foreach(task => {Await.result(task, Duration.Inf)})
   }
   protected def _importTask(taskId: Int): Boolean
 
