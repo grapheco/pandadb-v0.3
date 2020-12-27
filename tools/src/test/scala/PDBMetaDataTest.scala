@@ -1,58 +1,59 @@
-//import java.io.File
-//
-//import cn.pandadb.kernel.PDBMetaData
-//import cn.pandadb.kernel.kv.RocksDBGraphAPI
-//import org.junit.{Assert, FixMethodOrder, Test}
-//
-///**
-// * @Author: Airzihao
-// * @Description:
-// * @Date: Created at 20:08 2020/12/3
-// * @Modified By:
-// */
-//@FixMethodOrder
-//class PDBMetaDataTest {
-//  val pdbMetaData = PDBMetaData
-//  pdbMetaData.addProp("name")
-//  val mmap: Map[String, Int] = Map[String, Int]("name" -> 0)
-//  val persistFile: File = new File("./src/test/output/metadata.bin")
-//  val dbPath: String = "./src/test/output/testdb"
-//  val api: RocksDBGraphAPI = new RocksDBGraphAPI(dbPath)
-//
-//  @Test
-//  def getPerformace(): Unit = {
-//    val time0 = System.currentTimeMillis()
-//    for(i<-1 to 100000000){
-//      val propId: Int = mmap("name")
-//    }
-//    val time1 = System.currentTimeMillis()
-//
-//    for(i<-1 to 100000000){
-//      val propId: Int = pdbMetaData.getPropId("name")
-//    }
-//    val time2 = System.currentTimeMillis()
-//    println(time1 - time0)
-//    println(time2 - time1)
-//  }
-//
-//  @Test
-//  def test1(): Unit = {
-//    pdbMetaData.getPropId("name")
-//    pdbMetaData.getPropId("age")
-//    pdbMetaData.getLabelId("label0")
-//    pdbMetaData.getLabelId("label1")
-//    pdbMetaData.persist(dbPath)
-//  }
-//
-//  // write and read rocksDB takes much time. Better to persist the PDBMetaData in a naive file.
-//  @Test
-//  def test2(): Unit = {
-//    pdbMetaData.init(dbPath)
-//    Assert.assertEquals(0, pdbMetaData.getLabelId("label0"))
-//    Assert.assertEquals(1, pdbMetaData.getLabelId("label1"))
-//    Assert.assertEquals(0, pdbMetaData.getPropId("name"))
-//    Assert.assertEquals("age", pdbMetaData.getPropName(1))
-//  }
-//
-//
-//}
+import java.io.File
+
+import cn.pandadb.kernel.PDBMetaData
+import cn.pandadb.kernel.util.Profiler.timingByMicroSec
+import org.junit.{Assert, Before, Test}
+
+/**
+ * @Author: Airzihao
+ * @Description:
+ * @Date: Created at 13:41 2020/12/25
+ * @Modified By:
+ */
+class PDBMetaDataTest {
+
+  val dbPath: String = "./src/test/resource"
+
+  @Before
+  def initDirectory(): Unit = {
+    val file = new File(dbPath)
+    if(!file.exists()) file.mkdirs()
+    else file.delete()
+  }
+
+  @Test
+  def test1(): Unit = {
+    val nodeId0 = PDBMetaData.availableNodeId
+    Assert.assertEquals(nodeId0+1, PDBMetaData.availableNodeId)
+    PDBMetaData.persist(dbPath)
+    PDBMetaData.availableNodeId
+    PDBMetaData.init(dbPath)
+    Assert.assertEquals(nodeId0+2, PDBMetaData.availableNodeId)
+  }
+
+  @Test
+  def test2(): Unit = {
+    val propId0 = PDBMetaData.getPropId("name")
+    Assert.assertEquals(propId0, PDBMetaData.getPropId("name"))
+    PDBMetaData.persist(dbPath)
+    //this prop name is not persisted
+    val propId1 = PDBMetaData.getPropId("age")
+    PDBMetaData.init(dbPath)
+    val propId2 = PDBMetaData.getPropId("student")
+    Assert.assertEquals(propId1, propId2)
+    PDBMetaData.persist(dbPath)
+    Assert.assertEquals(propId2, PDBMetaData.getPropId("student"))
+  }
+
+  //performance test
+  @Test
+  def test9(): Unit = {
+    PDBMetaData.availabelIndexId
+    timingByMicroSec(PDBMetaData.availableNodeId)
+    timingByMicroSec(PDBMetaData.availableRelId)
+    timingByMicroSec(PDBMetaData.availabelIndexId)
+    timingByMicroSec(PDBMetaData.getPropId("alice"))
+    timingByMicroSec(PDBMetaData.getPropId("alice"))
+  }
+
+}
