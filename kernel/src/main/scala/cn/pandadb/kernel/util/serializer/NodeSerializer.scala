@@ -1,8 +1,6 @@
 package cn.pandadb.kernel.util.serializer
 
-import cn.pandadb.kernel.kv.KeyHandler.KeyType
 import cn.pandadb.kernel.store.StoredNodeWithProperty
-import cn.pandadb.kernel.util.serializer.NodeSerializer.{exportBytes, readMap, _writeKV}
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
 
 /**
@@ -27,11 +25,15 @@ object NodeSerializer extends BaseSerializer {
   }
 
   def serialize(nodeValue: StoredNodeWithProperty): Array[Byte] = {
+    serialize(nodeValue.id, nodeValue.labelIds, nodeValue.properties)
+  }
+
+  def serialize(id: Long, labels: Array[Int], prop: Map[Int, Any]): Array[Byte] = {
     val byteBuf: ByteBuf = allocator.heapBuffer()
-    byteBuf.writeLong(nodeValue.id)
-    _writeLabels(nodeValue.labelIds, byteBuf)
-    byteBuf.writeByte(nodeValue.properties.size)
-    nodeValue.properties.foreach(kv => _writeProp(kv._1, kv._2, byteBuf))
+    byteBuf.writeLong(id)
+    _writeLabels(labels, byteBuf)
+    byteBuf.writeByte(prop.size)
+    prop.foreach(kv => _writeProp(kv._1, kv._2, byteBuf))
     val bytes = exportBytes(byteBuf)
     byteBuf.release()
     bytes
