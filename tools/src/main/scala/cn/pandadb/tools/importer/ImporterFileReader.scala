@@ -1,6 +1,6 @@
 package cn.pandadb.tools.importer
 
-import java.io.File
+import java.io.{BufferedInputStream, File, FileInputStream}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -15,23 +15,26 @@ import scala.io.Source
 
 class ImporterFileReader(file: File ,batchSize: Int = 1000000) {
 
-  val fileIter = this.synchronized(Source.fromFile(file).getLines())
+//TODO: implement a thread-safe file reader
 
+//  val fileIter = this.synchronized(Source.fromFile(file).getLines())
+  val fileIter: Iterator[String] = this.synchronized{
+    val fis = new BufferedInputStream(new FileInputStream(file), 10 * 1024 * 1024)
+    val lines = Source.fromInputStream(fis).getLines()
+    lines
+  }
   val supposedQueueLength: Int = Runtime.getRuntime().availableProcessors()/2
-  var batchQueue: mutable.Queue[List[String]] = new mutable.Queue[List[String]]()
-
-  var arr: Array[String] = new Array[String](batchSize)
-  var flag: Boolean = false
+  var batchQueue: mutable.Queue[List[String]] = this.synchronized(new mutable.Queue[List[String]]())
 
   val fillQueue = new Runnable {
     override def run(): Unit = {
       if(batchQueue.length<supposedQueueLength && fileIter.hasNext){
-        for(i<-1 to supposedQueueLength-batchQueue.length) batchQueue.enqueue(_prepareBatch())
+        for(i<-1 to supposedQueueLength-batchQueue.length) batchQueue.enqueue(_prepareBatch)
       }
     }
   }
 
-  private def _prepareBatch(): List[String] = {
+  private def _prepareBatch: List[String] = {
     this.synchronized{
       var innercount = 0
       val listBuf: ListBuffer[String] = new ListBuffer[String]()
@@ -43,7 +46,7 @@ class ImporterFileReader(file: File ,batchSize: Int = 1000000) {
     }
   }
 
-  def getLines(): List[String] = {
+  def getLines: List[String] = {
     this.synchronized{
       if(batchQueue.nonEmpty) batchQueue.dequeue()
       else List[String]()

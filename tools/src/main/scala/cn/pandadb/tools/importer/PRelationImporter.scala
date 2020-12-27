@@ -22,7 +22,6 @@ import org.rocksdb.{FlushOptions, WriteBatch, WriteOptions}
 // TODO 1.relationLabel 2.relationType String->Int
 
 /**
- *
  * protocol: :relId(long), :fromId(long), :toId(long), :edgetype(string), propName1:type, ...
  */
 class PRelationImporter(dbPath: String, edgeFile: File, headFile: File) extends Importer with Logging{
@@ -34,7 +33,7 @@ class PRelationImporter(dbPath: String, edgeFile: File, headFile: File) extends 
   override val service: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 
   service.scheduleAtFixedRate(importerFileReader.fillQueue, 0, 100, TimeUnit.MILLISECONDS)
-  service.scheduleAtFixedRate(closer, 0, 1, TimeUnit.SECONDS)
+  service.scheduleAtFixedRate(closer, 1, 1, TimeUnit.SECONDS)
 
   val relationDB = RocksDBStorage.getDB(s"${dbPath}/rels")
   val inRelationDB = RocksDBStorage.getDB(s"${dbPath}/inEdge")
@@ -52,11 +51,12 @@ class PRelationImporter(dbPath: String, edgeFile: File, headFile: File) extends 
 
   def importRelations(): Unit ={
     importData()
+    println(s"relation service closed? ${service.isShutdown}")
     logger.info(s"$globalCount relations imported.")
   }
 
   override protected def _importTask(taskId: Int): Boolean = {
-    val serializer: RelationSerializer = new RelationSerializer()
+    val serializer = RelationSerializer
     var innerCount = 0
 
     val inBatch = new WriteBatch()
@@ -64,36 +64,39 @@ class PRelationImporter(dbPath: String, edgeFile: File, headFile: File) extends 
     val storeBatch = new WriteBatch()
 
     while (importerFileReader.notFinished) {
-      val batchData = importerFileReader.getLines()
-      batchData.foreach(line => {
-        innerCount += 1
-        val lineArr = line.replace("\n", "").split(",")
-        val relation = _wrapEdge(lineArr)
-        val serializedRel = serializer.serialize(relation)
-        storeBatch.put(KeyHandler.relationKeyToBytes(relation.id), serializedRel)
-        inBatch.put(KeyHandler.edgeKeyToBytes(relation.to, relation.typeId, relation.from), ByteUtils.longToBytes(relation.id))
-        outBatch.put(KeyHandler.edgeKeyToBytes(relation.from, relation.typeId, relation.to), ByteUtils.longToBytes(relation.id))
+      val batchData = importerFileReader.getLines
+      if(batchData.nonEmpty) {
+        batchData.foreach(line => {
+          innerCount += 1
+          val lineArr = line.replace("\n", "").split(",")
+          val relation = _wrapEdge(lineArr)
+          val serializedRel = serializer.serialize(relation)
+          storeBatch.put(KeyHandler.relationKeyToBytes(relation.id), serializedRel)
+          inBatch.put(KeyHandler.edgeKeyToBytes(relation.to, relation.typeId, relation.from), ByteUtils.longToBytes(relation.id))
+          outBatch.put(KeyHandler.edgeKeyToBytes(relation.from, relation.typeId, relation.to), ByteUtils.longToBytes(relation.id))
 
-        if(globalCount.get() % 1000000 == 0) {
-          relationDB.write(writeOptions, storeBatch)
-          inRelationDB.write(writeOptions, inBatch)
-          outRelationDB.write(writeOptions, outBatch)
-          storeBatch.clear()
-          inBatch.clear()
-          outBatch.clear()
+          if(globalCount.get() % 1000000 == 0) {
+            relationDB.write(writeOptions, storeBatch)
+            inRelationDB.write(writeOptions, inBatch)
+            outRelationDB.write(writeOptions, outBatch)
+            storeBatch.clear()
+            inBatch.clear()
+            outBatch.clear()
+          }
+        })
+        if(globalCount.addAndGet(batchData.length) % 10000000 == 0){
+          val time1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
+          logger.info(s"${globalCount.get() / 10000000}kw of $estEdgeCount(est) edges imported. $time1")
         }
-      })
-      if(globalCount.addAndGet(batchData.length) % 10000000 == 0){
-        val time1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
-        logger.info(s"${globalCount.get() / 10000000}kw of $estEdgeCount(est) edges imported. $time1")
+        relationDB.write(writeOptions, storeBatch)
+        inRelationDB.write(writeOptions, inBatch)
+        outRelationDB.write(writeOptions, outBatch)
+        storeBatch.clear()
+        inBatch.clear()
+        outBatch.clear()
       }
-      relationDB.write(writeOptions, storeBatch)
-      inRelationDB.write(writeOptions, inBatch)
-      outRelationDB.write(writeOptions, outBatch)
-      storeBatch.clear()
-      inBatch.clear()
-      outBatch.clear()
     }
+
     val flushOptions = new FlushOptions
     relationDB.flush(flushOptions)
     inRelationDB.flush(flushOptions)

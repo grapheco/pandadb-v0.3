@@ -40,7 +40,7 @@ class PNodeImporter(dbPath: String, nodeFile: File, nodeHeadFile: File) extends 
   override val service: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 
   service.scheduleAtFixedRate(importerFileReader.fillQueue, 0, 100, TimeUnit.MILLISECONDS)
-  service.scheduleAtFixedRate(closer, 0, 1, TimeUnit.SECONDS)
+  service.scheduleAtFixedRate(closer, 1, 1, TimeUnit.SECONDS)
 
   private val nodeDB = RocksDBStorage.getDB(s"${dbPath}/nodes")
   private val nodeLabelDB = RocksDBStorage.getDB(s"${dbPath}/nodeLabel")
@@ -55,17 +55,18 @@ class PNodeImporter(dbPath: String, nodeFile: File, nodeHeadFile: File) extends 
 
   def importNodes(): Unit = {
     importData()
+    println(s"node service closed? ${service.isShutdown}")
     logger.info(s"$globalCount nodes imported.")
   }
 
   override protected def _importTask(taskId: Int): Boolean = {
-    val serializer: NodeSerializer = new NodeSerializer()
+    val serializer = NodeSerializer
     var innerCount = 0
     val nodeBatch = new WriteBatch()
     val labelBatch = new WriteBatch()
 
     while (importerFileReader.notFinished) {
-      val batchData = importerFileReader.getLines()
+      val batchData = importerFileReader.getLines
       batchData.foreach(line => {
         innerCount += 1
         val lineArr = line.replace("\n", "").split(",")
