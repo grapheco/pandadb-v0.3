@@ -3,6 +3,7 @@ package cn.pandadb.kernel.util.serializer
 import java.io.ByteArrayOutputStream
 
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
+import scala.collection.mutable
 
 /**
  * @Author: Airzihao
@@ -14,10 +15,11 @@ import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
 object BaseSerializer extends BaseSerializer {
 
   override val allocator: ByteBufAllocator = ByteBufAllocator.DEFAULT
+
   def intArray2Bytes(array: Array[Int]): Array[Byte] = {
     val byteBuf: ByteBuf = allocator.heapBuffer()
     _writeIntArray(array, byteBuf)
-    val bytes = _exportBytes(byteBuf)
+    val bytes = exportBytes(byteBuf)
     byteBuf.release()
     bytes
   }
@@ -33,14 +35,14 @@ object BaseSerializer extends BaseSerializer {
   def map2Bytes(map: Map[Int, Any]): Array[Byte] = {
     val byteBuf: ByteBuf = allocator.buffer()
     _writeMap(map, byteBuf)
-    val bytes = _exportBytes(byteBuf)
+    val bytes = exportBytes(byteBuf)
     byteBuf.release()
     bytes
   }
 
   def bytes2Map(bytesArr: Array[Byte]): Map[Int, Any] = {
     val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytesArr)
-    val map = _readMap(byteBuf)
+    val map = readMap(byteBuf)
     byteBuf.release()
     map
   }
@@ -49,7 +51,7 @@ object BaseSerializer extends BaseSerializer {
     val byteBuf: ByteBuf = allocator.heapBuffer()
     _writeIntArray(array, byteBuf)
     _writeMap(map, byteBuf)
-    val bytes = _exportBytes(byteBuf)
+    val bytes = exportBytes(byteBuf)
     byteBuf.release()
     bytes
   }
@@ -57,17 +59,61 @@ object BaseSerializer extends BaseSerializer {
   def bytes2IntArrayMap(bytes: Array[Byte]): (Array[Int], Map[Int, Any]) = {
     val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytes)
     val intArray: Array[Int] = _readIntArray(byteBuf)
-    val map: Map[Int, Any] = _readMap(byteBuf)
+    val map: Map[Int, Any] = readMap(byteBuf)
     byteBuf.release()
     (intArray, map)
   }
+
+  def intSeq2Bytes(seq: Seq[Int]): Array[Byte] = {
+    val byteBuf: ByteBuf = allocator.buffer()
+    byteBuf.writeInt(seq.length)
+    seq.foreach(item => byteBuf.writeInt(item))
+    val bytes: Array[Byte] = exportBytes(byteBuf)
+    byteBuf.release()
+    bytes
+  }
+
+  def bytes2IntQueue(bytes: Array[Byte]): mutable.Queue[Int] = {
+    val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytes)
+    readIntQueue(byteBuf)
+  }
+
+  def bytes2Int(bytes: Array[Byte]): Int = {
+    val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytes)
+    val result: Int = byteBuf.readInt()
+    byteBuf.release()
+    result
+  }
+
+  def bytes2Long(bytes: Array[Byte]): Long = {
+    val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytes)
+    val result: Long = byteBuf.readLong()
+    byteBuf.release()
+    result
+  }
+
 }
 
 trait BaseSerializer {
 
-
   // data type:  Map("String"->1, "Int" -> 2, "Long" -> 3, "Double" -> 4, "Float" -> 5, "Boolean" -> 6)
   val allocator: ByteBufAllocator
+
+  def serialize(longNum: Long): Array[Byte] = {
+    val byteBuf: ByteBuf = allocator.buffer()
+    byteBuf.writeLong(longNum)
+    val bytes: Array[Byte] = exportBytes(byteBuf)
+    byteBuf.release()
+    bytes
+  }
+
+  def serialize(intNum: Int): Array[Byte] = {
+    val byteBuf: ByteBuf = allocator.buffer()
+    byteBuf.writeInt(intNum)
+    val bytes: Array[Byte] = exportBytes(byteBuf)
+    byteBuf.release()
+    bytes
+  }
 
   protected def _writeString(value: String, byteBuf: ByteBuf): Unit = {
     val strInBytes: Array[Byte] = value.getBytes
@@ -138,7 +184,8 @@ trait BaseSerializer {
     val len = byteBuf.readByte().toInt
     new Array[Int](len).map(item => byteBuf.readInt())
   }
-  protected def _readMap(byteBuf: ByteBuf): Map[Int, Any] = {
+
+  def readMap(byteBuf: ByteBuf): Map[Int, Any] = {
     val propNum: Int = byteBuf.readByte().toInt
     val propsMap: Map[Int, Any] = new Array[Int](propNum).map(item => {
       val propId: Int = byteBuf.readByte().toInt
@@ -156,10 +203,17 @@ trait BaseSerializer {
     }).toMap
     propsMap
   }
-  protected def _exportBytes(byteBuf: ByteBuf): Array[Byte] = {
+
+  def readIntQueue(byteBuf: ByteBuf): mutable.Queue[Int] = {
+    val length = byteBuf.readInt()
+    val queue: mutable.Queue[Int] = new mutable.Queue[Int]()
+    for(i<-1 to length) queue.enqueue(byteBuf.readInt())
+    queue
+  }
+
+  def exportBytes(byteBuf: ByteBuf): Array[Byte] = {
     val dst = new Array[Byte](byteBuf.writerIndex())
     byteBuf.readBytes(dst)
     dst
   }
-
 }
