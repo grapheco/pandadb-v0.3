@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "cn.pandadb.grpc";
+option java_outer_classname = "PandaRpc";
+
+package cn.pandadb.proto;
+import "google/protobuf/any.proto";
+
+service PandaRpcService{
+  rpc GetInternalResult(CypherRequest) returns (stream InternalRecords);
+}
+
+message CypherRequest{
+  string cypher = 1;
+}
+
+message InternalRecords{
+  repeated Record record = 1;
+}
+
+message Record{
+  string recordName = 1; // node,relationship,int,float,string,boolean
+  google.protobuf.Any result = 2;
+}
+
+
+message Node{
+  int64 nodeId = 1;
+  repeated string nodeLabels = 2;
+  Property properties = 3;
+}
+message Relationship{
+  int64 relationId = 1;
+  int64 startNode = 2;
+  int64 endNode = 3;
+  repeated string relationLabels = 4;
+  Property properties = 5;
+}
+message Property{
+  //数据类型放这里
+  repeated IntValue intValue = 1;
+  repeated FloatValue floatValue = 2;
+  repeated StringValue stringValue = 3;
+  repeated BooleanValue boolValue = 4;
+}
+
+message IntValue{
+  string key = 1;
+  int32 value = 2;
+}
+message StringValue{
+  string key = 1;
+  string value = 2;
+}
+message FloatValue{
+  string key = 1;
+  float value = 2;
+}
+message BooleanValue{
+  string key = 1;
+  bool value = 2;
+}
