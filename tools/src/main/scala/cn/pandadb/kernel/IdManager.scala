@@ -40,8 +40,10 @@ trait IdMapManager {
   def isNameExists(name: String) = _name2Id.contains(name)
 
   def getId(name: String): Int = {
-    if(_name2Id.contains(name)) _name2Id.get(name).get
-    else this.synchronized(_addName(name))
+    this.synchronized{
+      if(_name2Id.contains(name)) _name2Id.get(name).get
+      else _addName(name)
+    }
   }
 
   def getName(id: Int): String = {

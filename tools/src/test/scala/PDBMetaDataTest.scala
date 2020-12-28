@@ -2,7 +2,8 @@ import java.io.File
 
 import cn.pandadb.kernel.PDBMetaData
 import cn.pandadb.kernel.util.Profiler.timingByMicroSec
-import org.junit.{Assert, Before, Test}
+import org.junit.runners.MethodSorters
+import org.junit.{Assert, Before, FixMethodOrder, Test}
 
 /**
  * @Author: Airzihao
@@ -10,6 +11,7 @@ import org.junit.{Assert, Before, Test}
  * @Date: Created at 13:41 2020/12/25
  * @Modified By:
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 class PDBMetaDataTest {
 
   val dbPath: String = "./src/test/resource"
@@ -43,6 +45,13 @@ class PDBMetaDataTest {
     Assert.assertEquals(propId1, propId2)
     PDBMetaData.persist(dbPath)
     Assert.assertEquals(propId2, PDBMetaData.getPropId("student"))
+  }
+
+  @Test
+  def test3(): Unit = {
+    PDBMetaData.init(dbPath)
+    val a = PDBMetaData.availableNodeId
+    println(a)
   }
 
   //performance test

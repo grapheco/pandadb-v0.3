@@ -4,6 +4,7 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 
 import cn.pandadb.kernel.kv.RocksDBStorage
 import cn.pandadb.kernel.util.serializer.BaseSerializer
+import org.rocksdb.FlushOptions
 
 /**
  * @Author: Airzihao
@@ -33,11 +34,13 @@ object PDBMetaData {
     rocksDB.put("_propIdManager".getBytes(), _propIdManager.serialized)
     rocksDB.put("_typeIdManager".getBytes(), _typeIdManager.serialized)
     rocksDB.put("_labelIdManager".getBytes(), _labelIdManager.serialized)
+    rocksDB.flush(new FlushOptions)
     rocksDB.close()
   }
 
   def init(dbPath: String): Unit = {
     val rocksDB = RocksDBStorage.getDB(s"${dbPath}/metadata")
+    val bytes = rocksDB.get("_nodeIdAllocator".getBytes())
     _nodeIdAllocator.set(BaseSerializer.bytes2Long(rocksDB.get("_nodeIdAllocator".getBytes())))
     _relationIdAllocator.set(BaseSerializer.bytes2Long(rocksDB.get("_relationIdAllocator".getBytes())))
     _indexIdAllocator.set(BaseSerializer.bytes2Int(rocksDB.get("_indexIdAllocator".getBytes())))
