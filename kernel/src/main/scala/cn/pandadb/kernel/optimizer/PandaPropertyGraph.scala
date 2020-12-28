@@ -20,13 +20,14 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
 
   def isNFPredicateWithIndex(predicate: NFPredicate, labels: Set[String]): Boolean = {
 
-    predicate match{
+  /*  predicate match{
       case x:NFEquals => scan.isPropertyWithIndex(labels, x.propName)
       case x:NFGreaterThan => scan.isPropertyWithIndex(labels, x.propName)
       case x:NFGreaterThanOrEqual => scan.isPropertyWithIndex(labels, x.propName)
       case x:NFLessThan => scan.isPropertyWithIndex(labels, x.propName)
       case x:NFLessThanOrEqual => scan.isPropertyWithIndex(labels, x.propName)
-    }
+    }*/
+    true
 
   }
 
@@ -275,20 +276,26 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
 
 }
 
+trait PandaPropertyGraphWithStats{
+  def getAllNodesCount(): Long = ???
+  def getNodesCountByLabel(label: String):Long = ???
+  def getNodesCountByLabelAndProperty(label: String, propertyName: String):Long = ???
+  def getNodesCountByLabelAndPropertys(label: String, propertyName: String*):Long = ???
 
+
+  def getAllRelsCount(): Long = ???
+  def getRelsCountByLabel(label: String):Long = ???
+  def getRelsCountByLabelAndProperty(label: String, propertyName: String):Long = ???
+  def getRelsCountByLabelAndPropertys(label: String, propertyName: String*):Long = ???
+}
 
 trait PandaPropertyGraphScan[Id] extends PropertyGraphScanner[Id] {
   def isPropertyWithIndex(labels: Set[String], propertyName: String): Boolean = ???
 
-  // def isLabelWithIndex(label: String): Boolean = ???
+  def isPropertyWithIndex(label: String, propertyName: String): Boolean = ???
+  def isPropertysWithIndex(label: String, propertyName: String *): Boolean = ???
 
- // def isPopertysWithIndex(propertyName1: String, propertyName2: String): Boolean = ???
 
- // def isLabelAndPropertyWithIndex(propertyName: String, label: String): Boolean = ???
-
-  //def getRecorderNumbersFromProperty(labels: Set[String], propertyName: String): Int = ???
-
- // def getRecorderNumbersFromLabel(label: String): Int = ???
   /*
   direction
   0 -> Undirection
