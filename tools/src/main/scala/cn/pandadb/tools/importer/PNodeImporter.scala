@@ -30,7 +30,7 @@ import scala.io.Source
 headMap(propName1 -> type, propName2 -> type ...)
  */
 // protocol: :ID :LABELS propName1:type1 proName2:type2
-class PNodeImporter(dbPath: String, nodeFile: File, nodeHeadFile: File) extends Importer with Logging {
+class PNodeImporter(dbPath: String, nodeHeadFile: File, nodeFile: File) extends Importer with Logging {
 
   val NONE_LABEL_ID: Int = -1
   override protected var propSortArr: Array[Int] = null //Array(propId), record the sort of propId in head file
@@ -55,7 +55,8 @@ class PNodeImporter(dbPath: String, nodeFile: File, nodeHeadFile: File) extends 
 
   def importNodes(): Unit = {
     importData()
-    println(s"node service closed? ${service.isShutdown}")
+    nodeDB.close()
+    nodeLabelDB.close()
     logger.info(s"$globalCount nodes imported.")
   }
 

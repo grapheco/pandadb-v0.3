@@ -24,7 +24,7 @@ import org.rocksdb.{FlushOptions, WriteBatch, WriteOptions}
 /**
  * protocol: :relId(long), :fromId(long), :toId(long), :edgetype(string), propName1:type, ...
  */
-class PRelationImporter(dbPath: String, edgeFile: File, headFile: File) extends Importer with Logging{
+class PRelationImporter(dbPath: String, headFile: File, edgeFile: File) extends Importer with Logging{
 
   override val importerFileReader = new ImporterFileReader(edgeFile, 500000)
   override var propSortArr: Array[Int] = null
@@ -51,7 +51,10 @@ class PRelationImporter(dbPath: String, edgeFile: File, headFile: File) extends 
 
   def importRelations(): Unit ={
     importData()
-    println(s"relation service closed? ${service.isShutdown}")
+    relationDB.close()
+    inRelationDB.close()
+    outRelationDB.close()
+    relationLabelDB.close()
     logger.info(s"$globalCount relations imported.")
   }
 
