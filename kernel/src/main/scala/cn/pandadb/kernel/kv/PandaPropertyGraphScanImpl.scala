@@ -29,7 +29,7 @@ class PropertyGraphScanImpl(nodeIdGen: FileBasedIdGen,
 
       override def endId: Id = rel.to
 
-      override def relType: String = relationStore.getRelationTypeName(rel.typeId)
+      override def relType: String = relationStore.getRelationTypeName(rel.typeId).get
 
       override def copy(id: Id, source: Id, target: Id, relType: String, properties: CypherMap): this.type = ???
 
@@ -49,7 +49,7 @@ class PropertyGraphScanImpl(nodeIdGen: FileBasedIdGen,
 
       override def id: Id = node.id
 
-      override def labels: Set[String] = node.labelIds.toSet.map((id: Int) => nodeStore.getLabelName(id))
+      override def labels: Set[String] = node.labelIds.toSet.map((id: Int) => nodeStore.getLabelName(id).get)
 
       override def copy(id: Long, labels: Set[String], properties: CypherValue.CypherMap): this.type = ???
 
@@ -58,14 +58,14 @@ class PropertyGraphScanImpl(nodeIdGen: FileBasedIdGen,
         if (node.isInstanceOf[StoredNodeWithProperty]) {
           props = node.asInstanceOf[StoredNodeWithProperty].properties.map{
             kv=>
-              (nodeStore.getPropertyKeyName(kv._1), kv._2)
+              (nodeStore.getPropertyKeyName(kv._1).get, kv._2)
           }
         }
         else {
           val n = nodeStore.getNodeById(node.id)
           props = n.asInstanceOf[StoredNodeWithProperty].properties.map{
             kv=>
-              (nodeStore.getPropertyKeyName(kv._1), kv._2)
+              (nodeStore.getPropertyKeyName(kv._1).get, kv._2)
           }
         }
         CypherMap(props.toSeq: _*)
@@ -136,7 +136,7 @@ class PandaPropertyGraphScanImpl(nodeIdGen: FileBasedIdGen,
         var indexId = -1
         loop.breakable({
           for (labelId <- labelIds) {
-            indexId = indexStore.getIndexId(labelId, Array[Int](propertyNameId))
+            indexId = indexStore.getIndexId(labelId, Array[Int](propertyNameId)).get
             if (indexId != -1)
               loop.break()
           }
@@ -175,6 +175,12 @@ class PandaPropertyGraphScanImpl(nodeIdGen: FileBasedIdGen,
       }
     }
   }
+
+  override def isPropertyWithIndex(label: String, propertyName: String): Boolean =
+    indexStore.getIndexId(nodeStore.getLabelId(label), Array(nodeStore.getPropertyKeyId(propertyName))).isDefined
+
+  override def isPropertysWithIndex(label: String, propertyName: String*): Boolean =
+    indexStore.getIndexId(nodeStore.getLabelId(label), propertyName.toArray.map(nodeStore.getPropertyKeyId)).isDefined
 
   override def getRelByStartNodeId(sourceId: Id, direction: Int, label: String): Iterable[Relationship[Id]] = super.getRelByStartNodeId(sourceId, direction, label)
 

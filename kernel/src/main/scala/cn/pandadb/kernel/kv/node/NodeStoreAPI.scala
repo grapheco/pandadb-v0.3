@@ -24,7 +24,7 @@ class NodeStoreAPI(dbPath: String) extends NodeStoreSPI {
 
   override def allLabelIds(): Array[Int] = nodeLabelName.mapInt2String.keys.toArray
 
-  override def getLabelName(labelId: Int): String = nodeLabelName.key(labelId).get
+  override def getLabelName(labelId: Int): Option[String] = nodeLabelName.key(labelId)
 
   override def getLabelId(labelName: String): Int = nodeLabelName.id(labelName)
 
@@ -36,7 +36,7 @@ class NodeStoreAPI(dbPath: String) extends NodeStoreSPI {
 
   override def allPropertyKeyIds(): Array[Int] = propertyName.mapInt2String.keys.toArray
 
-  override def getPropertyKeyName(keyId: Int): String = propertyName.key(keyId).get
+  override def getPropertyKeyName(keyId: Int): Option[String] = propertyName.key(keyId)
 
   override def getPropertyKeyId(keyName: String): Int = propertyName.id(keyName)
 

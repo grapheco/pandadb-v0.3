@@ -29,7 +29,7 @@ class RelationStoreAPI(dbPath: String) extends RelationStoreSPI{
 
   override def allRelationTypeIds(): Array[Int] = relationTypeNameStore.mapInt2String.keys.toArray
 
-  override def getRelationTypeName(relationTypeId: Int): String = relationTypeNameStore.key(relationTypeId).get
+  override def getRelationTypeName(relationTypeId: Int): Option[String] = relationTypeNameStore.key(relationTypeId)
 
   override def getRelationTypeId(relationTypeName: String): Int = relationTypeNameStore.id(relationTypeName)
 
@@ -39,7 +39,7 @@ class RelationStoreAPI(dbPath: String) extends RelationStoreSPI{
 
   override def allPropertyKeyIds(): Array[Int] = propertyName.mapInt2String.keys.toArray
 
-  override def getPropertyKeyName(keyId: Int): String = propertyName.key(keyId).get
+  override def getPropertyKeyName(keyId: Int): Option[String] = propertyName.key(keyId)
 
   override def getPropertyKeyId(keyName: String): Int = propertyName.id(keyName)
 

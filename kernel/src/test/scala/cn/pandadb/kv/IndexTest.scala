@@ -44,7 +44,7 @@ class IndexTest extends Assert {
         val v = (l/10).toInt
         (v, l)
     }
-    ni.insertIndexRecordBatch(ni.getIndexId(LABEL, PROPS),data)
+    ni.insertIndexRecordBatch(ni.getIndexId(LABEL, PROPS).get,data)
 
     // find 20-29
     Assert.assertArrayEquals(ni.find(indexId, 2).toArray,
@@ -61,7 +61,7 @@ class IndexTest extends Assert {
         val v = (l%10).toInt
         (v, l)
     }
-    ni.insertIndexRecordBatch(ni.getIndexId(LABEL2, PROPS2), data2)
+    ni.insertIndexRecordBatch(ni.getIndexId(LABEL2, PROPS2).get, data2)
 
     //drop index1
     ni.dropIndex(LABEL, PROPS)
@@ -70,7 +70,7 @@ class IndexTest extends Assert {
     assert(ni.find(indexId, 2).toArray.length==0)
 
     // find 1,11,21,31,41 by index 2
-    Assert.assertArrayEquals(ni.find(ni.getIndexId(LABEL2, PROPS2), 1).toArray,
+    Assert.assertArrayEquals(ni.find(ni.getIndexId(LABEL2, PROPS2).get, 1).toArray,
       Array[Long](1,11,21,31,41))
   }
 

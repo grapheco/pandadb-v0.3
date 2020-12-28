@@ -108,7 +108,7 @@ trait NodeStoreSPI {
 
   def allLabelIds(): Array[Int];
 
-  def getLabelName(labelId: Int): String;
+  def getLabelName(labelId: Int): Option[String];
 
   def getLabelId(labelName: String): Int;
 
@@ -118,7 +118,7 @@ trait NodeStoreSPI {
 
   def allPropertyKeyIds(): Array[Int];
 
-  def getPropertyKeyName(keyId: Int): String;
+  def getPropertyKeyName(keyId: Int): Option[String];
 
   def getPropertyKeyId(keyName: String): Int;
 
