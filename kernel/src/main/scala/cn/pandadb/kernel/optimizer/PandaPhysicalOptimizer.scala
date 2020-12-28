@@ -2,10 +2,9 @@ package cn.pandadb.kernel.optimizer
 
 import cn.pandadb.kernel.kv.{AnyValue, NFBinaryPredicate, NFEquals, NFGreaterThan, NFGreaterThanOrEqual, NFLabels, NFLessThan, NFLessThanOrEqual, NFPredicate}
 import org.opencypher.lynx.graph.LynxPropertyGraph
+import org.opencypher.lynx.plan.{Add, AddInto, Aggregate, Alias, Cache, ConstructGraph, Distinct, Drop, EmptyRecords, Filter, FromCatalogGraph, GraphUnionAll, Join, Limit, OrderBy, PhysicalOperator, PrefixGraph, ReturnGraph, Select, Skip, Start, SwitchContext, TabularUnionAll}
+import org.opencypher.lynx.planning.{ScanNodes, ScanRels}
 import org.opencypher.lynx.{LynxPlannerContext, LynxTable, RecordHeader}
-import org.opencypher.lynx.planning.{Add, AddInto, Aggregate, Alias, Cache, ConstructGraph, Distinct, Drop, EmptyRecords, Filter, FromCatalogGraph, GraphUnionAll, Join, Limit, OrderBy, PhysicalOperator, PrefixGraph, ReturnGraph, ScanNodes, ScanRels, Select, Skip, Start, SwitchContext, TabularUnionAll}
-import org.opencypher.okapi.api.types.CTNode
-import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api.expr.{BinaryPredicate, ElementProperty, Equals, Expr, GreaterThan, GreaterThanOrEqual, Id, LessThan, LessThanOrEqual, NodeVar, Param}
 import org.opencypher.okapi.trees.TopDown
 
@@ -16,8 +15,8 @@ object PandaPhysicalOptimizer {
 
   def process(input: PhysicalOperator)(implicit context: LynxPlannerContext): PhysicalOperator = {
     //InsertCachingOperators(input)
-    //filterPushDown(input)
-    filterPushDown2(new ArrayBuffer[PhysicalOperator](), new ArrayBuffer[PhysicalOperator](), input)
+    filterPushDown(input)
+//    filterPushDown2(new ArrayBuffer[PhysicalOperator](), new ArrayBuffer[PhysicalOperator](), input)
   }
 
   def filterPushDown2(filterOps: ArrayBuffer[PhysicalOperator], ordinaryOps: ArrayBuffer[PhysicalOperator], input: PhysicalOperator): PhysicalOperator = {

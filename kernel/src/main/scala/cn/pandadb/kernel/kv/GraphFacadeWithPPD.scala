@@ -6,7 +6,7 @@ import cn.pandadb.kernel.kv.meta.NameStore
 import cn.pandadb.kernel.optimizer.PandaCypherSession
 import cn.pandadb.kernel.store._
 import org.apache.logging.log4j.scala.Logging
-import org.opencypher.lynx.{LynxSession, PropertyGraphScan}
+import org.opencypher.lynx.LynxSession
 import org.opencypher.okapi.api.graph.CypherResult
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship}

@@ -3,6 +3,7 @@ package org.opencypher.lynx.planning
 import cn.pandadb.kernel.kv.NFPredicate
 import cn.pandadb.kernel.optimizer.LynxType.LynxNode
 import cn.pandadb.kernel.optimizer.{PandaPropertyGraph, Transformer}
+import org.opencypher.lynx.plan.PhysicalOperator
 import org.opencypher.lynx.{LynxRecords, LynxTable, RecordHeader}
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue
