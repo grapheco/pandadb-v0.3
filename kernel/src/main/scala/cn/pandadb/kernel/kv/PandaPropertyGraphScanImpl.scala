@@ -4,7 +4,7 @@ import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.NameStore
 import cn.pandadb.kernel.optimizer.PandaPropertyGraphScan
 import cn.pandadb.kernel.store.{FileBasedIdGen, NodeStoreSPI, RelationStoreSPI, StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
-import org.opencypher.lynx.PropertyGraphScan
+import org.opencypher.lynx.PropertyGraphScanner
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship}
 
@@ -14,7 +14,7 @@ class PropertyGraphScanImpl(nodeIdGen: FileBasedIdGen,
                             relIdGen: FileBasedIdGen,
                             nodeStore: NodeStoreSPI,
                             relationStore: RelationStoreSPI,
-                            indexStore: IndexStoreAPI) extends PropertyGraphScan[Long] {
+                            indexStore: IndexStoreAPI) extends PropertyGraphScanner[Long] {
   type Id = Long
 
   val loop = new Breaks

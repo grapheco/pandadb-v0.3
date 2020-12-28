@@ -2,11 +2,9 @@ package cn.pandadb.kernel.optimizer
 
 import cn.pandadb.kernel.kv.{NFBinaryPredicate, NFEquals, NFGreaterThan, NFGreaterThanOrEqual, NFLabels, NFLessThan, NFLessThanOrEqual, NFLimit, NFPredicate}
 import cn.pandadb.kernel.optimizer.LynxType.{LynxNode, LynxRelationship}
-import org.opencypher.lynx.{LynxPlannerContext, LynxRecords, LynxSession, LynxTable, PropertyGraphScan, RecordHeader}
+import org.opencypher.lynx.{LynxPlannerContext, LynxRecords, LynxSession, LynxTable, PropertyGraphScanner, RecordHeader}
 import org.opencypher.lynx.graph.{LynxPropertyGraph, ScanGraph}
-import org.opencypher.lynx.planning.{Filter, PhysicalOperator, Start, TabularUnionAll}
-import org.opencypher.okapi.api.graph.{Pattern, PatternElement, SourceEndNodeKey, SourceStartNodeKey}
-import org.opencypher.okapi.api.schema.PropertyGraphSchema
+import org.opencypher.lynx.plan.Filter
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship}
@@ -279,7 +277,7 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
 
 
 
-trait PandaPropertyGraphScan[Id] extends PropertyGraphScan[Id] {
+trait PandaPropertyGraphScan[Id] extends PropertyGraphScanner[Id] {
   def isPropertyWithIndex(labels: Set[String], propertyName: String): Boolean = ???
 
   // def isLabelWithIndex(label: String): Boolean = ???
