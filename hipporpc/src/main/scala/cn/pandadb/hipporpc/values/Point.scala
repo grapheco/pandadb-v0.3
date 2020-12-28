@@ -1,4 +1,4 @@
-package cn.pandadb.server.values
+package cn.pandadb.hipporpc.values
 
 trait Point extends Serializable {
   def srid: Int
