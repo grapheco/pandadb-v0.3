@@ -253,7 +253,7 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
     var newOps: ArrayBuffer[NFPredicate] = new ArrayBuffer[NFPredicate]()
     if (Ops.isEmpty) new ArrayBuffer[NFPredicate]()
     else {
-      Ops.filter(isRangePredicate(_)).groupBy(_.asInstanceOf[NFBinaryPredicate].getPropName())
+      Ops.filter(isRangePredicate(_)).groupBy(_.asInstanceOf[NFBinaryPredicate].getName())
     }
     null
   }
