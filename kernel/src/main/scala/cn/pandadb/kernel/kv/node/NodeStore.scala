@@ -20,10 +20,10 @@ class NodeStore(db: RocksDB) {
   def set(node: StoredNodeWithProperty): Unit =
     set(node.id, node.labelIds, NodeSerializer.serialize(node))
 
-  def get(nodeId: NodeId, labelId: LabelId): StoredNodeWithProperty = {
+  def get(nodeId: NodeId, labelId: LabelId): Option[StoredNodeWithProperty] = {
     val value = db.get(KeyHandler.nodeKeyToBytes(labelId, nodeId))
-    if(value.nonEmpty) NodeSerializer.deserializeNodeValue(value)
-    else null
+    if(value.nonEmpty) Some(NodeSerializer.deserializeNodeValue(value))
+    else None
   }
 
   //TODO 有个问题,同一个节点会被扫两边

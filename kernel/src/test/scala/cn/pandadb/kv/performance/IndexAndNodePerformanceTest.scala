@@ -142,7 +142,7 @@ class IndexAndNodePerformanceTest {
       for (i <- 1 to 10000) {
         val id = Random.nextInt(2000000)
         val n = nodeStore.getNodeById(id)
-        if(n!=null) n.properties
+        if(n!=null) n.get.properties
         else count +=1
       }
       println(count)

@@ -5,7 +5,7 @@ import java.io.File
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
 import cn.pandadb.kernel.store.{NodeStoreSPI, RelationStoreSPI, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
-import org.junit.{Assert, Before, Test}
+import org.junit.{After, Assert, Before, Test}
 
 /**
  * @ClassName RelationAPITest
@@ -51,11 +51,17 @@ class RelationAPITest {
     relationAPI.addRelation(relation5)
   }
 
+  @After
+  def end(): Unit ={
+    nodeAPI.close()
+    relationAPI.close()
+  }
+
   @Test
   def getTest(): Unit = {
     Assert.assertArrayEquals(Array[Long](1,2,3,4,5), relationAPI.allRelationsWithProperty().toArray.map(_.id))
     Assert.assertArrayEquals(Array[Long](1,3,5), relationAPI.getRelationIdsByRelationType(1).toArray)
-    Assert.assertEquals(1, relationAPI.getRelationById(1).typeId)
+    Assert.assertEquals(1, relationAPI.getRelationById(1).get.typeId)
     Assert.assertArrayEquals(Array[Long](2,3,5), relationAPI.findToNodeIds(1).toArray.sorted)
     Assert.assertArrayEquals(Array[Long](1,3), relationAPI.findFromNodeIds(2).toArray.sorted)
     Assert.assertArrayEquals(Array[Long](2,5), relationAPI.findToNodeIds(1,1).toArray.sorted)
@@ -74,15 +80,15 @@ class RelationAPITest {
 
   @Test
   def updateTest(): Unit = {
-    Assert.assertEquals(Some(3), relationAPI.getRelationById(1).properties.get(0))
+    Assert.assertEquals(Some(3), relationAPI.getRelationById(1).get.properties.get(0))
     relationAPI.relationSetProperty(1, 0, 1)
     relationAPI.relationSetProperty(1, 1, 1)
-    Assert.assertEquals(Some(1), relationAPI.getRelationById(1).properties.get(0))
-    Assert.assertEquals(Some(1), relationAPI.getRelationById(1).properties.get(1))
-    Assert.assertEquals(None, relationAPI.getRelationById(5).properties.get(0))
+    Assert.assertEquals(Some(1), relationAPI.getRelationById(1).get.properties.get(0))
+    Assert.assertEquals(Some(1), relationAPI.getRelationById(1).get.properties.get(1))
+    Assert.assertEquals(None, relationAPI.getRelationById(5).get.properties.get(0))
     relationAPI.relationSetProperty(5, 0, 3)
-    Assert.assertEquals(Some(3), relationAPI.getRelationById(5).properties.get(0))
+    Assert.assertEquals(Some(3), relationAPI.getRelationById(5).get.properties.get(0))
     relationAPI.relationRemoveProperty(1, 1)
-    Assert.assertEquals(None, relationAPI.getRelationById(1).properties.get(1))
+    Assert.assertEquals(None, relationAPI.getRelationById(1).get.properties.get(1))
   }
 }

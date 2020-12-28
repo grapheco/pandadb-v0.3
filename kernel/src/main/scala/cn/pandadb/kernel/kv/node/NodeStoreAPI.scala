@@ -42,38 +42,42 @@ class NodeStoreAPI(dbPath: String) extends NodeStoreSPI {
 
   override def addPropertyKey(keyName: String): Int = propertyName.id(keyName)
 
-  override def getNodeById(nodeId: Long): StoredNodeWithProperty = {
-    val labels = nodeLabelStore.get(nodeId)
-    if (!labels.isEmpty)
-      nodeStore.get(nodeId, labels(0))
-    else null
-  }
+  override def getNodeById(nodeId: Long): Option[StoredNodeWithProperty] =
+    nodeLabelStore.get(nodeId).map(nodeStore.get(nodeId, _).get)
 
-  override def nodeAddLabel(nodeId: Long, labelId: Int): Unit = {
-    val node = getNodeById(nodeId)
-    val labels = node.labelIds ++ Array(labelId)
-    nodeLabelStore.set(nodeId, labelId)
-    nodeStore.set(new StoredNodeWithProperty(node.id, labels, node.properties))
-  }
+  override def nodeAddLabel(nodeId: Long, labelId: Int): Unit =
+    getNodeById(nodeId)
+      .foreach{ node =>
+        val labels = node.labelIds ++ Array(labelId)
+        nodeLabelStore.set(nodeId, labelId)
+        nodeStore.set(new StoredNodeWithProperty(node.id, labels, node.properties))
+      }
 
-  override def nodeRemoveLabel(nodeId: Long, labelId: Int): Unit = {
-    val node = getNodeById(nodeId)
-    val labels = node.labelIds.filter(_!=labelId)
-    nodeLabelStore.delete(nodeId, labelId)
-    nodeStore.set(new StoredNodeWithProperty(node.id, labels, node.properties))
-    nodeStore.delete(nodeId, labelId)
-  }
+  override def nodeRemoveLabel(nodeId: Long, labelId: Int): Unit =
+    nodeStore.get(nodeId, labelId)
+      .foreach{ node=>
+        val labels = node.labelIds.filter(_ != labelId)
+        nodeLabelStore.delete(node.id, labelId)
+        nodeStore.set(new StoredNodeWithProperty(node.id, labels, node.properties))
+        nodeStore.delete(nodeId, labelId)
+      }
 
-  override def nodeSetProperty(nodeId: Long, propertyKeyId: Int, propertyValue: Any): Unit = {
-    val node = getNodeById(nodeId)
-    nodeStore.set(new StoredNodeWithProperty(node.id, node.labelIds,
-      node.properties ++ Map(propertyKeyId -> propertyValue)))
-  }
+  override def nodeSetProperty(nodeId: Long, propertyKeyId: Int, propertyValue: Any): Unit =
+    getNodeById(nodeId)
+      .foreach{
+        node =>
+          nodeStore.set(new StoredNodeWithProperty(node.id, node.labelIds,
+            node.properties ++ Map(propertyKeyId -> propertyValue)))
+      }
+
 
   override def nodeRemoveProperty(nodeId: Long, propertyKeyId: Int): Any = {
-    val node = getNodeById(nodeId)
-    nodeStore.set(new StoredNodeWithProperty(node.id, node.labelIds,
-      node.properties-propertyKeyId))
+    getNodeById(nodeId)
+      .foreach{
+        node =>
+          nodeStore.set(new StoredNodeWithProperty(node.id, node.labelIds,
+            node.properties-propertyKeyId))
+      }
   }
 
   override def addNode(node: StoredNodeWithProperty): Unit = {
@@ -94,22 +98,23 @@ class NodeStoreAPI(dbPath: String) extends NodeStoreSPI {
   override def getNodeIdsByLabel(labelId: Int): Iterator[Long] = nodeStore.getNodeIdsByLabel(labelId)
 
   override def deleteNode(nodeId: Long): Unit = {
-    val labels = nodeLabelStore.get(nodeId)
-    nodeStore.delete(nodeId, labels)
+    nodeLabelStore.getAll(nodeId)
+      .foreach(nodeStore.delete(nodeId, _))
     nodeLabelStore.delete(nodeId)
   }
 
   // big cost
   override def deleteNodesByLabel(labelId: Int): Unit = {
-    val ids = nodeStore.getNodeIdsByLabel(labelId)
-    nodeStore.deleteByLabel(labelId)
-    ids.foreach{
-      nodeid=>
-        val labels = nodeLabelStore.get(nodeid)
-        nodeLabelStore.delete(nodeid)
-        if (labels.length>1)
-          nodeStore.delete(nodeid, labels)
+    nodeStore.getNodeIdsByLabel(labelId)
+      .foreach{
+        nodeid=>
+          nodeLabelStore.getAll(nodeid)
+            .foreach{
+              nodeStore.delete(nodeid, _)
+            }
+          nodeLabelStore.delete(nodeid)
     }
+    nodeStore.deleteByLabel(labelId)
   }
 
   //  // Big cost!!!
@@ -132,6 +137,7 @@ class NodeStoreAPI(dbPath: String) extends NodeStoreSPI {
   override def close(): Unit ={
     nodeDB.close()
     nodeLabelDB.close()
+    metaDB.close()
   }
 
 }

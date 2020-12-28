@@ -124,7 +124,7 @@ trait NodeStoreSPI {
 
   def addPropertyKey(keyName: String): Int;
 
-  def getNodeById(nodeId: Long): StoredNodeWithProperty;
+  def getNodeById(nodeId: Long): Option[StoredNodeWithProperty];
 
   def getNodesByLabel(labelId: Int): Iterator[StoredNodeWithProperty];
 

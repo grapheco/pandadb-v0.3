@@ -74,7 +74,7 @@ class PropertyGraphScanImpl(nodeIdGen: FileBasedIdGen,
   }
 
   override def nodeAt(id: Long): CypherValue.Node[Long] = mapNode(
-    nodeStore.getNodeById(id)
+    nodeStore.getNodeById(id).getOrElse(null)
   )
 
   override def allNodes(labels: Set[String], exactLabelMatch: Boolean): Iterable[Node[Id]] = {
@@ -100,7 +100,7 @@ class PropertyGraphScanImpl(nodeIdGen: FileBasedIdGen,
       throw new Exception("PandaDB doesn't support multiple label matching at the same time")
     }
     val relations: Iterator[Id] = relationStore.getRelationIdsByRelationType(relationStore.getRelationTypeId(relTypes.head))
-    relations.map(relId => mapRelation(relationStore.getRelationById(relId))).toIterable
+    relations.map(relId => mapRelation(relationStore.getRelationById(relId).get)).toIterable
   }
 }
 
@@ -176,5 +176,33 @@ class PandaPropertyGraphScanImpl(nodeIdGen: FileBasedIdGen,
     }
   }
 
+  override def getRelByStartNodeId(sourceId: Id, direction: Int, label: String): Iterable[Relationship[Id]] = super.getRelByStartNodeId(sourceId, direction, label)
 
+  override def getRelByStartNodeId(sourceId: Id, direction: Int): Iterable[Relationship[Id]] = super.getRelByStartNodeId(sourceId, direction)
+
+  override def getRelByEndNodeId(targetId: Id, direction: Int, label: String): Iterable[Relationship[Id]] = super.getRelByEndNodeId(targetId, direction, label)
+
+  override def getRelByEndNodeId(targetId: Id, direction: Int): Iterable[Relationship[Id]] = super.getRelByEndNodeId(targetId, direction)
+
+  override def getRelsByFilter(labels: String, direction: Int): Iterable[Relationship[Id]] = super.getRelsByFilter(labels, direction)
+
+  override def getRelsByFilter(direction: Int): Iterable[Relationship[Id]] = super.getRelsByFilter(direction)
+
+  override def getNodeById(Id: Id): Node[Id] = super.getNodeById(Id)
+
+  override def getRelByStartNodeIdWithProps(sourceId: Id, direction: Int, label: String): Iterable[Relationship[Id]] = super.getRelByStartNodeIdWithProps(sourceId, direction, label)
+
+  override def getRelByStartNodeIdWithProps(sourceId: Id, direction: Int): Iterable[Relationship[Id]] = super.getRelByStartNodeIdWithProps(sourceId, direction)
+
+  override def getRelByEndNodeIdWithProps(targetId: Id, direction: Int, label: String): Iterable[Relationship[Id]] = super.getRelByEndNodeIdWithProps(targetId, direction, label)
+
+  override def getRelByEndNodeIdWithProps(targetId: Id, direction: Int): Iterable[Relationship[Id]] = super.getRelByEndNodeIdWithProps(targetId, direction)
+
+  override def getRelsByFilterWithProps(labels: String, direction: Int): Iterable[Relationship[Id]] = super.getRelsByFilterWithProps(labels, direction)
+
+  override def getRelsByFilterWithProps(direction: Int): Iterable[Relationship[Id]] = super.getRelsByFilterWithProps(direction)
+
+  override def getNodeByIdWithProps(Id: Id): Node[Id] = super.getNodeByIdWithProps(Id)
+
+  override def allNodesWithProps(predicate: NFPredicate, labels: Set[String]): Iterable[Node[Id]] = super.allNodesWithProps(predicate, labels)
 }

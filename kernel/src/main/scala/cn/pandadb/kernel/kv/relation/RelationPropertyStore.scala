@@ -20,11 +20,13 @@ class RelationPropertyStore(db: RocksDB) {
 
   def delete(relationId: Long): Unit = db.delete(KeyHandler.relationKeyToBytes(relationId))
 
-  def get(relationId: Long): StoredRelationWithProperty = {
+  def get(relationId: Long): Option[StoredRelationWithProperty] = {
     val keyBytes = KeyHandler.relationKeyToBytes(relationId)
     val res = db.get(keyBytes)
-    if (res != null) RelationSerializer.deserializeRelWithProps(res)
-    else null
+    if (res != null)
+      Some(RelationSerializer.deserializeRelWithProps(res))
+    else
+      None
   }
 
   def exist(relationId: Long): Boolean = db.get(KeyHandler.relationKeyToBytes(relationId)) != null
@@ -35,7 +37,6 @@ class RelationPropertyStore(db: RocksDB) {
       iter.seekToFirst()
 
       override def hasNext: Boolean = iter.isValid
-
 
       override def next(): StoredRelationWithProperty = {
         val relation = RelationSerializer.deserializeRelWithProps(iter.value())
