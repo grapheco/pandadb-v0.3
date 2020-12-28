@@ -276,14 +276,7 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
 
 }
 
-
-
-trait PandaPropertyGraphScan[Id] extends PropertyGraphScanner[Id] {
-  //def isPropertyWithIndex(labels: Set[String], propertyName: String): Boolean = ???
-
-  def isPropertyWithIndex(label: String, propertyName: String): Boolean = ???
-  def isPropertysWithIndex(label: String, propertyName: String *): Boolean = ???
-
+trait PandaPropertyGraphWithStats{
   def getAllNodesCount(): Long = ???
   def getNodesCountByLabel(label: String):Long = ???
   def getNodesCountByLabelAndProperty(label: String, propertyName: String):Long = ???
@@ -294,17 +287,15 @@ trait PandaPropertyGraphScan[Id] extends PropertyGraphScanner[Id] {
   def getRelsCountByLabel(label: String):Long = ???
   def getRelsCountByLabelAndProperty(label: String, propertyName: String):Long = ???
   def getRelsCountByLabelAndPropertys(label: String, propertyName: String*):Long = ???
+}
+
+trait PandaPropertyGraphScan[Id] extends PropertyGraphScanner[Id] {
+  def isPropertyWithIndex(labels: Set[String], propertyName: String): Boolean = ???
+
+  def isPropertyWithIndex(label: String, propertyName: String): Boolean = ???
+  def isPropertysWithIndex(label: String, propertyName: String *): Boolean = ???
 
 
-  // def isLabelWithIndex(label: String): Boolean = ???
-
- // def isPopertysWithIndex(propertyName1: String, propertyName2: String): Boolean = ???
-
- // def isLabelAndPropertyWithIndex(propertyName: String, label: String): Boolean = ???
-
-  //def getRecorderNumbersFromProperty(labels: Set[String], propertyName: String): Int = ???
-
- // def getRecorderNumbersFromLabel(label: String): Int = ???
   /*
   direction
   0 -> Undirection
