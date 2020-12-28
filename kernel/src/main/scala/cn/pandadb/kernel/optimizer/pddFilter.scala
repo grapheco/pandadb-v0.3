@@ -3,8 +3,8 @@ package cn.pandadb.kernel.optimizer
 import cn.pandadb.kernel.kv.{AnyValue, NFEquals, NFGreaterThan, NFGreaterThanOrEqual, NFLabels, NFLessThan, NFLessThanOrEqual, NFLimit, NFPredicate}
 import cn.pandadb.kernel.optimizer.LynxType.LynxNode
 import org.opencypher.lynx.graph.LynxPropertyGraph
+import org.opencypher.lynx.plan.{EmptyRecords, Filter, Limit, PhysicalOperator}
 import org.opencypher.lynx.{LynxRecords, LynxTable, RecordHeader}
-import org.opencypher.lynx.planning.{EmptyRecords, Filter, Limit, PhysicalOperator}
 import org.opencypher.okapi.api.types.{CTNode, CypherType}
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue, Node, Relationship}

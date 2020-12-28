@@ -23,7 +23,7 @@ class IndexStoreAPI(dbPath: String) {
 
   def createIndex(label: Int, prop: Int): IndexId = meta.addIndexMeta(label, Array(prop))
 
-  def getIndexId(label: Int, props: Array[Int]): IndexId = meta.getIndexId(label, props)
+  def getIndexId(label: Int, props: Array[Int]): Option[IndexId] = meta.getIndexId(label, props)
 
   def insertIndexRecord(indexId: IndexId, data: Any, nodeId: NodeId): Unit = {
     index.set(indexId, IndexEncoder.typeCode(data), IndexEncoder.encode(data), nodeId)
@@ -42,8 +42,11 @@ class IndexStoreAPI(dbPath: String) {
   }
 
   def dropIndex(label: Int, props: Array[Int]): Unit = {
-    index.deleteRange(meta.getIndexId(label, props))
-    meta.deleteIndexMeta(label, props)
+    meta.getIndexId(label, props).foreach{
+      id=>
+      index.deleteRange(id)
+      meta.deleteIndexMeta(label, props)
+    }
   }
 
   def findByPrefix(prefix: Array[Byte]): Iterator[NodeId] = {

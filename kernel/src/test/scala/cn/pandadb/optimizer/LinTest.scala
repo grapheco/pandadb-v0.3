@@ -2,7 +2,6 @@ package cn.pandadb.optimizer
 
 import cn.pandadb.kernel.optimizer.{PandaCypherSession, PandaPropertyGraphScan}
 import org.junit.{Assert, Test}
-import org.opencypher.lynx.{LynxSession, PropertyGraphScan}
 import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue

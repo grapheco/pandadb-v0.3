@@ -1,6 +1,7 @@
 package org.opencypher.lynx.planning
 
 import org.opencypher.lynx.LynxTable
+import org.opencypher.lynx.plan.{InnerJoin, JoinType, SimpleTableOperator}
 import org.opencypher.okapi.api.value.CypherValue.CypherValue
 
 import scala.collection.Seq

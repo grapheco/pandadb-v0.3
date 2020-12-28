@@ -54,12 +54,12 @@ class IndexMeta(db: RocksDB) {
     db.delete(KeyHandler.nodePropertyIndexMetaKeyToBytes(label, props))
   }
 
-  def getIndexId(label: Int, props: Array[Int]): IndexId = {
+  def getIndexId(label: Int, props: Array[Int]): Option[IndexId] = {
     val v = db.get(KeyHandler.nodePropertyIndexMetaKeyToBytes(label, props))
-    if (v == null || v.length < 4) -1 else ByteUtils.getInt(v, 0)
+    if (v == null || v.length < 4) None else Some(ByteUtils.getInt(v, 0))
   }
 
-  def getIndexId(label: Int, prop: Int): IndexId = {
+  def getIndexId(label: Int, prop: Int): Option[IndexId] = {
     getIndexId(label, Array[Int](prop))
   }
 }

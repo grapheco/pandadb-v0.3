@@ -113,7 +113,7 @@ trait RelationStoreSPI {
 
   def allRelationTypeIds(): Array[Int];
 
-  def getRelationTypeName(relationTypeId: Int): String;
+  def getRelationTypeName(relationTypeId: Int): Option[String];
 
   def getRelationTypeId(relationTypeName: String): Int;
 
@@ -123,7 +123,7 @@ trait RelationStoreSPI {
 
   def allPropertyKeyIds(): Array[Int];
 
-  def getPropertyKeyName(keyId: Int): String;
+  def getPropertyKeyName(keyId: Int): Option[String];
 
   def getPropertyKeyId(keyName: String): Int;
 
@@ -131,7 +131,7 @@ trait RelationStoreSPI {
 
   //  def getRelationById(relId: Long): Array[Byte];
   //  def getRelationProperties(relId: Long): Map[Int, Any];
-  def getRelationById(relId: Long): StoredRelationWithProperty;
+  def getRelationById(relId: Long): Option[StoredRelationWithProperty];
 
   def getRelationIdsByRelationType(relationTypeId: Int): Iterator[Long];
 

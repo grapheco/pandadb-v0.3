@@ -14,7 +14,7 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-buffer</artifactId>
-            <version>4.0.43.Final</version>
+            <version>4.1.17.Final</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -68,5 +68,11 @@
         </dependency>
     </dependencies>
 
-
+    <repositories>
+        <repository>
+            <id>repos</id>
+            <name>Repository</name>
+            <url>http://10.0.82.220:8081/repository/maven-public/</url>
+        </repository>
+    </repositories>
 </project>

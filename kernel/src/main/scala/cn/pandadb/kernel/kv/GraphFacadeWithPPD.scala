@@ -6,7 +6,7 @@ import cn.pandadb.kernel.kv.meta.NameStore
 import cn.pandadb.kernel.optimizer.PandaCypherSession
 import cn.pandadb.kernel.store._
 import org.apache.logging.log4j.scala.Logging
-import org.opencypher.lynx.{LynxSession, PropertyGraphScan}
+import org.opencypher.lynx.LynxSession
 import org.opencypher.okapi.api.graph.CypherResult
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship}
@@ -61,16 +61,6 @@ class GraphFacadeWithPPD(
     nodeId
   }
 
-//  def addNode2(nodeProps: Map[String, Any], labels: String*): Long = {
-//    val nodeId = nodeIdGen.nextId()
-//    val labelIds = nodeLabelStore.ids(labels.toSet).toArray
-//    //TODO: string name to id
-//    val props = nodeProps.map{
-//      v => ( propertyNameStore.id(v._1),v._2)
-//    }
-//    graphStore.addNode(new StoredNodeWithProperty(nodeId, labelIds, props))
-//    nodeId
-//  }
 
   override def addRelation(label: String, from: Long, to: Long, relProps: Map[String, Any]): this.type = {
     val rid = relIdGen.nextId()

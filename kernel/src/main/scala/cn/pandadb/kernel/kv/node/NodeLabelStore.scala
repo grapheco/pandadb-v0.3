@@ -22,9 +22,16 @@ class NodeLabelStore(db: RocksDB)  {
     db.deleteRange(KeyHandler.nodeLabelToBytes(nodeId, 0),
       KeyHandler.nodeLabelToBytes(nodeId, -1))
 
-  // return labelIds
-  def get(id: Long): Array[Int] = {
-    val keyPrefix = KeyHandler.nodeLabelPrefix(id)
+  def get(nodeId: Long): Option[Int] = {
+    val keyPrefix = KeyHandler.nodeLabelPrefix(nodeId)
+    val iter = db.newIterator()
+    iter.seek(keyPrefix)
+    if (iter.isValid && iter.key().startsWith(keyPrefix)) Some(ByteUtils.getInt(iter.key(), keyPrefix.length))
+    else None
+  }
+
+  def getAll(nodeId: Long): Array[Int] = {
+    val keyPrefix = KeyHandler.nodeLabelPrefix(nodeId)
     val iter = db.newIterator()
     iter.seek(keyPrefix)
     new Iterator[Int] (){

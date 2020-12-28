@@ -29,7 +29,7 @@ class RelationStoreAPI(dbPath: String) extends RelationStoreSPI{
 
   override def allRelationTypeIds(): Array[Int] = relationTypeNameStore.mapInt2String.keys.toArray
 
-  override def getRelationTypeName(relationTypeId: Int): String = relationTypeNameStore.key(relationTypeId).get
+  override def getRelationTypeName(relationTypeId: Int): Option[String] = relationTypeNameStore.key(relationTypeId)
 
   override def getRelationTypeId(relationTypeName: String): Int = relationTypeNameStore.id(relationTypeName)
 
@@ -39,28 +39,28 @@ class RelationStoreAPI(dbPath: String) extends RelationStoreSPI{
 
   override def allPropertyKeyIds(): Array[Int] = propertyName.mapInt2String.keys.toArray
 
-  override def getPropertyKeyName(keyId: Int): String = propertyName.key(keyId).get
+  override def getPropertyKeyName(keyId: Int): Option[String] = propertyName.key(keyId)
 
   override def getPropertyKeyId(keyName: String): Int = propertyName.id(keyName)
 
   override def addPropertyKey(keyName: String): Int = propertyName.id(keyName)
 
-  override def getRelationById(relId: Long): StoredRelationWithProperty = relationStore.get(relId)
+  override def getRelationById(relId: Long): Option[StoredRelationWithProperty] = relationStore.get(relId)
 
   override def getRelationIdsByRelationType(relationTypeId: Int): Iterator[Long] =
     relationLabelStore.getRelations(relationTypeId)
 
   override def relationSetProperty(relationId: Long, propertyKeyId: Int, propertyValue: Any): Unit = {
-    val rel = relationStore.get(relationId)
-    if (rel != null) {
+    relationStore.get(relationId).foreach{
+      rel =>
       relationStore.set(new StoredRelationWithProperty(rel.id, rel.from, rel.to, rel.typeId,
         rel.properties ++ Map(propertyKeyId->propertyValue)))
     }
   }
 
   override def relationRemoveProperty(relationId: Long, propertyKeyId: Int): Any = {
-    val rel = relationStore.get(relationId)
-    if (rel != null) {
+    relationStore.get(relationId).foreach{
+      rel =>
       relationStore.set(new StoredRelationWithProperty(rel.id, rel.from, rel.to, rel.typeId,
         rel.properties-propertyKeyId))
     }
@@ -91,11 +91,13 @@ class RelationStoreAPI(dbPath: String) extends RelationStoreSPI{
   }
 
   override def deleteRelation(id: Long): Unit = {
-    val relation = relationStore.get(id)
-    relationStore.delete(id)
-    inRelationStore.delete(relation)
-    outRelationStore.delete(relation)
-    relationLabelStore.delete(relation.typeId, relation.id)
+    relationStore.get(id).foreach{
+      relation =>
+        relationStore.delete(id)
+        inRelationStore.delete(relation)
+        outRelationStore.delete(relation)
+        relationLabelStore.delete(relation.typeId, relation.id)
+    }
   }
 
   override def allRelationsWithProperty(): Iterator[StoredRelationWithProperty] = relationStore.all()
@@ -115,6 +117,8 @@ class RelationStoreAPI(dbPath: String) extends RelationStoreSPI{
   override def close(): Unit ={
     relationStore.close()
     inRelationStore.close()
+    outRelationDB.close()
+    metaDB.close()
     relationLabelStore.close()
   }
 }

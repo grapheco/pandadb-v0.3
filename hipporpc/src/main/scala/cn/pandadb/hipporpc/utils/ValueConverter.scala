@@ -1,26 +1,26 @@
-package cn.pandadb.server.utils
+package cn.pandadb.hipporpc.utils
 
-import cn.pandadb.server.values.{Label, RelationshipType, Value}
+import cn.pandadb.hipporpc.values.{BooleanValue, FloatValue, IntegerValue, Label, Node, NodeValue, NullValue, Relationship, RelationshipType, RelationshipValue, StringValue, Value}
 import org.opencypher.okapi.api.value.CypherValue
-import cn.pandadb.server.values
 
 import scala.collection.mutable
+
 class ValueConverter {
   def converterValue(v: Any): Value = {
     v match {
       case node:CypherValue.Node[Long] => convertNode(node)
       case relationship: CypherValue.Relationship[Long] => convertRelationship(relationship)
-      case i: CypherValue.CypherInteger => values.IntegerValue(i.value)
-      case f: CypherValue.CypherFloat => values.FloatValue(f.value)
-      case str: CypherValue.CypherString => values.StringValue(str.value)
-      case b: CypherValue.CypherBoolean => values.BooleanValue(b.value)
-      case _ => values.NullValue
+      case i: CypherValue.CypherInteger => IntegerValue(i.value)
+      case f: CypherValue.CypherFloat => FloatValue(f.value)
+      case str: CypherValue.CypherString => StringValue(str.value)
+      case b: CypherValue.CypherBoolean => BooleanValue(b.value)
+      case _ => NullValue
 //      case number: CypherValue.CypherNumber =>
 //      case duration: CypherValue.CypherDuration => values.DurationValue(duration.value)
     }
   }
 
-  def convertNode(node: CypherValue.Node[Long]): values.NodeValue ={
+  def convertNode(node: CypherValue.Node[Long]): NodeValue ={
     val id = node.id
     val labels = node.labels.toArray.map(l => Label(l))
     val properties = node.properties
@@ -30,11 +30,11 @@ class ValueConverter {
       val v: Value = converterValue(v1)
       propertiesMap(k) = v
     }
-    val convertedNode = values.Node(id, propertiesMap.toMap, labels)
-    values.NodeValue(convertedNode)
+    val convertedNode = Node(id, propertiesMap.toMap, labels)
+    NodeValue(convertedNode)
   }
 
-  def convertRelationship(relationship: CypherValue.Relationship[Long]): values.RelationshipValue ={
+  def convertRelationship(relationship: CypherValue.Relationship[Long]): RelationshipValue ={
     val id = relationship.id
     val relationshipType = RelationshipType(relationship.relType)
     val startNodeId = relationship.startId
@@ -48,7 +48,7 @@ class ValueConverter {
       propertiesMap(k) = v
     }
 
-    val rel = values.Relationship(id, propertiesMap.toMap, startNodeId, endNodeId, relationshipType)
-    values.RelationshipValue(rel)
+    val rel = Relationship(id, propertiesMap.toMap, startNodeId, endNodeId, relationshipType)
+    RelationshipValue(rel)
   }
 }

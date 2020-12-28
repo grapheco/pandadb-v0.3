@@ -52,9 +52,13 @@ class RelationDirectionStore(db: RocksDB, DIRECTION: Direction) {
       KeyHandler.edgeKeyToBytes(firstId, typeId, -1))
   }
 
-  def get(node1: Long, edgeType: Int, node2: Long): Long = {
+  def get(node1: Long, edgeType: Int, node2: Long): Option[Long] = {
     val keyBytes = KeyHandler.edgeKeyToBytes(node1, edgeType, node2)
-    ByteUtils.getLong(db.get(keyBytes), 0)
+    val value = db.get(keyBytes)
+    if (value!=null)
+      Some(ByteUtils.getLong(value, 0))
+    else
+      None
   }
 
   def getNodeIds(nodeId: Long): Iterator[Long] = {
