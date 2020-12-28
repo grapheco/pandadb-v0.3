@@ -2,7 +2,6 @@
 //
 //import java.util
 //
-//import cn.pandadb.driver.utils.TransferGrpcToScala
 //import org.neo4j.driver.types.TypeSystem
 //import org.neo4j.driver.{Record, Session, Statement, StatementResult, Transaction, TransactionConfig, TransactionWork, Value}
 //
@@ -10,10 +9,10 @@
 //
 //class PandaSession extends Session {
 //  val PANDA_CLIENT_NAME = "panda-client"
-//  val SERVER_NAME: String = "panda-server"
+//  val PANDA_SERVER_NAME = "panda-server"
 //  val ADDRESS: String = "localhost"
-//  val PORT: Int = 50010
-//  val client = new PandaRpcClient(TransferGrpcToScala.getChannel(PORT))
+//  val PORT: Int = 8878
+//  val client = new PandaRpcClient(ADDRESS, PORT, PANDA_CLIENT_NAME, PANDA_SERVER_NAME)
 //
 //  override def beginTransaction(): Transaction = ???
 //
@@ -29,7 +28,7 @@
 //
 //  override def run(statementTemplate: String): StatementResult = {
 //    // TODO: stream of InternalRecords
-//    val res = client.sendCypher().next()
+//    val res = client.sendCypherRequest("match (n) return n, n.name")
 //    new PandaStatementResult(res)
 //  }
 //
@@ -44,7 +43,7 @@
 //  override def reset(): Unit = ???
 //
 //  override def close(): Unit = {
-//   client.close();
+//   client.close
 //  }
 //
 //  override def run(statementTemplate: String, parameters: Value): StatementResult = ???

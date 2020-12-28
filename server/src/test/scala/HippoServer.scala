@@ -1,7 +1,7 @@
 import java.io.{File, FileInputStream}
 import java.nio.ByteBuffer
 
-import cn.pandadb.hipporpc.utils.ValueConverter
+import cn.pandadb.hipporpc.utils.{DriverValue, ValueConverter}
 import cn.pandadb.hipporpc.values.Value
 import cn.pandadb.kernel.kv.GraphFacadeWithPPD
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
@@ -14,7 +14,7 @@ import net.neoremind.kraps.rpc.netty.{HippoRpcEnv, HippoRpcEnvFactory}
 import org.apache.commons.io.{FileUtils, IOUtils}
 import org.grapheco.hippo.{ChunkedStream, HippoRpcHandler, ReceiveContext}
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable
 
 object server {
   var nodeStore: NodeStoreSPI = _
@@ -77,13 +77,18 @@ class MyStreamHandler(graphFacade:GraphFacadeWithPPD) extends HippoRpcHandler {
     case CypherRequest(cypher) =>{
       // TODO: create a iterator,get batch data from resIterator
       val resIterator = graphFacade.cypher(cypher).records.iterator
-      val list = ArrayBuffer[Value]()
+      val toDriverRecordsList = mutable.ArrayBuffer[DriverValue]()
       while (resIterator.hasNext){
+        val rowMap = mutable.Map[String, Value]()
         val cypherMap = resIterator.next()
         val keys = cypherMap.keys
-        keys.foreach(key => list += converter.converterValue(cypherMap.getOrElse(key)))
+        keys.foreach(key => {
+          val v =  converter.converterValue(cypherMap.getOrElse(key))
+          rowMap.put(key, v)
+        })
+        toDriverRecordsList += DriverValue(rowMap.toMap)
       }
-      ChunkedStream.grouped(100, list.toIterable)
+      ChunkedStream.grouped(100, toDriverRecordsList)
     }
   }
 

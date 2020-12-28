@@ -1,3 +1,4 @@
+import cn.pandadb.hipporpc.utils.DriverValue
 import cn.pandadb.hipporpc.values.Value
 import net.neoremind.kraps.RpcConf
 import net.neoremind.kraps.rpc.{RpcAddress, RpcEnvClientConfig}
@@ -26,10 +27,12 @@ object client {
     rpcEnv.shutdown()
   }
   def sendCypherRequest(endpointRef:HippoEndpointRef, rpcEnv: HippoRpcEnv): Unit ={
-    val res = endpointRef.getChunkedStream[Value](CypherRequest("match (n) return n"), Duration.Inf)
+    val res = endpointRef.getChunkedStream[DriverValue](CypherRequest("match (n) return n, n.name"), Duration.Inf)
     val iter = res.iterator
     while (iter.hasNext){
-      println(iter.next())
+      val rec = iter.next()
+      println(rec.rowMap.keySet, rec.rowMap.values)
+      println("=========================================")
     }
     rpcEnv.stop(endpointRef)
     rpcEnv.shutdown()

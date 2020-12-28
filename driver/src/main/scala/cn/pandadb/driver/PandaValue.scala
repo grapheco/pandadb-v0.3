@@ -4,22 +4,26 @@
 //import java.{lang, util}
 //import java.util.function
 //
+//import cn.pandadb.hipporpc.utils.DriverValue
+//import cn.pandadb.hipporpc.values.{Value => HippoValue}
+//
+//import scala.collection.JavaConverters._
 //import org.neo4j.blob.Blob
 //import org.neo4j.driver.Value
 //import org.neo4j.driver.types.{Entity, IsoDuration, Node, Path, Point, Relationship, Type}
 //
-//class PandaValue extends Value {
-//  override def size(): Int = ???
+//class PandaValue(driverValue: DriverValue) extends Value {
+//  override def size(): Int = driverValue.value.size
 //
-//  override def isEmpty: Boolean = ???
+//  override def isEmpty: Boolean = driverValue.value.isEmpty
 //
-//  override def keys(): lang.Iterable[String] = ???
+//  override def keys(): lang.Iterable[String] = asJavaIterable(driverValue.keys)
 //
-//  override def get(index: Int): Value = ???
+//  override def get(index: Int): Value =
 //
 //  override def `type`(): Type = ???
 //
-//  override def hasType(`type`: Type): Boolean = ???
+//  override def hasType(`type`: Type): Boolean = `type`.name() == value.getType()
 //
 //  override def isTrue: Boolean = ???
 //
