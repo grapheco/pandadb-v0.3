@@ -40,7 +40,6 @@ object PDBMetaData {
 
   def init(dbPath: String): Unit = {
     val rocksDB = RocksDBStorage.getDB(s"${dbPath}/metadata")
-    val bytes = rocksDB.get("_nodeIdAllocator".getBytes())
     _nodeIdAllocator.set(BaseSerializer.bytes2Long(rocksDB.get("_nodeIdAllocator".getBytes())))
     _relationIdAllocator.set(BaseSerializer.bytes2Long(rocksDB.get("_relationIdAllocator".getBytes())))
     _indexIdAllocator.set(BaseSerializer.bytes2Int(rocksDB.get("_indexIdAllocator".getBytes())))
