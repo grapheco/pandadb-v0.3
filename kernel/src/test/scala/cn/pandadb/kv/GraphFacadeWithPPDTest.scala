@@ -28,15 +28,13 @@ class GraphFacadeWithPPDTest {
 
   @Before
   def setup(): Unit = {
-    FileUtils.deleteDirectory(new File("./testdata/output"))
+    FileUtils.deleteDirectory(new File("./testdata"))
     new File("./testdata/output").mkdirs()
-    new File("./testdata/output/nodelabels").createNewFile()
-    new File("./testdata/output/rellabels").createNewFile()
 
     val dbPath = "./testdata"
-    var nodeStore = new NodeStoreAPI(dbPath)
-    var relationStore = new RelationStoreAPI(dbPath)
-    var indexStore = new IndexStoreAPI(dbPath)
+    nodeStore = new NodeStoreAPI(dbPath)
+    relationStore = new RelationStoreAPI(dbPath)
+    indexStore = new IndexStoreAPI(dbPath)
 
 //    graphStore = new RocksDBGraphAPI("./testdata/output/rocksdb")
 //    nodeLabelStore = new NodeLabelNameStore(graphStore.getRocksDB)
