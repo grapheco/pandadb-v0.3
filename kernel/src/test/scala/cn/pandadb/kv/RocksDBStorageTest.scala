@@ -7,7 +7,7 @@ class RocksDBStorageTest {
 
   @Test
   def testGetDB(): Unit = {
-    val db = RocksDBStorage.getDB()
+    val db = RocksDBStorage.getDB("testdata/db")
     Assert.assertNotNull(db)
   }
 

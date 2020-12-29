@@ -1,6 +1,7 @@
 package org.opencypher.lynx.plan
 
 import cats.data.NonEmptyList
+import cn.pandadb.kernel.optimizer.NFPredicate
 import org.opencypher.lynx.{plan, _}
 import org.opencypher.okapi.api.graph.{NodePattern, Pattern, PatternElement, QualifiedGraphName, RelationshipPattern}
 import org.opencypher.okapi.api.types.{CTAny, CTNode, CTNull, CTRelationship}
@@ -12,7 +13,6 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, RelType}
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.logical.{impl => logical}
-import cn.pandadb.kernel.kv.NFPredicate
 import org.opencypher.lynx.graph.LynxPropertyGraph
 import org.opencypher.lynx.planning.{ScanNodes, ScanRels, SourceNode, TargetNode}
 import org.opencypher.okapi.ir.impl.util.VarConverters.RichPatternElement

@@ -7,7 +7,7 @@ import org.rocksdb.{Options, RocksDB}
 object RocksDBStorage {
   RocksDB.loadLibrary()
 
-  def getDB(path:String = "testdata/rocks/db", createIfMissing:Boolean=true): RocksDB = {
+  def getDB(path:String, createIfMissing:Boolean=true): RocksDB = {
     val options: Options = new Options().setCreateIfMissing(createIfMissing)
     val dir = new File(path)
     if (!dir.exists()) {

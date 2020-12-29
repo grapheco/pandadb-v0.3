@@ -1,6 +1,6 @@
 package cn.pandadb.kernel.optimizer
 
-import cn.pandadb.kernel.kv.{AnyValue, NFBinaryPredicate, NFEquals, NFGreaterThan, NFGreaterThanOrEqual, NFLabels, NFLessThan, NFLessThanOrEqual, NFPredicate}
+//import cn.pandadb.kernel.kv.AnyValue
 import org.opencypher.lynx.graph.LynxPropertyGraph
 import org.opencypher.lynx.plan.{Add, AddInto, Aggregate, Alias, Cache, ConstructGraph, Distinct, Drop, EmptyRecords, Filter, FromCatalogGraph, GraphUnionAll, Join, Limit, OrderBy, PhysicalOperator, PrefixGraph, ReturnGraph, Select, Skip, Start, SwitchContext, TabularUnionAll}
 import org.opencypher.lynx.planning.{ScanNodes, ScanRels}
