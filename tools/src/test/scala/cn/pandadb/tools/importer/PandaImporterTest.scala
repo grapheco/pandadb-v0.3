@@ -47,9 +47,9 @@ class PandaImporterTest extends Logging {
     while (iter.hasNext) {
       val nodeFromFile = getNodeByLine(iter.next(), nodePropHead)
       val nodeFromDB = nodeAPI.getNodeById(nodeFromFile.id)
-      Assert.assertEquals(nodeFromFile.id, nodeFromDB.id)
-      Assert.assertArrayEquals(nodeFromFile.labelIds, nodeFromDB.labelIds)
-      Assert.assertEquals(nodeFromFile.properties, nodeFromDB.properties)
+      Assert.assertEquals(nodeFromFile.id, nodeFromDB.get.id)
+      Assert.assertArrayEquals(nodeFromFile.labelIds, nodeFromDB.get.labelIds)
+      Assert.assertEquals(nodeFromFile.properties, nodeFromDB.get.properties)
       count += 1
       if(count % 100000 == 0) logger.info(s"${count/100000} * 10W nodes checked.")
     }

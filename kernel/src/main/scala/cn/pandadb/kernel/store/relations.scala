@@ -113,6 +113,8 @@ trait RelationStoreSPI {
 
   def allRelationTypeIds(): Array[Int];
 
+  def relationCount: Long
+
   def getRelationTypeName(relationTypeId: Int): Option[String];
 
   def getRelationTypeId(relationTypeName: String): Int;

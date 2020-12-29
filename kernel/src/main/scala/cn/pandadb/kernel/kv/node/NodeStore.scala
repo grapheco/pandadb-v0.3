@@ -26,7 +26,7 @@ class NodeStore(db: RocksDB) {
     else None
   }
 
-  //TODO 有个问题,同一个节点会被扫两边
+  //fixme 有个问题,同一个节点会被扫两边
   def all() : Iterator[StoredNodeWithProperty] = {
     val iter = db.newIterator()
     iter.seekToFirst()

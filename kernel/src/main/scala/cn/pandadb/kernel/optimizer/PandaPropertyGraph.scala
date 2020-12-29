@@ -276,7 +276,7 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
 
 }
 
-trait PandaPropertyGraphWithStats{
+trait HasStatistics{
   def getAllNodesCount(): Long = ???
   def getNodesCountByLabel(label: String):Long = ???
   def getNodesCountByLabelAndProperty(label: String, propertyName: String):Long = ???
@@ -302,6 +302,9 @@ trait PandaPropertyGraphScan[Id] extends PropertyGraphScanner[Id] {
   1 -> incoming
   2 -> outgoing
   */
+  val UNDIRECTION = 0
+  val IN = 1
+  val OUT = 2
 
   def getRelByStartNodeId(sourceId: Long, direction:Int, label: String): Iterable[Relationship[Id]] = ???
   def getRelByStartNodeId(sourceId: Long, direction:Int): Iterable[Relationship[Id]] = ???

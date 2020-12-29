@@ -2,6 +2,7 @@ package cn.pandadb.kernel.kv.index
 
 
 import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler}
+import cn.pandadb.kernel.util.serializer.BaseSerializer
 import org.rocksdb.{RocksDB, WriteBatch, WriteOptions}
 
 class IndexStore(db: RocksDB){
@@ -15,12 +16,24 @@ class IndexStore(db: RocksDB){
    * ╠═════════╦══════════╦══════════╦══════════╣
    * ║ indexId ║ typeCode ║  value   ║  nodeId  ║
    * ╚═════════╩══════════╩══════════╩══════════╝
+   *
+   * Combined Index:
+   * ╔══════════════════════════════════════════╗
+   * ║                   key                    ║
+   * ╠═════════╦══════════╦══════════╦══════════╣
+   * ║ indexId ║  length  ║  value   ║  nodeId  ║
+   * ╚═════════╩══════════╩══════════╩══════════╝
    */
-   def set(indexId: IndexId,typeCode:Byte, value: Array[Byte], nodeId: NodeId): Unit = {
+  def set(indexId: IndexId, typeCode:Byte, value: Array[Byte], nodeId: NodeId): Unit = {
     db.put(KeyHandler.nodePropertyIndexKeyToBytes(indexId, typeCode, value, nodeId), Array.emptyByteArray)
   }
 
-   def set(indexId: IndexId, data: Iterator[(Any, Long)]): Unit ={
+  def set(indexId: IndexId, value: Array[Any], nodeId: NodeId): Unit = {
+    val bytes = BaseSerializer.anyArray2Bytes(value)
+    db.put(KeyHandler.nodePropertyCombinedIndexKeyToBytes(indexId, bytes.length, bytes, nodeId), Array.emptyByteArray)
+  }
+
+  def set(indexId: IndexId, data: Iterator[(Any, Long)]): Unit ={
     val writeOpt = new WriteOptions()
     val batch = new WriteBatch()
     var i = 0

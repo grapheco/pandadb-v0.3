@@ -165,6 +165,8 @@ trait NodeStoreSPI {
 
   def allNodes(): Iterator[StoredNodeWithProperty]
 
+  def nodesCount: Long
+
   def deleteNodesByLabel(labelId: Int): Unit
 
   def addNode(node: StoredNodeWithProperty): Unit
