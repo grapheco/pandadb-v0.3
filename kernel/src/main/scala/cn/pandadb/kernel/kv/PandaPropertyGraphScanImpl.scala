@@ -154,8 +154,10 @@ class PandaPropertyGraphScanImpl(nodeIdGen: FileBasedIdGen,
   override def isPropertyWithIndex(label: String, propertyName: String): Boolean =
     indexStore.getIndexId(nodeStore.getLabelId(label), Array(nodeStore.getPropertyKeyId(propertyName))).isDefined
 
-  override def isPropertysWithIndex(label: String, propertyName: String*): Boolean =
+  override def isPropertysWithIndex(label: String, propertyName: String*): Boolean = {
+    // fixme sort
     indexStore.getIndexId(nodeStore.getLabelId(label), propertyName.toArray.map(nodeStore.getPropertyKeyId)).isDefined
+  }
 
   override def getRelsByFilter(labels: String, direction: Int): Iterable[Relationship[Long]] =
     relationStore
@@ -166,13 +168,20 @@ class PandaPropertyGraphScanImpl(nodeIdGen: FileBasedIdGen,
       .map(mapRelation).toIterable
 
 
-  override def getRelsByFilter(direction: Int): Iterable[Relationship[Long]] = super.getRelsByFilter(direction)
+  override def getRelsByFilter(): Iterable[Relationship[Long]] = relationStore.allRelations().map(mapRelation).toIterable
 
   override def getNodeById(Id: Long): Node[Long] = nodeStore.getNodeById(Id).map(mapNode).get
 
-  override def getRelsByFilterWithProps(labels: String, direction: Int): Iterable[Relationship[Long]] = super.getRelsByFilterWithProps(labels, direction)
+  override def getRelsByFilterWithProps(labels: String, direction: Int): Iterable[Relationship[Long]] =
+    relationStore
+      .getRelationIdsByRelationType(
+        relationStore.getRelationTypeId(labels)
+      )
+      .map(relationStore.getRelationById(_).get)
+      .map(mapRelation).toIterable
 
-  override def getRelsByFilterWithProps(direction: Int): Iterable[Relationship[Long]] = super.getRelsByFilterWithProps(direction)
+//  override def getRelsByFilterWithProps(direction: Int): Iterable[Relationship[Long]] =
+
 
   override def getNodeByIdWithProps(Id: Long): Node[Long] = nodeStore.getNodeById(Id).map(mapNode).get
 

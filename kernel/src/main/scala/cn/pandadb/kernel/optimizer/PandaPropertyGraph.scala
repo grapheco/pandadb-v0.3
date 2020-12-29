@@ -122,35 +122,35 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
   }
 
 
-  def getNodesByFilter(predicate: Array[NFPredicate], labels: Set[String], sk: Int): Iterable[Node[Id]] = {
-
-
-    //todo test
-    val nodes = {
-      if (labels.nonEmpty) {
-        if (predicate.nonEmpty) {
-          val (indexNfp, nfp) = findindexPredicate(predicate, labels)
-          val tempnodes = {
-            if (indexNfp.nonEmpty) indexNfp.map(scan.allNodes(_, labels).toSeq).reduce(_.intersect(_))
-            else scan.allNodes(labels, false)
-          }
-          tempnodes.filter(filterByPredicates(_, nfp))
-        }
-        else scan.allNodes(labels, false)
-      }
-      else scan.allNodes()
-    }
-    nodes
-  }
-
-  def getNodesByFilter(predicate: Array[NFPredicate], labels: Set[String], nodeVar: NodeVar): LynxRecords = {
-
-    new LynxRecords(
-      RecordHeader(Map(NodeVar(nodeVar.name)(CTNode) -> nodeVar.name)),
-      LynxTable(Seq(nodeVar.name -> CTNode), getNodesByFilter(predicate, labels).map(Seq(_)))
-    )
-
-  }
+//  def getNodesByFilter(predicate: Array[NFPredicate], labels: Set[String], sk: Int): Iterable[Node[Id]] = {
+//
+//
+//    //todo test
+//    val nodes = {
+//      if (labels.nonEmpty) {
+//        if (predicate.nonEmpty) {
+//          val (indexNfp, nfp) = findindexPredicate(predicate, labels)
+//          val tempnodes = {
+//            if (indexNfp.nonEmpty) indexNfp.map(scan.allNodes(_, labels).toSeq).reduce(_.intersect(_))
+//            else scan.allNodes(labels, false)
+//          }
+//          tempnodes.filter(filterByPredicates(_, nfp))
+//        }
+//        else scan.allNodes(labels, false)
+//      }
+//      else scan.allNodes()
+//    }
+//    nodes
+//  }
+//
+//  def getNodesByFilter(predicate: Array[NFPredicate], labels: Set[String], nodeVar: NodeVar): LynxRecords = {
+//
+//    new LynxRecords(
+//      RecordHeader(Map(NodeVar(nodeVar.name)(CTNode) -> nodeVar.name)),
+//      LynxTable(Seq(nodeVar.name -> CTNode), getNodesByFilter(predicate, labels).map(Seq(_)))
+//    )
+//
+//  }
 
   def getNodesByFilter(predicate: Array[NFPredicate], name: String, nodeCypherType: CTNode): LynxRecords = {
 
@@ -277,6 +277,8 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
 }
 
 trait HasStatistics{
+  // if unknown return -1
+
   def getAllNodesCount(): Long = ???
   def getNodesCountByLabel(label: String):Long = ???
   def getNodesCountByLabelAndProperty(label: String, propertyName: String):Long = ???
@@ -290,11 +292,6 @@ trait HasStatistics{
 }
 
 trait PandaPropertyGraphScan[Id] extends PropertyGraphScanner[Id] {
-  def isPropertyWithIndex(labels: Set[String], propertyName: String): Boolean = ???
-
-  def isPropertyWithIndex(label: String, propertyName: String): Boolean = ???
-  def isPropertysWithIndex(label: String, propertyName: String *): Boolean = ???
-
 
   /*
   direction
@@ -306,28 +303,51 @@ trait PandaPropertyGraphScan[Id] extends PropertyGraphScanner[Id] {
   val IN = 1
   val OUT = 2
 
+  // relation
+
   def getRelationByNodeId(nodeId: Long, direction: Int): Iterator[Relationship[Id]] = ???
 
   def getRelationByNodeId(nodeId: Long, direction: Int, typeString: String): Iterator[Relationship[Id]] = ???
 
-  def getRelsByFilter(labels: String, direction: Int): Iterable[Relationship[Id]] = ???
+  def getRelationByNodeIdWithProperty(nodeId: Long, direction: Int): Iterator[Relationship[Id]] = ???
 
-  def getRelsByFilter(direction: Int): Iterable[Relationship[Id]] = ???
+  def getRelationByNodeIdWithProperty(nodeId: Long, direction: Int, typeString: String): Iterator[Relationship[Id]] = ???
+
+  def allRelations(): Iterator[Relationship[Id]] = ???
+
+  def allRelationsWithProperty: Iterator[Relationship[Id]] = ???
+
+  def getRelationByType(typeString: String): Iterator[Relationship[Id]] = ???
+
+  def getRelationByTypeWithProperty(typeString: String): Iterator[Relationship[Id]] = ???
+
+  // node
 
   def getNodeById(Id: Long): Node[Id] = ???
 
-  def allNodes(predicate: NFPredicate, labels: Set[String]): Iterable[Node[Id]] = ???
+  def getNodesByLabel(labelString: String): Iterator[Node[Id]] = ???
 
-  def getRelationByNodeIdWithProps(nodeId: Long, direction: Int): Iterator[Relationship[Id]] = ???
+  def allNodes(): Iterable[Node[Id]] = ???
 
-  def getRelationByNodeIdWithProps(nodeId: Long, direction: Int, typeString: String): Iterator[Relationship[Id]] = ???
+  // index
+  def isPropertyWithIndex(labels: Set[String], propertyName: String): (Int, Long) = ???
 
-  def getRelsByFilterWithProps(labels: String, direction: Int): Iterable[Relationship[Id]] = ???
+  def isPropertysWithIndex(labels: Set[String], propertyNames: Set[String]): (Int, Long) = ???
 
-  def getRelsByFilterWithProps(direction: Int): Iterable[Relationship[Id]] = ???
+  def isPropertyWithIndex(label: String, propertyName: String): (Int, Long) = ???
 
-  def getNodeByIdWithProps(Id: Long): Node[Id] = ???
+  def isPropertysWithIndex(label: String, propertyName: String *): (Int, Long) = ???
 
-  def allNodesWithProps(predicate: NFPredicate, labels: Set[String]): Iterable[Node[Id]] = ???
+  def findNodeId(indexId: Int, value: Any): Iterator[Long] = ???
+
+  def findNode(indexId: Int, value: Any): Iterator[Node[Id]] = ???
+
+  def findRangeNodeId(indexId: Int, from: Any, to: Any): Iterator[Long] = ???
+
+  def findRangeNode(indexId: Int, from: Any, to: Any): Iterator[Node[Id]] = ???
+
+  def startWithNodeId(indexId: Int, start: String): Iterator[Long] = ???
+
+  def startWithNode(indexId: Int, start: String: Iterator[Node[Id]] = ???
 
 }
