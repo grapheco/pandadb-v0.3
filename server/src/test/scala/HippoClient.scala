@@ -1,3 +1,4 @@
+import cn.pandadb.hipporpc.message.{Messages, SayHelloRequest, SayHelloResponse}
 import cn.pandadb.hipporpc.utils.DriverValue
 import cn.pandadb.hipporpc.values.Value
 import net.neoremind.kraps.RpcConf
@@ -8,10 +9,12 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 object client {
+  val PANDA_SERVER_NAME = "panda-server"
+
   def main(args: Array[String]): Unit = {
     val config =RpcEnvClientConfig(new RpcConf(), "client")
     val rpcEnv = HippoRpcEnvFactory.create(config)
-    val endpointRef = rpcEnv.setupEndpointRef(new RpcAddress("localhost", 8878), "server")
+    val endpointRef = rpcEnv.setupEndpointRef(new RpcAddress("localhost", 8878), PANDA_SERVER_NAME)
 //    val res = sayHelloHippoRpcTest(endpointRef, rpcEnv)
     val res = sendCypherRequest(endpointRef, rpcEnv)
 
@@ -22,12 +25,12 @@ object client {
 
   def sayHelloHippoRpcTest(endpointRef:HippoEndpointRef, rpcEnv: HippoRpcEnv): Any ={
     val res = Await.result(endpointRef.askWithBuffer[SayHelloResponse](SayHelloRequest("hello")),Duration.Inf)
-    res.value
+    res.msg
     rpcEnv.stop(endpointRef)
     rpcEnv.shutdown()
   }
   def sendCypherRequest(endpointRef:HippoEndpointRef, rpcEnv: HippoRpcEnv): Unit ={
-    val res = endpointRef.getChunkedStream[DriverValue](CypherRequest("match (n) return n, n.name"), Duration.Inf)
+    val res = endpointRef.getChunkedStream[DriverValue](Messages("match (n) return n, n.name"), Duration.Inf)
     val iter = res.iterator
     while (iter.hasNext){
       val rec = iter.next()

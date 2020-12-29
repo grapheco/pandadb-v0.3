@@ -1,6 +1,7 @@
 import java.io.{File, FileInputStream}
 import java.nio.ByteBuffer
 
+import cn.pandadb.hipporpc.message.{Messages, SayHelloRequest, SayHelloResponse}
 import cn.pandadb.hipporpc.utils.{DriverValue, ValueConverter}
 import cn.pandadb.hipporpc.values.Value
 import cn.pandadb.kernel.kv.GraphFacadeWithPPD
@@ -17,6 +18,8 @@ import org.grapheco.hippo.{ChunkedStream, HippoRpcHandler, ReceiveContext}
 import scala.collection.mutable
 
 object server {
+  val PANDA_SERVER_NAME = "panda-server"
+
   var nodeStore: NodeStoreSPI = _
   var relationStore: RelationStoreSPI = _
   var indexStore: IndexStoreAPI = _
@@ -41,17 +44,19 @@ object server {
       indexStore,
       {}
     )
+
     val n1: Long = graphFacade.addNode2(Map("name" -> "bob", "age" -> 40), "person")
     val n2: Long = graphFacade.addNode2(Map("name" -> "alex", "age" -> 20), "person")
     val n3: Long = graphFacade.addNode2(Map("name" -> "simba", "age" -> 10), "worker")
     val n4: Long = graphFacade.addNode2(Map("name" -> "bob", "age" -> 50), "person")
+    graphFacade.addRelation("friend", 1L, 2L, Map())
 
     //    val config = RpcEnvServerConfig(new RpcConf(), "server", args(0), 8878)
-    val config = RpcEnvServerConfig(new RpcConf(), "server", "localhost", 8878)
+    val config = RpcEnvServerConfig(new RpcConf(), PANDA_SERVER_NAME, "localhost", 8878)
     val rpcEnv = HippoRpcEnvFactory.create(config)
     val endpoint = new MyEndpoint(rpcEnv)
     val handler = new MyStreamHandler(graphFacade)
-    rpcEnv.setupEndpoint("server", endpoint)
+    rpcEnv.setupEndpoint(PANDA_SERVER_NAME, endpoint)
     rpcEnv.setRpcHandler(handler)
     rpcEnv.awaitTermination()
   }
@@ -74,7 +79,7 @@ class MyStreamHandler(graphFacade:GraphFacadeWithPPD) extends HippoRpcHandler {
       context.reply(SayHelloResponse(msg.toUpperCase()))
   }
   override def openChunkedStream(): PartialFunction[Any, ChunkedStream] = {
-    case CypherRequest(cypher) =>{
+    case Messages(cypher) =>{
       // TODO: create a iterator,get batch data from resIterator
       val resIterator = graphFacade.cypher(cypher).records.iterator
       val toDriverRecordsList = mutable.ArrayBuffer[DriverValue]()
@@ -93,9 +98,3 @@ class MyStreamHandler(graphFacade:GraphFacadeWithPPD) extends HippoRpcHandler {
   }
 
 }
-
-case class SayHelloRequest(msg: String)
-
-case class SayHelloResponse(value: Any)
-
-case class CypherRequest(cypher: String)

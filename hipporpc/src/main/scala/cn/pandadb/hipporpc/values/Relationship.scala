@@ -1,7 +1,7 @@
 package cn.pandadb.hipporpc.values
 
 case class Relationship(id: Long,
-                        props: Map[String, AnyRef],
+                        props: Map[String, Value],
                         startNodeId: Long,
                         endNodeId: Long,
                         relationshipType: RelationshipType) extends Serializable {
