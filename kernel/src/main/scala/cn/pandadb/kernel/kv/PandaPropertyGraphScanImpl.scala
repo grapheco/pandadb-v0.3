@@ -157,28 +157,18 @@ class PandaPropertyGraphScanImpl(nodeIdGen: FileBasedIdGen,
   override def isPropertysWithIndex(label: String, propertyName: String*): Boolean =
     indexStore.getIndexId(nodeStore.getLabelId(label), propertyName.toArray.map(nodeStore.getPropertyKeyId)).isDefined
 
-  override def getRelByStartNodeId(sourceId: Long, direction: Int, label: String): Iterable[Relationship[Long]] =
-    super.getRelByStartNodeId(sourceId, direction, label)
+  override def getRelsByFilter(labels: String, direction: Int): Iterable[Relationship[Long]] =
+    relationStore
+      .getRelationIdsByRelationType(
+        relationStore.getRelationTypeId(labels)
+      )
+      .map(relationStore.getRelationById(_).get)
+      .map(mapRelation).toIterable
 
-  override def getRelByStartNodeId(sourceId: Long, direction: Int): Iterable[Relationship[Long]] = super.getRelByStartNodeId(sourceId, direction)
-
-  override def getRelByEndNodeId(targetId: Long, direction: Int, label: String): Iterable[Relationship[Long]] = super.getRelByEndNodeId(targetId, direction, label)
-
-  override def getRelByEndNodeId(targetId: Long, direction: Int): Iterable[Relationship[Long]] = super.getRelByEndNodeId(targetId, direction)
-
-  override def getRelsByFilter(labels: String, direction: Int): Iterable[Relationship[Long]] = super.getRelsByFilter(labels, direction)
 
   override def getRelsByFilter(direction: Int): Iterable[Relationship[Long]] = super.getRelsByFilter(direction)
 
   override def getNodeById(Id: Long): Node[Long] = nodeStore.getNodeById(Id).map(mapNode).get
-
-  override def getRelByStartNodeIdWithProps(sourceId: Long, direction: Int, label: String): Iterable[Relationship[Long]] = super.getRelByStartNodeIdWithProps(sourceId: Long, direction: Int, label: String)
-
-  override def getRelByStartNodeIdWithProps(sourceId: Long, direction: Int): Iterable[Relationship[Long]] = super.getRelByStartNodeIdWithProps(sourceId, direction)
-
-  override def getRelByEndNodeIdWithProps(targetId: Long, direction: Int, label: String): Iterable[Relationship[Long]] = super.getRelByEndNodeIdWithProps(targetId, direction, label)
-
-  override def getRelByEndNodeIdWithProps(targetId: Long, direction: Int): Iterable[Relationship[Long]] = super.getRelByEndNodeIdWithProps(targetId, direction)
 
   override def getRelsByFilterWithProps(labels: String, direction: Int): Iterable[Relationship[Long]] = super.getRelsByFilterWithProps(labels, direction)
 
