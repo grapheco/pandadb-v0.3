@@ -305,27 +305,27 @@ trait PandaPropertyGraphScan[Id] extends PropertyGraphScanner[Id] {
 
   // relation
 
-  def getRelationByNodeId(nodeId: Long, direction: Int): Iterator[Relationship[Id]] = ???
+  def getRelationByNodeId(nodeId: Long, direction: Int): Iterable[Relationship[Id]] = ???
 
-  def getRelationByNodeId(nodeId: Long, direction: Int, typeString: String): Iterator[Relationship[Id]] = ???
+  def getRelationByNodeId(nodeId: Long, direction: Int, typeString: String): Iterable[Relationship[Id]] = ???
 
-  def getRelationByNodeIdWithProperty(nodeId: Long, direction: Int): Iterator[Relationship[Id]] = ???
+  def getRelationByNodeIdWithProperty(nodeId: Long, direction: Int): Iterable[Relationship[Id]] = ???
 
-  def getRelationByNodeIdWithProperty(nodeId: Long, direction: Int, typeString: String): Iterator[Relationship[Id]] = ???
+  def getRelationByNodeIdWithProperty(nodeId: Long, direction: Int, typeString: String): Iterable[Relationship[Id]] = ???
 
-  def allRelations(): Iterator[Relationship[Id]] = ???
+  def allRelations(): Iterable[Relationship[Id]] = ???
 
-  def allRelationsWithProperty: Iterator[Relationship[Id]] = ???
+  def allRelationsWithProperty: Iterable[Relationship[Id]] = ???
 
-  def getRelationByType(typeString: String): Iterator[Relationship[Id]] = ???
+  def getRelationByType(typeString: String): Iterable[Relationship[Id]] = ???
 
-  def getRelationByTypeWithProperty(typeString: String): Iterator[Relationship[Id]] = ???
+  def getRelationByTypeWithProperty(typeString: String): Iterable[Relationship[Id]] = ???
 
   // node
 
   def getNodeById(Id: Long): Node[Id] = ???
 
-  def getNodesByLabel(labelString: String): Iterator[Node[Id]] = ???
+  def getNodesByLabel(labelString: String): Iterable[Node[Id]] = ???
 
   def allNodes(): Iterable[Node[Id]] = ???
 
@@ -338,16 +338,16 @@ trait PandaPropertyGraphScan[Id] extends PropertyGraphScanner[Id] {
 
   def isPropertysWithIndex(label: String, propertyName: String *): (Int, Long) = ???
 
-  def findNodeId(indexId: Int, value: Any): Iterator[Long] = ???
+  def findNodeId(indexId: Int, value: Any): Iterable[Long] = ???
 
-  def findNode(indexId: Int, value: Any): Iterator[Node[Id]] = ???
+  def findNode(indexId: Int, value: Any): Iterable[Node[Id]] = ???
 
-  def findRangeNodeId(indexId: Int, from: Any, to: Any): Iterator[Long] = ???
+  def findRangeNodeId(indexId: Int, from: Any, to: Any): Iterable[Long] = ???
 
-  def findRangeNode(indexId: Int, from: Any, to: Any): Iterator[Node[Id]] = ???
+  def findRangeNode(indexId: Int, from: Any, to: Any): Iterable[Node[Id]] = ???
 
-  def startWithNodeId(indexId: Int, start: String): Iterator[Long] = ???
+  def startWithNodeId(indexId: Int, start: String): Iterable[Long] = ???
 
-  def startWithNode(indexId: Int, start: String: Iterator[Node[Id]] = ???
+  def startWithNode(indexId: Int, start: String: Iterable[Node[Id]] = ???
 
 }
