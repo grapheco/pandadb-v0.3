@@ -141,7 +141,7 @@ final case class  ScanRels(isEnd: Boolean,
     else next.recordHeader ++ RecordHeader(Map(NodeVar(rel.name)(CTRelationship) -> rel.name))
   }
 
-  val dir: Int = direction match {
+  var dir: Int = direction match {
     case Undirected => 0
     case Incoming => 1
     case Outgoing => 2
@@ -157,12 +157,17 @@ final case class  ScanRels(isEnd: Boolean,
       val records = next.table.records.flatMap(row => {
         if (isFirst) {
           val id = next.table.cell(row, sVar.name).asInstanceOf[Node[Long]].id
-          val rels = next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelByStartNodeId(id, dir, labels)
+          val rels = next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelationById(id, dir, labels, filterOP)
           rels.map(row ++ Seq(_))
         }
         else {
+          dir = dir match {
+            case 0 => 0
+            case 1 => 2
+            case 2 => 1
+          }
           val id = next.table.cell(row, tVar.name).asInstanceOf[Node[Long]].id
-          val rels = next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelByEndNodeId(id, dir, labels)
+          val rels = next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelationById(id, dir, labels, filterOP)
           rels.map(row ++ Seq(_))
         }
 

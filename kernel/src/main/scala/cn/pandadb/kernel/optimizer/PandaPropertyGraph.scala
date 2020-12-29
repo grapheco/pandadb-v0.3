@@ -83,22 +83,8 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
 
     }*/
 
-  def isOkNodes(p: NFPredicate, node: Node[Id]): Boolean = {
-    p match {
-      case x:NFGreaterThanOrEqual => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] >= x.value.asInstanceOf[Int]) true else false
-      case x:NFLessThanOrEqual => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] <= x.value.asInstanceOf[Int]) true else false
-      case x:NFEquals => {
-        if(node.properties.get(x.propName).get.getValue.get.equals(x.value.anyValue) ) {
-          true
-        }
-        else {
-          false
-        }
-      }
-      case x:NFLessThan => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] < x.value.asInstanceOf[Int]) true else false
-      case x:NFGreaterThan => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] > x.value.asInstanceOf[Int]) true else false
-    }
-  }
+
+
 
   def filterByPredicates(node: Node[Id], predicate: Array[NFPredicate]): Boolean = {
     if (predicate.nonEmpty) predicate.map(isOkNodes(_, node)).reduce(_&&_)
@@ -193,56 +179,12 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
   }
 
 
-/*  def getRelByStartNodeId(sourceId: Long, direction:Int): Iterable[LynxRelationship] = {
-    scan.getRelByStartNodeId(sourceId, direction)
-  }*/
 
-  def isOkRel(rel: LynxRelationship, Ops: ArrayBuffer[Filter]) = ???
-  def getRelByStartNodeId(sourceId: Long, direction:Int, label: Set[String], Ops: ArrayBuffer[NFPredicate]): Iterable[Relationship[Id]] = {
 
-    if (Ops.nonEmpty) {
-      //todo
-    }
-    null
-  }
-//
-//  def getRelByStartNodeId(sourceId: Long, direction:Int, label: Set[String]): Iterable[Relationship[Id]] = {
-//    //todo test
-//    Array(LynxRelationship(1, 1, 2, "knows")).filter(_.startId ==sourceId).map(_.asInstanceOf[Relationship[Id]])
-//    //if (label.nonEmpty) scan.getRelByStartNodeId(sourceId, direction, label.head)
-//    //else scan.getRelByStartNodeId(sourceId, direction)
-//  }
-//
-//  def getRelByEndNodeId(targetId: Long, direction:Int, label: Set[String]): Iterable[Relationship[Id]] = {
-//    if (label.nonEmpty) scan.getRelByEndNodeId(targetId, direction, label.head)
-//    else scan.getRelByEndNodeId(targetId, direction)
-//  }
 
-  def getNodeById(Id: Long, labels: Set[String], Ops: ArrayBuffer[NFPredicate]): Option[Node[Id]] = {
-    //todo filter nodes by label and Ops
-    //Option[getNodeById(Id)]
-    //Some(getNodeById(Id: Long))
-    val node = getNodeById(Id)
-    if (node.labels.equals(labels) && filterByPredicates(node, Ops.toArray)) Some(node)
-    else None
 
-  }
-  //1 Map("name" -> "bob", "age" -> 40), "person"
-  //2 (Map("name" -> "alex", "age" -> 20), "person")
-  //3 Map("name" -> "simba", "age" -> 10), "worker")
-  //("knows", 1L, 2L, Map())
-  def getNodeById(Id: Long): Node[Id] = {
-    //LynxNode(1,Set("bob"))
-    val node1 = LynxNode(1,Set("person"), "name" -> CypherValue("bob"), "age" -> CypherValue(40))
-    val node2 = LynxNode(1,Set("person"), "name" -> CypherValue("alex"), "age" -> CypherValue(20))
-    val node3 = LynxNode(1,Set("worker"), "name" -> CypherValue("simba"), "age" -> CypherValue(10))
-    val nodes:Map[Long, LynxNode] = Map(1L->node1, 2L -> node2, 3L->node3)
 
-    nodes.get(Id).get.asInstanceOf[Node[Id]]
 
-    //scan.getNodeById(Id)
-    //todo getNodesById
-  }
 
   def isRangePredicate(p: NFPredicate): Boolean = {
     if (p.isInstanceOf[NFGreaterThan] || p.isInstanceOf[NFLessThan] || p.isInstanceOf[NFGreaterThanOrEqual] || p.isInstanceOf[NFLessThanOrEqual]) true
@@ -256,22 +198,171 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
     }
     null
   }
-  def getRelsByFilter(labels: Set[String], direction: Int): Iterable[Relationship[Id]] = {
-    if (labels.nonEmpty) scan.getRelsByFilter(labels.head, direction)
-    else scan.getRelsByFilter(direction)
+
+
+  //******************************************************************************************
+  //********************************nodes*****************************************************
+  //******************************************************************************************
+
+
+  def isOkNode(p: NFPredicate, node: Node[Id]): Boolean = {
+    p match {
+      case x:NFGreaterThanOrEqual => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] >= x.value.asInstanceOf[Int]) true else false
+      case x:NFLessThanOrEqual => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] <= x.value.asInstanceOf[Int]) true else false
+      case x:NFEquals => {
+        if(node.properties.get(x.propName).get.getValue.get.equals(x.value.anyValue) ) {
+          true
+        }
+        else {
+          false
+        }
+      }
+      case x:NFLessThan => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] < x.value.asInstanceOf[Int]) true else false
+      case x:NFGreaterThan => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] > x.value.asInstanceOf[Int]) true else false
+    }
   }
 
-  def getRelsByFilter(Ops: ArrayBuffer[NFPredicate], labels: Set[String], direction: Int): Iterable[Relationship[Id]] = {
-    //todo filter rel
-    //getRelsByFilter(labels, direction)
-    Array(LynxRelationship(1, 1, 2, "knows").asInstanceOf[Relationship[Id]])
+  def getNodeById(nodeId: Long, labels: Set[String], filterOP: ArrayBuffer[NFPredicate]): Option[Node[Id]] ={
+    val node = scan.getNodeById(nodeId)
+    if(labels.isEmpty){
+      if(filterOP.isEmpty) Some(node)
+      else {
+        if(filterOP.map(isOkNode(_, node)).reduce(_ && _)) Some(node)
+        else None
+      }
+    }
+    else{
+      if (labels.map(node.labels.contains(_)).reduce(_ && _)) Some(node)
+      else{
+        if(filterOP.isEmpty) Some(node)
+        else {
+          if(filterOP.map(isOkNode(_, node)).reduce(_ && _)) Some(node)
+          else None
+        }
+      }
+    }
   }
 
-  def getNodesByFilter(Ops: ArrayBuffer[NFPredicate], labels: Set[String]): Iterable[Node[Id]] = {
-    val node3 = LynxNode(1,Set("worker"), "name" -> CypherValue("simba"), "age" -> CypherValue(10))
-    //todo filter Nodes
-    Array(node3).map(_.asInstanceOf[Node[Id]])
-    //scan.allNodes()
+  def filterNode(node: Node[Id], ops: ArrayBuffer[NFPredicate]): Boolean = {
+    if (ops.isEmpty) true
+    else {
+      ops.map(isOkNode(_, node)).reduce(_ && _)
+    }
+  }
+
+  def filterNode(node: Node[Id], labels: Set[String]): Boolean = {
+    if (labels.isEmpty) true
+    else {
+      labels.map(node.labels.contains(_)).reduce(_ && _)
+    }
+  }
+
+  def getPropNames(ops: ArrayBuffer[NFPredicate]): Set[String] = {
+    ops.map(_.asInstanceOf[NFBinaryPredicate].getPropName()).toSet
+  }
+
+  def getNodesByFilter(ops: ArrayBuffer[NFPredicate], labels: Set[String]): Iterable[Node[Id]] = {
+    if(labels.isEmpty){
+      if(ops.isEmpty)
+        scan.allNodes()
+      else{
+        scan.allNodes().filter(filterNode(_, ops))
+      }
+    }
+    else {
+      if (ops.isEmpty){
+        if (labels.size ==1) scan.getNodesByLabel(labels.head)
+        else {
+          val label = labels.toArray.map(x => x -> scan.getNodesCountByLabel(x)).minBy(_._2)._1
+          scan.getNodesByLabel(label).filter(filterNode(_, labels -- Set(label)))
+        }
+      }
+      else{
+        if (labels.size ==1){
+          val (index,cnt) = scan.isPropertysWithIndex(labels.head, getPropNames(ops).toSeq: _*)
+          //scan.findNode(index, )
+        }
+      }
+    }
+  }
+
+
+
+
+
+
+
+
+
+  //******************************************************************************************
+  //********************************rels*****************************************************
+  //******************************************************************************************
+
+  def isOkRel(p: NFPredicate, rel: Relationship[Id]): Boolean = {
+    p match {
+      case x:NFGreaterThanOrEqual => if(rel.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] >= x.value.asInstanceOf[Int]) true else false
+      case x:NFLessThanOrEqual => if(rel.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] <= x.value.asInstanceOf[Int]) true else false
+      case x:NFEquals => {
+        if(rel.properties.get(x.propName).get.getValue.get.equals(x.value.anyValue) ) {
+          true
+        }
+        else {
+          false
+        }
+      }
+      case x:NFLessThan => if(rel.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] < x.value.asInstanceOf[Int]) true else false
+      case x:NFGreaterThan => if(rel.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] > x.value.asInstanceOf[Int]) true else false
+    }
+  }
+
+  def filterRel(rel: Relationship[Id], ops: ArrayBuffer[NFPredicate]): Boolean = {
+    if (ops.isEmpty) true
+    else {
+      ops.map(isOkRel(_, rel)).reduce(_ && _)
+    }
+  }
+
+  def getRelsByFilter(ops: ArrayBuffer[NFPredicate], labels: Set[String], direction: Int): Iterable[Relationship[Id]] = {
+    val rels = {
+      if (ops.isEmpty) {
+        if (labels.isEmpty)
+          scan.allRelations()
+        else
+          scan.getRelationByType(labels.head)
+      }
+      else {
+        if (labels.isEmpty)
+          scan.allRelationsWithProperty
+        else
+          scan.getRelationByTypeWithProperty(labels.head)
+      }
+    }
+    if(ops.isEmpty) rels
+    else {
+      rels.filter(filterRel(_, ops))
+    }
+  }
+
+  def getRelationById(nodeId: Long, direction: Int, labels: Set[String], ops: ArrayBuffer[NFPredicate]): Iterable[Relationship[Id]] ={
+
+    val rels = {
+      if (ops.isEmpty) {
+        if (labels.isEmpty)
+          scan.getRelationByNodeId(nodeId, direction)
+        else
+          scan.getRelationByNodeId(nodeId, direction, labels.head)
+      }
+      else {
+        if (labels.isEmpty)
+          scan.getRelationByNodeIdWithProperty(nodeId, direction)
+        else
+          scan.getRelationByNodeIdWithProperty(nodeId, direction, labels.head)
+      }
+    }
+    if(ops.isEmpty) rels
+    else {
+      rels.filter(filterRel(_, ops))
+    }
   }
 
 }
@@ -291,7 +382,7 @@ trait HasStatistics{
   def getRelsCountByLabelAndPropertys(label: String, propertyName: String*):Long = ???
 }
 
-trait PandaPropertyGraphScan[Id] extends PropertyGraphScanner[Id] {
+trait PandaPropertyGraphScan[Id] extends PropertyGraphScanner[Id] with HasStatistics{
 
   /*
   direction
@@ -348,6 +439,6 @@ trait PandaPropertyGraphScan[Id] extends PropertyGraphScanner[Id] {
 
   def startWithNodeId(indexId: Int, start: String): Iterable[Long] = ???
 
-  def startWithNode(indexId: Int, start: String: Iterable[Node[Id]] = ???
+  def startWithNode(indexId: Int, start: String): Iterable[Node[Id]] = ???
 
 }
