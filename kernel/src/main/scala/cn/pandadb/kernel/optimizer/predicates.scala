@@ -21,6 +21,8 @@ trait NFBinaryPredicate extends NFPredicate{
   def getPropName(): String
 
   def getValue(): AnyValue
+
+  def getType(): String
   //def value: AnyValue
 }
 
@@ -48,6 +50,8 @@ case class NFGreaterThan(propName: String, value: AnyValue, name: String) extend
   override def getPropName(): String = propName
 
   override def getValue(): AnyValue = value
+
+  override def getType(): String = ">"
 }
 
 case class NFGreaterThanOrEqual(propName: String, value: AnyValue, name: String) extends NFRangePredicateWithEqual {
@@ -56,6 +60,8 @@ case class NFGreaterThanOrEqual(propName: String, value: AnyValue, name: String)
   override def getPropName(): String = propName
 
   override def getValue(): AnyValue = value
+
+  override def getType(): String = ">="
 }
 
 case class NFLessThan(propName: String, value: AnyValue, name: String) extends NFRangePredicate {
@@ -64,6 +70,8 @@ case class NFLessThan(propName: String, value: AnyValue, name: String) extends N
   override def getPropName(): String = propName
 
   override def getValue(): AnyValue = value
+
+  override def getType(): String = "<"
 }
 
 case class NFLessThanOrEqual(propName: String, value: AnyValue, name: String) extends NFRangePredicateWithEqual {
@@ -72,6 +80,8 @@ case class NFLessThanOrEqual(propName: String, value: AnyValue, name: String) ex
   override def getPropName(): String = propName
 
   override def getValue(): AnyValue = value
+
+  override def getType(): String = "<="
 }
 
 case class NFEquals(propName: String, value: AnyValue, name: String) extends NFBinaryPredicate {
@@ -80,6 +90,8 @@ case class NFEquals(propName: String, value: AnyValue, name: String) extends NFB
   override def getPropName(): String = propName
 
   override def getValue(): AnyValue = value
+
+  override def getType(): String = "="
 }
 
 case class NFNotEquals(propName: String, value: AnyValue, name: String) extends NFBinaryPredicate {
@@ -88,6 +100,8 @@ case class NFNotEquals(propName: String, value: AnyValue, name: String) extends 
   override def getPropName(): String = propName
 
   override def getValue(): AnyValue = value
+
+  override def getType(): String = "!="
 }
 
 case class NFNotNull(propName: String) extends NFPredicate {
