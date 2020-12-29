@@ -1,6 +1,6 @@
 package cn.pandadb.kernel.optimizer
 
-import cn.pandadb.kernel.kv.NFEquals
+import cn.pandadb.kernel.optimizer.NFEquals
 import cn.pandadb.kernel.optimizer.LynxType.{LynxNode, LynxRelationship}
 import org.opencypher.lynx.{LynxPlannerContext, LynxRecords, LynxSession, LynxTable, PropertyGraphScanner, RecordHeader}
 import org.opencypher.lynx.graph.{LynxPropertyGraph, ScanGraph}
