@@ -2,7 +2,7 @@ package cn.pandadb.kv
 
 import java.io.File
 
-import cn.pandadb.kernel.kv.meta.{NameStore, NodeLabelNameStore, PropertyNameStore, RelationTypeNameStore}
+import cn.pandadb.kernel.kv.meta.{NameStore, NodeLabelNameStore, PropertyNameStore, RelationTypeNameStore, Statistics}
 import cn.pandadb.kernel.kv.GraphFacadeWithPPD
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
@@ -23,6 +23,7 @@ class GraphFacadeWithPPDTest {
   var nodeStore: NodeStoreSPI = _
   var relationStore: RelationStoreSPI = _
   var indexStore: IndexStoreAPI = _
+  var statistics: Statistics = _
   var graphFacade: GraphFacadeWithPPD = _
 
 
@@ -35,6 +36,7 @@ class GraphFacadeWithPPDTest {
     nodeStore = new NodeStoreAPI(dbPath)
     relationStore = new RelationStoreAPI(dbPath)
     indexStore = new IndexStoreAPI(dbPath)
+    statistics = new Statistics(dbPath+"/statistics")
 
 //    graphStore = new RocksDBGraphAPI("./testdata/output/rocksdb")
 //    nodeLabelStore = new NodeLabelNameStore(graphStore.getRocksDB)
@@ -50,6 +52,7 @@ class GraphFacadeWithPPDTest {
       nodeStore,
       relationStore,
       indexStore,
+      statistics,
       {}
     )
   }

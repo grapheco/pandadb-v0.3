@@ -93,6 +93,8 @@ class NodeStoreAPI(dbPath: String) extends NodeStoreSPI {
 
   override def allNodes(): Iterator[StoredNodeWithProperty] = nodeStore.all()
 
+  override def nodesCount: Long = nodeLabelStore.getNodesCount
+
   override def getNodesByLabel(labelId: Int): Iterator[StoredNodeWithProperty] = nodeStore.getNodesByLabel(labelId)
 
   override def getNodeIdsByLabel(labelId: Int): Iterator[Long] = nodeStore.getNodeIdsByLabel(labelId)

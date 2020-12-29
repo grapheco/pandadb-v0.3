@@ -29,6 +29,8 @@ class RelationStoreAPI(dbPath: String) extends RelationStoreSPI{
 
   override def allRelationTypeIds(): Array[Int] = relationTypeNameStore.mapInt2String.keys.toArray
 
+  override def relationCount: Long = relationStore.count
+
   override def getRelationTypeName(relationTypeId: Int): Option[String] = relationTypeNameStore.key(relationTypeId)
 
   override def getRelationTypeId(relationTypeName: String): Int = relationTypeNameStore.id(relationTypeName)

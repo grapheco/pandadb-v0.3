@@ -59,7 +59,7 @@ class Statistics(path: String) {
     indexPropertyCount = getMap(Array(NODELABELCOUNT))
   }
 
-  def save(): Unit = {
+  def flush(): Unit = {
     db.put(Array(NODESCOUNT), ByteUtils.longToBytes(allNodesCount))
     db.put(Array(RELATIONSCOUNT), ByteUtils.longToBytes(allRelationCount))
     nodeLabelCount.foreach{
@@ -78,17 +78,24 @@ class Statistics(path: String) {
 
   def nodeCount: Long = allNodesCount
 
+  def nodeCount_=(count: Long): Unit = allNodesCount = count
+
   def increaseNodeCount(count: Long): Unit = allNodesCount += count
 
   def decreaseNodes(count: Long): Unit = allNodesCount -= count
 
   def relationCount: Long = allRelationCount
 
+  def relationCount_=(count: Long): Unit = allRelationCount = count
+
   def increaseRelationCount(count: Long): Unit = allRelationCount += count
 
   def decreaseRelations(count: Long): Unit = allRelationCount -= count
 
   def getNodeLabelCount(labelId: Int): Option[Long] = nodeLabelCount.get(labelId)
+
+  def setNodeLabelCount(labelId: Int, count: Long): Unit =
+    nodeLabelCount += labelId -> count
 
   def increaseNodeLabelCount(labelId: Int, count: Long): Unit =
     nodeLabelCount += labelId -> (nodeLabelCount.getOrElse(labelId, 0L) + count)
@@ -98,6 +105,9 @@ class Statistics(path: String) {
 
   def getRelationTypeCount(typeId: Int): Option[Long] = relationTypeCount.get(typeId)
 
+  def setRelationTypeCount(typeId: Int, count: Long): Unit =
+    relationTypeCount += typeId -> count
+
   def increaseRelationTypeCount(typeId: Int, count: Long): Unit =
     relationTypeCount += typeId -> (relationTypeCount.getOrElse(typeId, 0L) + count)
 
@@ -105,6 +115,9 @@ class Statistics(path: String) {
     relationTypeCount += typeId -> (relationTypeCount.getOrElse(typeId, 0L) - count)
 
   def getIndexPropertyCount(indexId: Int): Option[Long] = indexPropertyCount.get(indexId)
+
+  def setIndexPropertyCount(indexId: Int, count: Long): Unit =
+    indexPropertyCount += indexId -> count
 
   def increaseIndexPropertyCount(indexId: Int, count: Long): Unit =
     indexPropertyCount += indexId -> (indexPropertyCount.getOrElse(indexId, 0L) + count)

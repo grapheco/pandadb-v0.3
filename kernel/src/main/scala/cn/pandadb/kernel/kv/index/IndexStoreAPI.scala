@@ -25,6 +25,8 @@ class IndexStoreAPI(dbPath: String) {
 
   def getIndexId(label: Int, props: Array[Int]): Option[IndexId] = meta.getIndexId(label, props)
 
+  def allIndexId: Iterator[IndexId] = meta.all()
+
   def insertIndexRecord(indexId: IndexId, data: Any, nodeId: NodeId): Unit = {
     index.set(indexId, IndexEncoder.typeCode(data), IndexEncoder.encode(data), nodeId)
   }

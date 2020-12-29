@@ -97,6 +97,18 @@ object KeyHandler {
     bytes
   }
 
+  // [indexId(4),length(4),propValue(xBytes),nodeId(8Bytes)]
+  def nodePropertyCombinedIndexKeyToBytes(indexId:Int, length:Int, value: Array[Byte], nodeId: Long): Array[Byte] = {
+    val bytesLength = 16 + value.length
+    val bytes = new Array[Byte](bytesLength)
+    ByteUtils.setInt(bytes, 0, indexId)
+    ByteUtils.setInt(bytes, 4, length)
+    for (i <- value.indices)
+      bytes(8+i) = value(i)
+    ByteUtils.setLong(bytes, bytesLength-8, nodeId)
+    bytes
+  }
+
   // [indexId(4),typeCode(1),propValue(xBytes),----]
   def nodePropertyIndexPrefixToBytes(indexId:Int, typeCode:Byte, value: Array[Byte]): Array[Byte] = {
     val bytesLength = 5 + value.length

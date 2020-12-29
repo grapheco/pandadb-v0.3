@@ -2,7 +2,7 @@ package cn.pandadb.kernel.kv
 
 import cn.pandadb.kernel.GraphService
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
-import cn.pandadb.kernel.kv.meta.NameStore
+import cn.pandadb.kernel.kv.meta.{NameStore, Statistics}
 import cn.pandadb.kernel.optimizer.PandaCypherSession
 import cn.pandadb.kernel.store._
 import org.apache.logging.log4j.scala.Logging
@@ -17,11 +17,12 @@ class GraphFacadeWithPPD(
                           nodeStore: NodeStoreSPI,
                           relationStore: RelationStoreSPI,
                           indexStore: IndexStoreAPI,
+                          statistics: Statistics,
                           onClose: => Unit
                  ) extends Logging with GraphService {
 
   private val propertyGraph = new PandaCypherSession().createPropertyGraph(
-    new PandaPropertyGraphScanImpl(nodeIdGen, relIdGen, nodeStore, relationStore, indexStore)
+    new PandaPropertyGraphScanImpl(nodeIdGen, relIdGen, nodeStore, relationStore, indexStore, statistics)
   )
 
 

@@ -46,6 +46,17 @@ class RelationPropertyStore(db: RocksDB) {
     }
   }
 
+  def count: Long = {
+    val iter = db.newIterator()
+    iter.seekToFirst()
+    var count:Long = 0
+    while (iter.isValid){
+      count+=1
+      iter.next()
+    }
+    count
+  }
+
   def close(): Unit = {
     db.close()
   }

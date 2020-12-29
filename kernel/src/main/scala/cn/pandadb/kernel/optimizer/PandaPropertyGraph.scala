@@ -205,18 +205,18 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
     }
     null
   }
-
-  def getRelByStartNodeId(sourceId: Long, direction:Int, label: Set[String]): Iterable[Relationship[Id]] = {
-    //todo test
-    Array(LynxRelationship(1, 1, 2, "knows")).filter(_.startId ==sourceId).map(_.asInstanceOf[Relationship[Id]])
-    //if (label.nonEmpty) scan.getRelByStartNodeId(sourceId, direction, label.head)
-    //else scan.getRelByStartNodeId(sourceId, direction)
-  }
-
-  def getRelByEndNodeId(targetId: Long, direction:Int, label: Set[String]): Iterable[Relationship[Id]] = {
-    if (label.nonEmpty) scan.getRelByEndNodeId(targetId, direction, label.head)
-    else scan.getRelByEndNodeId(targetId, direction)
-  }
+//
+//  def getRelByStartNodeId(sourceId: Long, direction:Int, label: Set[String]): Iterable[Relationship[Id]] = {
+//    //todo test
+//    Array(LynxRelationship(1, 1, 2, "knows")).filter(_.startId ==sourceId).map(_.asInstanceOf[Relationship[Id]])
+//    //if (label.nonEmpty) scan.getRelByStartNodeId(sourceId, direction, label.head)
+//    //else scan.getRelByStartNodeId(sourceId, direction)
+//  }
+//
+//  def getRelByEndNodeId(targetId: Long, direction:Int, label: Set[String]): Iterable[Relationship[Id]] = {
+//    if (label.nonEmpty) scan.getRelByEndNodeId(targetId, direction, label.head)
+//    else scan.getRelByEndNodeId(targetId, direction)
+//  }
 
   def getNodeById(Id: Long, labels: Set[String], Ops: ArrayBuffer[NFPredicate]): Option[Node[Id]] = {
     //todo filter nodes by label and Ops
@@ -276,7 +276,7 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
 
 }
 
-trait PandaPropertyGraphWithStats{
+trait HasStatistics{
   def getAllNodesCount(): Long = ???
   def getNodesCountByLabel(label: String):Long = ???
   def getNodesCountByLabelAndProperty(label: String, propertyName: String):Long = ???
@@ -302,11 +302,13 @@ trait PandaPropertyGraphScan[Id] extends PropertyGraphScanner[Id] {
   1 -> incoming
   2 -> outgoing
   */
+  val UNDIRECTION = 0
+  val IN = 1
+  val OUT = 2
 
-  def getRelByStartNodeId(sourceId: Long, direction:Int, label: String): Iterable[Relationship[Id]] = ???
-  def getRelByStartNodeId(sourceId: Long, direction:Int): Iterable[Relationship[Id]] = ???
-  def getRelByEndNodeId(targetId: Long, direction:Int, label: String): Iterable[Relationship[Id]] = ???
-  def getRelByEndNodeId(targetId: Long, direction:Int): Iterable[Relationship[Id]] = ???
+  def getRelationByNodeId(nodeId: Long, direction: Int): Iterator[Relationship[Id]] = ???
+
+  def getRelationByNodeId(nodeId: Long, direction: Int, typeString: String): Iterator[Relationship[Id]] = ???
 
   def getRelsByFilter(labels: String, direction: Int): Iterable[Relationship[Id]] = ???
 
@@ -316,11 +318,9 @@ trait PandaPropertyGraphScan[Id] extends PropertyGraphScanner[Id] {
 
   def allNodes(predicate: NFPredicate, labels: Set[String]): Iterable[Node[Id]] = ???
 
+  def getRelationByNodeIdWithProps(nodeId: Long, direction: Int): Iterator[Relationship[Id]] = ???
 
-  def getRelByStartNodeIdWithProps(sourceId: Long, direction:Int, label: String): Iterable[Relationship[Id]] = ???
-  def getRelByStartNodeIdWithProps(sourceId: Long, direction:Int): Iterable[Relationship[Id]] = ???
-  def getRelByEndNodeIdWithProps(targetId: Long, direction:Int, label: String): Iterable[Relationship[Id]] = ???
-  def getRelByEndNodeIdWithProps(targetId: Long, direction:Int): Iterable[Relationship[Id]] = ???
+  def getRelationByNodeIdWithProps(nodeId: Long, direction: Int, typeString: String): Iterator[Relationship[Id]] = ???
 
   def getRelsByFilterWithProps(labels: String, direction: Int): Iterable[Relationship[Id]] = ???
 
