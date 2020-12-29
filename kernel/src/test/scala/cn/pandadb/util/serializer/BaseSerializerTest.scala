@@ -49,4 +49,12 @@ class BaseSerializerTest {
     timing(for(i<-1 to 10000000) serializer.bytes2IntArrayMap(bytesArr))
   }
 
+  @Test
+  def testAnyArray(): Unit = {
+    val arr: Array[Any] = Array[Any](123, "abc", true, 0.5, 0.5.toFloat, 12345679.toLong)
+    val bytesArr = serializer.anyArray2Bytes(arr)
+    val deserializedArr = serializer.bytes2AnyArray(bytesArr)
+    arr.zip(deserializedArr).map(pair => Assert.assertEquals(pair._1, pair._2))
+  }
+
 }

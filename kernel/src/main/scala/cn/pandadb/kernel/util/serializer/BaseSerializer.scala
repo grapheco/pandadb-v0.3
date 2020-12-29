@@ -2,7 +2,9 @@ package cn.pandadb.kernel.util.serializer
 
 import java.io.ByteArrayOutputStream
 
+import cn.pandadb.kernel.util.serializer.BaseSerializer.{_readAnyArray, _writeAnyArray}
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
+
 import scala.collection.mutable
 
 /**
@@ -15,6 +17,21 @@ import scala.collection.mutable
 object BaseSerializer extends BaseSerializer {
 
   override val allocator: ByteBufAllocator = ByteBufAllocator.DEFAULT
+
+  def anyArray2Bytes(array: Array[Any]): Array[Byte] = {
+    val byteBuf: ByteBuf = allocator.heapBuffer()
+    _writeAnyArray(array, byteBuf)
+    val bytes = exportBytes(byteBuf)
+    byteBuf.release()
+    bytes
+  }
+
+  def bytes2AnyArray(bytes: Array[Byte]): Array[Any] = {
+    val byteBuf = Unpooled.wrappedBuffer(bytes)
+    val arr = _readAnyArray(byteBuf)
+    byteBuf.release()
+    arr
+  }
 
   def intArray2Bytes(array: Array[Int]): Array[Byte] = {
     val byteBuf: ByteBuf = allocator.heapBuffer()
@@ -161,6 +178,27 @@ trait BaseSerializer {
     }
   }
 
+  protected def _writeAnyArray(array: Array[Any], byteBuf: ByteBuf): Unit = {
+    val len = array.length
+    byteBuf.writeInt(len)
+    array.foreach(item => {
+      item match {
+        case s: String => _writeString(item.asInstanceOf[String], byteBuf)
+        case s: Int => _writeInt(item.asInstanceOf[Int], byteBuf)
+        case s: Long => _writeLong(item.asInstanceOf[Long], byteBuf)
+        case s: Double => _writeDouble(item.asInstanceOf[Double], byteBuf)
+        case s: Float => _writeFloat(item.asInstanceOf[Float], byteBuf)
+        case s: Boolean => _writeBoolean(item.asInstanceOf[Boolean], byteBuf)
+      }
+    })
+  }
+
+  protected def _readAnyArray(byteBuf: ByteBuf): Array[Any] = {
+    val len = byteBuf.readInt()
+    val arr = new Array[Int](len).map(item => _readAny(byteBuf))
+    arr
+  }
+
   // [byte:len][arr(0)][arr(1)]...
   protected def _writeIntArray(array: Array[Int], byteBuf: ByteBuf): Unit = {
     val len = array.length
@@ -172,6 +210,20 @@ trait BaseSerializer {
     val size: Int = map.size
     byteBuf.writeByte(size)
     map.foreach(kv => _writeKV(kv._1, kv._2, byteBuf))
+  }
+
+  protected def _readAny(byteBuf: ByteBuf): Any = {
+    val typeId: Int = byteBuf.readByte().toInt
+    val value = typeId match {
+      case 1 => _readString(byteBuf)
+      case 2 => byteBuf.readInt()
+      case 3 => byteBuf.readLong()
+      case 4 => byteBuf.readDouble()
+      case 5 => byteBuf.readFloat()
+      case 6 => byteBuf.readBoolean()
+      //      case _ => _readString(byteBuf)
+    }
+    value
   }
 
   protected def _readString(byteBuf: ByteBuf): String = {
