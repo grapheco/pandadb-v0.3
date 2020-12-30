@@ -1,47 +1,58 @@
 package cn.pandadb.kernel.kv
 
+import cn.pandadb.kernel.kv.index.IndexStoreAPI
+import cn.pandadb.kernel.kv.meta.Statistics
+import cn.pandadb.kernel.store.{FileBasedIdGen, NodeStoreSPI, RelationStoreSPI, StoredNodeWithProperty, StoredRelationWithProperty}
 import org.opencypher.lynx.ir.{IRContextualNodeRef, IRNode, IRNodeRef, IRRelation, IRStoredNodeRef, PropertyGraphWriter}
 import org.opencypher.okapi.api.value.CypherValue
-import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue, Node, Relationship}
-case class TestNode(id: Long, labels: Set[String], props: (String, CypherValue)*) extends Node[Long] {
-  lazy val properties = props.toMap
-  val withIds = props.toMap + ("_id" -> CypherValue(id))
-  override type I = this.type
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue, Node, NoopCypherValueConverter, Relationship}
 
-  override def copy(id: Long, labels: Set[String], properties: CypherMap): TestNode.this.type = this
-}
+class PandaPropertyGraphWriterImpl(nodeIdGen: FileBasedIdGen,
+                                   relIdGen: FileBasedIdGen,
+                                   nodeStore: NodeStoreSPI,
+                                   relationStore: RelationStoreSPI,
+                                   indexStore: IndexStoreAPI,
+                                   statistics: Statistics) extends PropertyGraphWriter[Long]{
 
-case class TestRelationship(id: Long, startId: Long, endId: Long, relType: String, props: (String, CypherValue)*) extends Relationship[Long] {
-  val properties = props.toMap
-  val withIds = props.toMap ++ Map("_id" -> CypherValue(id), "_from" -> CypherValue(startId), "_to" -> CypherValue(endId))
-  override type I = this.type
+  def addNode(labels: Seq[String], props: Seq[(String, CypherValue)]): Long = {
+    val id = nodeIdGen.nextId()
+    val labelsId = labels.map(nodeStore.getLabelId).toArray
+    val propsMap  = props.toMap
+      .map(kv => (nodeStore.getPropertyKeyId(kv._1), kv._2.getValue))
+      .filter(_._2.isDefined).mapValues(_.get)
+    nodeStore.addNode(new StoredNodeWithProperty(id, labelsId, propsMap))
+    statistics.increaseNodeCount(1) // TODO batch
+    labelsId.foreach(statistics.increaseNodeLabelCount(_, 1))
+    id
+  }
 
-  override def copy(id: Long, source: Long, target: Long, relType: String, properties: CypherMap): TestRelationship.this.type = this
-}
-class PandaPropertyGraphWriterImpl extends PropertyGraphWriter[Long]{
+  def addRel(types: Seq[String], props: Seq[(String, CypherValue)], startId: Long, endId: Long): Long = {
+    val id = relIdGen.nextId()
+    val typesId = types.map(relationStore.getRelationTypeId).toArray //TODO only one type supported
+    val propsMap  = props.toMap
+      .map(kv => (relationStore.getPropertyKeyId(kv._1), kv._2.getValue))
+      .filter(_._2.isDefined).mapValues(_.get)
+    relationStore.addRelation(new StoredRelationWithProperty(id, startId, endId, typesId(0), propsMap))
+    statistics.increaseRelationCount(1) // TODO batch
+    statistics.increaseRelationTypeCount(typesId(0), 1) // TODO only one type supported, batch
+    id
+  }
 
-  def generateNodeId(): Long = ???
-
-  def generateRelId(): Long = ???
-
-  def addNode(node: TestNode) = ???
-  def addRel(rel: TestRelationship) = ???
   override def createElements(nodes: Array[IRNode], rels: Array[IRRelation[Long]]): Unit = {
+    nodes.foreach{
+      node => addNode(node.labels, node.props)
+    }
+    rels.foreach{
+      rel =>
 
-    val nodesMap = nodes.map(node => {
-      val id = generateNodeId
-      node -> id.toLong
-    }).toMap
-
-    def nodeId(ref: IRNodeRef[Long]) = {
-      ref match {
-        case IRStoredNodeRef(id) => id
-        case IRContextualNodeRef(node) => nodesMap(node)
-      }
+        addRel(rel.types, rel.props, mergeNodeId(rel.startNodeRef), mergeNodeId(rel.endNodeRef))
     }
 
-    nodesMap.map(x => TestNode(x._2, x._1.labels.toSet, x._1.props:_*)).map(addNode)
-
-    rels.map(rel => TestRelationship(generateRelId, startId = nodeId(rel.startNodeRef), endId = nodeId(rel.endNodeRef), rel.types.head, rel.props: _*)).map(addRel)
+    def mergeNodeId(ref: IRNodeRef[Long]):Long = {
+      ref match {
+        case IRStoredNodeRef(id) => id
+        case IRContextualNodeRef(node) => addNode(node.labels, node.props)
+      }
+    }
   }
 }

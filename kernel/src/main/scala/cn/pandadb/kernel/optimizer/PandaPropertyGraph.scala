@@ -3,7 +3,8 @@ package cn.pandadb.kernel.optimizer
 import cn.pandadb.kernel.optimizer.NFEquals
 import cn.pandadb.kernel.optimizer.LynxType.{LynxNode, LynxRelationship}
 import org.opencypher.lynx.{LynxPlannerContext, LynxRecords, LynxSession, LynxTable, PropertyGraphScanner, RecordHeader}
-import org.opencypher.lynx.graph.{LynxPropertyGraph, ScanGraph}
+import org.opencypher.lynx.graph.{LynxPropertyGraph, ScanGraph, WritableScanGraph}
+import org.opencypher.lynx.ir.{IRNode, IRRelation, PropertyGraphWriter, WritablePropertyGraph}
 import org.opencypher.lynx.plan.Filter
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue
@@ -15,7 +16,9 @@ import scala.collection.mutable.ArrayBuffer
 
 
 
-class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override val session: LynxSession) extends ScanGraph[Id](scan)(session) {
+class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyGraphWriter[Id])(implicit override val session: LynxSession)
+  //extends ScanGraph[Id](scan)(session)
+  extends WritableScanGraph[Id](scan, writer)(session){
   //def getRecorderNumberFromPredicate(predicate: NFPredicate): Int = ???
 
   def isNFPredicateWithIndex(predicate: NFPredicate, labels: Set[String]): Boolean = {
@@ -101,7 +104,7 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
     24
   }
 
-  def getNodesByFilter(predicate: Array[NFPredicate], labels: Set[String]): Iterable[Node[Id]] ={
+/*  def getNodesByFilter(predicate: Array[NFPredicate], labels: Set[String]): Iterable[Node[Id]] ={
     val node1 = LynxNode(1,Set("person"), "name" -> CypherValue("bob"), "age" -> CypherValue(40))
     val node2 = LynxNode(1,Set("person"), "name" -> CypherValue("alex"), "age" -> CypherValue(20))
     val node3 = LynxNode(1,Set("worker"), "name" -> CypherValue("simba"), "age" -> CypherValue(10))
@@ -124,7 +127,7 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
     val nodes:Map[Long, LynxNode] = Map(1L->node1, 2L -> node2, 3L->node3)
     nodes.values.map(_.asInstanceOf[Node[Id]]).filter(filterByPredicates(_, prediates))
     new LynxRecords(null, null)
-  }
+  }*/
 
 
 //  def getNodesByFilter(predicate: Array[NFPredicate], labels: Set[String], sk: Int): Iterable[Node[Id]] = {
@@ -242,41 +245,14 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
     ops.map(_.asInstanceOf[NFBinaryPredicate].getPropName()).toSet
   }
 
- /* def getNodesByFilter(predicate: Array[NFPredicate], name: String, nodeCypherType: CTNode): LynxRecords = {
+  def getNodesByFilter(predicate: Array[NFPredicate], name: String, nodeCypherType: CTNode): LynxRecords = {
 
 
     val (predicateNew1, labels) = findLabelPredicate(predicate)
-    val (predicateNew, size) = findLimitPredicate(predicateNew1)
-   val nodes = {
-      if(predicateNew.nonEmpty) predicateNew.map(scan.allNodes(_,  labels.distinct.toSet).toSeq).reduce(_.intersect(_))
-      else scan.allNodes(labels.toSet, false)
-    }
-
-    //val (predicateNew2, firstpredicate) =
-
-
-    val nodes = {
-      if (predicateNew.nonEmpty) {
-        val (indexNfp, nfp) = findindexPredicate(predicateNew, labels.toSet)
-
-        //getnodes by index
-        val tempnodes = {
-          if (indexNfp.nonEmpty) indexNfp.map(scan.allNodes(_, labels.distinct.toSet).toSeq).reduce(_.intersect(_))
-          else scan.allNodes(labels.toSet, false)
-        }
-        //if (nfp.nonEmpty)
-        //val tempnodes: Iterable[Node[Id]] = scan.allNodes(labels.toSet, false)
-
-        //filternodes by noneindex
-        if (size > 0 )
-          tempnodes.filter(filterByPredicates(_, nfp)).take(size.toInt)
-        else
-          tempnodes.filter(filterByPredicates(_, nfp))
-        //tempnodes
-      }
-      else scan.allNodes(labels.toSet, false)
-    }
-  }*/
+    new LynxRecords(RecordHeader(Map(NodeVar(name)(CTNode) -> name)),
+      LynxTable(Seq(name -> CTNode), getNodesByFilter(predicateNew1, labels.toSet).map(Seq(_)))
+    )
+  }
 
   def findIndexIdAndValue(ops: ArrayBuffer[NFPredicate], labels: Set[String]): (Int, Any) = ???
 
@@ -288,7 +264,14 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
     }
   }
 
-  def getNodesByFilter(ops: ArrayBuffer[NFPredicate], labels: Set[String]): Iterable[Node[Id]] = {
+  def getNodesByFilter(predicate: Array[NFPredicate],labels: Set[String], nodeVar: NodeVar): LynxRecords = {
+
+    new LynxRecords(RecordHeader(Map(NodeVar(nodeVar.name)(CTNode) -> nodeVar.name)),
+      LynxTable(Seq(nodeVar.name -> CTNode), getNodesByFilter(predicate, labels).map(Seq(_)))
+        )
+  }
+
+  def getNodesByFilter(ops: Array[NFPredicate], labels: Set[String]): Iterable[Node[Id]] = {
     if(labels.isEmpty){
       if(ops.isEmpty)
         scan.allNodes()
@@ -316,12 +299,33 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
         }
         else {
           if (eqlops.isEmpty){
-            val (indexId,_,_, cnt) = scan.isPropertysWithIndex(labels, rangeops.map(_._1).toSet)
-            scan.findRangeNode(indexId, null, null).filter(filterNode(_, opsNew))
+            val (indexId,label,props, cnt) = scan.isPropertysWithIndex(labels, rangeops.map(_._1).toSet)
+            val (v,t) = props.toSeq.map(rangeops.toMap.get(_)).head.get
+            val max = {
+              if (v.isInstanceOf[Int]) Int.MaxValue
+              else Float.MaxValue
+            }
+
+            val min = {
+              if (v.isInstanceOf[Int]) Int.MinValue
+              else Float.MinValue
+            }
+
+
+
+
+            val nodes = t match {
+              case "<=" => scan.findRangeNode(indexId, min, v)
+              case "<" => scan.findRangeNode(indexId, min, v)
+              case ">=" => scan.findRangeNode(indexId, v, max)
+              case ">" => scan.findRangeNode(indexId, v, max)
+            }
+            nodes.filter(filterNode(_, opsNew))
           }
           else{
-            val (indexId,_,_, cnt) = scan.isPropertysWithIndex(labels, eqlops.map(_._1).toSet)
-            scan.findNode(indexId, null).filter(filterNode(_, opsNew))
+            val (indexId,label, props, cnt) = scan.isPropertysWithIndex(labels, eqlops.map(_._1).toSet)
+            val v = props.toSeq.map(eqlops.toMap.get(_)).head
+            scan.findNode(indexId, v.get).filter(filterNode(_, opsNew))
           }
         }
       }
@@ -407,6 +411,7 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
     }
   }
 
+  override def createElements(nodes: Array[IRNode], rels: Array[IRRelation[Id]]): Unit = writer.createElements(nodes, rels)
 }
 
 trait HasStatistics{

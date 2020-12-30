@@ -1,6 +1,6 @@
 package cn.pandadb.kernel.optimizer
 
-import org.opencypher.lynx.graph.{LynxPropertyGraph, WritableScanGraph}
+import org.opencypher.lynx.graph.{LynxPropertyGraph, ScanGraph, WritableScanGraph}
 import org.opencypher.lynx.ir.{PropertyGraphWriter, WritablePropertyGraph}
 import org.opencypher.lynx.plan.{LynxPhysicalPlanner, PandaPhysicalPlanner, PhysicalOperator}
 import org.opencypher.lynx.planning.PandaTableOperator
@@ -19,8 +19,12 @@ class PandaCypherSession extends LynxSession{
   override protected val _optimizePhysicalPlan: (PhysicalOperator, LynxPlannerContext) => PhysicalOperator =
     (input: PhysicalOperator, context: LynxPlannerContext) => PandaPhysicalOptimizer.process(input)(context)
 
-  def createPropertyGraph[Id](scan: PandaPropertyGraphScan[Id]): LynxPropertyGraph = new PandaPropertyGraph[Id](scan)(session)
-  override def createPropertyGraph(scan: PropertyGraphScanner[Id], writer: PropertyGraphWriter[Id]): WritablePropertyGraph[Id] = new WritableScanGraph[Id](scan, writer)(session)
+ // def createPropertyGraph(scan: PropertyGraphScanner[Id]): LynxPropertyGraph = new ScanGraph[Id](scan)(session)
+
+ // def createPropertyGraph(scan: PropertyGraphScanner[Id], writer: PropertyGraphWriter[Id]): WritablePropertyGraph[Id] = new WritableScanGraph[Id](scan, writer)(session)
+
+  //def createPropertyGraph[Id](scan: PandaPropertyGraphScan[Id]): LynxPropertyGraph = new PandaPropertyGraph[Id](scan)(session)
+   def createPropertyGraph(scan: PandaPropertyGraphScan[Id], writer: PropertyGraphWriter[Id]): WritablePropertyGraph[Id] = new PandaPropertyGraph[Id](scan, writer)(session)
 }
 
 

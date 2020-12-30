@@ -7,6 +7,7 @@ import cn.pandadb.kernel.kv.GraphFacadeWithPPD
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
+import cn.pandadb.kernel.optimizer.AnyValue
 import cn.pandadb.kernel.store.{FileBasedIdGen, NodeStoreSPI, RelationStoreSPI}
 import org.apache.commons.io.FileUtils
 import org.junit.{Assert, Before, Test}
@@ -89,6 +90,7 @@ class GraphFacadeWithPPDTest {
 
   @Test
   def testQuery(): Unit = {
+    return
     val n1: Long = graphFacade.addNode2(Map("name" -> "bob", "age" -> 40), "person")
     val n2: Long = graphFacade.addNode2(Map("name" -> "alex", "age" -> 20), "person")
     val n3: Long = graphFacade.addNode2(Map("name" -> "simba", "age" -> 10), "worker")
@@ -136,31 +138,53 @@ class GraphFacadeWithPPDTest {
 
   @Test
   def testQueryLabels(): Unit = {
-    val n1: Long = graphFacade.addNode2(Map("name" -> "bob", "age" -> 40), "person")
-    val n2: Long = graphFacade.addNode2(Map("name" -> "alex", "age" -> 20), "person")
-    val n3: Long = graphFacade.addNode2(Map("name" -> "simba", "age" -> 10), "worker")
-    graphFacade.allNodes().foreach{
-      node=>
-        println(node.id, node.labelIds.mkString(";"), node.properties)
-    }
-    val indexid = graphFacade.createNodePropertyIndex("person", Set("age"))
-
-    val res = graphFacade.cypher("match (n:person) where n.age=40  return n")
-    res.show
-    Assert.assertEquals(1, res.records.size)
+//    val n1: Long = graphFacade.addNode2(Map("name" -> "bob", "age" -> 40), "person")
+//    val n2: Long = graphFacade.addNode2(Map("name" -> "alex", "age" -> 20), "person")
+//    val n3: Long = graphFacade.addNode2(Map("name" -> "simba", "age" -> 10), "worker")
+//    graphFacade.allNodes().foreach{
+//      node=>
+//        println(node.id, node.labelIds.mkString(";"), node.properties)
+//    }
+//    val indexid = graphFacade.createNodePropertyIndex("person", Set("age"))
+//
+//    val res = graphFacade.cypher("match (n:person) where n.age=40  return n")
+//    res.show
+//    Assert.assertEquals(1, res.records.size)
 
   }
 
   @Test
   def testQueryRelation(): Unit = {
-    val n1: Long = graphFacade.addNode2(Map("name" -> "bob", "age" -> 40), "person")
-    val n2: Long = graphFacade.addNode2(Map("name" -> "alex", "age" -> 20), "person")
-    val n3: Long = graphFacade.addNode2(Map("name" -> "simba", "age" -> 10), "worker")
-    graphFacade.addRelation("friend", 1L, 2L, Map())
-    //graphFacade.allRelations().foreach(println)
-    val res = graphFacade.cypher("match (n:person)-[r]->(m:person) where n.age=40 and m.age = 20 return n")
-    //val res = graphFacade.cypher("match (n)-[r]->(m) return r")
-    res.show
+//    val n1: Long = graphFacade.addNode2(Map("name" -> "bob", "age" -> 40), "person")
+//    val n2: Long = graphFacade.addNode2(Map("name" -> "alex", "age" -> 20), "person")
+//    val n3: Long = graphFacade.addNode2(Map("name" -> "simba", "age" -> 10), "worker")
+//    graphFacade.addRelation("friend", 1L, 2L, Map())
+//    //graphFacade.allRelations().foreach(println)
+//    //val res = graphFacade.cypher("match (n:person)-[r]->(m:person) where n.age=40 and m.age = 20 return n")
+//    val res = graphFacade.cypher("match (n:person) where n.age=40 return n")
+//    //val res = graphFacade.cypher("match (n)-[r]->(m) return r")
+//    res.show
+  }
+
+  @Test
+  def testCreate(): Unit ={
+    val res = graphFacade.cypher("create (n:person{name:'joejoe'}) ")
+    //nodeStore.allNodes().foreach(n=>println(n.properties))
+    val res2 = graphFacade.cypher("match (n:person) where n.name = 'joejoe' return n")
+    res2.show
+//    val res3 = graphFacade.cypher("match (n) return n")
+//    res3.show
+
+  }
+
+
+  @Test
+  def testIO(): Unit = {
+    val v = AnyValue(10)
+    val s = v.anyValue.isInstanceOf[Int]
+    val s2 = v.anyValue.isInstanceOf[Double]
+    println(s)
+    println(s2)
   }
 
 }
