@@ -32,4 +32,8 @@ trait GraphService {
   def relationRemoveLabel(id: Id, label: String): Unit
 
   def deleteRelation(id: Id): this.type
+
+  def createIndexOnNode(label: String, props: Set[String]): Unit
+
+  def createIndexOnRelation(typeName: String, props: Set[String]): Unit
 }

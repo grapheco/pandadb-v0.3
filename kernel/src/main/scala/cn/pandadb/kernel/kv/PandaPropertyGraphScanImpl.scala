@@ -15,9 +15,7 @@ class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
                                  relationStore: RelationStoreSPI,
                                  indexStore: IndexStoreAPI,
                                  statistics: Statistics)
-      extends PropertyGraphScanner[Long]
-      with HasStatistics
-      with PandaPropertyGraphScan[Long] {
+      extends PandaPropertyGraphScan[Long] {
 
   val loop = new Breaks
 
