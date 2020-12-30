@@ -134,7 +134,7 @@ trait NodeStoreSPI {
   //
   //  def getNodePropertiesBytes(nodeId: Long): Array[Byte];
 
-  //  def createNodeId(): Long;
+  def newNodeId(): Long;
 
   def nodeAddLabel(nodeId: Long, labelId: Int): Unit;
 

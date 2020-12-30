@@ -1,7 +1,7 @@
 package cn.pandadb.kernel.kv.relation
 
 import cn.pandadb.kernel.kv.RocksDBStorage
-import cn.pandadb.kernel.kv.meta.{NodeLabelNameStore, PropertyNameStore, RelationTypeNameStore}
+import cn.pandadb.kernel.kv.meta.{NodeLabelNameStore, PropertyNameStore, RelationIdGenerator, RelationTypeNameStore}
 import cn.pandadb.kernel.store.{RelationStoreSPI, StoredRelation, StoredRelationWithProperty}
 
 /**
@@ -24,6 +24,7 @@ class RelationStoreAPI(dbPath: String) extends RelationStoreSPI{
   private val metaDB = RocksDBStorage.getDB(s"${dbPath}/relationMeta")
   private val relationTypeNameStore = new RelationTypeNameStore(metaDB)
   private val propertyName = new PropertyNameStore(metaDB)
+  private val relationIdGenerator = new RelationIdGenerator(metaDB)
 
   override def allRelationTypes(): Array[String] = relationTypeNameStore.mapString2Int.keys.toArray
 
@@ -122,5 +123,9 @@ class RelationStoreAPI(dbPath: String) extends RelationStoreSPI{
     outRelationDB.close()
     metaDB.close()
     relationLabelStore.close()
+  }
+
+  override def newRelationId(): Long = {
+    relationIdGenerator.nextId()
   }
 }

@@ -160,6 +160,9 @@ trait RelationStoreSPI {
   def findFromNodeIds(toNodeId: Long, relationType: Int): Iterator[Long];
 
   //  def findFromNodeIds(toNodeId: Long, relationType: Int, category: Long): Iterator[Long];
+
+  def newRelationId(): Long;
+
   def addRelation(relation: StoredRelation): Unit
 
   def addRelation(relation: StoredRelationWithProperty): Unit
