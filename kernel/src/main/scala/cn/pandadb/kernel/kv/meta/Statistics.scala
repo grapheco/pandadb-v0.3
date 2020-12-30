@@ -19,7 +19,7 @@ object Statistics {
 
 class Statistics(path: String) {
 
-  val db: RocksDB = RocksDBStorage.getDB(path)
+  val db: RocksDB = RocksDBStorage.getDB(s"${path}/statistics")
 
   var allNodesCount: Long = -1
   var allRelationCount: Long = -1
