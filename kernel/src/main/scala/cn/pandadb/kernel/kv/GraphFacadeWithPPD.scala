@@ -22,7 +22,8 @@ class GraphFacadeWithPPD(
                  ) extends Logging with GraphService {
 
   private val propertyGraph = new PandaCypherSession().createPropertyGraph(
-    new PandaPropertyGraphScanImpl(nodeIdGen, relIdGen, nodeStore, relationStore, indexStore, statistics)
+    new PandaPropertyGraphScanImpl(nodeStore, relationStore, indexStore, statistics),
+    new PandaPropertyGraphWriterImpl(nodeIdGen, relIdGen, nodeStore, relationStore, indexStore, statistics)
   )
 
 
@@ -35,9 +36,11 @@ class GraphFacadeWithPPD(
   override def close(): Unit = {
     nodeIdGen.flush()
     relIdGen.flush()
+    statistics.flush()
     nodeStore.close()
     relationStore.close()
     indexStore.close()
+    statistics.close()
     onClose
   }
 
@@ -48,7 +51,8 @@ class GraphFacadeWithPPD(
       v => ( nodeStore.getPropertyKeyId(v._1),v._2)
     }
     nodeStore.addNode(new StoredNodeWithProperty(nodeId, labelIds, props))
-
+    statistics.increaseNodeCount(1) // TODO batch
+    labelIds.foreach(statistics.increaseNodeLabelCount(_, 1))
     this
   }
 
@@ -72,16 +76,28 @@ class GraphFacadeWithPPD(
     val rel = new StoredRelationWithProperty(rid, from, to, labelId, props)
     //TODO: transaction safe
     relationStore.addRelation(rel)
+    statistics.increaseRelationCount(1) // TODO batch , index statistic
+    statistics.increaseRelationTypeCount(labelId, 1)
     this
   }
 
   override def deleteNode(id: Id): this.type = {
-    nodeStore.deleteNode(id)
+    nodeStore.getNodeById(id).foreach{
+      node =>
+        nodeStore.deleteNode(node.id)
+        statistics.decreaseNodes(1)
+        node.labelIds.foreach(statistics.decreaseNodeLabelCount(_, 1))
+    }
     this
   }
 
   override def deleteRelation(id: Id): this.type = {
-    relationStore.deleteRelation(id)
+    relationStore.getRelationById(id).foreach{
+      rel =>
+        relationStore.deleteRelation(rel.id)
+        statistics.decreaseRelations(1)
+        statistics.setRelationTypeCount(rel.typeId, 1)
+    }
     this
   }
 
@@ -103,18 +119,23 @@ class GraphFacadeWithPPD(
     indexStore.insertIndexRecord(indexId, propertyValue, nodeId)
   }
 
+  override def nodeSetProperty(id: Id, key: String, value: Any): Unit =
+    nodeStore.nodeSetProperty(id, nodeStore.getPropertyKeyId(key), value)
 
-  override def nodeSetProperty(id: Id, key: String, value: Any): Unit = ???
+  override def nodeRemoveProperty(id: Id, key: String): Unit =
+    nodeStore.nodeRemoveProperty(id, nodeStore.getPropertyKeyId(key))
 
-  override def nodeRemoveProperty(id: Id, key: String): Unit = ???
+  override def nodeAddLabel(id: Id, label: String): Unit =
+    nodeStore.nodeAddLabel(id, nodeStore.getLabelId(label))
 
-  override def nodeAddLabel(id: Id, label: String): Unit = ???
+  override def nodeRemoveLabel(id: Id, label: String): Unit =
+    nodeStore.nodeRemoveLabel(id, nodeStore.getLabelId(label))
 
-  override def nodeRemoveLabel(id: Id, label: String): Unit = ???
+  override def relationSetProperty(id: Id, key: String, value: Any): Unit =
+    relationStore.relationSetProperty(id, relationStore.getPropertyKeyId(key), value)
 
-  override def relationSetProperty(id: Id, key: String, value: Any): Unit = ???
-
-  override def relationRemoveProperty(id: Id, key: String): Unit = ???
+  override def relationRemoveProperty(id: Id, key: String): Unit =
+    relationStore.relationRemoveProperty(id, relationStore.getPropertyKeyId(key))
 
   override def relationAddLabel(id: Id, label: String): Unit = ???
 

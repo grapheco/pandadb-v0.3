@@ -11,9 +11,7 @@ import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship
 import scala.util.control.Breaks
 
 
-class PandaPropertyGraphScanImpl(nodeIdGen: FileBasedIdGen,
-                                 relIdGen: FileBasedIdGen,
-                                 nodeStore: NodeStoreSPI,
+class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
                                  relationStore: RelationStoreSPI,
                                  indexStore: IndexStoreAPI,
                                  statistics: Statistics)
