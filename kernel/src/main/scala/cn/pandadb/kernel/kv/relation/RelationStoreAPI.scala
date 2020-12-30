@@ -118,6 +118,7 @@ class RelationStoreAPI(dbPath: String) extends RelationStoreSPI{
     inRelationStore.getRelations(toNodeId, edgeType)
 
   override def close(): Unit ={
+    relationIdGenerator.flush()
     relationStore.close()
     inRelationStore.close()
     outRelationDB.close()

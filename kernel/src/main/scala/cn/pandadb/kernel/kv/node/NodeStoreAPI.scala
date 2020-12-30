@@ -138,6 +138,7 @@ class NodeStoreAPI(dbPath: String) extends NodeStoreSPI {
   //  }
 
   override def close(): Unit ={
+    idGenerator.flush()
     nodeDB.close()
     nodeLabelDB.close()
     metaDB.close()
