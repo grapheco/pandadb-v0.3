@@ -11,10 +11,7 @@ import org.opencypher.okapi.api.graph.CypherResult
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship}
 
-class GraphFacadeWithPPD(
-                          nodeIdGen: FileBasedIdGen,
-                          relIdGen: FileBasedIdGen,
-                          nodeStore: NodeStoreSPI,
+class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
                           relationStore: RelationStoreSPI,
                           indexStore: IndexStoreAPI,
                           statistics: Statistics,
@@ -23,7 +20,7 @@ class GraphFacadeWithPPD(
 
   private val propertyGraph = new PandaCypherSession().createPropertyGraph(
     new PandaPropertyGraphScanImpl(nodeStore, relationStore, indexStore, statistics),
-    new PandaPropertyGraphWriterImpl(nodeIdGen, relIdGen, nodeStore, relationStore, indexStore, statistics)
+    new PandaPropertyGraphWriterImpl(nodeStore, relationStore, indexStore, statistics)
   )
 
 
@@ -34,8 +31,6 @@ class GraphFacadeWithPPD(
   }
 
   override def close(): Unit = {
-    nodeIdGen.flush()
-    relIdGen.flush()
     statistics.flush()
     nodeStore.close()
     relationStore.close()
@@ -53,7 +48,7 @@ class GraphFacadeWithPPD(
   def relPropNameMap(name: String): Int = relationStore.getPropertyKeyId(name)
 
   override def addNode(nodeProps: Map[String, Any], labels: String*): this.type = {
-    val nodeId = nodeIdGen.nextId()
+    val nodeId = nodeStore.newNodeId()
     val labelIds = nodeStore.getLabelIds(labels.toSet).toArray
     val props = nodeProps.map{
       v => ( nodePropNameMap(v._1),v._2)
@@ -65,7 +60,7 @@ class GraphFacadeWithPPD(
   }
 
   def addNode2(nodeProps: Map[String, Any], labels: String*): Long = {
-    val nodeId = nodeIdGen.nextId()
+    val nodeId = nodeStore.newNodeId()
     val labelIds = nodeStore.getLabelIds(labels.toSet).toArray
     val props = nodeProps.map{
       v => ( nodePropNameMap(v._1),v._2)
@@ -76,7 +71,7 @@ class GraphFacadeWithPPD(
 
 
   override def addRelation(label: String, from: Long, to: Long, relProps: Map[String, Any]): this.type = {
-    val rid = relIdGen.nextId()
+    val rid = relationStore.newRelationId()
     val labelId = relTypeNameMap(label)
     val props = relProps.map{
       v => ( relPropNameMap(v._1),v._2)

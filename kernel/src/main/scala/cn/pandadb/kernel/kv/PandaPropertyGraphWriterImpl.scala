@@ -7,15 +7,13 @@ import org.opencypher.lynx.ir.{IRContextualNodeRef, IRNode, IRNodeRef, IRRelatio
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue, Node, NoopCypherValueConverter, Relationship}
 
-class PandaPropertyGraphWriterImpl(nodeIdGen: FileBasedIdGen,
-                                   relIdGen: FileBasedIdGen,
-                                   nodeStore: NodeStoreSPI,
+class PandaPropertyGraphWriterImpl(nodeStore: NodeStoreSPI,
                                    relationStore: RelationStoreSPI,
                                    indexStore: IndexStoreAPI,
                                    statistics: Statistics) extends PropertyGraphWriter[Long]{
 
   def addNode(labels: Seq[String], props: Seq[(String, CypherValue)]): Long = {
-    val id = nodeIdGen.nextId()
+    val id = nodeStore.newNodeId()
     val labelsId = labels.map(nodeStore.getLabelId).toArray
     val propsMap  = props.toMap
       .map(kv => (nodeStore.getPropertyKeyId(kv._1), kv._2.getValue))
@@ -27,7 +25,7 @@ class PandaPropertyGraphWriterImpl(nodeIdGen: FileBasedIdGen,
   }
 
   def addRel(types: Seq[String], props: Seq[(String, CypherValue)], startId: Long, endId: Long): Long = {
-    val id = relIdGen.nextId()
+    val id = relationStore.newRelationId()
     val typesId = types.map(relationStore.getRelationTypeId).toArray //TODO only one type supported
     val propsMap  = props.toMap
       .map(kv => (relationStore.getPropertyKeyId(kv._1), kv._2.getValue))
