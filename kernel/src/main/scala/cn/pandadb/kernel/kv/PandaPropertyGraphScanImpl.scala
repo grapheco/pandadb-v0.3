@@ -195,8 +195,12 @@ class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
       .map{ p => (p._1.get, p._2, p._3, statistics.getIndexPropertyCount(p._1.get))}
       .filter(_._4.isDefined)
       .map{ p => (p._1, p._2, p._3, p._4.get)}
-      .minBy(_._4)
-      (res._1, res._2, res._3.map(nodeStore.getPropertyKeyName(_).get).toSet, res._4)
+    if (res.isEmpty)
+      (-1, null, null, -1)
+    else {
+      val resMin = res.minBy(_._4)
+      (resMin._1, resMin._2, resMin._3.map(nodeStore.getPropertyKeyName(_).get).toSet, resMin._4)
+    }
   }
 
   override def isPropertyWithIndex(label: String, propertyName: String): (Int, String, Set[String], Long) =
