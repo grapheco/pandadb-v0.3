@@ -177,8 +177,8 @@ class GraphFacadeWithPPDTest {
 
   @Test
   def testCreateRel(): Unit ={
-    val res = graphFacade.cypher("CREATE (n:person {name: 'bluejoe', age: 40}),(m:test {name: 'alex', age: 30}),(n)-[:fg]->(m)")
-    val res2 = graphFacade.cypher("match (n:person)-[r:fg]->(m: test) return n,r,m")
+    val res = graphFacade.cypher("CREATE (n:person {name: 'bluejoe', age: 40}),(m:test {name: 'alex', age: 30}),(n)-[:fans]->(m)")
+    val res2 = graphFacade.cypher("match (n:person)-[r:fans]->(m: test) where n.name='bluejoe' and m.age=30 return n,r,m")
     res2.show
   }
 

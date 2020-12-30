@@ -97,11 +97,15 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
   }
 
   def getNodeCnt(predicate: Array[NFPredicate], labels: Set[String]): Long = {
-    200
+    if(labels.isEmpty) scan.getAllNodesCount()
+    else{
+      labels.map(scan.getNodesCountByLabel).min
+    }
   }
 
   def getRelCnt(predicate: Array[NFPredicate], label: String, direction: Int): Long = {
-    24
+    if (label ==null) scan.getAllRelsCount()
+    else scan.getRelsCountByLabel(label)
   }
 
 /*  def getNodesByFilter(predicate: Array[NFPredicate], labels: Set[String]): Iterable[Node[Id]] ={
