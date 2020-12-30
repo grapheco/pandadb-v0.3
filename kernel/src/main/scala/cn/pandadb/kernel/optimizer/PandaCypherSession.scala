@@ -1,9 +1,10 @@
 package cn.pandadb.kernel.optimizer
 
-import org.opencypher.lynx.graph.LynxPropertyGraph
+import org.opencypher.lynx.graph.{LynxPropertyGraph, WritableScanGraph}
+import org.opencypher.lynx.ir.{PropertyGraphWriter, WritablePropertyGraph}
 import org.opencypher.lynx.plan.{LynxPhysicalPlanner, PandaPhysicalPlanner, PhysicalOperator}
 import org.opencypher.lynx.planning.PandaTableOperator
-import org.opencypher.lynx.{LynxPlannerContext, LynxResult, LynxSession, TableOperator}
+import org.opencypher.lynx.{LynxPlannerContext, LynxResult, LynxSession, PropertyGraphScanner, TableOperator}
 import org.opencypher.okapi.logical.impl._
 
 class PandaCypherSession extends LynxSession{
@@ -19,6 +20,7 @@ class PandaCypherSession extends LynxSession{
     (input: PhysicalOperator, context: LynxPlannerContext) => PandaPhysicalOptimizer.process(input)(context)
 
   def createPropertyGraph[Id](scan: PandaPropertyGraphScan[Id]): LynxPropertyGraph = new PandaPropertyGraph[Id](scan)(session)
+  override def createPropertyGraph(scan: PropertyGraphScanner[Id], writer: PropertyGraphWriter[Id]): WritablePropertyGraph[Id] = new WritableScanGraph[Id](scan, writer)(session)
 }
 
 
