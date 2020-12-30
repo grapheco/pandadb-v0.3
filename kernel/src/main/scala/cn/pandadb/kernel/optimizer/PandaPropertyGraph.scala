@@ -316,11 +316,11 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id])(implicit override
         }
         else {
           if (eqlops.isEmpty){
-            val (indexId, cnt) = scan.isPropertysWithIndex(labels, rangeops.map(_._1).toSet)
+            val (indexId,_,_, cnt) = scan.isPropertysWithIndex(labels, rangeops.map(_._1).toSet)
             scan.findRangeNode(indexId, null, null).filter(filterNode(_, opsNew))
           }
           else{
-            val (indexId, cnt) = scan.isPropertysWithIndex(labels, eqlops.map(_._1).toSet)
+            val (indexId,_,_, cnt) = scan.isPropertysWithIndex(labels, eqlops.map(_._1).toSet)
             scan.findNode(indexId, null).filter(filterNode(_, opsNew))
           }
         }
@@ -463,13 +463,13 @@ trait PandaPropertyGraphScan[Id] extends PropertyGraphScanner[Id] with HasStatis
   def allNodes(): Iterable[Node[Id]] = ???
 
   // index
-  def isPropertyWithIndex(labels: Set[String], propertyName: String): (Int, Long) = ???
+  def isPropertyWithIndex(labels: Set[String], propertyName: String): (Int, String, Set[String], Long) = ???
 
-  def isPropertysWithIndex(labels: Set[String], propertyNames: Set[String]): (Int, Long) = ???
+  def isPropertysWithIndex(labels: Set[String], propertyNames: Set[String]): (Int, String, Set[String], Long) = ???
 
-  def isPropertyWithIndex(label: String, propertyName: String): (Int, Long) = ???
+  def isPropertyWithIndex(label: String, propertyName: String): (Int, String, Set[String], Long) = ???
 
-  def isPropertysWithIndex(label: String, propertyName: String *): (Int, Long) = ???
+  def isPropertysWithIndex(label: String, propertyName: Set[String]): (Int, String, Set[String], Long) = ???
 
   def findNodeId(indexId: Int, value: Any): Iterable[Long] = ???
 

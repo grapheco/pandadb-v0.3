@@ -103,6 +103,23 @@ class GraphFacadeWithPPD(
     indexStore.insertIndexRecord(indexId, propertyValue, nodeId)
   }
 
+
+  override def nodeSetProperty(id: Id, key: String, value: Any): Unit = ???
+
+  override def nodeRemoveProperty(id: Id, key: String): Unit = ???
+
+  override def nodeAddLabel(id: Id, label: String): Unit = ???
+
+  override def nodeRemoveLabel(id: Id, label: String): Unit = ???
+
+  override def relationSetProperty(id: Id, key: String, value: Any): Unit = ???
+
+  override def relationRemoveProperty(id: Id, key: String): Unit = ???
+
+  override def relationAddLabel(id: Id, label: String): Unit = ???
+
+  override def relationRemoveLabel(id: Id, label: String): Unit = ???
+
   //FIXME: expensive time cost
   private def init(): Unit = {
 
