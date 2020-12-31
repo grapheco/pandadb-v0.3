@@ -141,7 +141,7 @@ object PandaPhysicalOptimizer {
   }
 
   def generationPlan(in: PhysicalOperator, filterOps: ArrayBuffer[NFPredicate], ordinaryOps: ArrayBuffer[PhysicalOperator], scanOps:mutable.ListMap[PhysicalOperator, Long]): PhysicalOperator ={
-    val lop = filterOps.filter(_.isInstanceOf[Limit])
+    val lop = filterOps.filter(_.isInstanceOf[NFLimit])
     val limit = if(lop.nonEmpty) lop.head else null
     //var opWithCnt: mutable.Map[PhysicalOperator, Long] = mutable.Map[PhysicalOperator, Long]()
 

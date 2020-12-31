@@ -27,12 +27,10 @@ object PandaImporter extends Logging{
   def main(args: Array[String]): Unit = {
     // args: dbPath, nodeHead file path, node file path, relHead file path, relation file path
     _argsCheck(args)
-//    val nodeImporter = new PNodeImporter(dbPath, srcNodeFile, headNodeFile)
-//    val edgeImporter = new PRelationImporter(dbPath, srcEdgeFile, headEdgeFile)
-//    val nodeImporter = new PNodeImporter(args(0), new File(args(1)), new File(args(2)))
+    val nodeImporter = new PNodeImporter(args(0), new File(args(1)), new File(args(2)))
     val relationImporter = new PRelationImporter(args(0), new File(args(3)), new File(args(4)))
     logger.info("Import task started.")
-//    nodeImporter.importNodes()
+    nodeImporter.importNodes()
     relationImporter.importRelations()
     PDBMetaData.persist(args(0))
     logger.info("import task finished.")
