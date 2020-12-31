@@ -56,6 +56,17 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
     nodeStore.addNode(new StoredNodeWithProperty(nodeId, labelIds, props))
     statistics.increaseNodeCount(1) // TODO batch
     labelIds.foreach(statistics.increaseNodeLabelCount(_, 1))
+    // index
+    labelIds.map(indexStore.getIndexIdByLabel).foreach(
+      _.foreach{
+        propsIndex =>
+          if (propsIndex._1.length<=1){
+            indexStore.insertIndexRecord(propsIndex._2, props.getOrElse(propsIndex._1(0), null), nodeId)
+          }else {
+            // TODO combined index
+          }
+          statistics.increaseIndexPropertyCount(propsIndex._2, 1)
+    })
     this
   }
 
@@ -90,6 +101,16 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
         nodeStore.deleteNode(node.id)
         statistics.decreaseNodes(1)
         node.labelIds.foreach(statistics.decreaseNodeLabelCount(_, 1))
+        node.labelIds.map(indexStore.getIndexIdByLabel).foreach(
+          _.foreach{
+            propsIndex =>
+              if (propsIndex._1.length<=1){
+                indexStore.deleteIndexRecord(propsIndex._2, node.properties.getOrElse(propsIndex._1(0), null), node.id)
+              }else {
+                // TODO combined index
+              }
+              statistics.decreaseIndexPropertyCount(propsIndex._2, 1)
+          })
     }
     this
   }
