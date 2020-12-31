@@ -190,6 +190,11 @@ class GraphFacadeWithPPDTest {
     val s2 = v.anyValue.isInstanceOf[Double]
     println(s)
     println(s2)
+    val as = Array("test"->1, "test"->2, "jkl" ->3, "jkl"->4)
+    val sfg = Array("test")
+    val a2 = as.groupBy(row => sfg.map(_.toString))
+    a2
+
   }
 
 }
