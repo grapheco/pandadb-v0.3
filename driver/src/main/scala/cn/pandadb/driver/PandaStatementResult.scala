@@ -4,6 +4,7 @@ package cn.pandadb.driver
 import java.time.{LocalDate, LocalDateTime, LocalTime, OffsetDateTime, OffsetTime, ZonedDateTime}
 import java.{lang, util => javaUtil}
 
+import org.neo4j.driver.internal.util.Format.formatPairs
 import cn.pandadb.driver.utils.{Types, TypesToNeo4jValue}
 import cn.pandadb.hipporpc.utils.DriverValue
 import cn.pandadb.hipporpc.values.{Value => HippoValue}
@@ -14,12 +15,19 @@ import org.neo4j.driver.types.{Entity, IsoDuration, Node, Path, Point, Relations
 import org.neo4j.driver.{Record, StatementResult, Value, util}
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class PandaStatementResult(driverRecords: Iterator[DriverValue]) extends StatementResult{
+class PandaStatementResult(driverRecords: Iterator[DriverValue], rpcClient: PandaRpcClient, cypher: String) extends StatementResult{
+  var queryKeys:javaUtil.List[String] = null  // like (n, n.name)
 
   override def keys(): javaUtil.List[String] = {
-    ???
+    if (queryKeys == null){
+      queryKeys = seqAsJavaList(rpcClient.peekOneDataRequest(cypher).metadata)
+      queryKeys
+    }else{
+      queryKeys
+    }
   }
 
   override def hasNext: Boolean = {
@@ -51,7 +59,15 @@ class PandaStatementResult(driverRecords: Iterator[DriverValue]) extends Stateme
 
       override def size(): Int = driverValue.rowMap.size
 
-      override def asMap(): javaUtil.Map[String, AnyRef] = ???
+      override def asMap(): javaUtil.Map[String, AnyRef] = {
+        val map = mutable.Map[String, AnyRef]()
+        val keyList = keys()
+        keyList.forEach(s => {
+          val neo4jValue = get(s)
+          map.put(s, neo4jValue)
+        })
+        mapAsJavaMap(map.toMap)
+      }
 
       override def asMap[T](function: javaUtil.function.Function[Value, T]): javaUtil.Map[String, T] = ???
 
@@ -92,7 +108,7 @@ class PandaStatementResult(driverRecords: Iterator[DriverValue]) extends Stateme
       override def get(s: String, v: Double): Double = ???
 
       override def toString: String = {
-        values().toString
+        String.format(s"Record<${formatPairs(asMap())}>")
       }
     }
   }

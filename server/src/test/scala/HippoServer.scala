@@ -1,7 +1,7 @@
 import java.io.{File, FileInputStream}
 import java.nio.ByteBuffer
 
-import cn.pandadb.hipporpc.message.{Messages, SayHelloRequest, SayHelloResponse}
+import cn.pandadb.hipporpc.message.{CypherRequest, PeekOneDataRequest, PeekOneDataResponse, SayHelloRequest, SayHelloResponse, VerifyConnectionRequest, VerifyConnectionResponse}
 import cn.pandadb.hipporpc.utils.{DriverValue, ValueConverter}
 import cn.pandadb.hipporpc.values.Value
 import cn.pandadb.kernel.kv.GraphFacadeWithPPD
@@ -15,6 +15,8 @@ import net.neoremind.kraps.rpc.{RpcCallContext, RpcEndpoint, RpcEnvServerConfig}
 import net.neoremind.kraps.rpc.netty.{HippoRpcEnv, HippoRpcEnvFactory}
 import org.apache.commons.io.{FileUtils, IOUtils}
 import org.grapheco.hippo.{ChunkedStream, HippoRpcHandler, ReceiveContext}
+import org.opencypher.okapi.api.value.CypherValue
+import org.opencypher.okapi.api.value.CypherValue.CypherValue
 
 import scala.collection.mutable
 
@@ -24,19 +26,19 @@ object server {
   var nodeStore: NodeStoreSPI = _
   var relationStore: RelationStoreSPI = _
   var indexStore: IndexStoreAPI = _
+  var statistics: Statistics = _
   var graphFacade: GraphFacadeWithPPD = _
 
   def main(args: Array[String]): Unit = {
-    FileUtils.deleteDirectory(new File("./testdata/output"))
+    FileUtils.deleteDirectory(new File("./testdata"))
     new File("./testdata/output").mkdirs()
-    new File("./testdata/output/nodelabels").createNewFile()
-    new File("./testdata/output/rellabels").createNewFile()
 
     val dbPath = "./testdata"
-    var nodeStore = new NodeStoreAPI(dbPath)
-    var relationStore = new RelationStoreAPI(dbPath)
-    var indexStore = new IndexStoreAPI(dbPath)
-    val statistics = new Statistics(dbPath)
+    nodeStore = new NodeStoreAPI(dbPath)
+    relationStore = new RelationStoreAPI(dbPath)
+    indexStore = new IndexStoreAPI(dbPath)
+    statistics = new Statistics(dbPath)
+
     graphFacade = new GraphFacadeWithPPD(
       nodeStore,
       relationStore,
@@ -77,24 +79,53 @@ class MyStreamHandler(graphFacade:GraphFacadeWithPPD) extends HippoRpcHandler {
   override def receiveWithBuffer(extraInput: ByteBuffer, context: ReceiveContext): PartialFunction[Any, Unit] = {
     case SayHelloRequest(msg) =>
       context.reply(SayHelloResponse(msg.toUpperCase()))
-  }
-  override def openChunkedStream(): PartialFunction[Any, ChunkedStream] = {
-    case Messages(cypher) =>{
-      // TODO: create a iterator,get batch data from resIterator
-      val resIterator = graphFacade.cypher(cypher).records.iterator
-      val toDriverRecordsList = mutable.ArrayBuffer[DriverValue]()
-      while (resIterator.hasNext){
-        val rowMap = mutable.Map[String, Value]()
-        val cypherMap = resIterator.next()
-        val keys = cypherMap.keys
-        keys.foreach(key => {
-          val v =  converter.converterValue(cypherMap.getOrElse(key))
-          rowMap.put(key, v)
-        })
-        toDriverRecordsList += DriverValue(rowMap.toMap)
+
+    case PeekOneDataRequest(cypher) =>{
+      val result = graphFacade.cypher(cypher).records
+      val iter = result.iterator
+      val metadata = result.physicalColumns.toList
+      val record: DriverValue = {
+        if (iter.hasNext){
+          valueConverter(metadata, iter.next())
+        }else{
+          DriverValue(List(), Map())
+        }
       }
-      ChunkedStream.grouped(100, toDriverRecordsList)
+      context.reply(PeekOneDataResponse(record))
+    }
+
+    case VerifyConnectionRequest(username, password) => {
+      if (username == "panda" && password == "db"){
+        context.reply(VerifyConnectionResponse("ok"))
+      }else{
+        context.reply(VerifyConnectionResponse("no"))
+      }
     }
   }
 
+  override def openChunkedStream(): PartialFunction[Any, ChunkedStream] = {
+    case CypherRequest(cypher) =>{
+      val result = graphFacade.cypher(cypher).records
+      val metadata = result.physicalColumns.toList
+      val pandaIterator = new PandaRecordsIterator(metadata, result.iterator)
+      ChunkedStream.grouped(100, pandaIterator.toIterable)
+    }
+  }
+
+  class PandaRecordsIterator(metadata: List[String], openCypherIter: Iterator[CypherValue.CypherMap]) extends Iterator[DriverValue]{
+    override def hasNext: Boolean = openCypherIter.hasNext
+    override def next(): DriverValue = {
+      val cypherMap = openCypherIter.next()
+      valueConverter(metadata, cypherMap)
+    }
+  }
+  def valueConverter(metadata: List[String], cypherMap:CypherValue.CypherMap): DriverValue ={
+    val rowMap = mutable.Map[String, Value]()
+    val keys = cypherMap.keys
+    keys.foreach(key => {
+      val v = converter.converterValue(cypherMap.getOrElse(key))
+      rowMap.put(key, v)
+    })
+    DriverValue(metadata, rowMap.toMap)
+  }
 }

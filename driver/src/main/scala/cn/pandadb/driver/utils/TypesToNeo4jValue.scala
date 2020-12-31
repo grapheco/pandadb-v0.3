@@ -3,7 +3,7 @@ package cn.pandadb.driver.utils
 import cn.pandadb.hipporpc.values.{Value => HippoValue}
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
 import org.neo4j.driver.internal.value.{BooleanValue, FloatValue, IntegerValue, NodeValue, RelationshipValue, StringValue}
-import org.neo4j.driver.{Value => Neo4jValue}
+import org.neo4j.driver.{Record, Value => Neo4jValue}
 
 import scala.collection.JavaConverters._
 

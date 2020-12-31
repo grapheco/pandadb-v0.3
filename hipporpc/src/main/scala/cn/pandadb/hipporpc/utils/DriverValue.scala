@@ -6,6 +6,6 @@ import cn.pandadb.hipporpc.values.Value
     eg: match (n) return n, n.name, n.age
     a row result (n, n.name, n.age) is represented by DriverValue
  */
-case class DriverValue(rowMap:Map[String, Value]){
+case class DriverValue(metadata: List[String], rowMap: Map[String, Value]){
 
 }

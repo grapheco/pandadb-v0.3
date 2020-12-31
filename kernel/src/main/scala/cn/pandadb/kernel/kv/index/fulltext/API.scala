@@ -78,7 +78,7 @@ case class API(dbPath: String, indexID: Int) {
   }
 
   def find(keyword: (Array[String], String)): Iterator[Long] = {
-    handler.topDocs2NodeIdArray(handler.search(keyword)).get.iterator
+    handler.topDocs2NodeIdArray(handler.search(keyword)).get
   }
 
   /**
