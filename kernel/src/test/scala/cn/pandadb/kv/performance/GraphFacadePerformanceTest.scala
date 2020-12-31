@@ -23,22 +23,12 @@ class GraphFacadePerformanceTest {
 
   @Before
   def setup(): Unit = {
-    FileUtils.deleteDirectory(new File("./testdata"))
-    new File("./testdata/output").mkdirs()
 
-    val dbPath = "./testdata"
+    val dbPath = "F:\\PandaDB_rocksDB\\10kw"
     nodeStore = new NodeStoreAPI(dbPath)
     relationStore = new RelationStoreAPI(dbPath)
     indexStore = new IndexStoreAPI(dbPath)
     statistics = new Statistics(dbPath+"/statistics")
-
-    //    graphStore = new RocksDBGraphAPI("./testdata/output/rocksdb")
-    //    nodeLabelStore = new NodeLabelNameStore(graphStore.getRocksDB)
-    //    relLabelStore = new RelationTypeNameStore(graphStore.getRocksDB)
-    //    propNameStore = new PropertyNameStore(graphStore.getRocksDB)
-
-
-
 
     graphFacade = new GraphFacadeWithPPD(
       nodeStore,
@@ -47,21 +37,24 @@ class GraphFacadePerformanceTest {
       statistics,
       {}
     )
+  }
 
+  @Test
+  def testLabel(): Unit ={
+    nodeStore.allLabels().foreach(println)
+    println("______________")
+    nodeStore.allPropertyKeys().foreach(println)
+    println("______________")
+    relationStore.allPropertyKeys().foreach(println)
+    println("______________")
+    relationStore.allRelationTypes().foreach(println)
 
-    graphFacade.addNode2(Map("id_p" -> 1L, "idStr" -> "a", "flag"->false), "person")
-    graphFacade.addNode2(Map("id_p" -> 2L, "idStr" -> "b", "flag"->true), "worker")
-    graphFacade.addNode2(Map("id_p" -> 3L, "idStr" -> "c", "flag"->false), "person")
-    graphFacade.addNode2(Map("id_p" -> 4L, "idStr" -> "d", "flag"->true), "worker")
-    graphFacade.addNode2(Map("id_p" -> 5L, "idStr" -> "e", "flag"->false), "person")
-    graphFacade.addNode2(Map("id_p" -> 6L, "idStr" -> "f", "flag"->true), "person")
-    graphFacade.addNode2(Map("id_p" -> 1L, "idStr" -> "a", "flag"->true), "person")
-    graphFacade.addNode2(Map("id_p" -> 1L, "idStr" -> "a", "flag"->false), "person")
+  }
 
-
-    graphFacade.addRelation("Relation", 1, 2, Map())
-    graphFacade.addRelation("Relation", 3, 4, Map())
-    graphFacade.addRelation("Relation", 5, 6, Map())
+  @Test
+  def createIndex(): Unit ={
+    // 
+    graphFacade.createIndexOnNode("Person", Set("name"))
   }
 
   @Test
@@ -111,16 +104,6 @@ class GraphFacadePerformanceTest {
     res.show
   }
 
-  @Test
-  def testQueryfunctions(): Unit ={
-    // functions error
-//    var res = graphFacade.cypher("match (n) where id(n)=1 return n")
-//    res.show
-//    var res = graphFacade.cypher("match (n) return max(n.id_p)")
-//    res.show
-//    var res = graphFacade.cypher("match (n) return sum(n.id_p)")
-//    res.show
-  }
 
   def timing(cy: String): (String, Long) = {
     val t1 = System.currentTimeMillis()
@@ -167,4 +150,7 @@ class GraphFacadePerformanceTest {
 
     //var res2 = cyphers.map(timing(_)).map(x => println(s"${x._1} cost time: ${x._2}"))
   }
+
+
+
 }
