@@ -29,10 +29,10 @@ object PandaImporter extends Logging{
     _argsCheck(args)
 //    val nodeImporter = new PNodeImporter(dbPath, srcNodeFile, headNodeFile)
 //    val edgeImporter = new PRelationImporter(dbPath, srcEdgeFile, headEdgeFile)
-    val nodeImporter = new PNodeImporter(args(0), new File(args(1)), new File(args(2)))
+//    val nodeImporter = new PNodeImporter(args(0), new File(args(1)), new File(args(2)))
     val relationImporter = new PRelationImporter(args(0), new File(args(3)), new File(args(4)))
     logger.info("Import task started.")
-    nodeImporter.importNodes()
+//    nodeImporter.importNodes()
     relationImporter.importRelations()
     PDBMetaData.persist(args(0))
     logger.info("import task finished.")
@@ -42,7 +42,7 @@ object PandaImporter extends Logging{
     if(args.length!=5)
       throw new Exception(s"Wrong args number. The importer needs 5 args. args: dbPath, nodeHead file path, node file path, relHead file path, relation file path")
     if(!_isEnvAvailable(args(0)))
-      throw new Exception(s"The dbPath $dbPath is not empty, try an empty directory please.")
+      throw new Exception(s"The dbPath ${args(0)} is not empty, try an empty directory please.")
     // files exist?
     for(i<-1 until 5){
       if(!new File(args(i)).exists()) throw new Exception(s"The file ${args(i)} not exists.")

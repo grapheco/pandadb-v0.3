@@ -69,8 +69,8 @@ class Store(val indexPath: String) {
     if (docs.totalHits == 0) return None
     val array = new collection.mutable.ArrayBuffer[Long]
     docs.scoreDocs.map(scoreDoc => {
-      reader.document(scoreDoc.doc).get("_id").toLong
-      array += scoreDoc2NodeWithProperties(scoreDoc)
+      array += reader.document(scoreDoc.doc).get("_id").toLong
+      //array += scoreDoc2NodeWithProperties(scoreDoc)
     })
     Some(array.toArray)
   }

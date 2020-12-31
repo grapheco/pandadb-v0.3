@@ -9,14 +9,8 @@ import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
 import cn.pandadb.kernel.PDBMetaData
 import cn.pandadb.kernel.kv.{KeyHandler, RocksDBStorage}
 import cn.pandadb.kernel.util.serializer.NodeSerializer
-//import cn.pandadb.tools.importer.IFReader.reader
 import org.apache.logging.log4j.scala.Logging
 import org.rocksdb.{FlushOptions, WriteBatch, WriteOptions}
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
-import scala.io.Source
 
 /**
  * @Author: Airzihao
@@ -37,13 +31,15 @@ class PNodeImporter(dbPath: String, nodeHeadFile: File, nodeFile: File) extends 
   override val headMap: Map[Int, String] = _setNodeHead()  // map(propId -> type)
   override val importerFileReader = new ImporterFileReader(nodeFile, 500000)
 
-  override val service: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
+//  override val service: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 
-  service.scheduleAtFixedRate(importerFileReader.fillQueue, 0, 100, TimeUnit.MILLISECONDS)
+  override val service: ScheduledExecutorService = Executors.newScheduledThreadPool(2)
+//  service.scheduleAtFixedRate(importerFileReader.fillQueue, 0, 100, TimeUnit.MILLISECONDS)
+  service.scheduleWithFixedDelay(importerFileReader.fillQueue, 0, 50, TimeUnit.MILLISECONDS)
   service.scheduleAtFixedRate(closer, 1, 1, TimeUnit.SECONDS)
 
-  private val nodeDB = RocksDBStorage.getDB(s"${dbPath}/nodes")
-  private val nodeLabelDB = RocksDBStorage.getDB(s"${dbPath}/nodeLabel")
+  private val nodeDB = RocksDBStorage.getInitDB(s"${dbPath}/nodes")
+  private val nodeLabelDB = RocksDBStorage.getInitDB(s"${dbPath}/nodeLabel")
 
   val estNodeCount: Long = estLineCount(nodeFile)
   var globalCount: AtomicLong = new AtomicLong(0)
@@ -57,6 +53,8 @@ class PNodeImporter(dbPath: String, nodeHeadFile: File, nodeFile: File) extends 
     importData()
     nodeDB.close()
     nodeLabelDB.close()
+    val flag = importerFileReader.notFinished
+    val se = service.isShutdown
     logger.info(s"$globalCount nodes imported.")
   }
 
@@ -93,6 +91,8 @@ class PNodeImporter(dbPath: String, nodeHeadFile: File, nodeFile: File) extends 
         val time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
         logger.info(s"${globalCount.get() / 10000000}kw of $estNodeCount(est) nodes imported. $time, thread$taskId")
       }
+      // forbid to access file reader at same time
+      Thread.sleep(10*taskId)
     }
     val flushOptions = new FlushOptions
     nodeDB.flush(flushOptions)

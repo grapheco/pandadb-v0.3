@@ -78,7 +78,7 @@ object PandaPhysicalPlanner {
       case logical.Select(fields, in, _) =>
         val inOp = process(in)
         val selectExpressions = fields.flatMap(inOp.recordHeader.ownedBy).distinct
-        inOp.select(selectExpressions: _*)
+        inOp.select(fields: _*)
 
       //as
       case logical.Project(projectExpr, in, _) =>
