@@ -322,20 +322,26 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
                 case ">=" => scan.findRangeNode(indexId, v, max)
                 case ">" => scan.findRangeNode(indexId, v, max)
               }
-              nodes.filter(filterNode(_, opsNew))
+              if (size>0) nodes.filter(filterNode(_, opsNew)).take(size.toInt)
+              else nodes.filter(filterNode(_, opsNew))
             }
             else {
-              getNodesByFilter(labels).filter(filterNode(_, opsNew))
+              if (size>0) getNodesByFilter(labels).filter(filterNode(_, opsNew)).take(size.toInt)
+              else getNodesByFilter(labels).filter(filterNode(_, opsNew))
             }
           }
           else{
             val (indexId,label, props, cnt) = scan.isPropertysWithIndex(labels, eqlops.map(_._1).toSet)
             if (indexId > 0) {
               val v = props.toSeq.map(eqlops.toMap.get(_)).head
-              scan.findNode(indexId, v.get).filter(filterNode(_, opsNew))
+              if (size>0) scan.findNode(indexId, v.get).filter(filterNode(_, opsNew)).take(size.toInt)
+              else scan.findNode(indexId, v.get).filter(filterNode(_, opsNew))
             }
-            else
-              getNodesByFilter(labels).filter(filterNode(_, opsNew))
+            else{
+              if (size>0) getNodesByFilter(labels).filter(filterNode(_, opsNew)).take(size.toInt)
+              else getNodesByFilter(labels).filter(filterNode(_, opsNew))
+            }
+
           }
         }
       }
