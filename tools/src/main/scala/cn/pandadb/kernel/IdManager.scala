@@ -36,6 +36,8 @@ trait IdMapManager {
     _name2Id = deserialized._5
   }
 
+  def all: Map[Int, String] = _id2Name
+
   def isIdUsed(id: Int) = _id2Name.contains(id)
   def isNameExists(name: String) = _name2Id.contains(name)
 

@@ -38,10 +38,10 @@ class PRelationImporter(dbPath: String, headFile: File, edgeFile: File) extends 
   service.scheduleWithFixedDelay(importerFileReader.fillQueue, 0, 50, TimeUnit.MILLISECONDS)
   service.scheduleAtFixedRate(closer, 1, 1, TimeUnit.SECONDS)
 
-  val relationDB = RocksDBStorage.getInitDB(s"${dbPath}/rels")
-  val inRelationDB = RocksDBStorage.getInitDB(s"${dbPath}/inEdge")
-  val outRelationDB = RocksDBStorage.getInitDB(s"${dbPath}/outEdge")
-  val relationTypeDB = RocksDBStorage.getInitDB(s"${dbPath}/relLabelIndex")
+  val relationDB = RocksDBStorage.getDB(s"${dbPath}/rels")
+  val inRelationDB = RocksDBStorage.getDB(s"${dbPath}/inEdge")
+  val outRelationDB = RocksDBStorage.getDB(s"${dbPath}/outEdge")
+  val relationTypeDB = RocksDBStorage.getDB(s"${dbPath}/relLabelIndex")
 
   var globalCount: AtomicLong = new AtomicLong(0)
   val estEdgeCount: Long = estLineCount(edgeFile)
