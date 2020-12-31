@@ -1,7 +1,7 @@
 package cn.pandadb.kernel.kv.node
 
 import cn.pandadb.kernel.kv.RocksDBStorage
-import cn.pandadb.kernel.kv.meta.{NodeLabelNameStore, PropertyNameStore}
+import cn.pandadb.kernel.kv.meta.{NodeIdGenerator, NodeLabelNameStore, PropertyNameStore}
 import cn.pandadb.kernel.store.{NodeStoreSPI, StoredNodeWithProperty}
 
 /**
@@ -17,6 +17,7 @@ class NodeStoreAPI(dbPath: String) extends NodeStoreSPI {
   private val metaDB = RocksDBStorage.getDB(s"${dbPath}/nodeMeta")
   private val nodeLabelName = new NodeLabelNameStore(metaDB)
   private val propertyName = new PropertyNameStore(metaDB)
+  private val idGenerator = new NodeIdGenerator(metaDB)
 
   val NONE_LABEL_ID: Int = -1
 
@@ -93,6 +94,8 @@ class NodeStoreAPI(dbPath: String) extends NodeStoreSPI {
 
   override def allNodes(): Iterator[StoredNodeWithProperty] = nodeStore.all()
 
+  override def nodesCount: Long = nodeLabelStore.getNodesCount
+
   override def getNodesByLabel(labelId: Int): Iterator[StoredNodeWithProperty] = nodeStore.getNodesByLabel(labelId)
 
   override def getNodeIdsByLabel(labelId: Int): Iterator[Long] = nodeStore.getNodeIdsByLabel(labelId)
@@ -135,9 +138,13 @@ class NodeStoreAPI(dbPath: String) extends NodeStoreSPI {
   //  }
 
   override def close(): Unit ={
+    idGenerator.flush()
     nodeDB.close()
     nodeLabelDB.close()
     metaDB.close()
   }
 
+  override def newNodeId(): Long = {
+    idGenerator.nextId()
+  }
 }

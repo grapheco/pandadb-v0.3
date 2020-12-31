@@ -62,4 +62,18 @@ class IndexMeta(db: RocksDB) {
   def getIndexId(label: Int, prop: Int): Option[IndexId] = {
     getIndexId(label, Array[Int](prop))
   }
+
+  def all(): Iterator[IndexId] = {
+    val iter = db.newIterator()
+    iter.seekToFirst()
+    new Iterator[IndexId] {
+      override def hasNext: Boolean = iter.isValid
+
+      override def next(): IndexId = {
+        val id = ByteUtils.getInt(iter.value(), 0)
+        iter.next()
+        id
+      }
+    }
+  }
 }

@@ -134,7 +134,7 @@ trait NodeStoreSPI {
   //
   //  def getNodePropertiesBytes(nodeId: Long): Array[Byte];
 
-  //  def createNodeId(): Long;
+  def newNodeId(): Long;
 
   def nodeAddLabel(nodeId: Long, labelId: Int): Unit;
 
@@ -164,6 +164,8 @@ trait NodeStoreSPI {
   }
 
   def allNodes(): Iterator[StoredNodeWithProperty]
+
+  def nodesCount: Long
 
   def deleteNodesByLabel(labelId: Int): Unit
 

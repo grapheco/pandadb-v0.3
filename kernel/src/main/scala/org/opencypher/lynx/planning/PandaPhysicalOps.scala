@@ -1,8 +1,7 @@
 package org.opencypher.lynx.planning
 
-import cn.pandadb.kernel.kv.NFPredicate
 import cn.pandadb.kernel.optimizer.LynxType.LynxNode
-import cn.pandadb.kernel.optimizer.{PandaPropertyGraph, Transformer}
+import cn.pandadb.kernel.optimizer.{NFPredicate, PandaPropertyGraph, Transformer}
 import org.opencypher.lynx.plan.PhysicalOperator
 import org.opencypher.lynx.{LynxRecords, LynxTable, RecordHeader}
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
@@ -138,11 +137,11 @@ final case class  ScanRels(isEnd: Boolean,
   override val graph = next.graph
 
   override lazy val recordHeader: RecordHeader = {
-    if (isEnd) RecordHeader(Map(NodeVar(rel.name)(CTRelationship) -> rel.name))
-    else next.recordHeader ++ RecordHeader(Map(NodeVar(rel.name)(CTRelationship) -> rel.name))
+    if (isEnd) RecordHeader(Map(RelationshipVar(rel.name)(CTRelationship) -> rel.name))
+    else next.recordHeader ++ RecordHeader(Map(RelationshipVar(rel.name)(CTRelationship) -> rel.name))
   }
 
-  val dir: Int = direction match {
+  var dir: Int = direction match {
     case Undirected => 0
     case Incoming => 1
     case Outgoing => 2
@@ -158,12 +157,17 @@ final case class  ScanRels(isEnd: Boolean,
       val records = next.table.records.flatMap(row => {
         if (isFirst) {
           val id = next.table.cell(row, sVar.name).asInstanceOf[Node[Long]].id
-          val rels = next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelByStartNodeId(id, dir, labels)
+          val rels = next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelationById(id, dir, labels, filterOP)
           rels.map(row ++ Seq(_))
         }
         else {
+          dir = dir match {
+            case 0 => 0
+            case 1 => 2
+            case 2 => 1
+          }
           val id = next.table.cell(row, tVar.name).asInstanceOf[Node[Long]].id
-          val rels = next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelByEndNodeId(id, dir, labels)
+          val rels = next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelationById(id, dir, labels, filterOP)
           rels.map(row ++ Seq(_))
         }
 

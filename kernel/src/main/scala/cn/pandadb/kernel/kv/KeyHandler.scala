@@ -28,7 +28,8 @@ object KeyHandler {
     val RelationType = Value(11) // [KeyType(1Byte), LabelId(4Byte)] --> LabelName(String)
     val PropertyName = Value(12) // [KeyType(1Byte),PropertyId(4Byte)] --> propertyName(String)
 
-    val NewNode = Value(13)     // [keyType(1Byte),labelId(4Bytes),nodeId(8Bytes)] -> nodeValue(id, labels, properties)
+    val NodeIdGenerator = Value(13)     // [keyType(1Byte)] -> MaxId(Long)
+    val RelationIdGenerator = Value(14)     // [keyType(1Byte)] -> MaxId(Long)
 
   }
 
@@ -93,6 +94,18 @@ object KeyHandler {
     ByteUtils.setByte(bytes, 4, typeCode)
     for (i <- value.indices)
       bytes(5+i) = value(i)
+    ByteUtils.setLong(bytes, bytesLength-8, nodeId)
+    bytes
+  }
+
+  // [indexId(4),length(4),propValue(xBytes),nodeId(8Bytes)]
+  def nodePropertyCombinedIndexKeyToBytes(indexId:Int, length:Int, value: Array[Byte], nodeId: Long): Array[Byte] = {
+    val bytesLength = 16 + value.length
+    val bytes = new Array[Byte](bytesLength)
+    ByteUtils.setInt(bytes, 0, indexId)
+    ByteUtils.setInt(bytes, 4, length)
+    for (i <- value.indices)
+      bytes(8+i) = value(i)
     ByteUtils.setLong(bytes, bytesLength-8, nodeId)
     bytes
   }
@@ -211,6 +224,19 @@ object KeyHandler {
   def propertyNameKeyPrefixToBytes(): Array[Byte] ={
     val bytes = new Array[Byte](1)
     ByteUtils.setByte(bytes, 0, KeyType.PropertyName.id.toByte)
+    bytes
+  }
+
+  // [keyType(1Bytes)]
+  def nodeIdGeneratorKeyToBytes(): Array[Byte] = {
+    val bytes = new Array[Byte](1)
+    ByteUtils.setByte(bytes, 0, KeyType.NodeIdGenerator.id.toByte)
+    bytes
+  }
+  // [keyType(1Bytes)]
+  def relationIdGeneratorKeyToBytes(): Array[Byte] = {
+    val bytes = new Array[Byte](1)
+    ByteUtils.setByte(bytes, 0, KeyType.NodeIdGenerator.id.toByte)
     bytes
   }
 

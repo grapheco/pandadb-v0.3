@@ -1,72 +1,74 @@
 package cn.pandadb.kernel.kv
 
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
-import cn.pandadb.kernel.kv.meta.NameStore
-import cn.pandadb.kernel.optimizer.PandaPropertyGraphScan
+import cn.pandadb.kernel.kv.meta.{NameStore, Statistics}
+import cn.pandadb.kernel.optimizer.{HasStatistics, PandaPropertyGraphScan}
 import cn.pandadb.kernel.store.{FileBasedIdGen, NodeStoreSPI, RelationStoreSPI, StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
 import org.opencypher.lynx.PropertyGraphScanner
 import org.opencypher.okapi.api.value.CypherValue
-import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship}
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship, get}
 
-import scala.util.control._
+import scala.util.control.Breaks
 
-class PropertyGraphScanImpl(nodeIdGen: FileBasedIdGen,
-                            relIdGen: FileBasedIdGen,
-                            nodeStore: NodeStoreSPI,
-                            relationStore: RelationStoreSPI,
-                            indexStore: IndexStoreAPI) extends PropertyGraphScanner[Long] {
-  type Id = Long
+
+class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
+                                 relationStore: RelationStoreSPI,
+                                 indexStore: IndexStoreAPI,
+                                 statistics: Statistics)
+      extends PandaPropertyGraphScan[Long] {
 
   val loop = new Breaks
 
-  private def mapRelation(rel: StoredRelation): Relationship[Id] = {
-    new Relationship[Id] {
+  protected def mapRelation(rel: StoredRelation): Relationship[Long] = {
+    new Relationship[Long] {
       override type I = this.type
 
-      override def id: Id = rel.id
+      override def id: Long = rel.id
 
-      override def startId: Id = rel.from
+      override def startId: Long = rel.from
 
-      override def endId: Id = rel.to
+      override def endId: Long = rel.to
 
       override def relType: String = relationStore.getRelationTypeName(rel.typeId).get
 
-      override def copy(id: Id, source: Id, target: Id, relType: String, properties: CypherMap): this.type = ???
+      override def copy(id: Long, source: Long, target: Long, relType: String, properties: CypherMap): this.type = ???
 
       override def properties: CypherMap = {
         var props: Map[String, Any] = Map.empty[String, Any]
-        if (rel.isInstanceOf[StoredRelationWithProperty]) {
-          props = rel.asInstanceOf[StoredRelationWithProperty].properties.asInstanceOf[Map[String, Any]]
+        rel match {
+          case rel: StoredRelationWithProperty =>
+            props = rel.properties.map(kv => (relationStore.getRelationTypeName(kv._1).getOrElse("unknown"), kv._2))
+          case _ =>
         }
         CypherMap(props.toSeq: _*)
       }
     }
   }
 
-  protected def mapNode(node: StoredNode): Node[Id] = {
-    new Node[Id] {
+  protected def mapNode(node: StoredNode): Node[Long] = {
+    new Node[Long] {
       override type I = this.type
 
-      override def id: Id = node.id
+      override def id: Long = node.id
 
       override def labels: Set[String] = node.labelIds.toSet.map((id: Int) => nodeStore.getLabelName(id).get)
 
       override def copy(id: Long, labels: Set[String], properties: CypherValue.CypherMap): this.type = ???
 
       override def properties: CypherMap = {
-        var props: Map[String, Any] = null
-        if (node.isInstanceOf[StoredNodeWithProperty]) {
-          props = node.asInstanceOf[StoredNodeWithProperty].properties.map{
-            kv=>
-              (nodeStore.getPropertyKeyName(kv._1).get, kv._2)
-          }
-        }
-        else {
-          val n = nodeStore.getNodeById(node.id)
-          props = n.asInstanceOf[StoredNodeWithProperty].properties.map{
-            kv=>
-              (nodeStore.getPropertyKeyName(kv._1).get, kv._2)
-          }
+        var props: Map[String, Any] = Map.empty[String, Any]
+        node match {
+          case node: StoredNodeWithProperty =>
+            props = node.properties.map {
+              kv =>
+                (nodeStore.getPropertyKeyName(kv._1).get, kv._2)
+            }
+          case _ =>
+            val n = nodeStore.getNodeById(node.id)
+            props = n.asInstanceOf[StoredNodeWithProperty].properties.map {
+              kv =>
+                (nodeStore.getPropertyKeyName(kv._1).get, kv._2)
+            }
         }
         CypherMap(props.toSeq: _*)
       }
@@ -74,10 +76,10 @@ class PropertyGraphScanImpl(nodeIdGen: FileBasedIdGen,
   }
 
   override def nodeAt(id: Long): CypherValue.Node[Long] = mapNode(
-    nodeStore.getNodeById(id).getOrElse(null)
+    nodeStore.getNodeById(id).orNull
   )
 
-  override def allNodes(labels: Set[String], exactLabelMatch: Boolean): Iterable[Node[Id]] = {
+  override def allNodes(labels: Set[String], exactLabelMatch: Boolean): Iterable[Node[Long]] = {
     if (labels.size>1){
       throw new Exception("PandaDB doesn't support multiple label matching at the same time")
     }
@@ -87,128 +89,213 @@ class PropertyGraphScanImpl(nodeIdGen: FileBasedIdGen,
   }
 
 
-  override def allNodes(): Iterable[Node[Id]] = {
+  override def allNodes(): Iterable[Node[Long]] = {
     nodeStore.allNodes().map(node => mapNode(node)).toIterable
   }
 
-  override def allRelationships(): Iterable[CypherValue.Relationship[Id]] = {
+  override def allRelationships(): Iterable[CypherValue.Relationship[Long]] = {
     relationStore.allRelations().map(rel => mapRelation(rel)).toIterable
   }
 
-  override def allRelationships(relTypes: Set[String]): Iterable[Relationship[Id]] = {
+  override def allRelationships(relTypes: Set[String]): Iterable[Relationship[Long]] = {
     if (relTypes.size>1){
       throw new Exception("PandaDB doesn't support multiple label matching at the same time")
     }
-    val relations: Iterator[Id] = relationStore.getRelationIdsByRelationType(relationStore.getRelationTypeId(relTypes.head))
+    val relations: Iterator[Long] = relationStore.getRelationIdsByRelationType(relationStore.getRelationTypeId(relTypes.head))
     relations.map(relId => mapRelation(relationStore.getRelationById(relId).get)).toIterable
   }
-}
 
-class PandaPropertyGraphScanImpl(nodeIdGen: FileBasedIdGen,
-                                 relIdGen: FileBasedIdGen,
-                                 nodeStore: NodeStoreSPI,
-                                 relationStore: RelationStoreSPI,
-                                 indexStore: IndexStoreAPI)
-      extends PropertyGraphScanImpl(nodeIdGen, relIdGen, nodeStore, relationStore, indexStore)
-      with PandaPropertyGraphScan[Long] {
+  // PandaPropertyGraphScan
 
-  override def isPropertyWithIndex(labels: Set[String], propertyName: String): Boolean = {
-    var res = false
-    val labelIds = nodeStore.getLabelIds(labels)
-    val propId = nodeStore.getPropertyKeyId(propertyName)
-    loop.breakable({
-      labelIds.foreach(label => {
-        val indexId = indexStore.getIndexId(label, Array(propId))
-        if (indexId != -1) {
-          res = true
-          loop.break()
-        }
-      })
-    })
-    res
-  }
-
-  override def allNodes(predicate: NFPredicate, labels: Set[String]): Iterable[Node[Id]] = {
-    predicate match {
-      case p: NFEquals => {
-        val labelIds = nodeStore.getLabelIds(labels)
-        val propertyNameId = nodeStore.getPropertyKeyId(p.propName)
-        var indexId = -1
-        loop.breakable({
-          for (labelId <- labelIds) {
-            indexId = indexStore.getIndexId(labelId, Array[Int](propertyNameId)).get
-            if (indexId != -1)
-              loop.break()
-          }
-        })
-        if (indexId != -1) {
-          val nodes = indexStore.find(indexId, p.value)
-          nodes.map(node => nodeAt(node)).toIterable
-        } else {
-          nodeStore.getNodesByLabel(labelIds.head)
-            .filter(_.properties.getOrElse(propertyNameId, null)==p.value)
-            .map(mapNode)
-            .toIterable
-//          val itr = new Iterator[Node[Id]]{
-//            private def doNext(): Unit = {
-//              tmpNode = null
-//              loop.breakable({
-//                while (nodes.hasNext) {
-//                  val node = nodes.next()
-//                  // fixme nodeLabelStore => propStore
-//                  if (tmpNode.properties.contains(nodeLabelStore.id(p.propName)) && tmpNode.properties(nodeLabelStore.id(p.propName)) == p.value ) {
-//                    loop.break()
-//                  }
-//                  else {
-//                    tmpNode = null
-//                  }
-//                }
-//              })
-//            }
-//            override def hasNext: Boolean = nodes.hasNext
-//
-//
-//            override def next(): Node[Id] = mapNode(tmpNode)
-//          }
-//          itr.toIterable
-        }
-      }
+  override def getRelationByNodeId(nodeId: Long, direction: Int): Iterable[Relationship[Long]] = {
+    direction match{
+      case OUT => relationStore.findOutRelations(nodeId).map(mapRelation).toIterable
+      case IN  => relationStore.findInRelations(nodeId).map(mapRelation).toIterable
+      case UNDIRECTION => (relationStore.findOutRelations(nodeId).map(mapRelation) ++
+        relationStore.findInRelations(nodeId).map(mapRelation)).toIterable
+      case _ => null
     }
   }
 
-  override def isPropertyWithIndex(label: String, propertyName: String): Boolean =
-    indexStore.getIndexId(nodeStore.getLabelId(label), Array(nodeStore.getPropertyKeyId(propertyName))).isDefined
+  override def getRelationByNodeId(nodeId: Long, direction: Int, typeString: String): Iterable[Relationship[Long]] = {
+    val typeId = relationStore.getRelationTypeId(typeString)
+    direction match{
+      case OUT => relationStore.findOutRelations(nodeId, typeId).map(mapRelation).toIterable
+      case IN  => relationStore.findInRelations(nodeId, typeId).map(mapRelation).toIterable
+      case UNDIRECTION => (relationStore.findOutRelations(nodeId, typeId).map(mapRelation) ++
+        relationStore.findInRelations(nodeId, typeId).map(mapRelation)).toIterable
+      case _ => null
+    }
+  }
 
-  override def isPropertysWithIndex(label: String, propertyName: String*): Boolean =
-    indexStore.getIndexId(nodeStore.getLabelId(label), propertyName.toArray.map(nodeStore.getPropertyKeyId)).isDefined
+  override def getRelationByNodeIdWithProperty(nodeId: Long, direction: Int): Iterable[Relationship[Long]] = {
+    direction match{
+      case OUT => relationStore.findToNodeIds(nodeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get)).toIterable
+      case IN  => relationStore.findFromNodeIds(nodeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get)).toIterable
+      case UNDIRECTION => (relationStore.findToNodeIds(nodeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get)) ++
+        relationStore.findFromNodeIds(nodeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get))).toIterable
+      case _ => null
+    }
+  }
 
-  override def getRelByStartNodeId(sourceId: Id, direction: Int, label: String): Iterable[Relationship[Id]] = super.getRelByStartNodeId(sourceId, direction, label)
+  override def getRelationByNodeIdWithProperty(nodeId: Long, direction: Int, typeString: String): Iterable[Relationship[Long]] ={
+    val typeId = relationStore.getRelationTypeId(typeString)
+    direction match{
+      case OUT => relationStore.findToNodeIds(nodeId, typeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get)).toIterable
+      case IN  => relationStore.findFromNodeIds(nodeId, typeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get)).toIterable
+      case UNDIRECTION => (relationStore.findToNodeIds(nodeId, typeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get)) ++
+        relationStore.findFromNodeIds(nodeId, typeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get))).toIterable
+      case _ => null
+    }
+  }
 
-  override def getRelByStartNodeId(sourceId: Id, direction: Int): Iterable[Relationship[Id]] = super.getRelByStartNodeId(sourceId, direction)
+  override def allRelations(): Iterable[Relationship[Long]] =
+    relationStore.allRelations().map(mapRelation).toIterable
 
-  override def getRelByEndNodeId(targetId: Id, direction: Int, label: String): Iterable[Relationship[Id]] = super.getRelByEndNodeId(targetId, direction, label)
+  override def allRelationsWithProperty: Iterable[Relationship[Long]] =
+    relationStore.allRelationsWithProperty().map(mapRelation).toIterable
 
-  override def getRelByEndNodeId(targetId: Id, direction: Int): Iterable[Relationship[Id]] = super.getRelByEndNodeId(targetId, direction)
+  override def getRelationByType(typeString: String): Iterable[Relationship[Long]] = {
+    getRelationByTypeWithProperty(typeString)
+  }
 
-  override def getRelsByFilter(labels: String, direction: Int): Iterable[Relationship[Id]] = super.getRelsByFilter(labels, direction)
+  override def getRelationByTypeWithProperty(typeString: String): Iterable[Relationship[Long]] = {
+    relationStore
+      .getRelationIdsByRelationType(
+        relationStore.getRelationTypeId(typeString)
+      )
+      .map(relationStore.getRelationById)
+      .filter(_.isDefined)
+      .map(s=>mapRelation(s.get))
+      .toIterable
+  }
 
-  override def getRelsByFilter(direction: Int): Iterable[Relationship[Id]] = super.getRelsByFilter(direction)
+  override def getNodeById(Id: Long): Node[Long] = nodeStore.getNodeById(Id).map(mapNode).orNull
 
-  override def getNodeById(Id: Id): Node[Id] = super.getNodeById(Id)
+  override def getNodesByLabel(labelString: String): Iterable[Node[Long]] =
+    nodeStore.getNodesByLabel(nodeStore.getLabelId(labelString)).map(mapNode).toIterable
 
-  override def getRelByStartNodeIdWithProps(sourceId: Id, direction: Int, label: String): Iterable[Relationship[Id]] = super.getRelByStartNodeIdWithProps(sourceId, direction, label)
+  override def isPropertyWithIndex(labels: Set[String], propertyName: String): (Int, String, Set[String], Long) =
+    labels.map(isPropertyWithIndex(_,propertyName)).minBy(_._4)
 
-  override def getRelByStartNodeIdWithProps(sourceId: Id, direction: Int): Iterable[Relationship[Id]] = super.getRelByStartNodeIdWithProps(sourceId, direction)
+  override def isPropertysWithIndex(labels: Set[String], propertyNames: Set[String]): (Int, String, Set[String], Long) = {
+    val propertyIds = propertyNames.map(nodeStore.getPropertyKeyId).toArray.sorted
+    val range = propertyIds.indices
+    val combinations = range.flatMap{
+      i => (i until propertyIds.length).map(propertyIds.slice(i,_).toArray)
+    }.toSet
+    val res = labels.flatMap{
+      label =>
+      combinations.map {
+        props =>
+        (indexStore.getIndexId(nodeStore.getLabelId(label), props), label, props)
+      }
+    }
+      .filter(_._1.isDefined)
+      .map{ p => (p._1.get, p._2, p._3, statistics.getIndexPropertyCount(p._1.get))}
+      .filter(_._4.isDefined)
+      .map{ p => (p._1, p._2, p._3, p._4.get)}
+    if (res.isEmpty)
+      (-1, null, null, -1)
+    else {
+      val resMin = res.minBy(_._4)
+      (resMin._1, resMin._2, resMin._3.map(nodeStore.getPropertyKeyName(_).get).toSet, resMin._4)
+    }
+  }
 
-  override def getRelByEndNodeIdWithProps(targetId: Id, direction: Int, label: String): Iterable[Relationship[Id]] = super.getRelByEndNodeIdWithProps(targetId, direction, label)
+  override def isPropertyWithIndex(label: String, propertyName: String): (Int, String, Set[String], Long) =
+    isPropertysWithIndex(label, Set(propertyName))
 
-  override def getRelByEndNodeIdWithProps(targetId: Id, direction: Int): Iterable[Relationship[Id]] = super.getRelByEndNodeIdWithProps(targetId, direction)
+  override def isPropertysWithIndex(label: String, propertyName: Set[String]): (Int, String, Set[String], Long) = {
+    val indexId = indexStore.getIndexId(
+      nodeStore.getLabelId(label),
+      propertyName.map(nodeStore.getPropertyKeyId).toArray.sorted
+    )
+    val count = indexId.map(statistics.getIndexPropertyCount(_).getOrElse(-1L)).getOrElse(-1L)
+    (indexId.getOrElse(-1), label, propertyName, count)
+  }
 
-  override def getRelsByFilterWithProps(labels: String, direction: Int): Iterable[Relationship[Id]] = super.getRelsByFilterWithProps(labels, direction)
 
-  override def getRelsByFilterWithProps(direction: Int): Iterable[Relationship[Id]] = super.getRelsByFilterWithProps(direction)
+  override def findNodeId(indexId: Int, value: Any): Iterable[Long] = indexStore.find(indexId, value).toIterable
 
-  override def getNodeByIdWithProps(Id: Id): Node[Id] = super.getNodeByIdWithProps(Id)
+  override def findNode(indexId: Int, value: Any): Iterable[Node[Long]] =
+    indexStore.find(indexId, value).map(nodeStore.getNodeById).filter(_.isDefined).map(s=>mapNode(s.get)).toIterable
 
-  override def allNodesWithProps(predicate: NFPredicate, labels: Set[String]): Iterable[Node[Id]] = super.allNodesWithProps(predicate, labels)
+  // fixme should find both int and double
+  override def findRangeNodeId(indexId: Int, from: Any, to: Any): Iterable[Long] = {
+    (from,to) match {
+      case range: (Int, Int) => indexStore.findIntRange(indexId, range._1, range._2).toIterable
+      case range: (Float, Float) => indexStore.findFloatRange(indexId, range._1, range._2).toIterable
+      case _ => null
+    }
+  }
+
+  override def findRangeNode(indexId: Int, from: Any, to: Any): Iterable[Node[Long]] =
+    findRangeNodeId(indexId, from, to).map(nodeStore.getNodeById).filter(_.isDefined).map(s=>mapNode(s.get))
+
+  override def startWithNodeId(indexId: Int, start: String): Iterable[Long] =
+    indexStore.findStringStartWith(indexId, start).toIterable
+
+  override def startWithNode(indexId: Int, start: String): Iterable[Node[Long]] =
+    startWithNodeId(indexId, start).map(nodeStore.getNodeById).filter(_.isDefined).map(s=>mapNode(s.get))
+
+  //Statistics
+
+  override def getAllNodesCount(): Long = statistics.allNodesCount
+
+  override def getNodesCountByLabel(label: String): Long =
+    statistics.getNodeLabelCount(nodeStore.getLabelId(label)).getOrElse(-1)
+
+  override def getNodesCountByLabelAndProperty(label: String, propertyName: String): Long = {
+    indexStore
+      .getIndexId(nodeStore.getLabelId(label), Array(nodeStore.getPropertyKeyId(propertyName)))
+      .map(statistics.getIndexPropertyCount(_).getOrElse(-1L))
+      .getOrElse(-1L)
+  }
+
+  override def getNodesCountByLabelAndPropertys(label: String, propertyName: String*): Long = {
+    indexStore
+      .getIndexId(nodeStore.getLabelId(label), propertyName.toArray.map(nodeStore.getPropertyKeyId))
+      .map(statistics.getIndexPropertyCount(_).getOrElse(-1L))
+      .getOrElse(-1L)
+  }
+
+  override def getAllRelsCount(): Long = statistics.allRelationCount
+
+  override def getRelsCountByLabel(label: String): Long =
+    statistics.getRelationTypeCount(relationStore.getRelationTypeId(label)).getOrElse(-1L)
+
+  override def getRelsCountByLabelAndProperty(label: String, propertyName: String): Long = {
+    indexStore
+      .getIndexId(nodeStore.getLabelId(label), Array(nodeStore.getPropertyKeyId(propertyName)))
+      .map(statistics.getIndexPropertyCount(_).getOrElse(-1L))
+      .getOrElse(-1L)
+  }
+
+  override def getRelsCountByLabelAndPropertys(label: String, propertyName: String*): Long = {
+    indexStore
+      .getIndexId(nodeStore.getLabelId(label), propertyName.toArray.map(nodeStore.getPropertyKeyId))
+      .map(statistics.getIndexPropertyCount(_).getOrElse(-1L))
+      .getOrElse(-1L)
+  }
+
+  def refresh():Unit = {
+    statistics.nodeCount = nodeStore.nodesCount
+    statistics.relationCount = relationStore.relationCount
+
+    nodeStore.allLabelIds().foreach{
+      l =>
+        statistics.setNodeLabelCount(l, nodeStore.getNodeIdsByLabel(l).length)
+    }
+    relationStore.allRelationTypeIds().foreach{
+      t =>
+        statistics.setRelationTypeCount(t,
+          relationStore.getRelationIdsByRelationType(t).length)
+    }
+    indexStore.allIndexId.foreach{
+      id =>
+        statistics.setIndexPropertyCount(id,
+          indexStore.findByPrefix(ByteUtils.intToBytes(id)).length)
+    }
+  }
 }

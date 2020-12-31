@@ -45,4 +45,20 @@ class NodeLabelStore(db: RocksDB)  {
     }.toArray
   }
 
+
+  def getNodesCount: Long = {
+    val iter = db.newIterator()
+    iter.seekToFirst()
+    var count:Long = 0
+    var currentNode:Long = 0
+    while (iter.isValid){
+      val id = ByteUtils.getLong(iter.key(), 0)
+      if (currentNode != id){
+        currentNode = id
+        count +=1
+      }
+      iter.next()
+    }
+    count
+  }
 }
