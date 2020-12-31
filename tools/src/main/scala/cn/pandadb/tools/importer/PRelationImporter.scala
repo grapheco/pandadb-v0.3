@@ -33,15 +33,13 @@ class PRelationImporter(dbPath: String, headFile: File, edgeFile: File) extends 
   override val headMap: Map[Int, String] = _setEdgeHead()
 
   override val service: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
-
-//  service.scheduleAtFixedRate(importerFileReader.fillQueue, 0, 100, TimeUnit.MILLISECONDS)
   service.scheduleWithFixedDelay(importerFileReader.fillQueue, 0, 50, TimeUnit.MILLISECONDS)
   service.scheduleAtFixedRate(closer, 1, 1, TimeUnit.SECONDS)
 
-  val relationDB = RocksDBStorage.getDB(s"${dbPath}/rels")
-  val inRelationDB = RocksDBStorage.getDB(s"${dbPath}/inEdge")
-  val outRelationDB = RocksDBStorage.getDB(s"${dbPath}/outEdge")
-  val relationTypeDB = RocksDBStorage.getDB(s"${dbPath}/relLabelIndex")
+  val relationDB = RocksDBStorage.getInitDB(s"${dbPath}/rels")
+  val inRelationDB = RocksDBStorage.getInitDB(s"${dbPath}/inEdge")
+  val outRelationDB = RocksDBStorage.getInitDB(s"${dbPath}/outEdge")
+  val relationTypeDB = RocksDBStorage.getInitDB(s"${dbPath}/relLabelIndex")
 
   var globalCount: AtomicLong = new AtomicLong(0)
   val estEdgeCount: Long = estLineCount(edgeFile)
@@ -50,7 +48,6 @@ class PRelationImporter(dbPath: String, headFile: File, edgeFile: File) extends 
   writeOptions.setDisableWAL(true)
   writeOptions.setIgnoreMissingColumnFamilies(true)
   writeOptions.setSync(false)
-
 
   def importRelations(): Unit ={
     importData()
