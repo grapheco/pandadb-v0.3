@@ -66,7 +66,7 @@ class PandaImporterTest extends Logging {
     var count: Int = 0
     while (iter.hasNext) {
       val relFromFile = getRelationByLine(iter.next(), relPropHead)
-      val relFromDB = relationAPI.getRelationById(relFromFile.id)
+      val relFromDB = relationAPI.getRelationById(relFromFile.id).get
       Assert.assertEquals(relFromFile, relFromDB)
       count += 1
       if(count % 100000 == 0) logger.info(s"${count/100000} * 10W rels checked.")
