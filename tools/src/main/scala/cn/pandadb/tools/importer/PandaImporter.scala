@@ -15,12 +15,6 @@ import scala.io.Source
  */
 object PandaImporter extends Logging{
 
-//  val srcNodeFile = new File("D://GitSpace//ScalaUtils//nodes50M-wrapped.csv")
-//  val srcEdgeFile = new File("D://GitSpace//ScalaUtils//edges50M-wrapped.csv")
-//  val headNodeFile = new File("D:\\GitSpace\\ScalaUtils\\output//nodeHead.csv")
-//  val headEdgeFile = new File("D:\\GitSpace\\ScalaUtils\\output//relationHead.csv")
-  val dbPath = "C:\\PandaDB\\base_50M"
-
   val stdNodeHeadPrefix: Array[String] = Array(":ID", ":LABEL")
   val stdRelationHeadPrefix: Array[String] = Array(":REL_ID", ":FROMID", ":TOID", ":TYPE")
 
