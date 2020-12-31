@@ -7,12 +7,13 @@ import org.neo4j.driver.{Record, Session, Statement, StatementResult, Transactio
 
 import scala.collection.JavaConverters
 
-class PandaSession extends Session {
-  val PANDA_CLIENT_NAME = "panda-client"
-  val PANDA_SERVER_NAME = "panda-server"
-  val ADDRESS: String = "localhost"
-  val PORT: Int = 8878
-  val client = new PandaRpcClient(ADDRESS, PORT, PANDA_CLIENT_NAME, PANDA_SERVER_NAME)
+class PandaSession(rpcClient: PandaRpcClient) extends Session {
+//  val PANDA_CLIENT_NAME = "panda-client"
+//  val PANDA_SERVER_NAME = "panda-server"
+//  val ADDRESS: String = "localhost"
+//  val PORT: Int = 8878
+
+//  val rpcClient = new PandaRpcClient(ADDRESS, PORT, PANDA_CLIENT_NAME, PANDA_SERVER_NAME)
 
   override def beginTransaction(): Transaction = ???
 
@@ -27,10 +28,8 @@ class PandaSession extends Session {
   override def writeTransaction[T](work: TransactionWork[T], config: TransactionConfig): T = ???
 
   override def run(statementTemplate: String): StatementResult = {
-    // TODO: stream of batch DriverValues, now is get all the query result
-//    val res = client.sendCypherRequest("match (n) return n, n.name")
-    val res = client.sendCypherRequest(statementTemplate)
-    new PandaStatementResult(res)
+    val res = rpcClient.sendCypherRequest(statementTemplate)
+    new PandaStatementResult(res, rpcClient, statementTemplate)
   }
 
   override def run(statement: String, config: TransactionConfig): StatementResult = ???
@@ -44,7 +43,7 @@ class PandaSession extends Session {
   override def reset(): Unit = ???
 
   override def close(): Unit = {
-   client.close
+    {}
   }
 
   override def run(statementTemplate: String, parameters: Value): StatementResult = ???
@@ -58,7 +57,4 @@ class PandaSession extends Session {
   override def typeSystem(): TypeSystem = ???
 
   override def isOpen: Boolean = ???
-
-  case class CypherRequest(cypher: String)
-
 }
