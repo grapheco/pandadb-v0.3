@@ -6,12 +6,14 @@ import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
-import cn.pandadb.kernel.kv.GraphFacadeWithPPD
-import cn.pandadb.kernel.store.{FileBasedIdGen, NodeStoreSPI, RelationStoreSPI}
+import cn.pandadb.kernel.kv.{GraphFacadeWithPPD, RocksDBStorage}
+import cn.pandadb.kernel.store.{FileBasedIdGen, NodeStoreSPI, RelationStoreSPI, StoredNodeWithProperty}
 import cn.pandadb.kernel.util.Profiler
 import org.apache.commons.io.FileUtils
 import org.junit.{Before, Test}
+import org.opencypher.okapi.api.value.CypherValue.Node
 
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 class GraphFacadePerformanceTest {
@@ -25,7 +27,7 @@ class GraphFacadePerformanceTest {
   @Before
   def setup(): Unit = {
 
-    val dbPath = "D:\\data\\yiyidata\\db"
+    val dbPath = "F:\\PandaDB_rocksDB\\10kw"
     nodeStore = new NodeStoreAPI(dbPath)
     relationStore = new RelationStoreAPI(dbPath)
     indexStore = new IndexStoreAPI(dbPath)
@@ -56,13 +58,68 @@ class GraphFacadePerformanceTest {
   def createIndex(): Unit ={
     // 
     graphFacade.createIndexOnNode("label1", Set("idStr"))
+    graphFacade.close()
   }
 
   @Test
   def createStat(): Unit ={
 //    graphFacade.refresh()
-//    statistics
-    indexStore.getIndexIdByLabel(nodeStore.getLabelId("label1")).foreach( s =>println(s._1(0)))
+    statistics
+    val dbPath = "F:\\PandaDB_rocksDB\\10kw"
+
+    val db = RocksDBStorage.getDB(dbPath + "/statistics")
+    val iter = db.newIterator()
+    while (iter.isValid){
+      iter
+    }
+//    statistics = new Statistics(dbPath)
+//    indexStore.getIndexIdByLabel(nodeStore.getLabelId("label1")).foreach( s =>println(s._1(0)))
+  }
+
+  @Test
+  def api(): Unit ={
+    Profiler.timing({
+      val label = nodeStore.getLabelId("label0")
+      val prop = nodeStore.getPropertyKeyId("flag")
+      var count = 0
+      val nodes = nodeStore.getNodesByLabel(label)
+      val res = ArrayBuffer[StoredNodeWithProperty]()
+      while (nodes.hasNext && count < 10) {
+        val node = nodes.next()
+        if (node.properties.getOrElse(prop, null) == false) {
+          res += node
+          count += 1
+        }
+      }
+    })
+    Profiler.timing({
+      val label = nodeStore.getLabelId("label1")
+      val prop = nodeStore.getPropertyKeyId("flag")
+      var count = 0
+      val nodes = nodeStore.getNodesByLabel(label)
+      val res = ArrayBuffer[StoredNodeWithProperty]()
+      while (nodes.hasNext && count < 10) {
+        val node = nodes.next()
+        if (node.properties.getOrElse(prop, null) == true) {
+          res += node
+          count += 1
+        }
+      }
+    })
+    Profiler.timing({
+      val label = nodeStore.getLabelId("label1")
+      val prop = nodeStore.getPropertyKeyId("flag")
+      var count = 0
+      val nodes = nodeStore.getNodesByLabel(label)
+      val res = ArrayBuffer[StoredNodeWithProperty]()
+      while (nodes.hasNext && count < 10) {
+        val node = nodes.next()
+        if (node.properties.getOrElse(prop, null) == true) {
+          res += node
+          count += 1
+        }
+      }
+    })
   }
 
   @Test
