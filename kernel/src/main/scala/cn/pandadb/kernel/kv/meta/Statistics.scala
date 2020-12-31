@@ -44,6 +44,7 @@ class Statistics(path: String) {
     iter.seek(prefix)
     while (iter.isValid && iter.key().startsWith(prefix)){
       res += ByteUtils.getInt(iter.key(), prefix.length) -> ByteUtils.getLong(iter.value(), 0)
+      iter.next()
     }
     res
   }

@@ -6,8 +6,9 @@ import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
-import cn.pandadb.kernel.kv.{GraphFacadeWithPPD}//, NodeIndex, NodeLabelIndex, NodeLabelStore, NodeStore, PropertyNameStore, RelationInEdgeIndexStore, RelationLabelIndex, RelationLabelStore, RelationOutEdgeIndexStore, RelationStore, RocksDBGraphAPI, RocksDBStorage, TokenStore}
+import cn.pandadb.kernel.kv.GraphFacadeWithPPD
 import cn.pandadb.kernel.store.{FileBasedIdGen, NodeStoreSPI, RelationStoreSPI}
+import cn.pandadb.kernel.util.Profiler
 import org.apache.commons.io.FileUtils
 import org.junit.{Before, Test}
 
@@ -24,11 +25,11 @@ class GraphFacadePerformanceTest {
   @Before
   def setup(): Unit = {
 
-    val dbPath = "F:\\PandaDB_rocksDB\\10kw"
+    val dbPath = "D:\\data\\yiyidata\\db"
     nodeStore = new NodeStoreAPI(dbPath)
     relationStore = new RelationStoreAPI(dbPath)
     indexStore = new IndexStoreAPI(dbPath)
-    statistics = new Statistics(dbPath+"/statistics")
+    statistics = new Statistics(dbPath)
 
     graphFacade = new GraphFacadeWithPPD(
       nodeStore,
@@ -54,18 +55,37 @@ class GraphFacadePerformanceTest {
   @Test
   def createIndex(): Unit ={
     // 
-    graphFacade.createIndexOnNode("Person", Set("name"))
+    graphFacade.createIndexOnNode("label1", Set("idStr"))
   }
 
   @Test
+  def createStat(): Unit ={
+//    graphFacade.refresh()
+//    statistics
+    indexStore.getIndexIdByLabel(nodeStore.getLabelId("label1")).foreach( s =>println(s._1(0)))
+  }
+
+  @Test
+  def t(): Unit ={
+    val res = graphFacade.cypher("Match (n:label1)  where n.idStr = 'b' return n limit 10")
+    res.show
+  }
+  @Test
   def testQueryAll(): Unit ={
-    var res = graphFacade.cypher("match (n) return n limit 1")
-    res.show
-    return
-    res = graphFacade.cypher("match ()-[r]->() return r")
-    res.show
-    res = graphFacade.cypher("match (n:person)-[r]->() return r")
-    res.show
+    graphFacade.cypher("Match (n) where n.idStr='b' return n limit 10 ")
+    Profiler.timing(
+      {
+        val res = graphFacade.cypher("Match (n) where  n.idStr='b' return n limit 10")
+        res.show
+      }
+    )
+//    var res = graphFacade.cypher("Match (n) return n limit 10")
+//    res.show
+//    return
+//    res = graphFacade.cypher("match ()-[r]->() return r")
+//    res.show
+//    res = graphFacade.cypher("match (n:person)-[r]->() return r")
+//    res.show
   }
 
   @Test

@@ -179,6 +179,7 @@ class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
     labels.map(isPropertyWithIndex(_,propertyName)).minBy(_._4)
 
   override def isPropertysWithIndex(labels: Set[String], propertyNames: Set[String]): (Int, String, Set[String], Long) = {
+    println("isPropertyWithIndex")
     val propertyIds = propertyNames.map(nodeStore.getPropertyKeyId).toArray.sorted
     val range = propertyIds.indices
     val combinations = range.flatMap{
