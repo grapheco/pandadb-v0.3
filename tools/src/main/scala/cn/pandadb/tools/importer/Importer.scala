@@ -36,7 +36,7 @@ trait Importer {
 
   def importData(): Unit = {
     val taskId: AtomicInteger = new AtomicInteger(0)
-    val taskArray: Array[Future[Boolean]] = new Array[Int](coreNum/2).map(item => Future{_importTask(taskId.getAndIncrement())})
+    val taskArray: Array[Future[Boolean]] = new Array[Int](coreNum/4).map(item => Future{_importTask(taskId.getAndIncrement())})
     taskArray.foreach(task => {Await.result(task, Duration.Inf)})
   }
   protected def _importTask(taskId: Int): Boolean
