@@ -137,8 +137,8 @@ final case class  ScanRels(isEnd: Boolean,
   override val graph = next.graph
 
   override lazy val recordHeader: RecordHeader = {
-    if (isEnd) RecordHeader(Map(NodeVar(rel.name)(CTRelationship) -> rel.name))
-    else next.recordHeader ++ RecordHeader(Map(NodeVar(rel.name)(CTRelationship) -> rel.name))
+    if (isEnd) RecordHeader(Map(RelationshipVar(rel.name)(CTRelationship) -> rel.name))
+    else next.recordHeader ++ RecordHeader(Map(RelationshipVar(rel.name)(CTRelationship) -> rel.name))
   }
 
   var dir: Int = direction match {

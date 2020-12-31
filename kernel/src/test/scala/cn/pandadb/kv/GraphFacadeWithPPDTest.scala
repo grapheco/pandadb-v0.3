@@ -152,26 +152,33 @@ class GraphFacadeWithPPDTest {
 
   @Test
   def testQueryRelation(): Unit = {
-//    val n1: Long = graphFacade.addNode2(Map("name" -> "bob", "age" -> 40), "person")
-//    val n2: Long = graphFacade.addNode2(Map("name" -> "alex", "age" -> 20), "person")
-//    val n3: Long = graphFacade.addNode2(Map("name" -> "simba", "age" -> 10), "worker")
-//    graphFacade.addRelation("friend", 1L, 2L, Map())
-//    //graphFacade.allRelations().foreach(println)
-//    //val res = graphFacade.cypher("match (n:person)-[r]->(m:person) where n.age=40 and m.age = 20 return n")
-//    val res = graphFacade.cypher("match (n:person) where n.age=40 return n")
-//    //val res = graphFacade.cypher("match (n)-[r]->(m) return r")
-//    res.show
+    val n1: Long = graphFacade.addNode2(Map("name" -> "bob", "age" -> 40), "person")
+    val n2: Long = graphFacade.addNode2(Map("name" -> "alex", "age" -> 20), "person")
+    val n3: Long = graphFacade.addNode2(Map("name" -> "simba", "age" -> 10), "worker")
+    graphFacade.addRelation("friend", 1L, 2L, Map())
+    //graphFacade.allRelations().foreach(println)
+    val res = graphFacade.cypher("match (n:person)-[r]->(m:person) where n.age=40 and m.age = 20 return n,r")
+    //val res = graphFacade.cypher("match (n:person) where n.age=40 return n")
+    //val res = graphFacade.cypher("match (n)-[r]-(m) return r")
+    res.show
   }
 
   @Test
   def testCreate(): Unit ={
     val res = graphFacade.cypher("create (n:person{name:'joejoe'}) ")
     //nodeStore.allNodes().foreach(n=>println(n.properties))
-    val res2 = graphFacade.cypher("match (n:person) where n.name = 'joejoe' return n")
+    val res2 = graphFacade.cypher("match (n:person) where n.name='joejoe' return n")
     res2.show
 //    val res3 = graphFacade.cypher("match (n) return n")
 //    res3.show
 
+  }
+
+  @Test
+  def testCreateRel(): Unit ={
+    val res = graphFacade.cypher("CREATE (n:person {name: 'bluejoe', age: 40}),(m:test {name: 'alex', age: 30}),(n)-[:fans]->(m)")
+    val res2 = graphFacade.cypher("match (n:person)-[r:fans]->(m: test) where n.name='bluejoe' and m.age=30 return n,r,m")
+    res2.show
   }
 
 
@@ -182,6 +189,11 @@ class GraphFacadeWithPPDTest {
     val s2 = v.anyValue.isInstanceOf[Double]
     println(s)
     println(s2)
+    val as = Array("test"->1, "test"->2, "jkl" ->3, "jkl"->4)
+    val sfg = Array("test")
+    val a2 = as.groupBy(row => sfg.map(_.toString))
+    a2
+
   }
 
 }

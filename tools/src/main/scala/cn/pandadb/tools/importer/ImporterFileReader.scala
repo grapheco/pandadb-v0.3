@@ -1,8 +1,8 @@
 package cn.pandadb.tools.importer
 
-import java.io.{BufferedInputStream, File, FileInputStream}
+import java.io.File
+import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue}
 
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
 
@@ -17,19 +17,15 @@ class ImporterFileReader(file: File ,batchSize: Int = 1000000) {
 
 //TODO: implement a thread-safe file reader
 
-//  val fileIter = this.synchronized(Source.fromFile(file).getLines())
-  val fileIter: Iterator[String] = this.synchronized{
-    val fis = new BufferedInputStream(new FileInputStream(file), 10 * 1024 * 1024)
-    val lines = Source.fromInputStream(fis).getLines()
-    lines
-  }
+  val fileIter = this.synchronized(Source.fromFile(file).getLines())
+
   val supposedQueueLength: Int = Runtime.getRuntime().availableProcessors()/2
-  var batchQueue: mutable.Queue[List[String]] = this.synchronized(new mutable.Queue[List[String]]())
+  var batchQueue: BlockingQueue[List[String]] = new LinkedBlockingQueue[List[String]](supposedQueueLength)
 
   val fillQueue = new Runnable {
     override def run(): Unit = {
-      if(batchQueue.length<supposedQueueLength && fileIter.hasNext){
-        for(i<-1 to supposedQueueLength-batchQueue.length) batchQueue.enqueue(_prepareBatch)
+      if(fileIter.hasNext) {
+        batchQueue.put(_prepareBatch)
       }
     }
   }
@@ -48,12 +44,12 @@ class ImporterFileReader(file: File ,batchSize: Int = 1000000) {
 
   def getLines: List[String] = {
     this.synchronized{
-      if(batchQueue.nonEmpty) batchQueue.dequeue()
-      else List[String]()
+      if(batchQueue.isEmpty) List[String]()
+      else batchQueue.take()
     }
   }
 
   def notFinished: Boolean = {
-    this.synchronized(fileIter.hasNext || batchQueue.nonEmpty)
+    this.synchronized(fileIter.hasNext || batchQueue.size()>0)
   }
 }

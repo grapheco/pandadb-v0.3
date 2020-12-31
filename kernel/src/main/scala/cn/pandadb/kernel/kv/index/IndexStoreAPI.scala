@@ -15,7 +15,7 @@ class IndexStoreAPI(dbPath: String) {
   type NodeId    = Long
 
   private val metaDB = RocksDBStorage.getDB(s"${dbPath}/indexMeta")
-  private val meta = new IndexMeta(metaDB)
+  private val meta = new IndexMetaData(metaDB)
   private val indexDB = RocksDBStorage.getDB(s"${dbPath}/index")
   private val index = new IndexStore(indexDB)
 
@@ -24,6 +24,8 @@ class IndexStoreAPI(dbPath: String) {
   def createIndex(label: Int, prop: Int): IndexId = meta.addIndexMeta(label, Array(prop))
 
   def getIndexId(label: Int, props: Array[Int]): Option[IndexId] = meta.getIndexId(label, props)
+
+  def getIndexIdByLabel(label: Int): Array[(Array[Int], IndexId)] = meta.getIndexId(label)
 
   def allIndexId: Iterator[IndexId] = meta.all()
 

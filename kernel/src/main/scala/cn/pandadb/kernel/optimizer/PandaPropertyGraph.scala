@@ -97,11 +97,15 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
   }
 
   def getNodeCnt(predicate: Array[NFPredicate], labels: Set[String]): Long = {
-    200
+    if(labels.isEmpty) scan.getAllNodesCount()
+    else{
+      labels.map(scan.getNodesCountByLabel).min
+    }
   }
 
   def getRelCnt(predicate: Array[NFPredicate], label: String, direction: Int): Long = {
-    24
+    if (label ==null) scan.getAllRelsCount()
+    else scan.getRelsCountByLabel(label)
   }
 
 /*  def getNodesByFilter(predicate: Array[NFPredicate], labels: Set[String]): Iterable[Node[Id]] ={
@@ -216,7 +220,7 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
       }
     }
     else{
-      if (labels.map(node.labels.contains(_)).reduce(_ && _)) Some(node)
+      if (!labels.map(node.labels.contains(_)).reduce(_ && _)) None
       else{
         if(filterOP.isEmpty) Some(node)
         else {
@@ -300,32 +304,38 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
         else {
           if (eqlops.isEmpty){
             val (indexId,label,props, cnt) = scan.isPropertysWithIndex(labels, rangeops.map(_._1).toSet)
-            val (v,t) = props.toSeq.map(rangeops.toMap.get(_)).head.get
-            val max = {
-              if (v.isInstanceOf[Int]) Int.MaxValue
-              else Float.MaxValue
+            if (indexId > 0) {
+              val (v,t) = props.toSeq.map(rangeops.toMap.get(_)).head.get
+              val max = {
+                if (v.isInstanceOf[Int]) Int.MaxValue
+                else Float.MaxValue
+              }
+
+              val min = {
+                if (v.isInstanceOf[Int]) Int.MinValue
+                else Float.MinValue
+              }
+
+              val nodes = t match {
+                case "<=" => scan.findRangeNode(indexId, min, v)
+                case "<" => scan.findRangeNode(indexId, min, v)
+                case ">=" => scan.findRangeNode(indexId, v, max)
+                case ">" => scan.findRangeNode(indexId, v, max)
+              }
+              nodes.filter(filterNode(_, opsNew))
             }
-
-            val min = {
-              if (v.isInstanceOf[Int]) Int.MinValue
-              else Float.MinValue
+            else {
+              getNodesByFilter(labels).filter(filterNode(_, opsNew))
             }
-
-
-
-
-            val nodes = t match {
-              case "<=" => scan.findRangeNode(indexId, min, v)
-              case "<" => scan.findRangeNode(indexId, min, v)
-              case ">=" => scan.findRangeNode(indexId, v, max)
-              case ">" => scan.findRangeNode(indexId, v, max)
-            }
-            nodes.filter(filterNode(_, opsNew))
           }
           else{
             val (indexId,label, props, cnt) = scan.isPropertysWithIndex(labels, eqlops.map(_._1).toSet)
-            val v = props.toSeq.map(eqlops.toMap.get(_)).head
-            scan.findNode(indexId, v.get).filter(filterNode(_, opsNew))
+            if (indexId > 0) {
+              val v = props.toSeq.map(eqlops.toMap.get(_)).head
+              scan.findNode(indexId, v.get).filter(filterNode(_, opsNew))
+            }
+            else
+              getNodesByFilter(labels).filter(filterNode(_, opsNew))
           }
         }
       }

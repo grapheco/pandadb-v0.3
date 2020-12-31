@@ -30,6 +30,7 @@ class PandaImporterTest extends Logging {
   // relPropHead: fromID:long, toID:String, weight:int
   val nodePropHead: Array[(String, String)] = Array(("id_p", "long"), ("idStr", "string"), ("flag", "boolean"), ("name", "string"))
   val relPropHead: Array[(String, String)] = Array(("fromID", "long"), ("toID", "string"), ("weight", "int"))
+
   // import data
   @Test
   def test1() = {
@@ -65,7 +66,7 @@ class PandaImporterTest extends Logging {
     var count: Int = 0
     while (iter.hasNext) {
       val relFromFile = getRelationByLine(iter.next(), relPropHead)
-      val relFromDB = relationAPI.getRelationById(relFromFile.id)
+      val relFromDB = relationAPI.getRelationById(relFromFile.id).get
       Assert.assertEquals(relFromFile, relFromDB)
       count += 1
       if(count % 100000 == 0) logger.info(s"${count/100000} * 10W rels checked.")
@@ -77,21 +78,6 @@ class PandaImporterTest extends Logging {
     val lineArr: Array[String] = line.split(",")
     val id = lineArr(0).toLong
     val labels: Array[Int] = lineArr(1).split(";").map(label => PDBMetaData.getLabelId(label))
-//    val propMap: Map[Int, Any] = {
-//      val propArray: Array[String] = Array(for (i<-2 until lineArr.length) lineArr(i))
-//      propArray.zip(propHead).map(item => {
-//        val propName = item._2._1
-//        val typeInStr = item._2._2.toLowerCase
-//        val propValue = typeInStr match {
-//          case "long" => item._1.asInstanceOf[Long]
-//          case "int" => item._1.asInstanceOf[Int]
-//          case "boolean" => item._1.asInstanceOf[Boolean]
-//          case _ => item._1.asInstanceOf[String]
-//        }
-//        (PDBMetaData.getPropId(propName) -> propValue)
-//      }).toMap
-//    }
-    // :ID,:LABEL,id_p:Long,idStr:String,flag:Boolean,name:String
     val propMap: Map[Int, Any] = Map(PDBMetaData.getPropId("id_p") -> lineArr(2).toLong,
       PDBMetaData.getPropId("idStr") -> lineArr(3),
       PDBMetaData.getPropId("flag") -> lineArr(4).toBoolean,

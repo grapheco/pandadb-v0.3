@@ -11,7 +11,7 @@ import org.rocksdb.RocksDB
  * @Date 2020/12/23
  * @Version 0.1
  */
-class IndexMeta(db: RocksDB) {
+class IndexMetaData(db: RocksDB) {
 
   type IndexId   = Int
   type NodeId    = Long
@@ -25,7 +25,7 @@ class IndexMeta(db: RocksDB) {
    * ║ label ║ props ║   indexId    ║
    * ╚═══════╩═══════╩══════════════╝
    */
-  def addIndexMeta(label: Int, props: Array[Int]): IndexId = {
+  def addIndexMeta(label: Int, props: Array[Int], fulltext:Boolean = false): IndexId = {
     val key = KeyHandler.nodePropertyIndexMetaKeyToBytes(label, props)
     val id  = db.get(key)
     if (id == null || id.isEmpty){
@@ -50,17 +50,32 @@ class IndexMeta(db: RocksDB) {
     id
   }
 
-  def deleteIndexMeta(label: Int, props: Array[Int]): Unit = {
+  def deleteIndexMeta(label: Int, props: Array[Int], fulltext:Boolean = false): Unit = {
     db.delete(KeyHandler.nodePropertyIndexMetaKeyToBytes(label, props))
   }
 
-  def getIndexId(label: Int, props: Array[Int]): Option[IndexId] = {
+  def getIndexId(label: Int, props: Array[Int], fulltext:Boolean = false): Option[IndexId] = {
     val v = db.get(KeyHandler.nodePropertyIndexMetaKeyToBytes(label, props))
     if (v == null || v.length < 4) None else Some(ByteUtils.getInt(v, 0))
   }
 
   def getIndexId(label: Int, prop: Int): Option[IndexId] = {
     getIndexId(label, Array[Int](prop))
+  }
+
+  def getIndexId(label: Int): Array[(Array[Int],IndexId)] = {
+    val prefix = KeyHandler.nodePropertyIndexMetaKeyToBytes(label, Array.emptyIntArray)
+    val iter = db.newIterator()
+    iter.seek(prefix)
+    new Iterator[(Array[Int],IndexId)] {
+      override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
+      override def next(): (Array[Int],IndexId) = {
+        val props = (0 until (iter.key().length-5)/4).toArray.map(i => ByteUtils.getInt(iter.key(), 5+4*i))
+        val id = ByteUtils.getInt(iter.value(), 0)
+        iter.next()
+        (props,id)
+      }
+    }.toArray
   }
 
   def all(): Iterator[IndexId] = {
