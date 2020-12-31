@@ -8,15 +8,16 @@ import cn.pandadb.server.common.modules.LifecycleServerModule
 class PandaRpcServer(config: Config, dbManager: GraphDatabaseManager)
   extends LifecycleServerModule with Logging{
 
-//  val graphService = dbManager.getDatabase("default")
-
-
   override def init(): Unit = {
     logger.info(this.getClass + ": init")
   }
 
   override def start(): Unit = {
     logger.info(this.getClass + ": start")
+
+    val graphService = dbManager.getDatabase("default")
+
+    logger.info("default database: " + graphService.toString)
 
   }
 
