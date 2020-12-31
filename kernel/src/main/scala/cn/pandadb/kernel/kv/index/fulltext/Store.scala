@@ -56,23 +56,18 @@ class Store(val indexPath: String) {
     node + ("id" -> node.get("_id").get.asInstanceOf[String].toLong) - "_id" toMap
   }
 
-  def topDocs2NodeWithPropertiesArray(docs: TopDocs): Option[Array[Map[String, Any]]] = {
-    if (docs.totalHits == 0) return None
-    val array = new collection.mutable.ArrayBuffer[Map[String, Any]]
-    docs.scoreDocs.map(scoreDoc => {
-      array += scoreDoc2NodeWithProperties(scoreDoc)
-    })
-    Some(array.toArray)
+  def topDocs2NodeWithPropertiesArray(docs: TopDocs): Option[Iterator[Map[String, Any]]] = {
+    docs.totalHits match {
+      case 0 => None
+      case _ => Some(docs.scoreDocs.map(scoreDoc => {scoreDoc2NodeWithProperties(scoreDoc)}).toIterator)
+    }
   }
 
-  def topDocs2NodeIdArray(docs: TopDocs): Option[Array[Long]] = {
-    if (docs.totalHits == 0) return None
-    val array = new collection.mutable.ArrayBuffer[Long]
-    docs.scoreDocs.map(scoreDoc => {
-      array += reader.document(scoreDoc.doc).get("_id").toLong
-      //array += scoreDoc2NodeWithProperties(scoreDoc)
-    })
-    Some(array.toArray)
+  def topDocs2NodeIdArray(docs: TopDocs): Option[Iterator[Long]] = {
+    docs.totalHits match {
+      case 0 => None
+      case _ =>  Some(docs.scoreDocs.map(s=>{reader.document(s.doc).get("_id").toLong}).toIterator)
+    }
   }
 
   private def executeQuery(q: Query, topN: Int = Int.MaxValue): TopDocs = {
