@@ -32,6 +32,7 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
 
   override def close(): Unit = {
     statistics.flush()
+    statistics.close()
     nodeStore.close()
     relationStore.close()
     indexStore.close()
@@ -168,14 +169,16 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
   override def createIndexOnNode(label: String, props: Set[String]): Unit = {
     val labelId = nodeLabelNameMap(label)
     val propsId = props.map(nodePropNameMap).toArray.sorted
+    val indexId = indexStore.createIndex(labelId, propsId)
     if(propsId.length == 1) {
       indexStore.insertIndexRecordBatch(
-        indexStore.createIndex(labelId, propsId),
+        indexId,
         nodeStore.getNodesByLabel(labelId).map{
           node =>
             (node.properties.getOrElse(propsId(0),null), node.id)
         }
       )
+      statistics.setIndexPropertyCount(indexId, nodeStore.getNodesByLabel(labelId).length)
     } else {
       // TODO combined index
     }
@@ -184,9 +187,10 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
   override def createIndexOnRelation(typeName: String, props: Set[String]): Unit = {
     val typeId = relTypeNameMap(typeName)
     val propsId = props.map(relPropNameMap).toArray.sorted
+    val indexId = indexStore.createIndex(typeId, propsId)
     if(propsId.length == 1) {
       indexStore.insertIndexRecordBatch(
-        indexStore.createIndex(typeId, propsId),
+        indexId,
         relationStore.getRelationIdsByRelationType(typeId)
           .map(relationStore.getRelationById(_).get)
           .map{
@@ -194,6 +198,7 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
             (rel.properties.getOrElse(propsId(0),null), rel.id)
         }
       )
+      statistics.setIndexPropertyCount(indexId, relationStore.getRelationIdsByRelationType(typeId).length)
     } else {
       // TODO combined index
     }

@@ -183,7 +183,7 @@ class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
     val propertyIds = propertyNames.map(nodeStore.getPropertyKeyId).toArray.sorted
     val range = propertyIds.indices
     val combinations = range.flatMap{
-      i => (i until propertyIds.length).map(propertyIds.slice(i,_).toArray)
+      i => (i until propertyIds.length).map(j => propertyIds.slice(i,j+1))
     }.toSet
     val res = labels.flatMap{
       label =>

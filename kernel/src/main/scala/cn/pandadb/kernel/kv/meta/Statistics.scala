@@ -2,7 +2,7 @@ package cn.pandadb.kernel.kv.meta
 
 import cn.pandadb.kernel.kv.meta.Statistics.{INDEXPROPERTYCOUNT, NODELABELCOUNT, NODESCOUNT, RELATIONSCOUNT, RELATIONTYPECOUNT, emptyLong}
 import cn.pandadb.kernel.kv.{ByteUtils, RocksDBStorage}
-import org.rocksdb.RocksDB
+import org.rocksdb.{FlushOptions, RocksDB}
 
 import scala.collection.mutable
 
@@ -75,6 +75,7 @@ class Statistics(path: String) {
       kv=>
       db.put(getKey(INDEXPROPERTYCOUNT, kv._1), ByteUtils.longToBytes(kv._2))
     }
+    db.flush(new FlushOptions)
   }
 
   def nodeCount: Long = allNodesCount

@@ -65,15 +65,8 @@ class GraphFacadePerformanceTest {
   def createStat(): Unit ={
 //    graphFacade.refresh()
     statistics
-    val dbPath = "F:\\PandaDB_rocksDB\\10kw"
-
-    val db = RocksDBStorage.getDB(dbPath + "/statistics")
-    val iter = db.newIterator()
-    while (iter.isValid){
-      iter
-    }
 //    statistics = new Statistics(dbPath)
-//    indexStore.getIndexIdByLabel(nodeStore.getLabelId("label1")).foreach( s =>println(s._1(0)))
+    indexStore.getIndexIdByLabel(nodeStore.getLabelId("label1")).foreach( s =>println(s._1(0)))
   }
 
   @Test

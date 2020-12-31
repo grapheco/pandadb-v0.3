@@ -304,7 +304,7 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
         else {
           if (eqlops.isEmpty){
             val (indexId,label,props, cnt) = scan.isPropertysWithIndex(labels, rangeops.map(_._1).toSet)
-            if (indexId > 0) {
+            if (indexId >= 0) {
               val (v,t) = props.toSeq.map(rangeops.toMap.get(_)).head.get
               val max = {
                 if (v.isInstanceOf[Int]) Int.MaxValue
@@ -332,7 +332,7 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
           }
           else{
             val (indexId,label, props, cnt) = scan.isPropertysWithIndex(labels, eqlops.map(_._1).toSet)
-            if (indexId > 0) {
+            if (indexId >= 0) {
               val v = props.toSeq.map(eqlops.toMap.get(_)).head
               if (size>0) scan.findNode(indexId, v.get).filter(filterNode(_, opsNew)).take(size.toInt)
               else scan.findNode(indexId, v.get).filter(filterNode(_, opsNew))
