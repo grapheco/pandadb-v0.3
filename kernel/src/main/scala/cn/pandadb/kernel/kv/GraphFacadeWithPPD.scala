@@ -199,9 +199,35 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
     }
   }
 
+  def refresh():Unit = {
+    statistics.nodeCount = nodeStore.nodesCount
+    println(s"node count: ${statistics.nodeCount}")
+    statistics.relationCount = relationStore.relationCount
+    println(s"relation count: ${statistics.relationCount}")
+    nodeStore.allLabelIds().foreach{
+      l =>
+        statistics.setNodeLabelCount(l, nodeStore.getNodeIdsByLabel(l).length)
+        println(s"label ${l} count: ${statistics.getNodeLabelCount(l)}")
+    }
+    relationStore.allRelationTypeIds().foreach{
+      t =>
+        statistics.setRelationTypeCount(t,
+          relationStore.getRelationIdsByRelationType(t).length)
+        println(s"type ${t} count: ${statistics.getRelationTypeCount(t)}")
+    }
+    indexStore.allIndexId.foreach{
+      id =>
+        statistics.setIndexPropertyCount(id,
+          indexStore.findByPrefix(ByteUtils.intToBytes(id)).length)
+        println(s"index ${id} count: ${statistics.getIndexPropertyCount(id)}")
+    }
+    statistics.flush()
+  }
+
   //FIXME: expensive time cost
   private def init(): Unit = {
-
+    statistics.init()
+    println("finished init")
   }
 
   def snapshot(): Unit = {

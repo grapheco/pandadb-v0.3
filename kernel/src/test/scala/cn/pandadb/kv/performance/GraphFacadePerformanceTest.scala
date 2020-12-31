@@ -6,11 +6,14 @@ import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
-import cn.pandadb.kernel.kv.{GraphFacadeWithPPD}//, NodeIndex, NodeLabelIndex, NodeLabelStore, NodeStore, PropertyNameStore, RelationInEdgeIndexStore, RelationLabelIndex, RelationLabelStore, RelationOutEdgeIndexStore, RelationStore, RocksDBGraphAPI, RocksDBStorage, TokenStore}
-import cn.pandadb.kernel.store.{FileBasedIdGen, NodeStoreSPI, RelationStoreSPI}
+import cn.pandadb.kernel.kv.{GraphFacadeWithPPD, RocksDBStorage}
+import cn.pandadb.kernel.store.{FileBasedIdGen, NodeStoreSPI, RelationStoreSPI, StoredNodeWithProperty}
+import cn.pandadb.kernel.util.Profiler
 import org.apache.commons.io.FileUtils
 import org.junit.{Before, Test}
+import org.opencypher.okapi.api.value.CypherValue.Node
 
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 class GraphFacadePerformanceTest {
@@ -23,22 +26,12 @@ class GraphFacadePerformanceTest {
 
   @Before
   def setup(): Unit = {
-    FileUtils.deleteDirectory(new File("./testdata"))
-    new File("./testdata/output").mkdirs()
 
-    val dbPath = "./testdata"
+    val dbPath = "F:\\PandaDB_rocksDB\\10kw"
     nodeStore = new NodeStoreAPI(dbPath)
     relationStore = new RelationStoreAPI(dbPath)
     indexStore = new IndexStoreAPI(dbPath)
-    statistics = new Statistics(dbPath+"/statistics")
-
-    //    graphStore = new RocksDBGraphAPI("./testdata/output/rocksdb")
-    //    nodeLabelStore = new NodeLabelNameStore(graphStore.getRocksDB)
-    //    relLabelStore = new RelationTypeNameStore(graphStore.getRocksDB)
-    //    propNameStore = new PropertyNameStore(graphStore.getRocksDB)
-
-
-
+    statistics = new Statistics(dbPath)
 
     graphFacade = new GraphFacadeWithPPD(
       nodeStore,
@@ -47,32 +40,109 @@ class GraphFacadePerformanceTest {
       statistics,
       {}
     )
-
-
-    graphFacade.addNode2(Map("id_p" -> 1L, "idStr" -> "a", "flag"->false), "person")
-    graphFacade.addNode2(Map("id_p" -> 2L, "idStr" -> "b", "flag"->true), "worker")
-    graphFacade.addNode2(Map("id_p" -> 3L, "idStr" -> "c", "flag"->false), "person")
-    graphFacade.addNode2(Map("id_p" -> 4L, "idStr" -> "d", "flag"->true), "worker")
-    graphFacade.addNode2(Map("id_p" -> 5L, "idStr" -> "e", "flag"->false), "person")
-    graphFacade.addNode2(Map("id_p" -> 6L, "idStr" -> "f", "flag"->true), "person")
-    graphFacade.addNode2(Map("id_p" -> 1L, "idStr" -> "a", "flag"->true), "person")
-    graphFacade.addNode2(Map("id_p" -> 1L, "idStr" -> "a", "flag"->false), "person")
-
-
-    graphFacade.addRelation("Relation", 1, 2, Map())
-    graphFacade.addRelation("Relation", 3, 4, Map())
-    graphFacade.addRelation("Relation", 5, 6, Map())
   }
 
   @Test
+  def testLabel(): Unit ={
+    nodeStore.allLabels().foreach(println)
+    println("______________")
+    nodeStore.allPropertyKeys().foreach(println)
+    println("______________")
+    relationStore.allPropertyKeys().foreach(println)
+    println("______________")
+    relationStore.allRelationTypes().foreach(println)
+
+  }
+
+  @Test
+  def createIndex(): Unit ={
+    // 
+    graphFacade.createIndexOnNode("label1", Set("idStr"))
+    graphFacade.close()
+  }
+
+  @Test
+  def createStat(): Unit ={
+//    graphFacade.refresh()
+    statistics
+    val dbPath = "F:\\PandaDB_rocksDB\\10kw"
+
+    val db = RocksDBStorage.getDB(dbPath + "/statistics")
+    val iter = db.newIterator()
+    while (iter.isValid){
+      iter
+    }
+//    statistics = new Statistics(dbPath)
+//    indexStore.getIndexIdByLabel(nodeStore.getLabelId("label1")).foreach( s =>println(s._1(0)))
+  }
+
+  @Test
+  def api(): Unit ={
+    Profiler.timing({
+      val label = nodeStore.getLabelId("label0")
+      val prop = nodeStore.getPropertyKeyId("flag")
+      var count = 0
+      val nodes = nodeStore.getNodesByLabel(label)
+      val res = ArrayBuffer[StoredNodeWithProperty]()
+      while (nodes.hasNext && count < 10) {
+        val node = nodes.next()
+        if (node.properties.getOrElse(prop, null) == false) {
+          res += node
+          count += 1
+        }
+      }
+    })
+    Profiler.timing({
+      val label = nodeStore.getLabelId("label1")
+      val prop = nodeStore.getPropertyKeyId("flag")
+      var count = 0
+      val nodes = nodeStore.getNodesByLabel(label)
+      val res = ArrayBuffer[StoredNodeWithProperty]()
+      while (nodes.hasNext && count < 10) {
+        val node = nodes.next()
+        if (node.properties.getOrElse(prop, null) == true) {
+          res += node
+          count += 1
+        }
+      }
+    })
+    Profiler.timing({
+      val label = nodeStore.getLabelId("label1")
+      val prop = nodeStore.getPropertyKeyId("flag")
+      var count = 0
+      val nodes = nodeStore.getNodesByLabel(label)
+      val res = ArrayBuffer[StoredNodeWithProperty]()
+      while (nodes.hasNext && count < 10) {
+        val node = nodes.next()
+        if (node.properties.getOrElse(prop, null) == true) {
+          res += node
+          count += 1
+        }
+      }
+    })
+  }
+
+  @Test
+  def t(): Unit ={
+    val res = graphFacade.cypher("Match (n:label1)  where n.idStr = 'b' return n limit 10")
+    res.show
+  }
+  @Test
   def testQueryAll(): Unit ={
-    var res = graphFacade.cypher("match (n) return n limit 1")
-    res.show
-    return
-    res = graphFacade.cypher("match ()-[r]->() return r")
-    res.show
-    res = graphFacade.cypher("match (n:person)-[r]->() return r")
-    res.show
+    graphFacade.cypher("Match (n) where n.idStr='b' return n limit 10 ")
+    Profiler.timing(
+      {
+        val res = graphFacade.cypher("Match (n) where  n.idStr='b' return n limit 10")
+        res.show
+      }
+    )
+//    var res = graphFacade.cypher("Match (n) return n limit 10")
+//    res.show
+//    return
+//    res = graphFacade.cypher("match ()-[r]->() return r")
+//    res.show
+//    res = graphFacade.cypher("match (n:person)-[r]->() return r")
+//    res.show
   }
 
   @Test
@@ -111,16 +181,6 @@ class GraphFacadePerformanceTest {
     res.show
   }
 
-  @Test
-  def testQueryfunctions(): Unit ={
-    // functions error
-//    var res = graphFacade.cypher("match (n) where id(n)=1 return n")
-//    res.show
-//    var res = graphFacade.cypher("match (n) return max(n.id_p)")
-//    res.show
-//    var res = graphFacade.cypher("match (n) return sum(n.id_p)")
-//    res.show
-  }
 
   def timing(cy: String): (String, Long) = {
     val t1 = System.currentTimeMillis()
@@ -167,4 +227,7 @@ class GraphFacadePerformanceTest {
 
     //var res2 = cyphers.map(timing(_)).map(x => println(s"${x._1} cost time: ${x._2}"))
   }
+
+
+
 }

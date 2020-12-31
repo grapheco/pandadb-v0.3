@@ -51,7 +51,7 @@ object PDBMetaData {
     }
     _propIdManager.all.foreach{
       kv=>
-        val key = KeyHandler.relationTypeKeyToBytes(kv._1)
+        val key = KeyHandler.propertyNameKeyToBytes(kv._1)
         nodeMetaDB.put(key, ByteUtils.stringToBytes(kv._2))
         relMetaDB.put(key, ByteUtils.stringToBytes(kv._2))
     }
