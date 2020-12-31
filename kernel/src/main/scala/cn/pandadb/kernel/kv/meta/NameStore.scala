@@ -9,10 +9,11 @@ import scala.collection.mutable
 
 trait NameStore {
   val db: RocksDB
+  val initInt: Int
   val key2ByteArrayFunc: (Int) => Array[Byte]
   val keyPrefixFunc: () => Array[Byte]
 
-  val idGenerator: AtomicInteger = new AtomicInteger(0)
+  val idGenerator: AtomicInteger = new AtomicInteger(initInt)
   val mapString2Int: mutable.Map[String, Int] = mutable.Map[String, Int]()
   val mapInt2String: mutable.Map[Int, String] = mutable.Map[Int, String]()
 

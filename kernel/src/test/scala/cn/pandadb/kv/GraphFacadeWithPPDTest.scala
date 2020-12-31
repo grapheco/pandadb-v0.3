@@ -48,8 +48,6 @@ class GraphFacadeWithPPDTest {
 
 
     graphFacade = new GraphFacadeWithPPD(
-      new FileBasedIdGen(new File("./testdata/output/nodeid"), 100),
-      new FileBasedIdGen(new File("./testdata/output/relid"), 100),
       nodeStore,
       relationStore,
       indexStore,
