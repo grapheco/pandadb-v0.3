@@ -70,7 +70,7 @@ class IndexMetaData(db: RocksDB) {
     new Iterator[(Array[Int],IndexId)] {
       override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
       override def next(): (Array[Int],IndexId) = {
-        val props = (0 until (iter.key().length-5)/4).toArray.map(i => ByteUtils.getInt(iter.key(), 5+4*i)
+        val props = (0 until (iter.key().length-5)/4).toArray.map(i => ByteUtils.getInt(iter.key(), 5+4*i))
         val id = ByteUtils.getInt(iter.value(), 0)
         iter.next()
         (props,id)
