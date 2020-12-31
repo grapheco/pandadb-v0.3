@@ -6,6 +6,7 @@ import cn.pandadb.hipporpc.utils.{DriverValue, ValueConverter}
 import cn.pandadb.hipporpc.values.Value
 import cn.pandadb.kernel.kv.GraphFacadeWithPPD
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
+import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
 import cn.pandadb.kernel.store.{FileBasedIdGen, NodeStoreSPI, RelationStoreSPI}
@@ -35,13 +36,12 @@ object server {
     var nodeStore = new NodeStoreAPI(dbPath)
     var relationStore = new RelationStoreAPI(dbPath)
     var indexStore = new IndexStoreAPI(dbPath)
-
+    val statistics = new Statistics(dbPath)
     graphFacade = new GraphFacadeWithPPD(
-      new FileBasedIdGen(new File("./testdata/output/nodeid"), 100),
-      new FileBasedIdGen(new File("./testdata/output/relid"), 100),
       nodeStore,
       relationStore,
       indexStore,
+      statistics,
       {}
     )
 

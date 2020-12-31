@@ -2,17 +2,10 @@ package cn.pandadb.server
 
 import java.io.File
 
-import cn.pandadb.kernel.kv.GraphFacadeWithPPD
-import cn.pandadb.kernel.kv.index.IndexStoreAPI
-import cn.pandadb.kernel.kv.node.NodeStoreAPI
-import cn.pandadb.kernel.kv.relation.RelationStoreAPI
-import cn.pandadb.kernel.store.FileBasedIdGen
 import cn.pandadb.server.common.Logging
 import cn.pandadb.server.common.configuration.Config
-import org.apache.commons.io.FileUtils
-//import org.apache.logging.log4j.scala.Logging
 
-class PandaServerBootStrapper {
+class PandaServerBootstrapper {
   private var pandaServer: PandaServer = null
   def start(configFile: Option[File] = None, configOverrides: Map[String, String] = Map()): Unit = {
     addShutdownHook()
@@ -54,7 +47,7 @@ object PandaServerEntryPoint extends Logging{
 //    else {
 //      sys.error("can not find <conf-file> \r\n")
 //    }
-    val serverBootstrapper = new PandaServerBootStrapper
+    val serverBootstrapper = new PandaServerBootstrapper
     serverBootstrapper.start()
   }
 
