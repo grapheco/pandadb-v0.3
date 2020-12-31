@@ -2,9 +2,9 @@ package cn.pandadb.kernel.kv.meta
 import cn.pandadb.kernel.kv.KeyHandler
 import org.rocksdb.RocksDB
 
-class NodeIdGenerator(db: RocksDB,
-                      keyBytes: Array[Byte] = KeyHandler.nodeIdGeneratorKeyToBytes(),
-                      sequenceSize: Int = 100)
-  extends IdGenerator(db, keyBytes, sequenceSize) {
+class NodeIdGenerator(override val db: RocksDB,
+                      override val keyBytes: Array[Byte] = KeyHandler.nodeIdGeneratorKeyToBytes(),
+                      override val sequenceSize: Int = 100)
+  extends IdGenerator() {
 
 }

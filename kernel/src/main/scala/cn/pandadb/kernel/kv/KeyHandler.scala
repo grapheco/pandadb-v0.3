@@ -236,7 +236,7 @@ object KeyHandler {
   // [keyType(1Bytes)]
   def relationIdGeneratorKeyToBytes(): Array[Byte] = {
     val bytes = new Array[Byte](1)
-    ByteUtils.setByte(bytes, 0, KeyType.NodeIdGenerator.id.toByte)
+    ByteUtils.setByte(bytes, 0, KeyType.RelationIdGenerator.id.toByte)
     bytes
   }
 

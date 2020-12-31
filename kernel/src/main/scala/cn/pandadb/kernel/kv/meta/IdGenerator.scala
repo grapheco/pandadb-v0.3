@@ -7,7 +7,10 @@ import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler}
 import org.rocksdb.RocksDB
 
 
-class IdGenerator(db: RocksDB, keyBytes: Array[Byte], sequenceSize: Int) {
+trait IdGenerator {
+  val db: RocksDB
+  val keyBytes: Array[Byte]
+  val sequenceSize: Int
 
   private val id: AtomicLong = {
     val value: Array[Byte] = db.get(keyBytes)

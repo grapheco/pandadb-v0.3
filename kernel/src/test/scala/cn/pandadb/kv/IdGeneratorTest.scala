@@ -32,6 +32,7 @@ class NodeIdGeneratorTest {
 
   @Test
   def testNextId(): Unit = {
+    println(nodeIdGenerator.nextId())
     for(i <- 1L to 1000L) {
       Assert.assertEquals(i, nodeIdGenerator.nextId())
     }

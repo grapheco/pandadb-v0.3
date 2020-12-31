@@ -48,8 +48,6 @@ class GraphFacadeWithPPDTest {
 
 
     graphFacade = new GraphFacadeWithPPD(
-      new FileBasedIdGen(new File("./testdata/output/nodeid"), 100),
-      new FileBasedIdGen(new File("./testdata/output/relid"), 100),
       nodeStore,
       relationStore,
       indexStore,
@@ -90,7 +88,6 @@ class GraphFacadeWithPPDTest {
 
   @Test
   def testQuery(): Unit = {
-    return
     val n1: Long = graphFacade.addNode2(Map("name" -> "bob", "age" -> 40), "person")
     val n2: Long = graphFacade.addNode2(Map("name" -> "alex", "age" -> 20), "person")
     val n3: Long = graphFacade.addNode2(Map("name" -> "simba", "age" -> 10), "worker")
