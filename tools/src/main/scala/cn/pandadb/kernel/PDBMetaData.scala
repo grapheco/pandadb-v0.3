@@ -2,7 +2,7 @@ package cn.pandadb.kernel
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 
-import cn.pandadb.kernel.kv.RocksDBStorage
+import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler, RocksDBStorage}
 import cn.pandadb.kernel.util.serializer.BaseSerializer
 import org.rocksdb.FlushOptions
 
@@ -34,6 +34,31 @@ object PDBMetaData {
     rocksDB.put("_propIdManager".getBytes(), _propIdManager.serialized)
     rocksDB.put("_typeIdManager".getBytes(), _typeIdManager.serialized)
     rocksDB.put("_labelIdManager".getBytes(), _labelIdManager.serialized)
+
+    val nodeMetaDB = RocksDBStorage.getDB(s"${dbPath}/nodeMeta")
+    val relMetaDB = RocksDBStorage.getDB(s"${dbPath}/relationMeta")
+    nodeMetaDB.put(KeyHandler.nodeIdGeneratorKeyToBytes(), ByteUtils.longToBytes(_nodeIdAllocator.get()))
+    relMetaDB.put(KeyHandler.relationIdGeneratorKeyToBytes(), ByteUtils.longToBytes(_relationIdAllocator.get()))
+    _labelIdManager.all.foreach{
+      kv=>
+        val key = KeyHandler.nodeLabelKeyToBytes(kv._1)
+        nodeMetaDB.put(key, ByteUtils.stringToBytes(kv._2))
+    }
+    _typeIdManager.all.foreach{
+      kv=>
+        val key = KeyHandler.relationTypeKeyToBytes(kv._1)
+        relMetaDB.put(key, ByteUtils.stringToBytes(kv._2))
+    }
+    _propIdManager.all.foreach{
+      kv=>
+        val key = KeyHandler.relationTypeKeyToBytes(kv._1)
+        nodeMetaDB.put(key, ByteUtils.stringToBytes(kv._2))
+        relMetaDB.put(key, ByteUtils.stringToBytes(kv._2))
+    }
+    nodeMetaDB.flush(new FlushOptions)
+    nodeMetaDB.close()
+    relMetaDB.flush(new FlushOptions)
+    relMetaDB.close()
     rocksDB.flush(new FlushOptions)
     rocksDB.close()
   }
