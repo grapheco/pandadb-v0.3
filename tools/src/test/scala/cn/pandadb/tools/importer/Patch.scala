@@ -1,8 +1,11 @@
 import java.io.File
 
 import cn.pandadb.kernel.PDBMetaData
+import cn.pandadb.kernel.PDBMetaData.{_nodeIdAllocator, _relationIdAllocator}
+import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler, RocksDBStorage}
 import cn.pandadb.tools.importer.PRelationImporter
 import org.junit.{Assert, Test}
+import org.rocksdb.FlushOptions
 
 /**
  * @Author: Airzihao
@@ -16,6 +19,14 @@ class PRelationImporterTest {
     val dbPath = "F:\\PandaDB_rocksDB\\10kw"
     PDBMetaData.init(dbPath)
     PDBMetaData.persist(dbPath)
+    val nodeMetaDB = RocksDBStorage.getDB(s"${dbPath}/nodeMeta")
+    val relMetaDB = RocksDBStorage.getDB(s"${dbPath}/relationMeta")
+    nodeMetaDB.put(KeyHandler.nodeIdGeneratorKeyToBytes(), ByteUtils.longToBytes(100000000))
+    relMetaDB.put(KeyHandler.relationIdGeneratorKeyToBytes(), ByteUtils.longToBytes(200000000 - 4))
+    nodeMetaDB.flush(new FlushOptions)
+    relMetaDB.flush(new FlushOptions)
+    nodeMetaDB.close()
+    relMetaDB.close()
   }
 
 }
