@@ -91,14 +91,17 @@ class PRelationImporter(dbPath: String, headFile: File, edgeFile: File) extends 
             storeBatch.clear()
             inBatch.clear()
             outBatch.clear()
+            labelBatch.clear()
           }
         })
         relationDB.write(writeOptions, storeBatch)
         inRelationDB.write(writeOptions, inBatch)
         outRelationDB.write(writeOptions, outBatch)
+        relationTypeDB.write(writeOptions,labelBatch)
         storeBatch.clear()
         inBatch.clear()
         outBatch.clear()
+        labelBatch.clear()
         if(globalCount.addAndGet(batchData.length) % 10000000 == 0){
           val time1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
           logger.info(s"${globalCount.get() / 10000000}kw of $estEdgeCount(est) edges imported. $time1")
@@ -112,6 +115,7 @@ class PRelationImporter(dbPath: String, headFile: File, edgeFile: File) extends 
     relationDB.flush(flushOptions)
     inRelationDB.flush(flushOptions)
     outRelationDB.flush(flushOptions)
+    relationTypeDB.flush(flushOptions)
     logger.info(s"$innerCount, $taskId")
     true
   }
