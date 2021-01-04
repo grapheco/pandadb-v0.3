@@ -80,11 +80,11 @@ final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, varMap: Map[Var, TNode
   override lazy val table: LynxTable = {
     if (isEnd) {
       val records = getNodes()
-      LynxTable(Seq(nodeVar.name -> CTNode), records.map(Seq(_)))
+      LynxTable(Seq(nodeVar.name -> CTNode), records.toIterator.map(Seq(_)).toIterable)
     }
     else {
       val (rel, tNode) = varMap.filter(x => next.table.physicalColumns.contains(x._1.name)).head
-      val records:Iterable[Seq[_ <: CypherValue]]  = next.table.records.map(row => {
+      val records:Iterable[Seq[_ <: CypherValue]]  = next.table.records.toIterator.map(row => {
 
         val id = tNode match {
           case SourceNode() => next.table.cell(row, rel.name).asInstanceOf[Relationship[Long]].startId
@@ -98,10 +98,10 @@ final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, varMap: Map[Var, TNode
           case Some(value) => row ++ Seq(value)
           case None => Seq(CypherNull)
         }
-      })
+      }).toIterable
 
 
-      LynxTable(next.table.schema ++ Seq(nodeVar.name -> CTNode), records.filter(!_.equals(Seq(CypherNull))))
+      LynxTable(next.table.schema ++ Seq(nodeVar.name -> CTNode), records.toIterator.filter(!_.equals(Seq(CypherNull))).toIterable)
     }
   }
   def getRecords: LynxRecords = {
@@ -150,11 +150,11 @@ final case class  ScanRels(isEnd: Boolean,
   override lazy val table: LynxTable = {
     if (isEnd) {
       val records = next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelsByFilter(filterOP, labels, dir)
-      LynxTable(Seq(rel.name -> CTRelationship), records.toIterable.map(Seq(_)))
+      LynxTable(Seq(rel.name -> CTRelationship), records.map(Seq(_)).toIterable)
     }
     else {
       val isFirst = next.table.physicalColumns.contains(sVar.name)
-      val records = next.table.records.flatMap(row => {
+      val records = next.table.records.toIterator.flatMap(row => {
         if (isFirst) {
           val id = next.table.cell(row, sVar.name).asInstanceOf[Node[Long]].id
           val rels = next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelationById(id, dir, labels, filterOP)
@@ -171,7 +171,7 @@ final case class  ScanRels(isEnd: Boolean,
           rels.map(row ++ Seq(_))
         }
 
-      })
+      }).toIterable
 
       LynxTable(next.table.schema ++ Seq(rel.name -> CTRelationship), records)
     }

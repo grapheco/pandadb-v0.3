@@ -54,7 +54,7 @@ object IndexEncoder {
    */
   def encode(data: Any): Array[Byte] = {
     data match {
-      case data == null => Array.emptyByteArray
+      //case data == null => Array.emptyByteArray
       case data: Boolean => Array.emptyByteArray
       case data: Byte => intEncode(data.toInt)
       case data: Short => intEncode(data.toInt)
@@ -70,7 +70,7 @@ object IndexEncoder {
 
   def typeCode(data: Any): Byte = {
     data match {
-      case data == null => NULL
+      //case data == null => NULL
       case data: Boolean if data => TRUE_CODE
       case data: Boolean if !data => FALSE_CODE
       case data: Byte => INT_CODE
