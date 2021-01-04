@@ -227,7 +227,7 @@ class APITest {
       while (nodes.hasNext) {
         val node = nodes.next()
         if (node.properties.getOrElse(prop, null) == "ha") {
-//          res += node
+          res += node
         }
       }
     })
@@ -247,19 +247,20 @@ class APITest {
       }
     })
 
-//    Profiler.timing({
-//      println("Test match (n:label0) where n.idStr='ha' return n")
-//      val label = nodeStore.getLabelId("label0")
-//      val prop = nodeStore.getPropertyKeyId("idStr")
-//      nodeStore
-//        .getNodesByLabel(label)
-//        .map(mapNode)
-//        .toIterable
-//        .filter{
-//        node =>
-//          node.properties.getOrElse("idStr", null).value == "ha"
-//      }.foreach(println)
-//    })
+    Profiler.timing({
+      println("Test match (n:label0) where n.idStr='ha' return n")
+      val label = nodeStore.getLabelId("label0")
+      val prop = nodeStore.getPropertyKeyId("idStr")
+      nodeStore
+        .getNodesByLabel(label)
+        .map(mapNode)
+        .toIterable
+        .iterator
+        .filter{
+        node =>
+          node.properties.getOrElse("idStr", null).value == "ha"
+      }.foreach(println)
+    })
 
 //    Profiler.timing({
 //      println("Test match (n:label0) where n.idStr='ha' return n")
@@ -337,16 +338,44 @@ class APITest {
 
   @Test
   def mapNodeTest(): Unit ={
+    val keyMap = Map(0->"idStr0", 1-> "idStr1", 2-> "idStr2", 3->"idStr3", 4 ->"idStr4")
     val t0 = System.currentTimeMillis()
     val storedNodes = nodeStore.getNodesByLabel(9).take(1000000).toArray
     val t1 = System.currentTimeMillis()
     val nodes = storedNodes.map(mapNode).map(_.properties.value)
     val t2 = System.currentTimeMillis()
-    val nodes2 = storedNodes.map(node => node.properties.map(kv => (nodeStore.getPropertyKeyName(kv._1).get, kv._2)))
+    val nodes1 = storedNodes.map(node => CypherMap(node.properties.map(kv => (nodeStore.getPropertyKeyName(kv._1).get, kv._2)).toSeq: _*))
     val t3 = System.currentTimeMillis()
+    val nodes2 = storedNodes.map(node => node.properties.map(kv => (nodeStore.getPropertyKeyName(kv._1).get, kv._2)))
+    val t4 = System.currentTimeMillis()
+    val nodes3 = storedNodes.map(node => node.properties.map(kv => (keyMap(kv._1), kv._2)))
+    val t5 = System.currentTimeMillis()
     println("scan time: ", t1 - t0)
-    println("map time: ", t2 - t1)
-    println("map2 time: ", t3 - t2)
+    println("mapNode time: ", t2 - t1)
+    println("CypherMap time: ", t3 - t2)
+    println("MapProps time: ", t4 - t3)
+    println("MapProps without API time: ", t5 - t4)
+  }
+
+  @Test
+  def relationAPI(): Unit ={
+    println("match (n:label0)-[r]->(m:label1) return r limit 10000")
+
+    val label0 = nodeStore.getLabelId("label0")
+    val label1 = nodeStore.getLabelId("label1")
+    val limit  = 10000
+
+    val res = nodeStore
+      .getNodeIdsByLabel(label0)
+      .flatMap(relationStore.findOutRelations)
+      .filter{
+        rel =>
+          nodeStore
+            .getNodeById(rel.to)
+            .exists(_.labelIds.contains(label1))
+      }
+      .take(limit)
+    println(res.length)
   }
 
 }

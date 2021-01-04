@@ -1,6 +1,7 @@
 package cn.pandadb.kernel.kv.index
 
 import cn.pandadb.kernel.kv.ByteUtils
+import cn.pandadb.kernel.util.serializer.BaseSerializer
 
 /**
  * @ClassName IndexEncoder
@@ -18,6 +19,7 @@ object IndexEncoder {
   val FLOAT_CODE: Byte = 3
   val LONG_CODE: Byte = 4
   val STRING_CODE: Byte = 5
+  val MAP_CODE: Byte = 6
 
   /**
    * support dataType : boolean, byte, short, int, float, long, double, string
@@ -43,6 +45,8 @@ object IndexEncoder {
    * ║      Long     ║     Long     ║      4       ║
    * ╠═══════════════╬══════════════╬══════════════╣
    * ║     String    ║    String    ║      5       ║
+   * ╠═══════════════╬══════════════╬══════════════╣
+   * ║       Map     ║  ByteArray   ║      6       ║
    * ╚═══════════════╩══════════════╩══════════════╝
    *
    * @param data the data to encode
@@ -50,6 +54,7 @@ object IndexEncoder {
    */
   def encode(data: Any): Array[Byte] = {
     data match {
+      case data == null => Array.emptyByteArray
       case data: Boolean => Array.emptyByteArray
       case data: Byte => intEncode(data.toInt)
       case data: Short => intEncode(data.toInt)
@@ -58,12 +63,14 @@ object IndexEncoder {
       case data: Long => longEncode(data)
       case data: Double => floatEncode(data.toFloat)
       case data: String => stringEncode(data)
+      case data: Map[Int, Any] => BaseSerializer.map2Bytes(data)
       case data: Any => throw new Exception(s"this value type: ${data.getClass} is not supported")
     }
   }
 
   def typeCode(data: Any): Byte = {
     data match {
+      case data == null => NULL
       case data: Boolean if data => TRUE_CODE
       case data: Boolean if !data => FALSE_CODE
       case data: Byte => INT_CODE
@@ -73,6 +80,7 @@ object IndexEncoder {
       case data: Long => LONG_CODE
       case data: Double => FLOAT_CODE
       case data: String => STRING_CODE
+      case data: Map[Int, Any] => MAP_CODE
       case data: Any => throw new Exception(s"this value type: ${data.getClass} is not supported")
     }
   }
