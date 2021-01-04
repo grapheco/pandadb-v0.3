@@ -115,7 +115,7 @@ final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, varMap: Map[Var, TNode
   }
 
   def getNodes(): Iterable[Node[Id]] = {
-    graph.asInstanceOf[PandaPropertyGraph[Id]].getNodesByFilter(filterOP.toArray, labels)
+    graph.asInstanceOf[PandaPropertyGraph[Id]].getNodesByFilter(filterOP.toArray, labels).toIterable
 
   }
 
@@ -150,7 +150,7 @@ final case class  ScanRels(isEnd: Boolean,
   override lazy val table: LynxTable = {
     if (isEnd) {
       val records = next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelsByFilter(filterOP, labels, dir)
-      LynxTable(Seq(rel.name -> CTRelationship), records.map(Seq(_)))
+      LynxTable(Seq(rel.name -> CTRelationship), records.toIterable.map(Seq(_)))
     }
     else {
       val isFirst = next.table.physicalColumns.contains(sVar.name)

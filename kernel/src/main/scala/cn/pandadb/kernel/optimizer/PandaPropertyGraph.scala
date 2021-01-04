@@ -254,13 +254,13 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
 
     val (predicateNew1, labels) = findLabelPredicate(predicate)
     new LynxRecords(RecordHeader(Map(NodeVar(name)(CTNode) -> name)),
-      LynxTable(Seq(name -> CTNode), getNodesByFilter(predicateNew1, labels.toSet).map(Seq(_)))
+      LynxTable(Seq(name -> CTNode), getNodesByFilter(predicateNew1, labels.toSet).toIterable.map(Seq(_)))
     )
   }
 
   def findIndexIdAndValue(ops: ArrayBuffer[NFPredicate], labels: Set[String]): (Int, Any) = ???
 
-  def getNodesByFilter(labels: Set[String]): Iterable[Node[Id]] = {
+  def getNodesByFilter(labels: Set[String]): Iterator[Node[Id]] = {
     if (labels.size ==1) scan.getNodesByLabel(labels.head)
     else {
       val label = labels.toArray.map(x => x -> scan.getNodesCountByLabel(x)).minBy(_._2)._1
@@ -271,20 +271,20 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
   def getNodesByFilter(predicate: Array[NFPredicate],labels: Set[String], nodeVar: NodeVar): LynxRecords = {
 
     new LynxRecords(RecordHeader(Map(NodeVar(nodeVar.name)(CTNode) -> nodeVar.name)),
-      LynxTable(Seq(nodeVar.name -> CTNode), getNodesByFilter(predicate, labels).map(Seq(_)))
+      LynxTable(Seq(nodeVar.name -> CTNode), getNodesByFilter(predicate, labels).toIterable.map(Seq(_)))
         )
   }
 
-  def getNodesByFilter(ops: Array[NFPredicate], labels: Set[String]): Iterable[Node[Id]] = {
+  def getNodesByFilter(ops: Array[NFPredicate], labels: Set[String]): Iterator[Node[Id]] = {
     if(labels.isEmpty){
       if(ops.isEmpty)
-        scan.allNodes()
+        scan.getAllNodes()
       else{
         val (opsNew, size) = findLimitPredicate(ops.toArray)
         if (size > 0 )
-          scan.allNodes().filter(filterNode(_, opsNew)).take(size.toInt)
+          scan.getAllNodes().filter(filterNode(_, opsNew)).take(size.toInt)
         else
-          scan.allNodes().filter(filterNode(_, opsNew))
+          scan.getAllNodes().filter(filterNode(_, opsNew))
       }
     }
     else {
@@ -384,7 +384,7 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
     }
   }
 
-  def getRelsByFilter(ops: ArrayBuffer[NFPredicate], labels: Set[String], direction: Int): Iterable[Relationship[Id]] = {
+  def getRelsByFilter(ops: ArrayBuffer[NFPredicate], labels: Set[String], direction: Int): Iterator[Relationship[Id]] = {
     val rels = {
       if (ops.isEmpty) {
         if (labels.isEmpty)
@@ -405,7 +405,7 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
     }
   }
 
-  def getRelationById(nodeId: Long, direction: Int, labels: Set[String], ops: ArrayBuffer[NFPredicate]): Iterable[Relationship[Id]] ={
+  def getRelationById(nodeId: Long, direction: Int, labels: Set[String], ops: ArrayBuffer[NFPredicate]): Iterator[Relationship[Id]] ={
 
     val rels = {
       if (ops.isEmpty) {
@@ -474,6 +474,12 @@ trait PandaPropertyGraphScan[Id] extends PropertyGraphScanner[Id] with HasStatis
   def getRelationByType(typeString: String): Iterator[Relationship[Id]] = ???
 
   def getRelationByTypeWithProperty(typeString: String): Iterator[Relationship[Id]] = ???
+
+  //oveeride
+
+  override def allNodes(): Iterable[Node[Id]] = getAllNodes().toIterable
+
+  override def allRelationships(): Iterable[Relationship[Id]] = allRelations().toIterable
 
   // node
 
