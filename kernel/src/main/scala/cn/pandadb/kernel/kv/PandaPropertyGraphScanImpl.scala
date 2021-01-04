@@ -79,31 +79,26 @@ class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
     nodeStore.getNodeById(id).orNull
   )
 
-//  override def getAllNodes(labels: Set[String], exactLabelMatch: Boolean): Iterator[Node[Long]] = {
-//    if (labels.size>1){
-//      throw new Exception("PandaDB doesn't support multiple label matching at the same time")
-//    }
-//    val labelIds = nodeStore.getLabelIds(labels)
-//    val nodes = nodeStore.getNodesByLabel(labelIds.head)
-//    nodes.map(mapNode(_))
-//  }
+  override def allNodes(labels: Set[String], exactLabelMatch: Boolean): Iterable[Node[Long]] = {
+    if (labels.size>1){
+      throw new Exception("PandaDB doesn't support multiple label matching at the same time")
+    }
+    val labelIds = nodeStore.getLabelIds(labels)
+    val nodes = nodeStore.getNodesByLabel(labelIds.head)
+    nodes.map(mapNode(_)).toIterable
+  }
 
+  override def allRelationships(): Iterable[CypherValue.Relationship[Long]] = {
+    relationStore.allRelations().map(rel => mapRelation(rel)).toIterable
+  }
 
-//  override def getallNodes(): Iterator[Node[Long]] = {
-//    nodeStore.allNodes().map(node => mapNode(node))
-//  }
-//
-//  override def allRelationships(): Iterator[CypherValue.Relationship[Long]] = {
-//    relationStore.allRelations().map(rel => mapRelation(rel))
-//  }
-//
-//  override def allRelationships(relTypes: Set[String]): Iterator[Relationship[Long]] = {
-//    if (relTypes.size>1){
-//      throw new Exception("PandaDB doesn't support multiple label matching at the same time")
-//    }
-//    val relations: Iterator[Long] = relationStore.getRelationIdsByRelationType(relationStore.getRelationTypeId(relTypes.head))
-//    relations.map(relId => mapRelation(relationStore.getRelationById(relId).get))
-//  }
+  override def allRelationships(relTypes: Set[String]): Iterable[Relationship[Long]] = {
+    if (relTypes.size>1){
+      throw new Exception("PandaDB doesn't support multiple label matching at the same time")
+    }
+    val relations: Iterator[Long] = relationStore.getRelationIdsByRelationType(relationStore.getRelationTypeId(relTypes.head))
+    relations.map(relId => mapRelation(relationStore.getRelationById(relId).get)).toIterable
+  }
 
   // PandaPropertyGraphScan
 
@@ -170,7 +165,6 @@ class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
       .map(relationStore.getRelationById)
       .filter(_.isDefined)
       .map(s=>mapRelation(s.get))
-
   }
 
   override def getNodeById(Id: Long): Node[Long] = nodeStore.getNodeById(Id).map(mapNode).orNull
