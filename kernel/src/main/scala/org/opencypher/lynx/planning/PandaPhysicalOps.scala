@@ -1,7 +1,7 @@
 package org.opencypher.lynx.planning
 
 import cn.pandadb.kernel.optimizer.LynxType.LynxNode
-import cn.pandadb.kernel.optimizer.{NFPredicate, PandaPropertyGraph, Transformer}
+import cn.pandadb.kernel.optimizer.{NFLimit, NFPredicate, PandaPropertyGraph, Transformer}
 import org.opencypher.lynx.plan.PhysicalOperator
 import org.opencypher.lynx.{LynxRecords, LynxTable, RecordHeader}
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
@@ -84,15 +84,24 @@ final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, varMap: Map[Var, TNode
     }
     else {
       val (rel, tNode) = varMap.filter(x => next.table.physicalColumns.contains(x._1.name)).head
+      val isSrc:Boolean = tNode match {
+        case SourceNode() => true
+        case TargetNode() => false
+      }
+      val (opsNew, limit) = findLimitPredicate(filterOP.toArray)
       val records:Iterable[Seq[_ <: CypherValue]]  = next.table.records.toIterator.map(row => {
 
-        val id = tNode match {
+     /*   val id = tNode match {
           case SourceNode() => next.table.cell(row, rel.name).asInstanceOf[Relationship[Long]].startId
           case TargetNode() => next.table.cell(row, rel.name).asInstanceOf[Relationship[Long]].endId
-        }
+        }*/
+       val id = {
+         if (isSrc) next.table.cell(row, rel.name).asInstanceOf[Relationship[Long]].startId
+         else next.table.cell(row, rel.name).asInstanceOf[Relationship[Long]].endId
+       }
 
 
-        val node = in.graph.asInstanceOf[PandaPropertyGraph[Id]].getNodeById(id, labels, filterOP)
+        val node = in.graph.asInstanceOf[PandaPropertyGraph[Id]].getNodeById(id, labels, opsNew)
         node match {
             //rels.map(row ++ Seq(_))
           case Some(value) => row ++ Seq(value)
@@ -100,8 +109,13 @@ final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, varMap: Map[Var, TNode
         }
       }).toIterable
 
+      val newRecords = {
+        if (limit>0) records.take(limit.toInt)
+        else records
+      }
 
-      LynxTable(next.table.schema ++ Seq(nodeVar.name -> CTNode), records.toIterator.filter(!_.equals(Seq(CypherNull))).toIterable)
+
+      LynxTable(next.table.schema ++ Seq(nodeVar.name -> CTNode), newRecords.toIterator.filter(!_.equals(Seq(CypherNull))).toIterable)
     }
   }
   def getRecords: LynxRecords = {
@@ -121,6 +135,20 @@ final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, varMap: Map[Var, TNode
 
   def getRecordsNumbers: Long = {
     graph.asInstanceOf[PandaPropertyGraph[Id]].getNodeCnt(filterOP.toArray, labels)
+  }
+
+  def findLimitPredicate(predicate: Array[NFPredicate]):(ArrayBuffer[NFPredicate], Long) = {
+    var nps: ArrayBuffer[NFPredicate] = ArrayBuffer[NFPredicate]()
+    var limit: Long = -1
+    predicate.foreach(u => {
+      u match {
+        case x: NFLimit => {
+          limit = x.size
+        }
+        case x: NFPredicate => nps += x
+      }
+    })
+    nps -> limit
   }
 
 }
