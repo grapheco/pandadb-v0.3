@@ -79,87 +79,90 @@ class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
     nodeStore.getNodeById(id).orNull
   )
 
-  override def allNodes(labels: Set[String], exactLabelMatch: Boolean): Iterable[Node[Long]] = {
-    if (labels.size>1){
-      throw new Exception("PandaDB doesn't support multiple label matching at the same time")
-    }
-    val labelIds = nodeStore.getLabelIds(labels)
-    val nodes = nodeStore.getNodesByLabel(labelIds.head)
-    nodes.map(mapNode(_)).toIterable
-  }
+//  override def getAllNodes(labels: Set[String], exactLabelMatch: Boolean): Iterator[Node[Long]] = {
+//    if (labels.size>1){
+//      throw new Exception("PandaDB doesn't support multiple label matching at the same time")
+//    }
+//    val labelIds = nodeStore.getLabelIds(labels)
+//    val nodes = nodeStore.getNodesByLabel(labelIds.head)
+//    nodes.map(mapNode(_))
+//  }
 
 
-  override def allNodes(): Iterable[Node[Long]] = {
-    nodeStore.allNodes().map(node => mapNode(node)).toIterable
-  }
-
-  override def allRelationships(): Iterable[CypherValue.Relationship[Long]] = {
-    relationStore.allRelations().map(rel => mapRelation(rel)).toIterable
-  }
-
-  override def allRelationships(relTypes: Set[String]): Iterable[Relationship[Long]] = {
-    if (relTypes.size>1){
-      throw new Exception("PandaDB doesn't support multiple label matching at the same time")
-    }
-    val relations: Iterator[Long] = relationStore.getRelationIdsByRelationType(relationStore.getRelationTypeId(relTypes.head))
-    relations.map(relId => mapRelation(relationStore.getRelationById(relId).get)).toIterable
-  }
+//  override def getallNodes(): Iterator[Node[Long]] = {
+//    nodeStore.allNodes().map(node => mapNode(node))
+//  }
+//
+//  override def allRelationships(): Iterator[CypherValue.Relationship[Long]] = {
+//    relationStore.allRelations().map(rel => mapRelation(rel))
+//  }
+//
+//  override def allRelationships(relTypes: Set[String]): Iterator[Relationship[Long]] = {
+//    if (relTypes.size>1){
+//      throw new Exception("PandaDB doesn't support multiple label matching at the same time")
+//    }
+//    val relations: Iterator[Long] = relationStore.getRelationIdsByRelationType(relationStore.getRelationTypeId(relTypes.head))
+//    relations.map(relId => mapRelation(relationStore.getRelationById(relId).get))
+//  }
 
   // PandaPropertyGraphScan
 
-  override def getRelationByNodeId(nodeId: Long, direction: Int): Iterable[Relationship[Long]] = {
+  override def getRelationByNodeId(nodeId: Long, direction: Int): Iterator[Relationship[Long]] = {
     direction match{
-      case OUT => relationStore.findOutRelations(nodeId).map(mapRelation).toIterable
-      case IN  => relationStore.findInRelations(nodeId).map(mapRelation).toIterable
+      case OUT => relationStore.findOutRelations(nodeId).map(mapRelation)
+      case IN  => relationStore.findInRelations(nodeId).map(mapRelation)
       case UNDIRECTION => (relationStore.findOutRelations(nodeId).map(mapRelation) ++
-        relationStore.findInRelations(nodeId).map(mapRelation)).toIterable
+        relationStore.findInRelations(nodeId).map(mapRelation))
       case _ => null
     }
   }
 
-  override def getRelationByNodeId(nodeId: Long, direction: Int, typeString: String): Iterable[Relationship[Long]] = {
+  override def getRelationByNodeId(nodeId: Long, direction: Int, typeString: String): Iterator[Relationship[Long]] = {
     val typeId = relationStore.getRelationTypeId(typeString)
     direction match{
-      case OUT => relationStore.findOutRelations(nodeId, typeId).map(mapRelation).toIterable
-      case IN  => relationStore.findInRelations(nodeId, typeId).map(mapRelation).toIterable
+      case OUT => relationStore.findOutRelations(nodeId, typeId).map(mapRelation)
+      case IN  => relationStore.findInRelations(nodeId, typeId).map(mapRelation)
       case UNDIRECTION => (relationStore.findOutRelations(nodeId, typeId).map(mapRelation) ++
-        relationStore.findInRelations(nodeId, typeId).map(mapRelation)).toIterable
+        relationStore.findInRelations(nodeId, typeId).map(mapRelation))
       case _ => null
     }
   }
 
-  override def getRelationByNodeIdWithProperty(nodeId: Long, direction: Int): Iterable[Relationship[Long]] = {
+  override def getRelationByNodeIdWithProperty(nodeId: Long, direction: Int): Iterator[Relationship[Long]] = {
     direction match{
-      case OUT => relationStore.findToNodeIds(nodeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get)).toIterable
-      case IN  => relationStore.findFromNodeIds(nodeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get)).toIterable
+      case OUT => relationStore.findToNodeIds(nodeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get))
+      case IN  => relationStore.findFromNodeIds(nodeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get))
       case UNDIRECTION => (relationStore.findToNodeIds(nodeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get)) ++
-        relationStore.findFromNodeIds(nodeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get))).toIterable
+        relationStore.findFromNodeIds(nodeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get)))
       case _ => null
     }
   }
 
-  override def getRelationByNodeIdWithProperty(nodeId: Long, direction: Int, typeString: String): Iterable[Relationship[Long]] ={
+  override def getRelationByNodeIdWithProperty(nodeId: Long, direction: Int, typeString: String): Iterator[Relationship[Long]] ={
     val typeId = relationStore.getRelationTypeId(typeString)
     direction match{
-      case OUT => relationStore.findToNodeIds(nodeId, typeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get)).toIterable
-      case IN  => relationStore.findFromNodeIds(nodeId, typeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get)).toIterable
+      case OUT => relationStore.findToNodeIds(nodeId, typeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get))
+      case IN  => relationStore.findFromNodeIds(nodeId, typeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get))
       case UNDIRECTION => (relationStore.findToNodeIds(nodeId, typeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get)) ++
-        relationStore.findFromNodeIds(nodeId, typeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get))).toIterable
+        relationStore.findFromNodeIds(nodeId, typeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get)))
       case _ => null
     }
   }
 
-  override def allRelations(): Iterable[Relationship[Long]] =
-    relationStore.allRelations().map(mapRelation).toIterable
 
-  override def allRelationsWithProperty: Iterable[Relationship[Long]] =
-    relationStore.allRelationsWithProperty().map(mapRelation).toIterable
+  override def getAllNodes(): Iterator[Node[Long]] = nodeStore.allNodes().map(node => mapNode(node))
 
-  override def getRelationByType(typeString: String): Iterable[Relationship[Long]] = {
+  override def allRelations(): Iterator[Relationship[Long]] =
+    relationStore.allRelations().map(mapRelation)
+
+  override def allRelationsWithProperty: Iterator[Relationship[Long]] =
+    relationStore.allRelationsWithProperty().map(mapRelation)
+
+  override def getRelationByType(typeString: String): Iterator[Relationship[Long]] = {
     getRelationByTypeWithProperty(typeString)
   }
 
-  override def getRelationByTypeWithProperty(typeString: String): Iterable[Relationship[Long]] = {
+  override def getRelationByTypeWithProperty(typeString: String): Iterator[Relationship[Long]] = {
     relationStore
       .getRelationIdsByRelationType(
         relationStore.getRelationTypeId(typeString)
@@ -167,13 +170,13 @@ class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
       .map(relationStore.getRelationById)
       .filter(_.isDefined)
       .map(s=>mapRelation(s.get))
-      .toIterable
+
   }
 
   override def getNodeById(Id: Long): Node[Long] = nodeStore.getNodeById(Id).map(mapNode).orNull
 
-  override def getNodesByLabel(labelString: String): Iterable[Node[Long]] =
-    nodeStore.getNodesByLabel(nodeStore.getLabelId(labelString)).map(mapNode).toIterable
+  override def getNodesByLabel(labelString: String): Iterator[Node[Long]] =
+    nodeStore.getNodesByLabel(nodeStore.getLabelId(labelString)).map(mapNode)
 
   override def isPropertyWithIndex(labels: Set[String], propertyName: String): (Int, String, Set[String], Long) =
     labels.map(isPropertyWithIndex(_,propertyName)).minBy(_._4)
@@ -217,27 +220,27 @@ class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
   }
 
 
-  override def findNodeId(indexId: Int, value: Any): Iterable[Long] = indexStore.find(indexId, value).toIterable
+  override def findNodeId(indexId: Int, value: Any): Iterator[Long] = indexStore.find(indexId, value)
 
-  override def findNode(indexId: Int, value: Any): Iterable[Node[Long]] =
-    indexStore.find(indexId, value).map(nodeStore.getNodeById).filter(_.isDefined).map(s=>mapNode(s.get)).toIterable
+  override def findNode(indexId: Int, value: Any): Iterator[Node[Long]] =
+    indexStore.find(indexId, value).map(nodeStore.getNodeById).filter(_.isDefined).map(s=>mapNode(s.get))
 
   // fixme should find both int and double
-  override def findRangeNodeId(indexId: Int, from: Any, to: Any): Iterable[Long] = {
+  override def findRangeNodeId(indexId: Int, from: Any, to: Any): Iterator[Long] = {
     (from,to) match {
-      case range: (Int, Int) => indexStore.findIntRange(indexId, range._1, range._2).toIterable
-      case range: (Float, Float) => indexStore.findFloatRange(indexId, range._1, range._2).toIterable
+      case range: (Int, Int) => indexStore.findIntRange(indexId, range._1, range._2)
+      case range: (Float, Float) => indexStore.findFloatRange(indexId, range._1, range._2)
       case _ => null
     }
   }
 
-  override def findRangeNode(indexId: Int, from: Any, to: Any): Iterable[Node[Long]] =
+  override def findRangeNode(indexId: Int, from: Any, to: Any): Iterator[Node[Long]] =
     findRangeNodeId(indexId, from, to).map(nodeStore.getNodeById).filter(_.isDefined).map(s=>mapNode(s.get))
 
-  override def startWithNodeId(indexId: Int, start: String): Iterable[Long] =
-    indexStore.findStringStartWith(indexId, start).toIterable
+  override def startWithNodeId(indexId: Int, start: String): Iterator[Long] =
+    indexStore.findStringStartWith(indexId, start)
 
-  override def startWithNode(indexId: Int, start: String): Iterable[Node[Long]] =
+  override def startWithNode(indexId: Int, start: String): Iterator[Node[Long]] =
     startWithNodeId(indexId, start).map(nodeStore.getNodeById).filter(_.isDefined).map(s=>mapNode(s.get))
 
   //Statistics
