@@ -5,7 +5,7 @@ import org.opencypher.lynx.graph.LynxPropertyGraph
 import org.opencypher.lynx.plan.{Add, AddInto, Aggregate, Alias, Cache, ConstructGraph, Distinct, Drop, EmptyRecords, Filter, FromCatalogGraph, GraphUnionAll, Join, Limit, OrderBy, PhysicalOperator, PrefixGraph, ReturnGraph, Select, Skip, Start, SwitchContext, TabularUnionAll}
 import org.opencypher.lynx.planning.{ScanNodes, ScanRels}
 import org.opencypher.lynx.{LynxPlannerContext, LynxTable, RecordHeader}
-import org.opencypher.okapi.ir.api.expr.{BinaryPredicate, ElementProperty, Equals, Expr, GreaterThan, GreaterThanOrEqual, Id, LessThan, LessThanOrEqual, NodeVar, Param}
+import org.opencypher.okapi.ir.api.expr.{BinaryPredicate, ElementProperty, Equals, Expr, GreaterThan, GreaterThanOrEqual, Id, LessThan, LessThanOrEqual, NodeVar, Not, Param}
 import org.opencypher.okapi.trees.TopDown
 
 import scala.collection.mutable
@@ -22,8 +22,13 @@ object PandaPhysicalOptimizer {
   def filterPushDown2(filterOps: ArrayBuffer[PhysicalOperator], ordinaryOps: ArrayBuffer[PhysicalOperator], input: PhysicalOperator): PhysicalOperator = {
     input match {
       case x: Filter => {
-        filterOps += x
-        filterPushDown2(filterOps, ordinaryOps, x.in)
+        if(x.expr.isInstanceOf[Not]){
+          filterPushDown2(filterOps, ordinaryOps, x.in)
+        }
+        else {
+          filterOps += x
+          filterPushDown2(filterOps, ordinaryOps, x.in)
+        }
       }
       /*    case x: LabelRecorders => {
             filterOps += x
