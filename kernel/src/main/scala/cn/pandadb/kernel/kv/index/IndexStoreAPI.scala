@@ -2,6 +2,8 @@ package cn.pandadb.kernel.kv.index
 
 import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler, RocksDBStorage}
 
+import scala.collection.mutable
+
 /**
  * @ClassName IndexAPI
  * @Description TODO
@@ -18,10 +20,30 @@ class IndexStoreAPI(dbPath: String) {
   private val meta = new IndexMetaData(metaDB)
   private val indexDB = RocksDBStorage.getDB(s"${dbPath}/index")
   private val index = new IndexStore(indexDB)
+  //indexId->([name, address], Store)
+  private val fulltextIndexMap = new mutable.HashMap[Int, (Array[Int], FulltextIndexStore)]()
 
   def createIndex(label: Int, props: Array[Int]): IndexId = meta.addIndexMeta(label, props)
 
   def createIndex(label: Int, prop: Int): IndexId = meta.addIndexMeta(label, Array(prop))
+
+  def createFulltextIndex(label: Int, prop: Int): IndexId = {
+    val indexId = meta.addIndexMeta(label, Array(prop), true)
+    val store = fulltextIndexMap.get(indexId)
+    if(store==None){
+      fulltextIndexMap.put(indexId, (Array(prop), new FulltextIndexStore(s"${dbPath}/${indexId}")))
+    }
+    indexId
+  }
+
+  def createFulltextIndex(label: Int, props: Array[Int]): IndexId = {
+    val indexId = meta.addIndexMeta(label, props, true)
+    val store = fulltextIndexMap.get(indexId)
+    if(store==None){
+      fulltextIndexMap.put(indexId, (props, new FulltextIndexStore(s"${dbPath}/${indexId}")))
+    }
+    indexId
+  }
 
   def getIndexId(label: Int, props: Array[Int]): Option[IndexId] = meta.getIndexId(label, props)
 
@@ -36,20 +58,50 @@ class IndexStoreAPI(dbPath: String) {
   def insertIndexRecordBatch(indexId: IndexId, data: Iterator[(Any, Long)]): Unit =
     index.set(indexId, data)
 
+  def insertFulltextIndexRecord(indexId: IndexId, data: Array[Any], id: Long): Unit = {
+    val (propIds, store) = fulltextIndexMap.get(indexId).get
+    store.insert(id, propIds.zip(data).toMap.map(p => {s"${p._1}" -> p._2.asInstanceOf[String]}))
+  }
+
+  def insertFulltextIndexRecordBatch(indexId: IndexId, data: Iterator[(Array[Any], Long)]): Unit = {
+    val (propIds, store) = fulltextIndexMap.get(indexId).get
+    data.foreach(d => {
+      store.insert(d._2, propIds.zip(d._1).toMap.map(p => {s"${p._1}" -> p._2.asInstanceOf[String]}))
+    })
+  }
+
   def updateIndexRecord(indexId: IndexId, value: Any, id: Long, newValue: Any): Unit = {
     index.update(indexId, IndexEncoder.typeCode(value), IndexEncoder.encode(value),
       id, IndexEncoder.typeCode(newValue), IndexEncoder.encode(newValue))
+  }
+
+  def updateFulltextIndexRecord(indexId: IndexId, value: Any, id: Long, newValue: Array[Any]): Unit = {
+    val (propIds, store) = fulltextIndexMap.get(indexId).get
+    store.delete(id)
+    store.insert(id, propIds.zip(newValue).toMap.map(p => {s"${p._1}" -> p._2.asInstanceOf[String]}))
   }
 
   def deleteIndexRecord(indexId: IndexId, value: Any, id: Long): Unit ={
     index.delete(indexId, IndexEncoder.typeCode(value), IndexEncoder.encode(value), id)
   }
 
+  def deleteFulltextIndexRecord(indexId: IndexId, value: Any, id: Long): Unit =
+    fulltextIndexMap.get(indexId).get._2.delete(id)
+
   def dropIndex(label: Int, props: Array[Int]): Unit = {
     meta.getIndexId(label, props).foreach{
       id=>
         index.deleteRange(id)
         meta.deleteIndexMeta(label, props)
+    }
+  }
+
+  def dropFulltextIndex(label: Int, props: Array[Int]): Unit = {
+    meta.getIndexId(label, props).foreach{
+      id=>
+        meta.deleteIndexMeta(label, props, true)
+        fulltextIndexMap.get(id).get._2.dropAndClose()
+        fulltextIndexMap -= id
     }
   }
 
@@ -93,7 +145,6 @@ class IndexStoreAPI(dbPath: String) {
     }
   }
 
-
   def findStringStartWith(indexId: IndexId, string: String): Iterator[Long] =
     findByPrefix(
       KeyHandler.nodePropertyIndexPrefixToBytes(
@@ -101,6 +152,10 @@ class IndexStoreAPI(dbPath: String) {
         IndexEncoder.STRING_CODE,
         IndexEncoder.encode(string).take(string.getBytes().length / 8 + string.getBytes().length)))
 
+  def search(indexId: IndexId, props: Array[Int], keyword: String): Iterator[Long] = {
+    val store = fulltextIndexMap.get(indexId).get._2
+    store.topDocs2NodeIdArray(store.search(props.map(v=>s"$v"),keyword)).get
+  }
 
   def findIntRange(indexId: IndexId, startValue: Int = Int.MinValue, endValue: Int = Int.MaxValue): Iterator[Long] =
     findRange(indexId, IndexEncoder.INT_CODE, IndexEncoder.encode(startValue), IndexEncoder.encode(endValue))
@@ -111,5 +166,6 @@ class IndexStoreAPI(dbPath: String) {
   def close(): Unit = {
     indexDB.close()
     metaDB.close()
+    fulltextIndexMap.foreach(p=>p._2._2.close())
   }
 }

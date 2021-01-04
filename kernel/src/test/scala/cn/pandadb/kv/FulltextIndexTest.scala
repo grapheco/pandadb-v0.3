@@ -1,12 +1,40 @@
 //package cn.pandadb.kv
 //
-//import cn.pandadb.kernel.{NodeId, TypedId}
-//import cn.pandadb.kernel.kv.{FulltextIndex, RocksDBStorage}
+//import cn.pandadb.kernel.kv.index.IndexStoreAPI
+//import cn.pandadb.kernel.kv.meta.Statistics
+//import cn.pandadb.kernel.kv.node.NodeStoreAPI
+//import cn.pandadb.kernel.kv.relation.RelationStoreAPI
+//import cn.pandadb.kernel.kv.{GraphFacadeWithPPD, RocksDBStorage}
+//import cn.pandadb.kernel.store.{NodeStoreSPI, RelationStoreSPI}
 //import org.junit.{After, Assert, Before, Test}
 //import org.rocksdb.RocksDB
 //
 //@Test
 //class FulltextIndexTest extends Assert {
+//  var nodeStore: NodeStoreSPI = _
+//  var relationStore: RelationStoreSPI = _
+//  var indexStore: IndexStoreAPI = _
+//  var statistics: Statistics = _
+//  var graphFacade: GraphFacadeWithPPD = _
+//
+//
+//  @Before
+//  def setup(): Unit = {
+//
+//    val dbPath = "D:\\PandaDB-tmp\\100M"
+//    nodeStore = new NodeStoreAPI(dbPath)
+//    relationStore = new RelationStoreAPI(dbPath)
+//    indexStore = new IndexStoreAPI(dbPath)
+//    statistics = new Statistics(dbPath)
+//
+//    graphFacade = new GraphFacadeWithPPD(
+//      nodeStore,
+//      relationStore,
+//      indexStore,
+//      statistics,
+//      {}
+//    )
+//  }
 //
 //  val path = "D:\\PandaDB-tmp"
 //  var db: RocksDB = null

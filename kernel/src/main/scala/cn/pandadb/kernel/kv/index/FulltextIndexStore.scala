@@ -1,6 +1,4 @@
-package cn.pandadb.kernel.kv.index.fulltext
-
-import java.io.File
+package cn.pandadb.kernel.kv.index
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.document.Field.Store
@@ -10,7 +8,9 @@ import org.apache.lucene.queryparser.classic.{MultiFieldQueryParser, QueryParser
 import org.apache.lucene.search.{IndexSearcher, Query, ScoreDoc, TopDocs}
 import org.apache.lucene.store.{Directory, FSDirectory}
 
-class Store(val indexPath: String) {
+import java.io.File
+
+class FulltextIndexStore(val indexPath: String) {
   val dir = new File(indexPath)
   val directory: Directory = FSDirectory.open(dir.toPath)
   val analyzer = new StandardAnalyzer
@@ -24,11 +24,11 @@ class Store(val indexPath: String) {
   termVectoredTextFieldType.setStoreTermVectorOffsets(true)
   termVectoredTextFieldType.setStoreTermVectorPositions(true)
 
-  def insert(id: Long, props: Map[String, Any]): Unit = {
+  def insert(id: Long, props: Map[String, String]): Unit = {
     val document = new Document
     document.add(new StringField("_id", s"${id}", Store.YES))
     props.foreach { x =>
-      document.add(new Field(x._1, x._2.toString, termVectoredTextFieldType))
+      document.add(new Field(x._1, x._2, termVectoredTextFieldType))
     }
     indexWriter.addDocument(document)
     indexWriter.commit()
@@ -37,8 +37,8 @@ class Store(val indexPath: String) {
   def delete(id: Long): Unit =
     indexWriter.deleteDocuments(new Term("_id", s"${id}"))
 
-  private def document2Map(doc: Document): collection.mutable.HashMap[String, Any] = {
-    val map = new collection.mutable.HashMap[String, Any]
+  private def document2Map(doc: Document): collection.mutable.HashMap[String, String] = {
+    val map = new collection.mutable.HashMap[String, String]
     val itl = doc.getFields().iterator()
     while (itl.hasNext()) {
       val field = itl.next()
@@ -47,19 +47,19 @@ class Store(val indexPath: String) {
     map
   }
 
-  private def scoreDoc2Map(doc: ScoreDoc): collection.mutable.HashMap[String, Any] = {
+  private def scoreDoc2Map(doc: ScoreDoc): collection.mutable.HashMap[String, String] = {
     document2Map(reader.document(doc.doc))
   }
 
-  private def scoreDoc2NodeWithProperties(doc: ScoreDoc): Map[String, Any] = {
+  private def scoreDoc2NodeProperties(doc: ScoreDoc): Map[String, String] = {
     val node = scoreDoc2Map(doc)
-    node + ("id" -> node.get("_id").get.asInstanceOf[String].toLong) - "_id" toMap
+    node + ("_id" -> node.get("_id").get) toMap
   }
 
-  def topDocs2NodeWithPropertiesArray(docs: TopDocs): Option[Iterator[Map[String, Any]]] = {
+  def topDocs2NodeWithPropertiesArray(docs: TopDocs): Option[Iterator[Map[String, String]]] = {
     docs.totalHits match {
       case 0 => None
-      case _ => Some(docs.scoreDocs.map(scoreDoc => {scoreDoc2NodeWithProperties(scoreDoc)}).toIterator)
+      case _ => Some(docs.scoreDocs.map(scoreDoc => {scoreDoc2NodeProperties(scoreDoc)}).toIterator)
     }
   }
 
@@ -80,16 +80,16 @@ class Store(val indexPath: String) {
     searcher.search(q, topN)
   }
 
-  def search(keyword: (Array[String], String), topN: Int = Int.MaxValue): TopDocs = {
-    val stringQuery = new MultiFieldQueryParser(keyword._1,analyzer).parse(keyword._2)
+  def search(fields: Array[String], keyword: String, topN: Int = Int.MaxValue): TopDocs = {
+    val stringQuery = new MultiFieldQueryParser(fields,analyzer).parse(keyword)
     executeQuery(stringQuery, topN)
   }
 
-  def at(id: Int): Option[Map[String, Any]] = {
+  def at(id: Int): Option[Map[String, String]] = {
     val idQuery = new QueryParser("_id", analyzer).parse(s"${id}")
     val hits = executeQuery(idQuery,1)
     if (hits.totalHits == 0) return None
-    Some(scoreDoc2NodeWithProperties(hits.scoreDocs.head))
+    Some(scoreDoc2NodeProperties(hits.scoreDocs.head))
   }
 
   def dropAndClose(): Unit ={
