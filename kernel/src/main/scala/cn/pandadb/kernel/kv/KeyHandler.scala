@@ -30,6 +30,7 @@ object KeyHandler {
 
     val NodeIdGenerator = Value(13)     // [keyType(1Byte)] -> MaxId(Long)
     val RelationIdGenerator = Value(14)     // [keyType(1Byte)] -> MaxId(Long)
+    val IndexIdGenerator = Value(15)     // [keyType(1Byte)] -> MaxId(Long)
 
   }
 
@@ -60,29 +61,16 @@ object KeyHandler {
     ByteUtils.longToBytes(nodeId)
   }
 
-  // [keyType(1Byte),labelId(4Bytes),properties(x*4Bytes)]
-  def nodePropertyIndexMetaKeyToBytes(labelId: Int, props:Array[Int]): Array[Byte] = {
-    val bytes = new Array[Byte](1+4+4*props.length)
-    ByteUtils.setByte(bytes, 0, KeyType.NodePropertyIndexMeta.id.toByte)
-    ByteUtils.setInt(bytes, 1, labelId)
+  // [labelId(4Bytes), properties(x*4Bytes), isFullText(1Bytes)]
+  def nodePropertyIndexMetaKeyToBytes(labelId: Int, props:Array[Int], isFullText: Boolean): Array[Byte] = {
+    val bytes = new Array[Byte](4+4*props.length+1)
+    ByteUtils.setInt(bytes, 0, labelId)
     var index=5
     props.foreach{
       p=>ByteUtils.setInt(bytes,index,p)
         index+=4
     }
-    bytes
-  }
-
-  // [keyType(1Byte),labelId(4Bytes),properties(x*4Bytes)]
-  def nodePropertyFulltextIndexMetaKeyToBytes(labelId: Int, props:Array[Int]): Array[Byte] = {
-    val bytes = new Array[Byte](1+4+4*props.length)
-    ByteUtils.setByte(bytes, 0, KeyType.NodePropertyFulltextIndexMeta.id.toByte)
-    ByteUtils.setInt(bytes, 1, labelId)
-    var index=5
-    props.foreach{
-      p=>ByteUtils.setInt(bytes,index,p)
-        index+=4
-    }
+    ByteUtils.setBoolean(bytes, 4+4*props.length, isFullText)
     bytes
   }
 
@@ -239,6 +227,12 @@ object KeyHandler {
     ByteUtils.setByte(bytes, 0, KeyType.RelationIdGenerator.id.toByte)
     bytes
   }
+  // [KeyType(1Bytes)]
+  def indexIdGeneratorKeyToBytes(): Array[Byte] = {
+    val bytes = new Array[Byte](1)
+    ByteUtils.setByte(bytes, 0, KeyType.IndexIdGenerator.id.toByte)
+    bytes
+  }
 
 }
 
@@ -306,6 +300,14 @@ object ByteUtils {
 
   def getByte(bytes: Array[Byte], index: Int): Byte = {
     bytes(index)
+  }
+
+  def setBoolean(bytes: Array[Byte], index: Int, value: Boolean): Unit = {
+    bytes(index) = if(value) 1.toByte else 0.toByte
+  }
+
+  def getBoolean(bytes: Array[Byte], index: Int): Boolean = {
+    bytes(index) == 1.toByte
   }
 
 //  import org.nustaq.serialization.FSTConfiguration

@@ -30,6 +30,11 @@ class NodeLabelStore(db: RocksDB)  {
     else None
   }
 
+  def exist(nodeId: Long, label: Int): Boolean = {
+    val key = KeyHandler.nodeLabelToBytes(nodeId, label)
+    db.get(key)!=null
+  }
+
   def getAll(nodeId: Long): Array[Int] = {
     val keyPrefix = KeyHandler.nodeLabelPrefix(nodeId)
     val iter = db.newIterator()

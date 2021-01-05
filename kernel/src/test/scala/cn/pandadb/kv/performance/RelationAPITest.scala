@@ -49,36 +49,21 @@ class RelationAPITest {
   def relationAPITest(): Unit ={
     Profiler.timing({
       println("Test preheat")
-      val label = nodeStore.getLabelId("label0")
-      val prop = nodeStore.getPropertyKeyId("flag")
-      var count = 0
-      val nodes = nodeStore.getNodesByLabel(label)
-      val res = ArrayBuffer[StoredNodeWithProperty]()
-      while (nodes.hasNext && count < 10) {
-        val node = nodes.next()
-        if (node.properties.getOrElse(prop, null) == false) {
-          res += node
-          count += 1
-        }
-      }
+      nodeStore.allNodes().take(10000)
+      relationStore.allRelations().take(10000)
     })
 
     Profiler.timing({
       println("match (n:label0)-[r]->(m:label1) return r limit 10000")
 
-      val label0 = nodeStore.getLabelId("label0")
-      val label1 = nodeStore.getLabelId("label1")
+      val label0 = nodeStore.getLabelId("label5")
+      val label1 = nodeStore.getLabelId("label6")
       val limit = 10000
 
       val res = nodeStore
         .getNodeIdsByLabel(label0)
         .flatMap(relationStore.findOutRelations)
-        .filter{
-          rel =>
-            nodeStore
-              .getNodeById(rel.to)
-              .exists(_.labelIds.contains(label1))
-        }
+        .filter(rel =>nodeStore.hasLabel(rel.to, label1))
         .take(limit)
       println(res.length)
     })
@@ -95,15 +80,10 @@ class RelationAPITest {
       val res = nodeStore
         .getNodeIdsByLabel(label0)
         .flatMap(relationStore.findOutRelations)
-        .flatMap(rel => nodeStore.getNodeById(rel.to))
-        .filter(_.labelIds.contains(label1))
-        .flatMap(node => relationStore.findOutRelations(node.id))
-        .filter{
-          rel =>
-            nodeStore
-              .getNodeById(rel.to)
-              .exists(_.labelIds.contains(label2))
-        }
+        .map(_.to)
+        .filter(nodeId =>nodeStore.hasLabel(nodeId, label1))
+        .flatMap(relationStore.findOutRelations)
+        .filter(rel =>nodeStore.hasLabel(rel.to, label2))
         .take(limit)
 
       println(res.length)
@@ -121,18 +101,13 @@ class RelationAPITest {
       val res = nodeStore
         .getNodeIdsByLabel(label0)
         .flatMap(relationStore.findOutRelations)
-        .flatMap(rel => nodeStore.getNodeById(rel.to))
-        .filter(_.labelIds.contains(label1))
-        .flatMap(node => relationStore.findOutRelations(node.id))
-        .flatMap(rel => nodeStore.getNodeById(rel.to))
-        .filter(_.labelIds.contains(label2))
-        .flatMap(node => relationStore.findOutRelations(node.id))
-        .filter{
-          rel =>
-            nodeStore
-              .getNodeById(rel.to)
-              .exists(_.labelIds.contains(label3))
-        }
+        .map(_.to)
+        .filter(nodeId =>nodeStore.hasLabel(nodeId, label1))
+        .flatMap(relationStore.findOutRelations)
+        .map(_.to)
+        .filter(nodeId =>nodeStore.hasLabel(nodeId, label2))
+        .flatMap(relationStore.findOutRelations)
+        .filter(rel =>nodeStore.hasLabel(rel.to, label3))
         .take(limit)
       println(res.length)
     })
@@ -147,80 +122,74 @@ class RelationAPITest {
 
       val res = nodeStore
         .getNodeIdsByLabel(label0)
-        .flatMap(relationStore.findOutRelations)
-        .filter(_.typeId == type0)
-        .filter{
-          rel =>
-            nodeStore
-              .getNodeById(rel.to)
-              .exists(_.labelIds.contains(label1))
-        }
+        .flatMap(nodeId => relationStore.findOutRelations(nodeId, type0))
+        .filter(rel =>nodeStore.hasLabel(rel.to, label1))
         .take(limit)
       println(res.length)
     })
-
-    Profiler.timing({
-      println("match (n:label0)-[r:type1]->(m:label1) return r")
-
-      val label0 = nodeStore.getLabelId("label0")
-      val label1 = nodeStore.getLabelId("label1")
-      val type1  = relationStore.getRelationTypeId("type1")
-      val limit = 10000
-
-      val res = nodeStore
-        .getNodeIdsByLabel(label0)
-        .flatMap(relationStore.findOutRelations)
-        .filter(_.typeId == type1)
-        .filter{
-          rel =>
-            nodeStore
-              .getNodeById(rel.to)
-              .exists(_.labelIds.contains(label1))
-        }
-        .take(limit)
-      println(res.length)
-    })
-
-    Profiler.timing({
-      println("match (n:label3)-[r]->(m:label6) return r")
-
-      val label3 = nodeStore.getLabelId("label3")
-      val label6 = nodeStore.getLabelId("label6")
-      val limit = 10000
-
-      val res = nodeStore
-        .getNodeIdsByLabel(label3)
-        .flatMap(relationStore.findOutRelations)
-        .filter{
-          rel =>
-            nodeStore
-              .getNodeById(rel.to)
-              .exists(_.labelIds.contains(label6))
-        }
-        .take(limit)
-      println(res.length)
-    })
-
-    Profiler.timing({
-      println("match (n:label3)-[r:type1]->(m:label6) return r")
-
-      val label3 = nodeStore.getLabelId("label3")
-      val label6 = nodeStore.getLabelId("label6")
-      val type1  = relationStore.getRelationTypeId("type1")
-      val limit = 10000
-
-      val res = nodeStore
-        .getNodeIdsByLabel(label3)
-        .flatMap(relationStore.findOutRelations)
-        .filter(_.typeId == type1)
-        .filter{
-          rel =>
-            nodeStore
-              .getNodeById(rel.to)
-              .exists(_.labelIds.contains(label6))
-        }
-        .take(limit)
-      println(res.length)
-    })
+//
+//    Profiler.timing({
+//      println("match (n:label0)-[r:type1]->(m:label1) return r")
+//
+//      val label0 = nodeStore.getLabelId("label0")
+//      val label1 = nodeStore.getLabelId("label1")
+//      val type1  = relationStore.getRelationTypeId("type1")
+//      val limit = 10000
+//
+//      val res = nodeStore
+//        .getNodeIdsByLabel(label0)
+//        .flatMap(relationStore.findOutRelations)
+//        .filter(_.typeId == type1)
+//        .filter{
+//          rel =>
+//            nodeStore
+//              .getNodeById(rel.to)
+//              .exists(_.labelIds.contains(label1))
+//        }
+//        .take(limit)
+//      println(res.length)
+//    })
+//
+//    Profiler.timing({
+//      println("match (n:label3)-[r]->(m:label6) return r")
+//
+//      val label3 = nodeStore.getLabelId("label3")
+//      val label6 = nodeStore.getLabelId("label6")
+//      val limit = 10000
+//
+//      val res = nodeStore
+//        .getNodeIdsByLabel(label3)
+//        .flatMap(relationStore.findOutRelations)
+//        .filter{
+//          rel =>
+//            nodeStore
+//              .getNodeById(rel.to)
+//              .exists(_.labelIds.contains(label6))
+//        }
+//        .take(limit)
+//      println(res.length)
+//    })
+//
+//    Profiler.timing({
+//      println("match (n:label3)-[r:type1]->(m:label6) return r")
+//
+//      val label3 = nodeStore.getLabelId("label3")
+//      val label6 = nodeStore.getLabelId("label6")
+//      val type1  = relationStore.getRelationTypeId("type1")
+//      val limit = 10000
+//
+//      val res = nodeStore
+//        .getNodeIdsByLabel(label3)
+//        .flatMap(relationStore.findOutRelations)
+//        .filter(_.typeId == type1)
+//        .filter{
+//          rel =>
+//            nodeStore
+//              .getNodeById(rel.to)
+//              .exists(_.labelIds.contains(label6))
+//        }
+//        .take(limit)
+//      println(res.length)
+//    })
   }
 }

@@ -1,5 +1,6 @@
 package cn.pandadb.kernel.kv.index
 
+import cn.pandadb.kernel.kv.meta.{IndexIdGenerator, RelationIdGenerator}
 import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler, RocksDBStorage}
 
 import scala.collection.mutable
@@ -20,26 +21,30 @@ class IndexStoreAPI(dbPath: String) {
   private val meta = new IndexMetaData(metaDB)
   private val indexDB = RocksDBStorage.getDB(s"${dbPath}/index")
   private val index = new IndexStore(indexDB)
+  private val indexIdGenerator = new IndexIdGenerator(metaDB)
+
   //indexId->([name, address], Store)
   private val fulltextIndexMap = new mutable.HashMap[Int, (Array[Int], FulltextIndexStore)]()
 
-  def createIndex(label: Int, props: Array[Int]): IndexId = meta.addIndexMeta(label, props)
-
-  def createIndex(label: Int, prop: Int): IndexId = meta.addIndexMeta(label, Array(prop))
-
-  def createFulltextIndex(label: Int, prop: Int): IndexId = {
-    val indexId = meta.addIndexMeta(label, Array(prop), true)
-    val store = fulltextIndexMap.get(indexId)
-    if(store==None){
-      fulltextIndexMap.put(indexId, (Array(prop), new FulltextIndexStore(s"${dbPath}/${indexId}")))
+  def createIndex(label: Int, props: Array[Int]): IndexId =
+    meta.getIndexId(label, props).getOrElse{
+      val id = indexIdGenerator.nextId().toInt
+      meta.addIndexMeta(label, props, fulltext = false, id)
+      id
     }
-    indexId
-  }
+
+  def createIndex(label: Int, prop: Int): IndexId = createIndex(label, Array(prop))
+
+  def createFulltextIndex(label: Int, prop: Int): IndexId = createFulltextIndex(label, Array(prop))
 
   def createFulltextIndex(label: Int, props: Array[Int]): IndexId = {
-    val indexId = meta.addIndexMeta(label, props, true)
+    val indexId = meta.getIndexId(label, props, fulltext = true).getOrElse{
+      val id = indexIdGenerator.nextId().toInt
+      meta.addIndexMeta(label, props, fulltext = true, id)
+      id
+    }
     val store = fulltextIndexMap.get(indexId)
-    if(store==None){
+    if(store.isEmpty){
       fulltextIndexMap.put(indexId, (props, new FulltextIndexStore(s"${dbPath}/${indexId}")))
     }
     indexId
@@ -47,7 +52,7 @@ class IndexStoreAPI(dbPath: String) {
 
   def getIndexId(label: Int, props: Array[Int]): Option[IndexId] = meta.getIndexId(label, props)
 
-  def getIndexIdByLabel(label: Int): Array[(Array[Int], IndexId)] = meta.getIndexId(label)
+  def getIndexIdByLabel(label: Int): Array[(Array[Int], IndexId, Boolean)] = meta.getIndexId(label)
 
   def allIndexId: Iterator[IndexId] = meta.all()
 

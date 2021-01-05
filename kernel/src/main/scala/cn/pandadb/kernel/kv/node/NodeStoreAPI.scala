@@ -46,6 +46,13 @@ class NodeStoreAPI(dbPath: String) extends NodeStoreSPI {
   override def getNodeById(nodeId: Long): Option[StoredNodeWithProperty] =
     nodeLabelStore.get(nodeId).map(nodeStore.get(nodeId, _).get)
 
+  override def getNodeLabelsById(nodeId: Long): Array[Int] = {
+    nodeLabelStore.getAll(nodeId)
+  }
+
+  override def hasLabel(nodeId: Long, label: Int): Boolean =
+    nodeLabelStore.exist(nodeId, label)
+
   override def nodeAddLabel(nodeId: Long, labelId: Int): Unit =
     getNodeById(nodeId)
       .foreach{ node =>

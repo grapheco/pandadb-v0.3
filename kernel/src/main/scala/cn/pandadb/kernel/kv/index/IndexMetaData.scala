@@ -14,66 +14,41 @@ import org.rocksdb.RocksDB
 class IndexMetaData(db: RocksDB) {
 
   type IndexId   = Int
-  type NodeId    = Long
-  val metaIdKey: Array[Byte] = Array[Byte](KeyType.NodePropertyIndexMeta.id.toByte)
   /**
    * Index MetaData
    *
-   * ╔═══════════════╦══════════════╗
-   * ║      key      ║    value     ║
-   * ╠═══════╦═══════╬══════════════╣
-   * ║ label ║ props ║   indexId    ║
-   * ╚═══════╩═══════╩══════════════╝
+   * ╔══════════════════════════════╦══════════════╗
+   * ║              key             ║    value     ║
+   * ╠═══════╦═══════╦══════════════╬══════════════╣
+   * ║ label ║ props ║   fullText   ║   indexId    ║
+   * ╚═══════╩═══════╩══════════════╩══════════════╝
    */
-  def addIndexMeta(label: Int, props: Array[Int], fulltext:Boolean = false): IndexId = {
-    val key = KeyHandler.nodePropertyIndexMetaKeyToBytes(label, props)
-    val id  = db.get(key)
-    if (id == null || id.isEmpty){
-      val new_id = getIncreasingId
-      val id_byte = new Array[Byte](4)
-      ByteUtils.setInt(id_byte, 0, new_id)
-      db.put(key,id_byte)
-      new_id
-    } else {
-      ByteUtils.getInt(id, 0)
-    }
-  }
-
-  def getIncreasingId: IndexId ={
-    val increasingId = db.get(metaIdKey)
-    var id:Int = 0
-    if (increasingId != null && increasingId.nonEmpty){
-      id = ByteUtils.getInt(increasingId, 0)
-    }
-    val id_bytes = ByteUtils.intToBytes(id+1)
-    db.put(metaIdKey, id_bytes)
-    id
+  def addIndexMeta(label: Int, props: Array[Int], fulltext:Boolean = false, id: IndexId): Unit = {
+    val key = KeyHandler.nodePropertyIndexMetaKeyToBytes(label, props, fulltext)
+    db.put(key, ByteUtils.intToBytes(id))
   }
 
   def deleteIndexMeta(label: Int, props: Array[Int], fulltext:Boolean = false): Unit = {
-    db.delete(KeyHandler.nodePropertyIndexMetaKeyToBytes(label, props))
+    db.delete(KeyHandler.nodePropertyIndexMetaKeyToBytes(label, props, fulltext))
   }
 
   def getIndexId(label: Int, props: Array[Int], fulltext:Boolean = false): Option[IndexId] = {
-    val v = db.get(KeyHandler.nodePropertyIndexMetaKeyToBytes(label, props))
+    val v = db.get(KeyHandler.nodePropertyIndexMetaKeyToBytes(label, props, fulltext))
     if (v == null || v.length < 4) None else Some(ByteUtils.getInt(v, 0))
   }
 
-  def getIndexId(label: Int, prop: Int): Option[IndexId] = {
-    getIndexId(label, Array[Int](prop))
-  }
-
-  def getIndexId(label: Int): Array[(Array[Int],IndexId)] = {
-    val prefix = KeyHandler.nodePropertyIndexMetaKeyToBytes(label, Array.emptyIntArray)
+  def getIndexId(label: Int): Array[(Array[Int],IndexId, Boolean)] = {
+    val prefix = KeyHandler.nodePropertyIndexMetaKeyToBytes(label, Array.emptyIntArray, false)
     val iter = db.newIterator()
     iter.seek(prefix)
-    new Iterator[(Array[Int],IndexId)] {
+    new Iterator[(Array[Int],IndexId,Boolean)] {
       override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
-      override def next(): (Array[Int],IndexId) = {
-        val props = (0 until (iter.key().length-5)/4).toArray.map(i => ByteUtils.getInt(iter.key(), 5+4*i))
+      override def next(): (Array[Int],IndexId,Boolean) = {
+        val props = (0 until (iter.key().length-5)/4).toArray.map(i => ByteUtils.getInt(iter.key(), 4+4*i))
         val id = ByteUtils.getInt(iter.value(), 0)
+        val isFullText = ByteUtils.getBoolean(iter.key(), iter.key().length - 1)
         iter.next()
-        (props,id)
+        (props, id, isFullText)
       }
     }.toArray
   }

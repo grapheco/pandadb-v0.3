@@ -130,6 +130,10 @@ trait NodeStoreSPI {
 
   def getNodeIdsByLabel(labelId: Int): Iterator[Long];
 
+  def getNodeLabelsById(nodeId: Long): Array[Int];
+
+  def hasLabel(nodeId: Long, label: Int): Boolean;
+
   //  def getNodeLabelIdsBytes(nodeId: Long): Array[Byte];
   //
   //  def getNodePropertiesBytes(nodeId: Long): Array[Byte];
