@@ -109,13 +109,15 @@ final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, varMap: Map[Var, TNode
         }
       }).toIterable
 
+      records.toIterator.filter(!_.equals(Seq(CypherNull))).toIterable
+
       val newRecords = {
-        if (limit>0) records.take(limit.toInt)
-        else records
+        if (limit>0) records.toIterator.filter(!_.equals(Seq(CypherNull))).toIterable.take(limit.toInt)
+        else records.toIterator.filter(!_.equals(Seq(CypherNull))).toIterable
       }
 
 
-      LynxTable(next.table.schema ++ Seq(nodeVar.name -> CTNode), newRecords.toIterator.filter(!_.equals(Seq(CypherNull))).toIterable)
+      LynxTable(next.table.schema ++ Seq(nodeVar.name -> CTNode), newRecords)
     }
   }
   def getRecords: LynxRecords = {

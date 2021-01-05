@@ -108,12 +108,12 @@ object PandaPhysicalOptimizer {
         val tabularUnionAll = TabularUnionAll(op1, op2)
         generatePhysicalPlan(filterOps, ordinaryOps, tabularUnionAll)
         //todo throw exception
-      case x: ScanRels => handlePhyOpWithStat(filterOps.map(Transformer.getPredicate(_)), ordinaryOps, mutable.ListMap[PhysicalOperator, Long](), x)
-      case x: ScanNodes => handlePhyOpWithStat(filterOps.map(Transformer.getPredicate(_)), ordinaryOps, mutable.ListMap[PhysicalOperator, Long](), x)
+      case x: ScanRels => handlePhyOpWithStat(filterOps.map(Transformer.getPredicate(_)), ordinaryOps, Seq[(PhysicalOperator, Long)](), x)
+      case x: ScanNodes => handlePhyOpWithStat(filterOps.map(Transformer.getPredicate(_)), ordinaryOps, Seq[(PhysicalOperator, Long)](), x)
     }
   }
 
-  def handlePhyOpWithStat(filterOps: ArrayBuffer[NFPredicate], ordinaryOps: ArrayBuffer[PhysicalOperator], scanOps:mutable.ListMap[PhysicalOperator, Long], input: PhysicalOperator): PhysicalOperator = {
+  def handlePhyOpWithStat(filterOps: ArrayBuffer[NFPredicate], ordinaryOps: ArrayBuffer[PhysicalOperator], scanOps:Seq[(PhysicalOperator, Long)], input: PhysicalOperator): PhysicalOperator = {
     input match {
       case x:ScanNodes => {
         //ScanNodes(isEnd: Boolean, nodeVar: Var, varMap: Map[Var, TNode], in: PhysicalOperator, next: PhysicalOperator, labels: Set[String], filterOP: ArrayBuffer[NFPredicate])
@@ -121,9 +121,9 @@ object PandaPhysicalOptimizer {
         val newXop = ScanNodes(x.isEnd, x.nodeVar, x.varMap, x.in, x.next, x.labels, x.filterOP ++ xop)
 
         if (newXop.isEnd){
-          generationPlan(newXop.asInstanceOf[ScanNodes].in, filterOps, ordinaryOps, scanOps += newXop -> newXop.getRecordsNumbers)
+          generationPlan(newXop.asInstanceOf[ScanNodes].in, filterOps, ordinaryOps, scanOps ++ Seq(newXop -> newXop.getRecordsNumbers))
         }
-        else handlePhyOpWithStat(filterOps, ordinaryOps, scanOps += newXop -> newXop.getRecordsNumbers, newXop.next)
+        else handlePhyOpWithStat(filterOps, ordinaryOps, scanOps ++ Seq(newXop -> newXop.getRecordsNumbers), newXop.next)
       }
         //todo add graph for rels
       case x:ScanRels =>{
@@ -138,21 +138,22 @@ object PandaPhysicalOptimizer {
         val xop = filterOps.filter(u => u.isInstanceOf[NFBinaryPredicate] && u.asInstanceOf[NFBinaryPredicate].getName().equals(x.rel.name))
         val newXop = ScanRels(x.isEnd, x.sVar, x.rel, x.tVar, x.next, x.direction,  x.labels, x.filterOP ++ xop)
         if (newXop.isEnd){
-          generationPlan(newXop.asInstanceOf[ScanNodes].in, filterOps, ordinaryOps, scanOps += newXop -> newXop.getRecordsNumbers)
+          generationPlan(newXop.asInstanceOf[ScanNodes].in, filterOps, ordinaryOps, scanOps ++ Seq(newXop -> newXop.getRecordsNumbers))
         }
-        else handlePhyOpWithStat(filterOps, ordinaryOps, scanOps += newXop -> newXop.getRecordsNumbers, newXop.next)
+        else handlePhyOpWithStat(filterOps, ordinaryOps, scanOps ++ Seq(newXop -> newXop.getRecordsNumbers), newXop.next)
       }
     }
   }
 
-  def generationPlan(in: PhysicalOperator, filterOps: ArrayBuffer[NFPredicate], ordinaryOps: ArrayBuffer[PhysicalOperator], scanOps:mutable.ListMap[PhysicalOperator, Long]): PhysicalOperator ={
+  def generationPlan(in: PhysicalOperator, filterOps: ArrayBuffer[NFPredicate], ordinaryOps: ArrayBuffer[PhysicalOperator], scanOps:Seq[(PhysicalOperator, Long)]): PhysicalOperator ={
     val lop = filterOps.filter(_.isInstanceOf[NFLimit])
     val limit = if(lop.nonEmpty) lop.head else null
     //var opWithCnt: mutable.Map[PhysicalOperator, Long] = mutable.Map[PhysicalOperator, Long]()
 
     val (op, cnt) = scanOps.toArray.minBy(_._2)
 
-    val index = scanOps.values.toArray.zipWithIndex.filter(_._1 == cnt).head._2
+    //val index = scanOps.values.toArray.zipWithIndex.filter(_._1 == cnt).head._2
+    val index = scanOps.zipWithIndex.filter(_._1._2 ==cnt).head._2
 
     val leftOPs = scanOps.take(index).toArray.reverse.toBuffer
     val rigthOps = scanOps.takeRight(scanOps.size - 1 - index).toArray.toBuffer
