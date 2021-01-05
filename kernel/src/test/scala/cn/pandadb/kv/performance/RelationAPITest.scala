@@ -64,10 +64,11 @@ class RelationAPITest {
     })
 
     Profiler.timing({
-      println("match (n:label0)-[r]->(m:label1) return r")
+      println("match (n:label0)-[r]->(m:label1) return r limit 10000")
 
       val label0 = nodeStore.getLabelId("label0")
       val label1 = nodeStore.getLabelId("label1")
+      val limit = 10000
 
       val res = nodeStore
         .getNodeIdsByLabel(label0)
@@ -78,8 +79,10 @@ class RelationAPITest {
               .getNodeById(rel.to)
               .exists(_.labelIds.contains(label1))
         }
+        .take(limit)
       println(res.length)
     })
+
 
     Profiler.timing({
       println("match (n:label0)-[r1]->(m:label1)-[r2]->(p:label2) return r2")
@@ -87,6 +90,7 @@ class RelationAPITest {
       val label0 = nodeStore.getLabelId("label0")
       val label1 = nodeStore.getLabelId("label1")
       val label2 = nodeStore.getLabelId("label2")
+      val limit = 10000
 
       val res = nodeStore
         .getNodeIdsByLabel(label0)
@@ -100,17 +104,19 @@ class RelationAPITest {
               .getNodeById(rel.to)
               .exists(_.labelIds.contains(label2))
         }
+        .take(limit)
 
       println(res.length)
     })
 
     Profiler.timing({
-      println("match (n:label0)-[r1]->(m:label1)-[r2]->(p:label2)-[r3]->(q:label3) return r3")
+      println("match (n:label0)-[r1]->(m:label1)-[r2]->(p:label2)-[r3]->(q:label3) return r3 limit 1000")
 
       val label0 = nodeStore.getLabelId("label0")
       val label1 = nodeStore.getLabelId("label1")
       val label2 = nodeStore.getLabelId("label2")
       val label3 = nodeStore.getLabelId("label3")
+      val limit = 1000
 
       val res = nodeStore
         .getNodeIdsByLabel(label0)
@@ -127,6 +133,7 @@ class RelationAPITest {
               .getNodeById(rel.to)
               .exists(_.labelIds.contains(label3))
         }
+        .take(limit)
       println(res.length)
     })
 
@@ -136,6 +143,7 @@ class RelationAPITest {
       val label0 = nodeStore.getLabelId("label0")
       val label1 = nodeStore.getLabelId("label1")
       val type0  = relationStore.getRelationTypeId("type0")
+      val limit = 10000
 
       val res = nodeStore
         .getNodeIdsByLabel(label0)
@@ -147,6 +155,7 @@ class RelationAPITest {
               .getNodeById(rel.to)
               .exists(_.labelIds.contains(label1))
         }
+        .take(limit)
       println(res.length)
     })
 
@@ -156,6 +165,7 @@ class RelationAPITest {
       val label0 = nodeStore.getLabelId("label0")
       val label1 = nodeStore.getLabelId("label1")
       val type1  = relationStore.getRelationTypeId("type1")
+      val limit = 10000
 
       val res = nodeStore
         .getNodeIdsByLabel(label0)
@@ -167,6 +177,7 @@ class RelationAPITest {
               .getNodeById(rel.to)
               .exists(_.labelIds.contains(label1))
         }
+        .take(limit)
       println(res.length)
     })
 
@@ -175,6 +186,7 @@ class RelationAPITest {
 
       val label3 = nodeStore.getLabelId("label3")
       val label6 = nodeStore.getLabelId("label6")
+      val limit = 10000
 
       val res = nodeStore
         .getNodeIdsByLabel(label3)
@@ -185,6 +197,7 @@ class RelationAPITest {
               .getNodeById(rel.to)
               .exists(_.labelIds.contains(label6))
         }
+        .take(limit)
       println(res.length)
     })
 
@@ -194,6 +207,7 @@ class RelationAPITest {
       val label3 = nodeStore.getLabelId("label3")
       val label6 = nodeStore.getLabelId("label6")
       val type1  = relationStore.getRelationTypeId("type1")
+      val limit = 10000
 
       val res = nodeStore
         .getNodeIdsByLabel(label3)
@@ -205,6 +219,7 @@ class RelationAPITest {
               .getNodeById(rel.to)
               .exists(_.labelIds.contains(label6))
         }
+        .take(limit)
       println(res.length)
     })
   }
