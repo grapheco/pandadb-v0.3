@@ -17,8 +17,6 @@ class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
                                  statistics: Statistics)
       extends PandaPropertyGraphScan[Long] {
 
-  val loop = new Breaks
-
   protected def mapRelation(rel: StoredRelation): Relationship[Long] = {
     new Relationship[Long] {
       override type I = this.type

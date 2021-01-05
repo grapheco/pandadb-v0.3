@@ -1,5 +1,7 @@
 package cn.pandadb.server
 
+import java.io.FileInputStream
+
 import cn.pandadb.dbms.{DefaultGraphDatabaseManager, GraphDatabaseManager}
 import cn.pandadb.server.common.Logging
 import cn.pandadb.server.common.configuration.Config
