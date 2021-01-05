@@ -56,19 +56,11 @@ class FulltextIndexStore(val indexPath: String) {
     node + ("_id" -> node.get("_id").get) toMap
   }
 
-  def topDocs2NodeWithPropertiesArray(docs: TopDocs): Option[Iterator[Map[String, String]]] = {
-    docs.totalHits match {
-      case 0 => None
-      case _ => Some(docs.scoreDocs.map(scoreDoc => {scoreDoc2NodeProperties(scoreDoc)}).toIterator)
-    }
-  }
+  def topDocs2NodeWithPropertiesArray(docs: TopDocs): Iterator[Map[String, String]] =
+    docs.scoreDocs.map(scoreDoc => {scoreDoc2NodeProperties(scoreDoc)}).toIterator
 
-  def topDocs2NodeIdArray(docs: TopDocs): Option[Iterator[Long]] = {
-    docs.totalHits match {
-      case 0 => None
-      case _ =>  Some(docs.scoreDocs.map(s=>{reader.document(s.doc).get("_id").toLong}).toIterator)
-    }
-  }
+  def topDocs2NodeIdArray(docs: TopDocs): Iterator[Long] =
+    docs.scoreDocs.map(s=>{reader.document(s.doc).get("_id").toLong}).toIterator
 
   private def executeQuery(q: Query, topN: Int = Int.MaxValue): TopDocs = {
     val newReader = DirectoryReader.openIfChanged(reader)
