@@ -218,7 +218,8 @@ class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
     indexStore.find(indexId, value).map(nodeStore.getNodeById).filter(_.isDefined).map(s=>mapNode(s.get))
 
   // fixme should find both int and double
-  override def findRangeNodeId(indexId: Int, from: Any, to: Any): Iterator[Long] = {
+  override def findRangeNodeId(indexId: Int, from: Float, to: Float, fromClosed:Boolean = false, toClosed:Boolean = false): Iterator[Long] = {
+
     (from,to) match {
       case range: (Int, Int) => indexStore.findIntRange(indexId, range._1, range._2)
       case range: (Float, Float) => indexStore.findFloatRange(indexId, range._1, range._2)
@@ -226,8 +227,8 @@ class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
     }
   }
 
-  override def findRangeNode(indexId: Int, from: Any, to: Any): Iterator[Node[Long]] =
-    findRangeNodeId(indexId, from, to).map(nodeStore.getNodeById).filter(_.isDefined).map(s=>mapNode(s.get))
+  override def findRangeNode(indexId: Int, from: Float, to: Float, fromClosed:Boolean = false, toClosed:Boolean = false): Iterator[Node[Long]] =
+    findRangeNodeId(indexId, from, to, fromClosed, toClosed).map(nodeStore.getNodeById).filter(_.isDefined).map(s=>mapNode(s.get))
 
   override def startWithNodeId(indexId: Int, start: String): Iterator[Long] =
     indexStore.findStringStartWith(indexId, start)

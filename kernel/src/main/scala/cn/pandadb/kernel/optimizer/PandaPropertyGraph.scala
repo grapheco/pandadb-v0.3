@@ -502,9 +502,9 @@ trait PandaPropertyGraphScan[Id] extends PropertyGraphScanner[Id] with HasStatis
 
   def findNode(indexId: Int, value: Any): Iterator[Node[Id]] = ???
 
-  def findRangeNodeId(indexId: Int, from: Any, to: Any): Iterator[Long] = ???
+  def findRangeNodeId(indexId: Int, from: Float, to: Float, fromClose:Boolean = false, toClose:Boolean = false): Iterator[Long] = ???
 
-  def findRangeNode(indexId: Int, from: Any, to: Any): Iterator[Node[Id]] = ???
+  def findRangeNode(indexId: Int, from: Float, to: Float, fromClose:Boolean = false, toClose:Boolean = false): Iterator[Node[Id]] = ???
 
   def startWithNodeId(indexId: Int, start: String): Iterator[Long] = ???
 
