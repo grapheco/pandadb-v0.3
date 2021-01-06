@@ -18,12 +18,12 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class PandaStatementResult(driverRecords: Iterator[DriverValue], rpcClient: PandaRpcClient, cypher: String) extends StatementResult{
+class PandaStatementResult(driverRecords: Iterator[DriverValue], rpcClient: PandaRpcClient, cypher: String, params:Map[String,Any]) extends StatementResult{
   var queryKeys:javaUtil.List[String] = null  // like (n, n.name)
 
   override def keys(): javaUtil.List[String] = {
     if (queryKeys == null){
-      queryKeys = seqAsJavaList(rpcClient.peekOneDataRequest(cypher).metadata)
+      queryKeys = seqAsJavaList(rpcClient.peekOneDataRequest(cypher, params).metadata)
       queryKeys
     }else{
       queryKeys

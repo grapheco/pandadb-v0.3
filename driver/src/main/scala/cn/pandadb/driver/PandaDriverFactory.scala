@@ -1,12 +1,13 @@
-package cn.pandadb.driver.utils
+package cn.pandadb.driver
 
-import cn.pandadb.driver.{PandaDriver, PandaRpcClient, UsernameOrPasswordErrorException}
+import cn.pandadb.driver.utils.RegexUtils
 
 class PandaDriverFactory(uri: String, authtoken: PandaAuthToken, config: PandaDriverConfig) {
 
   def newInstance(): PandaDriver ={
-    val address = uri.split(":")(0)
-    val port = uri.split(":")(1).toInt
+    val res = RegexUtils.getIpAndPort(uri)
+    val address = res._1
+    val port = res._2
 
     val rpcClient = new PandaRpcClient(address, port, config.RPC_CLIENT_NAME, config.RPC_SERVER_NAME)
 

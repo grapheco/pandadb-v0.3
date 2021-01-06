@@ -71,8 +71,8 @@ class MyStreamHandler(graphFacade:GraphService) extends HippoRpcHandler {
     case SayHelloRequest(msg) =>
       context.reply(SayHelloResponse(msg.toUpperCase()))
 
-    case PeekOneDataRequest(cypher) =>{
-      val result = graphFacade.cypher(cypher).records
+    case PeekOneDataRequest(cypher, params) =>{
+      val result = graphFacade.cypher(cypher, params).records
       val iter = result.iterator
       val metadata = result.physicalColumns.toList
       val record: DriverValue = {
@@ -95,8 +95,8 @@ class MyStreamHandler(graphFacade:GraphService) extends HippoRpcHandler {
   }
 
   override def openChunkedStream(): PartialFunction[Any, ChunkedStream] = {
-    case CypherRequest(cypher) =>{
-      val result = graphFacade.cypher(cypher).records
+    case CypherRequest(cypher, params) =>{
+      val result = graphFacade.cypher(cypher, params).records
       val metadata = result.physicalColumns.toList
       val pandaIterator = new PandaRecordsIterator(metadata, result.iterator)
       ChunkedStream.grouped(100, pandaIterator.toIterable)

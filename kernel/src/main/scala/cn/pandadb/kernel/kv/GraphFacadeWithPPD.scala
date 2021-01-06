@@ -232,7 +232,6 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
   //FIXME: expensive time cost
   private def init(): Unit = {
     statistics.init()
-    println("finished init")
   }
 
   def snapshot(): Unit = {

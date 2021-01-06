@@ -14,13 +14,14 @@ class PandaRpcClient(hostName:String, port: Int, clientName: String, serverName:
   var config: RpcEnvClientConfig = new RpcEnvClientConfig(new RpcConf(), clientName)
   val rpcEnv = HippoRpcEnvFactory.create(config)
   val endpointRef = rpcEnv.setupEndpointRef(new RpcAddress(hostName, port), serverName)
-  def sendCypherRequest(cypher: String): Iterator[DriverValue] ={
-    endpointRef.getChunkedStream[DriverValue](CypherRequest(cypher), Duration.Inf).iterator
+
+  def sendCypherRequest(cypher: String, params:Map[String, Any]): Iterator[DriverValue] ={
+    endpointRef.getChunkedStream[DriverValue](CypherRequest(cypher, params), Duration.Inf).iterator
 
   }
-  def peekOneDataRequest(cypher: String): DriverValue = {
+  def peekOneDataRequest(cypher: String, params: Map[String, Any]): DriverValue = {
     // maybe to async?
-    Await.result(endpointRef.askWithBuffer[PeekOneDataResponse](PeekOneDataRequest(cypher)), Duration("30s")).driverValue
+    Await.result(endpointRef.askWithBuffer[PeekOneDataResponse](PeekOneDataRequest(cypher, params: Map[String, Any])), Duration("30s")).driverValue
   }
 
   def verifyConnectionRequest(username:String, password: String): String = {
