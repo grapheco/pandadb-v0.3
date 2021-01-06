@@ -1,9 +1,9 @@
 package org.neo4j.driver;
 
 import cn.pandadb.driver.PandaDriver;
-import cn.pandadb.driver.utils.PandaAuthToken;
-import cn.pandadb.driver.utils.PandaDriverFactory;
-import cn.pandadb.driver.utils.PandaDriverConfig;
+import cn.pandadb.driver.PandaAuthToken;
+import cn.pandadb.driver.PandaDriverFactory;
+import cn.pandadb.driver.PandaDriverConfig;
 
 public class GraphDatabase
 {

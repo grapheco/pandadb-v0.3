@@ -30,7 +30,7 @@ object client {
     rpcEnv.shutdown()
   }
   def sendCypherRequest(endpointRef:HippoEndpointRef, rpcEnv: HippoRpcEnv): Unit ={
-    val res = endpointRef.getChunkedStream[Map[String, Value]](CypherRequest("match (n) return n, n.name"), Duration.Inf)
+    val res = endpointRef.getChunkedStream[Map[String, Value]](CypherRequest("match (n) return n, n.name", Map()), Duration.Inf)
     val iter = res.iterator
     while (iter.hasNext){
       val rec = iter.next()

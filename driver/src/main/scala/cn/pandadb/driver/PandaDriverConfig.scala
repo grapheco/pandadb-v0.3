@@ -1,9 +1,9 @@
-package cn.pandadb.driver.utils
+package cn.pandadb.driver
 
 object PandaDriverConfig {
 
   def defaultConfiguration(): PandaDriverConfig = {
-    new PandaDriverConfig("pandadb-server", "panda-client")
+    new PandaDriverConfig("pandadb-server", "pandadb-client")
   }
 }
 

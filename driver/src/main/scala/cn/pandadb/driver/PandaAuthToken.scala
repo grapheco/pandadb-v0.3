@@ -1,4 +1,4 @@
-package cn.pandadb.driver.utils
+package cn.pandadb.driver
 
 object PandaAuthToken {
 

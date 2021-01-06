@@ -21,7 +21,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherValue
 import scala.collection.mutable
 
 object server {
-  val PANDA_SERVER_NAME = "panda-server"
+  val PANDA_SERVER_NAME = "pandadb-server"
 
   var nodeStore: NodeStoreSPI = _
   var relationStore: RelationStoreSPI = _
@@ -54,7 +54,7 @@ object server {
     graphFacade.addRelation("friend", 1L, 2L, Map())
 
     //    val config = RpcEnvServerConfig(new RpcConf(), "server", args(0), 8878)
-    val config = RpcEnvServerConfig(new RpcConf(), PANDA_SERVER_NAME, "localhost", 8878)
+    val config = RpcEnvServerConfig(new RpcConf(), PANDA_SERVER_NAME, "0.0.0.0", 8878)
     val rpcEnv = HippoRpcEnvFactory.create(config)
     val endpoint = new MyEndpoint(rpcEnv)
     val handler = new MyStreamHandler(graphFacade)
@@ -80,8 +80,8 @@ class MyStreamHandler(graphFacade:GraphFacadeWithPPD) extends HippoRpcHandler {
     case SayHelloRequest(msg) =>
       context.reply(SayHelloResponse(msg.toUpperCase()))
 
-    case PeekOneDataRequest(cypher) =>{
-      val result = graphFacade.cypher(cypher).records
+    case PeekOneDataRequest(cypher, params) =>{
+      val result = graphFacade.cypher(cypher, params).records
       val iter = result.iterator
       val metadata = result.physicalColumns.toList
       val record: DriverValue = {
@@ -104,8 +104,8 @@ class MyStreamHandler(graphFacade:GraphFacadeWithPPD) extends HippoRpcHandler {
   }
 
   override def openChunkedStream(): PartialFunction[Any, ChunkedStream] = {
-    case CypherRequest(cypher) =>{
-      val result = graphFacade.cypher(cypher).records
+    case CypherRequest(cypher, params) =>{
+      val result = graphFacade.cypher(cypher, params).records
       val metadata = result.physicalColumns.toList
       val pandaIterator = new PandaRecordsIterator(metadata, result.iterator)
       ChunkedStream.grouped(100, pandaIterator.toIterable)

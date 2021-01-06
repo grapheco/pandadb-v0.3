@@ -2,8 +2,8 @@ package cn.pandadb.hipporpc.message
 
 import cn.pandadb.hipporpc.utils.DriverValue
 
-case class CypherRequest(cypher: String){}
-case class PeekOneDataRequest(cypher: String){}
+case class CypherRequest(cypher: String, params:Map[String, Any]){}
+case class PeekOneDataRequest(cypher: String, params:Map[String, Any]){}
 case class PeekOneDataResponse(driverValue: DriverValue){}
 
 case class SayHelloRequest(msg: String){}
