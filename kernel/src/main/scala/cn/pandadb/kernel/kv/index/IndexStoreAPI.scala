@@ -25,6 +25,7 @@ class IndexStoreAPI(dbPath: String) {
 
   //indexId->([name, address], Store)
   private val fulltextIndexMap = new mutable.HashMap[Int, (Array[Int], FulltextIndexStore)]()
+  private val fulltextIndexPathPrefix = s"${dbPath}/index/fulltextIndex"
 
   def createIndex(label: Int, props: Array[Int]): IndexId =
     meta.getIndexId(label, props).getOrElse{
@@ -45,7 +46,7 @@ class IndexStoreAPI(dbPath: String) {
     }
     val store = fulltextIndexMap.get(indexId)
     if(store.isEmpty){
-      fulltextIndexMap.put(indexId, (props, new FulltextIndexStore(s"${dbPath}/${indexId}")))
+      fulltextIndexMap.put(indexId, (props, new FulltextIndexStore(s"$fulltextIndexPathPrefix/$indexId")))
     }
     indexId
   }
@@ -158,8 +159,9 @@ class IndexStoreAPI(dbPath: String) {
         IndexEncoder.encode(string).take(string.getBytes().length / 8 + string.getBytes().length)))
 
   def search(indexId: IndexId, props: Array[Int], keyword: String): Iterator[Long] = {
+    println(indexId, fulltextIndexMap.get(indexId).get._2)
     val store = fulltextIndexMap.get(indexId).get._2
-    store.topDocs2NodeIdArray(store.search(props.map(v=>s"$v"),keyword)).get
+    store.topDocs2NodeIdArray(store.search(props.map(v=>s"$v"),keyword))
   }
 
   def findIntRange(indexId: IndexId, startValue: Int = Int.MinValue, endValue: Int = Int.MaxValue): Iterator[Long] =
