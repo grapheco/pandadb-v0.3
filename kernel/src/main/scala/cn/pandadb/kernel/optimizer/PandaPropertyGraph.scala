@@ -317,10 +317,10 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
               }
 
               val nodes = t match {
-                case "<=" => scan.findRangeNode(indexId, min, v)
-                case "<" => scan.findRangeNode(indexId, min, v)
-                case ">=" => scan.findRangeNode(indexId, v, max)
-                case ">" => scan.findRangeNode(indexId, v, max)
+                case "<=" => scan.findRangeNode(indexId, min, v.asInstanceOf[Float], false, true)
+                case "<" => scan.findRangeNode(indexId, min,  v.asInstanceOf[Float], false, false)
+                case ">=" => scan.findRangeNode(indexId,  v.asInstanceOf[Float], max, true, false)
+                case ">" => scan.findRangeNode(indexId,  v.asInstanceOf[Float], max, false, false)
               }
               if (size>0) nodes.filter(filterNode(_, opsNew)).take(size.toInt)
               else nodes.filter(filterNode(_, opsNew))
