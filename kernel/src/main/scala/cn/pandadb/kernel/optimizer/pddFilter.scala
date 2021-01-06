@@ -23,7 +23,12 @@ object Transformer {
         rhs match {
           //case x:Falselit
           case x:BoolLit => x.v
-          case _ => parameters.get(rhs.asInstanceOf[Param].name).get.getValue.get
+          case _ => {
+           val a= parameters.get(rhs.asInstanceOf[Param].name)
+            val b = a.get
+            val c = b.getValue.get
+            c
+          }
         }
         //parameters.get(rhs.asInstanceOf[Param].name).get.getValue.get
       }), lhs.asInstanceOf[ElementProperty].propertyOwner.asInstanceOf[Var].name)

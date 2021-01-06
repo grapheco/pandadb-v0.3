@@ -195,8 +195,8 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
 
   def isOkNode(p: NFPredicate, node: Node[Id]): Boolean = {
     p match {
-      case x:NFGreaterThanOrEqual => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] >= x.value.asInstanceOf[Int]) true else false
-      case x:NFLessThanOrEqual => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] <= x.value.asInstanceOf[Int]) true else false
+      case x:NFGreaterThanOrEqual => x.isInRange(node.properties.get(x.propName).get.getValue.get)
+      case x:NFLessThanOrEqual => x.isInRange(node.properties.get(x.propName).get.getValue.get)
       case x:NFEquals => {
         if(node.properties.get(x.propName).get.getValue.get.equals(x.value.anyValue) ) {
           true
@@ -205,8 +205,8 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
           false
         }
       }
-      case x:NFLessThan => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] < x.value.asInstanceOf[Int]) true else false
-      case x:NFGreaterThan => if(node.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] > x.value.asInstanceOf[Int]) true else false
+      case x:NFLessThan => x.isInRange(node.properties.get(x.propName).get.getValue.get)
+      case x:NFGreaterThan => x.isInRange(node.properties.get(x.propName).get.getValue.get)
     }
   }
 
@@ -305,14 +305,19 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
           if (eqlops.isEmpty){
             val (indexId,label,props, cnt) = scan.isPropertysWithIndex(labels, rangeops.map(_._1).toSet)
             if (indexId >= 0) {
-              val (v,t) = props.toSeq.map(rangeops.toMap.get(_)).head.get
+              var (v,t) = props.toSeq.map(rangeops.toMap.get(_)).head.get
               val max = Float.MaxValue
               val min = Float.MinValue
+              val value = v match {
+                case v:Long => v.toInt.toFloat
+                case v:Double => v.toFloat
+              }
+
               val nodes = t match {
-                case "<=" => scan.findRangeNode(indexId, min, v.asInstanceOf[Float], toClose = true)
-                case "<" => scan.findRangeNode(indexId, min,  v.asInstanceOf[Float])
-                case ">=" => scan.findRangeNode(indexId,  v.asInstanceOf[Float], max, fromClose = true)
-                case ">" => scan.findRangeNode(indexId,  v.asInstanceOf[Float], max)
+                case "<=" => scan.findRangeNode(indexId, min, value, toClose = true)
+                case "<" => scan.findRangeNode(indexId, min,  value)
+                case ">=" => scan.findRangeNode(indexId,  value, max, fromClose = true)
+                case ">" => scan.findRangeNode(indexId,  value, max)
               }
               if (size>0) nodes.filter(filterNode(_, opsNew)).take(size.toInt)
               else nodes.filter(filterNode(_, opsNew))
