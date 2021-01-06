@@ -210,21 +210,15 @@ class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
     val count = indexId.map(statistics.getIndexPropertyCount(_).getOrElse(-1L)).getOrElse(-1L)
     (indexId.getOrElse(-1), label, propertyName, count)
   }
-
-
+  
   override def findNodeId(indexId: Int, value: Any): Iterator[Long] = indexStore.find(indexId, value)
 
   override def findNode(indexId: Int, value: Any): Iterator[Node[Long]] =
     indexStore.find(indexId, value).map(nodeStore.getNodeById).filter(_.isDefined).map(s=>mapNode(s.get))
 
-  // fixme should find both int and double
   override def findRangeNodeId(indexId: Int, from: Float, to: Float, fromClosed:Boolean = false, toClosed:Boolean = false): Iterator[Long] = {
-
-    (from,to) match {
-      case range: (Int, Int) => indexStore.findIntRange(indexId, range._1, range._2)
-      case range: (Float, Float) => indexStore.findFloatRange(indexId, range._1, range._2)
-      case _ => null
-    }
+    indexStore.findFloatRange(indexId, from, to, startClosed = fromClosed, endClosed = toClosed) ++
+      indexStore.findIntRange(indexId, from.toInt, to.toInt, startClosed = fromClosed, endClosed = toClosed)
   }
 
   override def findRangeNode(indexId: Int, from: Float, to: Float, fromClosed:Boolean = false, toClosed:Boolean = false): Iterator[Node[Long]] =

@@ -306,21 +306,13 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
             val (indexId,label,props, cnt) = scan.isPropertysWithIndex(labels, rangeops.map(_._1).toSet)
             if (indexId >= 0) {
               val (v,t) = props.toSeq.map(rangeops.toMap.get(_)).head.get
-              val max = {
-                if (v.isInstanceOf[Int]) Int.MaxValue
-                else Float.MaxValue
-              }
-
-              val min = {
-                if (v.isInstanceOf[Int]) Int.MinValue
-                else Float.MinValue
-              }
-
+              val max = Float.MaxValue
+              val min = Float.MinValue
               val nodes = t match {
-                case "<=" => scan.findRangeNode(indexId, min, v.asInstanceOf[Float], false, true)
-                case "<" => scan.findRangeNode(indexId, min,  v.asInstanceOf[Float], false, false)
-                case ">=" => scan.findRangeNode(indexId,  v.asInstanceOf[Float], max, true, false)
-                case ">" => scan.findRangeNode(indexId,  v.asInstanceOf[Float], max, false, false)
+                case "<=" => scan.findRangeNode(indexId, min, v.asInstanceOf[Float], toClose = true)
+                case "<" => scan.findRangeNode(indexId, min,  v.asInstanceOf[Float])
+                case ">=" => scan.findRangeNode(indexId,  v.asInstanceOf[Float], max, fromClose = true)
+                case ">" => scan.findRangeNode(indexId,  v.asInstanceOf[Float], max)
               }
               if (size>0) nodes.filter(filterNode(_, opsNew)).take(size.toInt)
               else nodes.filter(filterNode(_, opsNew))

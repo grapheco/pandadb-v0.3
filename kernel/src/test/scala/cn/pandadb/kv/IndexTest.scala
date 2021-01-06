@@ -155,7 +155,10 @@ class IndexTest extends Assert {
     Assert.assertArrayEquals(Array[Long](9,8,7,6,5,0,1,2,3,4), ni.findIntRange(indexId).toArray)
 //    ni.findIntRange(indexId, 3,20).toList.foreach(println(_))
     Assert.assertArrayEquals(Array[Long](2,3), ni.findIntRange(indexId, 3,100).toArray)
-    Assert.assertArrayEquals(Array[Long](5,0,1,2,3), ni.findIntRange(indexId, 0,99).toArray)
+    Assert.assertArrayEquals(Array[Long](2,3,4), ni.findIntRange(indexId, 3,100, endClosed = true).toArray)
+    Assert.assertArrayEquals(Array[Long](0,1,2,3), ni.findIntRange(indexId, 0,99).toArray)
+    Assert.assertArrayEquals(Array[Long](5,0,1,2,3), ni.findIntRange(indexId, 0,99, startClosed = true).toArray)
+    Assert.assertArrayEquals(Array[Long](0,1,2,3), ni.findIntRange(indexId, 0,99, endClosed = true).toArray)
     Assert.assertArrayEquals(Array[Long](8,7,6,5,0,1,2,3), ni.findIntRange(indexId, -60,60).toArray)
   }
 

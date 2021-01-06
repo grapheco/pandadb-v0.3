@@ -130,10 +130,17 @@ class IndexStoreAPI(dbPath: String) {
   def find(indexId: IndexId, value: Any): Iterator[Long] =
     findByPrefix(KeyHandler.nodePropertyIndexPrefixToBytes(indexId, IndexEncoder.typeCode(value), IndexEncoder.encode(value)))
 
-  private def findRange(indexId:IndexId, valueType: Byte, startValue: Array[Byte] , endValue: Array[Byte]): Iterator[Long] = {
+  private def findRange(indexId:IndexId,
+                        valueType: Byte,
+                        startValue: Array[Byte],
+                        endValue: Array[Byte],
+                        startClosed: Boolean,
+                        endClosed: Boolean): Iterator[Long] = {
+    val startTail = if(startClosed) 0 else -1
+    val endTail = if(endClosed) -1 else 0
     val typePrefix  = KeyHandler.nodePropertyIndexTypePrefix(indexId, valueType)
-    val startPrefix = KeyHandler.nodePropertyIndexPrefixToBytes(indexId, valueType, startValue)
-    val endPrefix   = KeyHandler.nodePropertyIndexPrefixToBytes(indexId, valueType, endValue)
+    val startPrefix = KeyHandler.nodePropertyIndexKeyToBytes(indexId, valueType, startValue, startTail.toLong)
+    val endPrefix   = KeyHandler.nodePropertyIndexKeyToBytes(indexId, valueType, endValue, endTail.toLong)
     val iter = indexDB.newIterator()
     iter.seekForPrev(endPrefix)
     val endKey = iter.key()
@@ -164,11 +171,19 @@ class IndexStoreAPI(dbPath: String) {
     store.topDocs2NodeIdArray(store.search(props.map(v=>s"$v"),keyword))
   }
 
-  def findIntRange(indexId: IndexId, startValue: Int = Int.MinValue, endValue: Int = Int.MaxValue): Iterator[Long] =
-    findRange(indexId, IndexEncoder.INT_CODE, IndexEncoder.encode(startValue), IndexEncoder.encode(endValue))
+  def findIntRange(indexId: IndexId,
+                   startValue: Int = Int.MinValue,
+                   endValue: Int = Int.MaxValue,
+                   startClosed: Boolean = false,
+                   endClosed: Boolean = false): Iterator[Long] =
+    findRange(indexId, IndexEncoder.INT_CODE, IndexEncoder.encode(startValue), IndexEncoder.encode(endValue), startClosed, endClosed)
 
-  def findFloatRange(indexId: IndexId, startValue: Float, endValue: Float): Iterator[Long] =
-    findRange(indexId, IndexEncoder.FLOAT_CODE, IndexEncoder.encode(startValue), IndexEncoder.encode(endValue))
+  def findFloatRange(indexId: IndexId,
+                     startValue: Float,
+                     endValue: Float,
+                     startClosed: Boolean = false,
+                     endClosed: Boolean = false): Iterator[Long] =
+    findRange(indexId, IndexEncoder.FLOAT_CODE, IndexEncoder.encode(startValue), IndexEncoder.encode(endValue), startClosed, endClosed)
 
   def close(): Unit = {
     indexDB.close()
