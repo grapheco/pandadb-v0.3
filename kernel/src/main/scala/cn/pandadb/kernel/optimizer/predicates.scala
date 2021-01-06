@@ -54,20 +54,26 @@ case class NFGreaterThan(propName: String, value: AnyValue, name: String) extend
   override def getType(): String = ">"
 
   override def isInRange(v: Any): Boolean = {
-    val vs = v match {
-      case x:Long => x
-      case x:Int => x
-      case x:Float => x
-      case x:Double => x
+    if (v.isInstanceOf[String]) {
+      if (value.anyValue.isInstanceOf[String]) v.asInstanceOf[String] > value.anyValue.asInstanceOf[String]
+      else false
     }
-    val vp = value.anyValue match {
-      case x:Long => x
-      case x:Int => x
-      case x:Float => x
-      case x:Double => x
+    else {
+      val vs = v match {
+        case x: Long => x
+        case x: Int => x
+        case x: Float => x
+        case x: Double => x
+      }
+      val vp = value.anyValue match {
+        case x: Long => x
+        case x: Int => x
+        case x: Float => x
+        case x: Double => x
+      }
+      if (vs > vp) true
+      else false
     }
-    if (vs > vp) true
-    else false
 
   }
 }
@@ -82,20 +88,26 @@ case class NFGreaterThanOrEqual(propName: String, value: AnyValue, name: String)
   override def getType(): String = ">="
 
   override def isInRange(v: Any): Boolean = {
-    val vs = v match {
-      case x:Long => x
-      case x:Int => x
-      case x:Float => x
-      case x:Double => x
+    if (v.isInstanceOf[String]) {
+      if (value.anyValue.isInstanceOf[String]) v.asInstanceOf[String] >= value.anyValue.asInstanceOf[String]
+      else false
     }
-    val vp = value.anyValue match {
-      case x:Long => x
-      case x:Int => x
-      case x:Float => x
-      case x:Double => x
+    else {
+      val vs = v match {
+        case x: Long => x
+        case x: Int => x
+        case x: Float => x
+        case x: Double => x
+      }
+      val vp = value.anyValue match {
+        case x: Long => x
+        case x: Int => x
+        case x: Float => x
+        case x: Double => x
+      }
+      if (vs >= vp) true
+      else false
     }
-    if (vs >= vp) true
-    else false
 
   }
 }
@@ -110,21 +122,26 @@ case class NFLessThan(propName: String, value: AnyValue, name: String) extends N
   override def getType(): String = "<"
 
   override def isInRange(v: Any): Boolean = {
-    val vs = v match {
-      case x:Long => x
-      case x:Int => x
-      case x:Float => x
-      case x:Double => x
+    if (v.isInstanceOf[String]) {
+      if (value.anyValue.isInstanceOf[String]) v.asInstanceOf[String] < value.anyValue.asInstanceOf[String]
+      else false
     }
-    val vp = value.anyValue match {
-      case x:Long => x
-      case x:Int => x
-      case x:Float => x
-      case x:Double => x
+    else {
+      val vs = v match {
+        case x: Long => x
+        case x: Int => x
+        case x: Float => x
+        case x: Double => x
+      }
+      val vp = value.anyValue match {
+        case x: Long => x
+        case x: Int => x
+        case x: Float => x
+        case x: Double => x
+      }
+      if (vs < vp) true
+      else false
     }
-    if (vs < vp) true
-    else false
-
   }
 }
 
@@ -138,20 +155,26 @@ case class NFLessThanOrEqual(propName: String, value: AnyValue, name: String) ex
   override def getType(): String = "<="
 
   override def isInRange(v: Any): Boolean = {
-    val vs = v match {
-      case x:Long => x
-      case x:Int => x
-      case x:Float => x
-      case x:Double => x
+    if (v.isInstanceOf[String]) {
+      if (value.anyValue.isInstanceOf[String]) v.asInstanceOf[String] <= value.anyValue.asInstanceOf[String]
+      else false
     }
-    val vp = value.anyValue match {
-      case x:Long => x
-      case x:Int => x
-      case x:Float => x
-      case x:Double => x
+    else {
+      val vs = v match {
+        case x: Long => x
+        case x: Int => x
+        case x: Float => x
+        case x: Double => x
+      }
+      val vp = value.anyValue match {
+        case x: Long => x
+        case x: Int => x
+        case x: Float => x
+        case x: Double => x
+      }
+      if (vs <= vp) true
+      else false
     }
-    if (vs <= vp) true
-    else false
 
   }
 }
