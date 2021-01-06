@@ -210,7 +210,7 @@ class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
     val count = indexId.map(statistics.getIndexPropertyCount(_).getOrElse(-1L)).getOrElse(-1L)
     (indexId.getOrElse(-1), label, propertyName, count)
   }
-  
+
   override def findNodeId(indexId: Int, value: Any): Iterator[Long] = indexStore.find(indexId, value)
 
   override def findNode(indexId: Int, value: Any): Iterator[Node[Long]] =

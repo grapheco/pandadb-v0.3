@@ -196,4 +196,41 @@ class GraphFacadeWithPPDTest {
 
   }
 
+  @Test
+  def index(): Unit ={
+    val createCypher = Array(
+      "create (n:person{name: 'bob', age: 31})",
+      "create (n:person{name: 'alice', age: 31.5})",
+      "create (n:person{name: 'bobobobob', age: 3})",
+      "create (n:person{name: 22, age: '31'})",
+      "create (n:person{name: 'b', age: -100})",
+      "create (n:person{name: 'ba', age: -100.000001})",
+      "create (n:person{name: 'bob', age: 32})",
+      "create (n:worker{name: 'alice', age: 31.5})",
+      "create (n:worker{name: 'bobobobob', age: 3})",
+      "create (n:worker{name: 22, age: '31'})",
+      "create (n:worker{name: 'b', age: -100})",
+      "create (n:worker{name: 'ba', age: -100.000001})",
+    )
+    createCypher.foreach(graphFacade.cypher(_))
+    
+    graphFacade.createIndexOnNode("person", Set("name"))
+    graphFacade.createIndexOnNode("person", Set("age"))
+
+    val matchCypher = Array(
+      "match (n:person) where n.person.name = 'bob' return n",
+      "match (n:person) where n.person.name = 22 return n",
+      "match (n:person) where n.person.name = 'alice' return n",
+      "match (n:person) where n.person.name starts with 'alice' return n",
+      "match (n:person) where n.person.name starts with 'b' return n",
+      "match (n:person) where n.person.age = 31 return n",
+      "match (n:person) where n.person.age < 31 return n",
+      "match (n:person) where n.person.age <= 31 return n",
+      "match (n:person) where n.person.age <= 31.00 return n",
+      "match (n:person) where n.person.age > -100 return n",
+      "match (n:person) where n.person.age > -100.0000001 return n",
+    )
+
+    matchCypher.foreach(graphFacade.cypher(_).show)
+  }
 }
