@@ -38,7 +38,7 @@ object server {
     FileUtils.deleteDirectory(new File("./testdata"))
     new File("./testdata/output").mkdirs()
 
-    val dbPath = "./testdata"
+    val dbPath = "D:\\data\\graph500\\db"
     nodeStore = new NodeStoreAPI(dbPath)
     relationStore = new RelationStoreAPI(dbPath)
     indexStore = new IndexStoreAPI(dbPath)
@@ -52,11 +52,11 @@ object server {
       {}
     )
 
-    val n1: Long = graphFacade.addNode2(Map("name" -> "bob", "age" -> 40), "person")
-    val n2: Long = graphFacade.addNode2(Map("name" -> "alex", "age" -> 20), "person")
-    val n3: Long = graphFacade.addNode2(Map("name" -> "simba", "age" -> 10), "worker")
-    val n4: Long = graphFacade.addNode2(Map("name" -> "bob", "age" -> 50), "person")
-    graphFacade.addRelation("friend", 1L, 2L, Map())
+//    val n1: Long = graphFacade.addNode2(Map("name" -> "bob", "age" -> 40), "person")
+//    val n2: Long = graphFacade.addNode2(Map("name" -> "alex", "age" -> 20), "person")
+//    val n3: Long = graphFacade.addNode2(Map("name" -> "simba", "age" -> 10), "worker")
+//    val n4: Long = graphFacade.addNode2(Map("name" -> "bob", "age" -> 50), "person")
+//    graphFacade.addRelation("friend", 1L, 2L, Map())
 
     //    val config = RpcEnvServerConfig(new RpcConf(), "server", args(0), 8878)
     val config = RpcEnvServerConfig(new RpcConf(), PANDA_SERVER_NAME, "0.0.0.0", 8878)

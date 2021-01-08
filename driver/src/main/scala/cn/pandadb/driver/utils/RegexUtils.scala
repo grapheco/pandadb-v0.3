@@ -5,19 +5,18 @@ import cn.pandadb.driver.NotValidAddressException
 import scala.util.matching.Regex
 
 object RegexUtils {
-  val uriRegex = new Regex("(\\d+\\.\\d+\\.\\d+\\.\\d+)\\:(\\d+)")
+  val uriRegex = "(\\d+\\.\\d+\\.\\d+\\.\\d+)\\:(\\d+)"
+  val uriRegex2 = "(localhost)\\:(\\d+)"
 
+  val pattern = new Regex(s"${uriRegex}|${uriRegex2}")
   def getIpAndPort(uri: String): (String, Int) ={
-    val uriTemp = {
-      if (uri.toLowerCase.contains("localhost")) uri.toLowerCase().replaceAll("localhost", "0.0.0.0")
-      else uri.toLowerCase()
+    try {
+      val res = pattern.findFirstMatchIn(uri)
+      val addr = res.get.group(0).split(":")
+      (addr(0), addr(1).toInt)
     }
-    val res = uriRegex.findFirstMatchIn(uriTemp)
-    if (res.isDefined){
-      (res.get.group(1), res.get.group(2).toInt)
-    }
-    else{
-      throw new NotValidAddressException
+    catch {
+      case e:Exception => throw new NotValidAddressException
     }
   }
 }

@@ -15,7 +15,7 @@ class DriverFunctionTest {
 
   @Before
   def init(): Unit ={
-    driver = GraphDatabase.driver("127.0.0.1:8878", PandaAuthToken.basic("panda", "db"))
+    driver = GraphDatabase.driver("127.0.0.1:52000", PandaAuthToken.basic("panda", "db"))
     session = driver.session()
   }
   @After

@@ -2,7 +2,7 @@ package cn.pandadb.driver.utils
 
 import cn.pandadb.hipporpc.values.{Value => HippoValue}
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
-import org.neo4j.driver.internal.value.{BooleanValue, FloatValue, IntegerValue, NodeValue, RelationshipValue, StringValue}
+import org.neo4j.driver.internal.value.{BooleanValue, DateTimeValue, FloatValue, IntegerValue, LocalDateTimeValue, NodeValue, RelationshipValue, StringValue}
 import org.neo4j.driver.{Record, Value => Neo4jValue}
 
 import scala.collection.JavaConverters._
@@ -32,6 +32,9 @@ object TypesToNeo4jValue {
       case Types.INTEGER => new IntegerValue(value.asLong())
       case Types.STRING => new StringValue(value.asString())
       case Types.FLOAT => new FloatValue(value.asFloat())
+      case Types.DATE_TIME => new DateTimeValue(value.asDateTime())
+      case Types.DATE => new DateTimeValue(value.asDateTime())
+      case Types.LOCAL_DATE_TIME => new LocalDateTimeValue(value.asLocalDateTime())
     }
   }
 
