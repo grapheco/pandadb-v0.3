@@ -97,7 +97,7 @@ class PandaStreamHandler(graphFacade:GraphService) extends HippoRpcHandler {
         val pandaIterator = new PandaRecordsIterator(metadata, result.iterator)
         ChunkedStream.grouped(100, pandaIterator.toIterable)
       }catch {
-        case e:SyntaxException => ChunkedStream.grouped(1, new ExceptionMessage(e.getMessage).toIterable)
+        case e:Exception => ChunkedStream.grouped(1, new ExceptionMessage(e.getMessage).toIterable)
       }
     }
   }
