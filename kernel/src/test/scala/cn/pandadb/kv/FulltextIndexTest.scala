@@ -7,7 +7,7 @@ import org.junit.{After, Assert, Test}
 
 @Test
 class FulltextIndexTest extends Assert {
-  val dbPath = "D:\\PandaDB-tmp\\100M"
+  val dbPath = "D:\\PandaDB-tmp\\100M.2"
   val api = new IndexStoreAPI(dbPath)
   val nodeStore = new NodeStoreAPI(dbPath)
   val label = 1

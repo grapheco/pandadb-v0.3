@@ -15,6 +15,7 @@ class FulltextIndexStore(val indexPath: String) {
   val directory: Directory = FSDirectory.open(dir.toPath)
   val analyzer = new StandardAnalyzer
   val conf = new IndexWriterConfig(analyzer)
+  val maxBufferedDocs = 500
   val indexWriter = new IndexWriter(directory, conf)
   var reader = DirectoryReader.open(indexWriter)
   var searcher = new IndexSearcher(reader)
@@ -24,6 +25,11 @@ class FulltextIndexStore(val indexPath: String) {
   termVectoredTextFieldType.setStoreTermVectorOffsets(true)
   termVectoredTextFieldType.setStoreTermVectorPositions(true)
 
+  def commit(): Unit = {
+    indexWriter.flush()
+    indexWriter.commit()
+  }
+
   def insert(id: Long, props: Map[String, String]): Unit = {
     val document = new Document
     document.add(new StringField("_id", s"${id}", Store.YES))
@@ -31,7 +37,9 @@ class FulltextIndexStore(val indexPath: String) {
       document.add(new Field(x._1, x._2, termVectoredTextFieldType))
     }
     indexWriter.addDocument(document)
-    indexWriter.commit()
+    if(indexWriter.numRamDocs()>maxBufferedDocs){
+      commit()
+    }
   }
 
   def delete(id: Long): Unit =
