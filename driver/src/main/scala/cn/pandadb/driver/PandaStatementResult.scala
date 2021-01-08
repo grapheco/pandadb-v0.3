@@ -18,24 +18,20 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class PandaStatementResult(driverRecords: Iterator[DriverValue], rpcClient: PandaRpcClient, cypher: String, params:Map[String,Any]) extends StatementResult{
-  var queryKeys:javaUtil.List[String] = null  // like (n, n.name)
+class PandaStatementResult(driverStreamRecords: Stream[DriverValue], rpcClient: PandaRpcClient, cypher: String, params:Map[String,Any]) extends StatementResult{
+  val metadata = driverStreamRecords.head
+  val resultIterator = driverStreamRecords.tail.iterator
 
   override def keys(): javaUtil.List[String] = {
-    if (queryKeys == null){
-      queryKeys = seqAsJavaList(rpcClient.peekOneDataRequest(cypher, params).metadata)
-      queryKeys
-    }else{
-      queryKeys
-    }
+    seqAsJavaList(metadata.rowMap.keySet.toList)
   }
 
   override def hasNext: Boolean = {
-    driverRecords.hasNext
+    resultIterator.hasNext
   }
 
   override def next(): Record = {
-   val driverValue = driverRecords.next()
+   val driverValue = resultIterator.next()
     new Record {
       override def keys(): javaUtil.List[String] = seqAsJavaList(driverValue.rowMap.keySet.toList)
 

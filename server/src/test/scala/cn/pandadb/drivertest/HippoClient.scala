@@ -1,5 +1,6 @@
+package cn.pandadb.drivertest
+
 import cn.pandadb.hipporpc.message.{CypherRequest, SayHelloRequest, SayHelloResponse}
-import cn.pandadb.hipporpc.utils.DriverValue
 import cn.pandadb.hipporpc.values.Value
 import net.neoremind.kraps.RpcConf
 import net.neoremind.kraps.rpc.{RpcAddress, RpcEnvClientConfig}
@@ -9,7 +10,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 object client {
-  val PANDA_SERVER_NAME = "panda-server"
+  val PANDA_SERVER_NAME = "pandadb-server"
 
   def main(args: Array[String]): Unit = {
     val config =RpcEnvClientConfig(new RpcConf(), "client")

@@ -18,11 +18,6 @@
         <artifactId>neo4j-java-driver</artifactId>
         <version>2.0.1-graiph-SNAPSHOT</version>
     </dependency>
-<!--    <dependency>-->
-<!--        <groupId>pandadb</groupId>-->
-<!--        <artifactId>grpc</artifactId>-->
-<!--        <version>1.0-SNAPSHOT</version>-->
-<!--    </dependency>-->
     <dependency>
         <groupId>org.grapheco</groupId>
         <artifactId>hippo-rpc_2.12</artifactId>
