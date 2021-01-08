@@ -2,6 +2,7 @@ package cn.pandadb.kernel.optimizer
 
 import cn.pandadb.kernel.optimizer.NFEquals
 import cn.pandadb.kernel.optimizer.LynxType.{LynxNode, LynxRelationship}
+import cn.pandadb.kernel.store.{StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
 import org.opencypher.lynx.{LynxPlannerContext, LynxRecords, LynxSession, LynxTable, PropertyGraphScanner, RecordHeader}
 import org.opencypher.lynx.graph.{LynxPropertyGraph, ScanGraph, WritableScanGraph}
 import org.opencypher.lynx.ir.{IRNode, IRRelation, PropertyGraphWriter, WritablePropertyGraph}
@@ -211,7 +212,7 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
   }
 
   def getNodeById(nodeId: Long, labels: Set[String], filterOP: ArrayBuffer[NFPredicate]): Option[Node[Id]] ={
-    val node = scan.getNodeById(nodeId)
+    val node = scan.mapNode(scan.getNodeById(nodeId))
     if(labels.isEmpty){
       if(filterOP.isEmpty) Some(node)
       else {
@@ -261,10 +262,10 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
   def findIndexIdAndValue(ops: ArrayBuffer[NFPredicate], labels: Set[String]): (Int, Any) = ???
 
   def getNodesByFilter(labels: Set[String]): Iterator[Node[Id]] = {
-    if (labels.size ==1) scan.getNodesByLabel(labels.head)
+    if (labels.size ==1) scan.getNodesByLabel(labels.head).map(scan.mapNode)
     else {
       val label = labels.toArray.map(x => x -> scan.getNodesCountByLabel(x)).minBy(_._2)._1
-      scan.getNodesByLabel(label).filter(filterNode(_, labels -- Set(label)))
+      scan.getNodesByLabel(label).map(scan.mapNode).filter(filterNode(_, labels -- Set(label)))
     }
   }
 
@@ -278,13 +279,13 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
   def getNodesByFilter(ops: Array[NFPredicate], labels: Set[String]): Iterator[Node[Id]] = {
     if(labels.isEmpty){
       if(ops.isEmpty)
-        scan.getAllNodes()
+        scan.getAllNodes().map(scan.mapNode)
       else{
         val (opsNew, size) = findLimitPredicate(ops.toArray)
         if (size > 0 )
-          scan.getAllNodes().filter(filterNode(_, opsNew)).take(size.toInt)
+          scan.getAllNodes().map(scan.mapNode).filter(filterNode(_, opsNew)).take(size.toInt)
         else
-          scan.getAllNodes().filter(filterNode(_, opsNew))
+          scan.getAllNodes().map(scan.mapNode).filter(filterNode(_, opsNew))
       }
     }
     else {
@@ -319,8 +320,8 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
                 case ">=" => scan.findRangeNode(indexId,  value, max, fromClose = true)
                 case ">" => scan.findRangeNode(indexId,  value, max)
               }
-              if (size>0) nodes.filter(filterNode(_, opsNew)).take(size.toInt)
-              else nodes.filter(filterNode(_, opsNew))
+              if (size>0) nodes.map(scan.mapNode).filter(filterNode(_, opsNew)).take(size.toInt)
+              else nodes.map(scan.mapNode).filter(filterNode(_, opsNew))
             }
             else {
               if (size>0) getNodesByFilter(labels).filter(filterNode(_, opsNew)).take(size.toInt)
@@ -331,8 +332,8 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
             val (indexId,label, props, cnt) = scan.isPropertysWithIndex(labels, eqlops.map(_._1).toSet)
             if (indexId >= 0) {
               val v = props.toSeq.map(eqlops.toMap.get(_)).head
-              if (size>0) scan.findNode(indexId, v.get).filter(filterNode(_, opsNew)).take(size.toInt)
-              else scan.findNode(indexId, v.get).filter(filterNode(_, opsNew))
+              if (size>0) scan.findNode(indexId, v.get).map(scan.mapNode).filter(filterNode(_, opsNew)).take(size.toInt)
+              else scan.findNode(indexId, v.get).map(scan.mapNode).filter(filterNode(_, opsNew))
             }
             else{
               if (size>0) getNodesByFilter(labels).filter(filterNode(_, opsNew)).take(size.toInt)
@@ -396,9 +397,9 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
           scan.getRelationByTypeWithProperty(labels.head)
       }
     }
-    if(ops.isEmpty) rels
+    if(ops.isEmpty) rels.map(scan.mapRelation)
     else {
-      rels.filter(filterRel(_, ops))
+      rels.map(scan.mapRelation).filter(filterRel(_, ops))
     }
   }
 
@@ -418,9 +419,9 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
           scan.getRelationByNodeIdWithProperty(nodeId, direction, labels.head)
       }
     }
-    if(ops.isEmpty) rels
+    if(ops.isEmpty) rels.map(scan.mapRelation)
     else {
-      rels.filter(filterRel(_, ops))
+      rels.map(scan.mapRelation).filter(filterRel(_, ops))
     }
   }
 
@@ -450,41 +451,47 @@ trait PandaPropertyGraphScan[Id] extends PropertyGraphScanner[Id] with HasStatis
   1 -> incoming
   2 -> outgoing
   */
-  val UNDIRECTION = 0
+  val UNDIRECTED = 0
   val IN = 1
   val OUT = 2
 
+  def mapNode(node: StoredNode): Node[Id] = ???
+
+  def mapRelation(relation: StoredRelation): Relationship[Id] = ???
+
   // relation
 
-  def getRelationByNodeId(nodeId: Long, direction: Int): Iterator[Relationship[Id]] = ???
+  def getRelationByNodeId(nodeId: Long, direction: Int): Iterator[StoredRelation] = ???
 
-  def getRelationByNodeId(nodeId: Long, direction: Int, typeString: String): Iterator[Relationship[Id]] = ???
+  def getRelationByNodeId(nodeId: Long, direction: Int, typeString: String): Iterator[StoredRelation] = ???
 
-  def getRelationByNodeIdWithProperty(nodeId: Long, direction: Int): Iterator[Relationship[Id]] = ???
+  def getRelationByNodeIdWithProperty(nodeId: Long, direction: Int): Iterator[StoredRelationWithProperty] = ???
 
-  def getRelationByNodeIdWithProperty(nodeId: Long, direction: Int, typeString: String): Iterator[Relationship[Id]] = ???
+  def getRelationByNodeIdWithProperty(nodeId: Long, direction: Int, typeString: String): Iterator[StoredRelationWithProperty] = ???
 
-  def allRelations(): Iterator[Relationship[Id]] = ???
+  def allRelations(): Iterator[StoredRelation] = ???
 
-  def allRelationsWithProperty: Iterator[Relationship[Id]] = ???
+  def allRelationsWithProperty: Iterator[StoredRelationWithProperty] = ???
 
-  def getRelationByType(typeString: String): Iterator[Relationship[Id]] = ???
+  def getRelationByType(typeString: String): Iterator[StoredRelation] = ???
 
-  def getRelationByTypeWithProperty(typeString: String): Iterator[Relationship[Id]] = ???
+  def getRelationByTypeWithProperty(typeString: String): Iterator[StoredRelationWithProperty] = ???
 
-  //oveeride
+  //override
 
-  override def allNodes(): Iterable[Node[Id]] = getAllNodes().toIterable
+  override def allNodes(): Iterable[Node[Id]] = getAllNodes().map(mapNode).toIterable
 
-  override def allRelationships(): Iterable[Relationship[Id]] = allRelations().toIterable
+  override def allRelationships(): Iterable[Relationship[Id]] = allRelations().map(mapRelation).toIterable
 
   // node
 
-  def getNodeById(Id: Long): Node[Id] = ???
+  def getNodeById(Id: Long): StoredNodeWithProperty = ???
 
-  def getNodesByLabel(labelString: String): Iterator[Node[Id]] = ???
+  def getNodesByLabel(labelString: String): Iterator[StoredNodeWithProperty] = ???
 
-  def getAllNodes(): Iterator[Node[Id]] = ???
+  def getNodeIdsByLabel(labelString: String): Iterator[Id] = ???
+
+  def getAllNodes(): Iterator[StoredNodeWithProperty] = ???
 
   // index
   def isPropertyWithIndex(labels: Set[String], propertyName: String): (Int, String, Set[String], Long) = ???
@@ -497,14 +504,14 @@ trait PandaPropertyGraphScan[Id] extends PropertyGraphScanner[Id] with HasStatis
 
   def findNodeId(indexId: Int, value: Any): Iterator[Long] = ???
 
-  def findNode(indexId: Int, value: Any): Iterator[Node[Id]] = ???
+  def findNode(indexId: Int, value: Any): Iterator[StoredNodeWithProperty] = ???
 
   def findRangeNodeId(indexId: Int, from: Float, to: Float, fromClose:Boolean = false, toClose:Boolean = false): Iterator[Long] = ???
 
-  def findRangeNode(indexId: Int, from: Float, to: Float, fromClose:Boolean = false, toClose:Boolean = false): Iterator[Node[Id]] = ???
+  def findRangeNode(indexId: Int, from: Float, to: Float, fromClose:Boolean = false, toClose:Boolean = false): Iterator[StoredNodeWithProperty] = ???
 
   def startWithNodeId(indexId: Int, start: String): Iterator[Long] = ???
 
-  def startWithNode(indexId: Int, start: String): Iterator[Node[Id]] = ???
+  def startWithNode(indexId: Int, start: String): Iterator[StoredNodeWithProperty] = ???
 
 }

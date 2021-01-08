@@ -60,7 +60,7 @@ object IndexEncoder {
       case data: Short => intEncode(data.toInt)
       case data: Int => intEncode(data)
       case data: Float => floatEncode(data)
-      case data: Long => longEncode(data)
+      case data: Long => intEncode(data.toInt)// fixme
       case data: Double => floatEncode(data.toFloat)
       case data: String => stringEncode(data)
       case data: Map[Int, Any] => BaseSerializer.map2Bytes(data)
@@ -77,7 +77,7 @@ object IndexEncoder {
       case data: Short => INT_CODE
       case data: Int => INT_CODE
       case data: Float => FLOAT_CODE
-      case data: Long => LONG_CODE
+      case data: Long => INT_CODE // fixme
       case data: Double => FLOAT_CODE
       case data: String => STRING_CODE
       case data: Map[Int, Any] => MAP_CODE

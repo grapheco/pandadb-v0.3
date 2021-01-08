@@ -55,8 +55,7 @@ class NodeAPITest {
     Assert.assertEquals(None, nodeAPI.getNodeById(6))
     // get nodes by labels
     Assert.assertArrayEquals(Array[Long](1,3,5), nodeAPI.getNodeIdsByLabel(1).toArray)
-    // fixme get node 5 twice
-//    Assert.assertArrayEquals(Array[Long](1,2,3,4,5), nodeAPI.allNodes().toArray.map(_.id))
+    Assert.assertArrayEquals(Array[Long](1,2,3,4,5), nodeAPI.allNodes().toArray.map(_.id).sorted)
   }
 
   @Test

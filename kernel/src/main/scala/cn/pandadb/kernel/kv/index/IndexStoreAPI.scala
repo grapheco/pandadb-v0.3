@@ -179,8 +179,8 @@ class IndexStoreAPI(dbPath: String) {
     findRange(indexId, IndexEncoder.INT_CODE, IndexEncoder.encode(startValue), IndexEncoder.encode(endValue), startClosed, endClosed)
 
   def findFloatRange(indexId: IndexId,
-                     startValue: Float,
-                     endValue: Float,
+                     startValue: Float = Float.MinValue,
+                     endValue: Float = Float.MinValue,
                      startClosed: Boolean = false,
                      endClosed: Boolean = false): Iterator[Long] =
     findRange(indexId, IndexEncoder.FLOAT_CODE, IndexEncoder.encode(startValue), IndexEncoder.encode(endValue), startClosed, endClosed)

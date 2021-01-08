@@ -13,6 +13,7 @@ import org.apache.commons.io.FileUtils
 import org.junit.{Assert, Before, Test}
 import org.opencypher.okapi.api.graph.CypherResult
 import org.opencypher.okapi.api.value.CypherValue.{Node, Relationship}
+import org.rocksdb.RocksDB
 
 class GraphFacadeWithPPDTest {
 
@@ -218,8 +219,11 @@ class GraphFacadeWithPPDTest {
         graphFacade.cypher(c)
     }
 
-    graphFacade.createIndexOnNode("person", Set("name"))
+//    graphFacade.createIndexOnNode("person", Set("name"))
     graphFacade.createIndexOnNode("person", Set("age"))
+
+    println(nodeStore.allPropertyKeys().mkString(","))
+    println(nodeStore.allLabels().mkString(","))
 
     val matchCypher = Array(
       "match (n:person) where n.name = 'bob' return n",
@@ -228,17 +232,43 @@ class GraphFacadeWithPPDTest {
 //      "match (n:person) where n.name starts with 'alice' return n",
 //      "match (n:person) where n.name starts with 'b' return n",
       "match (n:person) where n.age = 31 return n",
-      "match (n:person) where n.age < 31 return n",
-      "match (n:person) where n.age <= 31 return n",
-      "match (n:person) where n.age <= 31.00 return n",
-      "match (n:person) where n.age > -100 return n",
+      "match (n:person) where n.age < 31 return n", // error
+//      "match (n:worker) where n.age < 31 return n", // error
+      "match (n:person) where n.age <= 31 return n", // error
+      "match (n:person) where n.age <= 31.00 return n", //error
+      "match (n:person) where n.age > -100 return n", //
       "match (n:person) where n.age > -100.0000001 return n",
     )
 
     matchCypher.foreach{
       c=>
         println(c)
-        graphFacade.cypher(c).show
+//        graphFacade.cypher(c).show
     }
+
+
+    val indexId = indexStore.getIndexId(nodeStore.getLabelId("person"),
+      Array(nodeStore.getPropertyKeyId("age"))).get
+
+    indexStore.findIntRange(indexId).foreach(println("int",_))
+    indexStore.findFloatRange(indexId, -200, 500).foreach(println("double",_))
+
+    graphFacade.close()
+  }
+
+  def showAll(db: RocksDB): Unit = {
+    val it = db.newIterator()
+    it.seek(Array[Byte](0))
+    while (it.isValid){
+      val key = it.key()
+      println(key.map(b=>b.toHexString).toList)
+      it.next()
+    }
+  }
+
+  @Test
+  def showAll(): Unit ={
+    val path = "./testdata/index"
+
   }
 }

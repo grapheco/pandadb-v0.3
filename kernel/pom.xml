@@ -44,11 +44,13 @@
             <version>1.8</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.rocksdb/rocksdbjni -->
+        <!-- https://mvnrepository.com/artifact/org.rocksdb/rocksdbjni -->
         <dependency>
             <groupId>org.rocksdb</groupId>
             <artifactId>rocksdbjni</artifactId>
-            <version>5.18.4</version>
+            <version>6.15.2</version>
         </dependency>
+
 
         <dependency>
             <groupId>com.twitter</groupId>

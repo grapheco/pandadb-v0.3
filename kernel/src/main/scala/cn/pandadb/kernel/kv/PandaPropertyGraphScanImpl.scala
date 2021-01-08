@@ -4,11 +4,9 @@ import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.{NameStore, Statistics}
 import cn.pandadb.kernel.optimizer.{HasStatistics, PandaPropertyGraphScan}
 import cn.pandadb.kernel.store.{FileBasedIdGen, NodeStoreSPI, RelationStoreSPI, StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
-import org.opencypher.lynx.PropertyGraphScanner
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship, get}
 
-import scala.util.control.Breaks
 
 
 class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
@@ -17,7 +15,7 @@ class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
                                  statistics: Statistics)
       extends PandaPropertyGraphScan[Long] {
 
-  protected def mapRelation(rel: StoredRelation): Relationship[Long] = {
+  override def mapRelation(rel: StoredRelation): Relationship[Long] = {
     new Relationship[Long] {
       override type I = this.type
 
@@ -43,7 +41,7 @@ class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
     }
   }
 
-  protected def mapNode(node: StoredNode): Node[Long] = {
+  override def mapNode(node: StoredNode): Node[Long] = {
     new Node[Long] {
       override type I = this.type
 
@@ -100,75 +98,73 @@ class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
 
   // PandaPropertyGraphScan
 
-  override def getRelationByNodeId(nodeId: Long, direction: Int): Iterator[Relationship[Long]] = {
+  override def getRelationByNodeId(nodeId: Long, direction: Int): Iterator[StoredRelation] = {
     direction match{
-      case OUT => relationStore.findOutRelations(nodeId).map(mapRelation)
-      case IN  => relationStore.findInRelations(nodeId).map(mapRelation)
-      case UNDIRECTION => (relationStore.findOutRelations(nodeId).map(mapRelation) ++
-        relationStore.findInRelations(nodeId).map(mapRelation))
+      case OUT => relationStore.findOutRelations(nodeId)
+      case IN  => relationStore.findInRelations(nodeId)
+      case UNDIRECTED => relationStore.findOutRelations(nodeId) ++
+        relationStore.findInRelations(nodeId)
       case _ => null
     }
   }
 
-  override def getRelationByNodeId(nodeId: Long, direction: Int, typeString: String): Iterator[Relationship[Long]] = {
+  override def getRelationByNodeId(nodeId: Long, direction: Int, typeString: String): Iterator[StoredRelation] = {
     val typeId = relationStore.getRelationTypeId(typeString)
     direction match{
-      case OUT => relationStore.findOutRelations(nodeId, typeId).map(mapRelation)
-      case IN  => relationStore.findInRelations(nodeId, typeId).map(mapRelation)
-      case UNDIRECTION => (relationStore.findOutRelations(nodeId, typeId).map(mapRelation) ++
-        relationStore.findInRelations(nodeId, typeId).map(mapRelation))
+      case OUT => relationStore.findOutRelations(nodeId, typeId)
+      case IN  => relationStore.findInRelations(nodeId, typeId)
+      case UNDIRECTED => relationStore.findOutRelations(nodeId, typeId) ++
+        relationStore.findInRelations(nodeId, typeId)
       case _ => null
     }
   }
 
-  override def getRelationByNodeIdWithProperty(nodeId: Long, direction: Int): Iterator[Relationship[Long]] = {
+  override def getRelationByNodeIdWithProperty(nodeId: Long, direction: Int): Iterator[StoredRelationWithProperty] = {
     direction match{
-      case OUT => relationStore.findToNodeIds(nodeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get))
-      case IN  => relationStore.findFromNodeIds(nodeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get))
-      case UNDIRECTION => (relationStore.findToNodeIds(nodeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get)) ++
-        relationStore.findFromNodeIds(nodeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get)))
+      case OUT => relationStore.findToNodeIds(nodeId).map(relationStore.getRelationById).filter(_.isDefined).map(_.get)
+      case IN  => relationStore.findFromNodeIds(nodeId).map(relationStore.getRelationById).filter(_.isDefined).map(_.get)
+      case UNDIRECTED => relationStore.findToNodeIds(nodeId).map(relationStore.getRelationById).filter(_.isDefined).map(_.get) ++
+        relationStore.findFromNodeIds(nodeId).map(relationStore.getRelationById).filter(_.isDefined).map(_.get)
       case _ => null
     }
   }
 
-  override def getRelationByNodeIdWithProperty(nodeId: Long, direction: Int, typeString: String): Iterator[Relationship[Long]] ={
+  override def getRelationByNodeIdWithProperty(nodeId: Long, direction: Int, typeString: String): Iterator[StoredRelationWithProperty] ={
     val typeId = relationStore.getRelationTypeId(typeString)
     direction match{
-      case OUT => relationStore.findToNodeIds(nodeId, typeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get))
-      case IN  => relationStore.findFromNodeIds(nodeId, typeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get))
-      case UNDIRECTION => (relationStore.findToNodeIds(nodeId, typeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get)) ++
-        relationStore.findFromNodeIds(nodeId, typeId).map(relationStore.getRelationById).filter(_.isDefined).map(a=>mapRelation(a.get)))
+      case OUT => relationStore.findToNodeIds(nodeId, typeId).map(relationStore.getRelationById).filter(_.isDefined).map(_.get)
+      case IN  => relationStore.findFromNodeIds(nodeId, typeId).map(relationStore.getRelationById).filter(_.isDefined).map(_.get)
+      case UNDIRECTED => relationStore.findToNodeIds(nodeId, typeId).map(relationStore.getRelationById).filter(_.isDefined).map(_.get) ++
+        relationStore.findFromNodeIds(nodeId, typeId).map(relationStore.getRelationById).filter(_.isDefined).map(_.get)
       case _ => null
     }
   }
 
+  override def getAllNodes(): Iterator[StoredNodeWithProperty] = nodeStore.allNodes()
 
-  override def getAllNodes(): Iterator[Node[Long]] = nodeStore.allNodes().map(node => mapNode(node))
+  override def allRelations(): Iterator[StoredRelation] = relationStore.allRelations()
 
-  override def allRelations(): Iterator[Relationship[Long]] =
-    relationStore.allRelations().map(mapRelation)
+  override def allRelationsWithProperty: Iterator[StoredRelationWithProperty] = relationStore.allRelationsWithProperty()
 
-  override def allRelationsWithProperty: Iterator[Relationship[Long]] =
-    relationStore.allRelationsWithProperty().map(mapRelation)
+  override def getRelationByType(typeString: String): Iterator[StoredRelation] = getRelationByTypeWithProperty(typeString)
 
-  override def getRelationByType(typeString: String): Iterator[Relationship[Long]] = {
-    getRelationByTypeWithProperty(typeString)
-  }
-
-  override def getRelationByTypeWithProperty(typeString: String): Iterator[Relationship[Long]] = {
+  override def getRelationByTypeWithProperty(typeString: String): Iterator[StoredRelationWithProperty] = {
     relationStore
       .getRelationIdsByRelationType(
         relationStore.getRelationTypeId(typeString)
       )
       .map(relationStore.getRelationById)
       .filter(_.isDefined)
-      .map(s=>mapRelation(s.get))
+      .map(_.get)
   }
 
-  override def getNodeById(Id: Long): Node[Long] = nodeStore.getNodeById(Id).map(mapNode).orNull
+  override def getNodeById(Id: Long): StoredNodeWithProperty = nodeStore.getNodeById(Id).orNull
 
-  override def getNodesByLabel(labelString: String): Iterator[Node[Long]] =
-    nodeStore.getNodesByLabel(nodeStore.getLabelId(labelString)).map(mapNode)
+  override def getNodesByLabel(labelString: String): Iterator[StoredNodeWithProperty] =
+    nodeStore.getNodesByLabel(nodeStore.getLabelId(labelString))
+
+  override def getNodeIdsByLabel(labelString: String): Iterator[Long] =
+    nodeStore.getNodeIdsByLabel(nodeStore.getLabelId(labelString))
 
   override def isPropertyWithIndex(labels: Set[String], propertyName: String): (Int, String, Set[String], Long) =
     labels.map(isPropertyWithIndex(_,propertyName)).minBy(_._4)
@@ -213,22 +209,22 @@ class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
 
   override def findNodeId(indexId: Int, value: Any): Iterator[Long] = indexStore.find(indexId, value)
 
-  override def findNode(indexId: Int, value: Any): Iterator[Node[Long]] =
-    indexStore.find(indexId, value).map(nodeStore.getNodeById).filter(_.isDefined).map(s=>mapNode(s.get))
+  override def findNode(indexId: Int, value: Any): Iterator[StoredNodeWithProperty] =
+    indexStore.find(indexId, value).map(nodeStore.getNodeById).filter(_.isDefined).map(_.get)
 
   override def findRangeNodeId(indexId: Int, from: Float, to: Float, fromClosed:Boolean = false, toClosed:Boolean = false): Iterator[Long] = {
     indexStore.findFloatRange(indexId, from, to, startClosed = fromClosed, endClosed = toClosed) ++
       indexStore.findIntRange(indexId, from.toInt, to.toInt, startClosed = fromClosed, endClosed = toClosed)
   }
 
-  override def findRangeNode(indexId: Int, from: Float, to: Float, fromClosed:Boolean = false, toClosed:Boolean = false): Iterator[Node[Long]] =
-    findRangeNodeId(indexId, from, to, fromClosed, toClosed).map(nodeStore.getNodeById).filter(_.isDefined).map(s=>mapNode(s.get))
+  override def findRangeNode(indexId: Int, from: Float, to: Float, fromClosed:Boolean = false, toClosed:Boolean = false): Iterator[StoredNodeWithProperty] =
+    findRangeNodeId(indexId, from, to, fromClosed, toClosed).map(nodeStore.getNodeById).filter(_.isDefined).map(_.get)
 
   override def startWithNodeId(indexId: Int, start: String): Iterator[Long] =
     indexStore.findStringStartWith(indexId, start)
 
-  override def startWithNode(indexId: Int, start: String): Iterator[Node[Long]] =
-    startWithNodeId(indexId, start).map(nodeStore.getNodeById).filter(_.isDefined).map(s=>mapNode(s.get))
+  override def startWithNode(indexId: Int, start: String): Iterator[StoredNodeWithProperty] =
+    startWithNodeId(indexId, start).map(nodeStore.getNodeById).filter(_.isDefined).map(_.get)
 
   //Statistics
 

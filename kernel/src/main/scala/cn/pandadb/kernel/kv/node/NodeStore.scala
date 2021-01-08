@@ -26,7 +26,6 @@ class NodeStore(db: RocksDB) {
     else None
   }
 
-  //fixme 有个问题,同一个节点会被扫两边
   def all() : Iterator[StoredNodeWithProperty] = {
     val iter = db.newIterator()
     iter.seekToFirst()
@@ -35,10 +34,12 @@ class NodeStore(db: RocksDB) {
       override def hasNext: Boolean = iter.isValid
       override def next(): StoredNodeWithProperty = {
         val node = NodeSerializer.deserializeNodeValue(iter.value())
+        val label = ByteUtils.getInt(iter.key(), 0)
         iter.next()
-        node
+        if (node.labelIds.length > 0 && node.labelIds(0) != label) null
+        else node
       }
-    }
+    }.filter(_!=null)
   }
 
   def getNodesByLabel(labelId: LabelId): Iterator[StoredNodeWithProperty] = {
