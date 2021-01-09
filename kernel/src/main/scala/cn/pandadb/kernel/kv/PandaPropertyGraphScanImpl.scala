@@ -15,6 +15,28 @@ class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
                                  statistics: Statistics)
       extends PandaPropertyGraphScan[Long] {
 
+
+  //node
+  override def getNodeLabelIdByName(name: String): Int = nodeStore.getLabelId(name)
+
+  override def getNodeLabelNameById(keyId: Int): String = nodeStore.getLabelName(keyId).get
+
+  override def getNodePropertyIdByName(name: String): Int = nodeStore.getPropertyKeyId(name)
+
+  override def getNodePropertyNameById(keyId: Int): String = nodeStore.getPropertyKeyName(keyId).get
+
+  //rel
+  override def getRelationPropertyIdByName(name: String): Int = relationStore.getPropertyKeyId(name)
+
+  override def getRelationPropertyNameById(keyId: Int): String = relationStore.getPropertyKeyName(keyId).get
+
+  override def getRelationTypeIdByName(name: String): Int = relationStore.getRelationTypeId(name)
+
+  override def getRelationTypeNameById(keyId: Int): String = relationStore.getRelationTypeName(keyId).get
+
+
+
+
   override def mapRelation(rel: StoredRelation): Relationship[Long] = {
     new Relationship[Long] {
       override type I = this.type

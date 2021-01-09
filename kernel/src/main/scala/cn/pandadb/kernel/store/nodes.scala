@@ -94,7 +94,15 @@ import org.opencypher.v9_0.util.LabelId
 //                       nodeStoreSpi: NodeStoreSPI)
 //  extends LazyNode(id, nodeStoreSpi) {
 //}
-case class StoredNode(id: Long, labelIds: Array[Int]=null) {
+
+trait StoredValue{
+
+}
+
+case class StoredValueNull() extends StoredValue
+
+
+case class StoredNode(id: Long, labelIds: Array[Int]=null) extends StoredValue {
 }
 
 class StoredNodeWithProperty(override val id: Long,
@@ -105,6 +113,8 @@ class StoredNodeWithProperty(override val id: Long,
 
 trait NodeStoreSPI {
   def allLabels(): Array[String];
+
+
 
   def allLabelIds(): Array[Int];
 

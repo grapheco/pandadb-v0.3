@@ -12,6 +12,7 @@ trait NFExpression {
 }
 
 trait NFPredicate extends NFExpression {
+  def isOkValue(v:Any): Boolean
 }
 
 trait NFBinaryPredicate extends NFPredicate{
@@ -35,14 +36,14 @@ trait NFRangePredicateWithEqual extends NFRangePredicate{
 }
 
 case class NFBetween(propName: String, left: AnyValue, right: AnyValue, name: String, isLeftEqual:Boolean, isRightEqual: Boolean) extends NFPredicate {
-
+  override def isOkValue(v: Any): Boolean = ???
 }
 case class NFLabels(labels: Seq[String] ) extends NFPredicate {
-
+  override def isOkValue(v: Any): Boolean = ???
 }
 
 case class NFLimit(size: Long) extends NFPredicate {
-
+  override def isOkValue(v: Any): Boolean = ???
 }
 case class NFGreaterThan(propName: String, value: AnyValue, name: String) extends NFRangePredicate{
   override def getName(): String = name
@@ -76,6 +77,8 @@ case class NFGreaterThan(propName: String, value: AnyValue, name: String) extend
     }
 
   }
+
+  override def isOkValue(v: Any): Boolean = ???
 }
 
 case class NFGreaterThanOrEqual(propName: String, value: AnyValue, name: String) extends NFRangePredicateWithEqual {
@@ -110,6 +113,8 @@ case class NFGreaterThanOrEqual(propName: String, value: AnyValue, name: String)
     }
 
   }
+
+  override def isOkValue(v: Any): Boolean = ???
 }
 
 case class NFLessThan(propName: String, value: AnyValue, name: String) extends NFRangePredicate {
@@ -143,6 +148,8 @@ case class NFLessThan(propName: String, value: AnyValue, name: String) extends N
       else false
     }
   }
+
+  override def isOkValue(v: Any): Boolean = ???
 }
 
 case class NFLessThanOrEqual(propName: String, value: AnyValue, name: String) extends NFRangePredicateWithEqual {
@@ -177,6 +184,8 @@ case class NFLessThanOrEqual(propName: String, value: AnyValue, name: String) ex
     }
 
   }
+
+  override def isOkValue(v: Any): Boolean = ???
 }
 
 case class NFEquals(propName: String, value: AnyValue, name: String) extends NFBinaryPredicate {
@@ -187,6 +196,8 @@ case class NFEquals(propName: String, value: AnyValue, name: String) extends NFB
   override def getValue(): AnyValue = value
 
   override def getType(): String = "="
+
+  override def isOkValue(v: Any): Boolean = ???
 }
 
 case class NFNotEquals(propName: String, value: AnyValue, name: String) extends NFBinaryPredicate {
@@ -197,45 +208,60 @@ case class NFNotEquals(propName: String, value: AnyValue, name: String) extends 
   override def getValue(): AnyValue = value
 
   override def getType(): String = "!="
+
+  override def isOkValue(v: Any): Boolean = ???
 }
 
 case class NFNotNull(propName: String) extends NFPredicate {
+  override def isOkValue(v: Any): Boolean = ???
 }
 
 case class NFIsNull(propName: String) extends NFPredicate {
+  override def isOkValue(v: Any): Boolean = ???
 }
 
 case class NFTrue() extends NFPredicate {
+  override def isOkValue(v: Any): Boolean = ???
 }
 
 case class NFFalse() extends NFPredicate {
+  override def isOkValue(v: Any): Boolean = ???
 }
 
 case class NFStartsWith(propName: String, text: String) extends NFPredicate {
+  override def isOkValue(v: Any): Boolean = ???
 }
 
 case class NFEndsWith(propName: String, text: String) extends NFPredicate {
+  override def isOkValue(v: Any): Boolean = ???
 }
 
 case class NFHasProperty(propName: String) extends NFPredicate {
+  override def isOkValue(v: Any): Boolean = ???
 }
 
 case class NFContainsWith(propName: String, text: String) extends NFPredicate {
+  override def isOkValue(v: Any): Boolean = ???
 }
 
 case class NFRegexp(propName: String, text: String) extends NFPredicate {
+  override def isOkValue(v: Any): Boolean = ???
 }
 
 case class NFAnd(a: NFPredicate, b: NFPredicate) extends NFPredicate {
+  override def isOkValue(v: Any): Boolean = ???
 }
 
 case class NFOr(a: NFPredicate, b: NFPredicate) extends NFPredicate {
+  override def isOkValue(v: Any): Boolean = ???
 }
 
 case class NFNot(a: NFPredicate) extends NFPredicate {
+  override def isOkValue(v: Any): Boolean = ???
 }
 
 case class NFConstantCachedIn(a: NFPredicate) extends NFPredicate {
+  override def isOkValue(v: Any): Boolean = ???
 }
 
 case class AnyValue(anyValue: Any)

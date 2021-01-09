@@ -11,7 +11,7 @@ object RocksDBStorage {
     val options: Options = new Options().setCreateIfMissing(createIfMissing)
     val blockConfig = new BlockBasedTableConfig()
     val bloomFilter = new BloomFilter(15, false)
-    blockConfig.setFilterPolicy(bloomFilter)
+    //blockConfig.setFilterPolicy(bloomFilter)
 
 //    blockConfig.setCacheIndexAndFilterBlocks(true)
     options.setTableFormatConfig(blockConfig)

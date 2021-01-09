@@ -3,9 +3,9 @@ package cn.pandadb.kernel.optimizer
 //import cn.pandadb.kernel.kv.AnyValue
 import org.opencypher.lynx.graph.LynxPropertyGraph
 import org.opencypher.lynx.plan.{Add, AddInto, Aggregate, Alias, Cache, ConstructGraph, Distinct, Drop, EmptyRecords, Filter, FromCatalogGraph, GraphUnionAll, Join, Limit, OrderBy, PhysicalOperator, PrefixGraph, ReturnGraph, Select, Skip, Start, SwitchContext, TabularUnionAll}
-import org.opencypher.lynx.planning.{ScanNodes, ScanRels}
+import org.opencypher.lynx.planning.{LinTable, ScanNodes, ScanRels}
 import org.opencypher.lynx.{LynxPlannerContext, LynxTable, RecordHeader}
-import org.opencypher.okapi.ir.api.expr.{BinaryPredicate, ElementProperty, Equals, Expr, GreaterThan, GreaterThanOrEqual, Id, LessThan, LessThanOrEqual, NodeVar, Not, Param}
+import org.opencypher.okapi.ir.api.expr.{BinaryPredicate, ElementProperty, Equals, Expr, GreaterThan, GreaterThanOrEqual, Id, LessThan, LessThanOrEqual, NodeVar, Not, Param, RelationshipVar, Var}
 import org.opencypher.okapi.trees.TopDown
 
 import scala.collection.mutable
@@ -157,47 +157,68 @@ object PandaPhysicalOptimizer {
 
     val leftOPs = scanOps.take(index).toArray.reverse.toBuffer
     val rigthOps = scanOps.takeRight(scanOps.size - 1 - index).toArray.toBuffer
+
+    val rets = ordinaryOps.head.asInstanceOf[Select].expressions.map(v =>
+      v match {
+        case x:NodeVar => {
+          if (x.name.contains(".")) x.name.take(x.name.indexOf("."))
+          else x.name
+        }
+        case x:RelationshipVar => {
+          if (x.name.contains(".")) x.name.take(x.name.indexOf("."))
+          else x.name
+        }
+      }).toSet
+
     var tempOp: PhysicalOperator = op match {
-      case x: ScanRels => ScanRels(true, x.sVar, x.rel, x.tVar, in , x.direction,  x.labels, x.filterOP)
-      case x: ScanNodes => ScanNodes(true, x.nodeVar, x.varMap, x.in, null, x.labels, x.filterOP)
+      case x: ScanRels => ScanRels(true, x.sVar, x.rel, x.tVar, in , x.direction,  x.labels, x.filterOP, rets.contains(x.rel.name), false)
+      case x: ScanNodes => ScanNodes(true, x.nodeVar, x.varMap, x.in, null, x.labels, x.filterOP, rets.contains(x.nodeVar.name), false)
     }
     while (leftOPs.nonEmpty && rigthOps.nonEmpty){
       if (leftOPs.head._2 >= rigthOps.head._2){
         rigthOps.head._1 match {
-          case x: ScanNodes => tempOp = ScanNodes(false, x.nodeVar, x.varMap, x.in, tempOp, x.labels, x.filterOP)
-          case x: ScanRels => tempOp = ScanRels(false, x.sVar, x.rel, x.tVar, tempOp, x.direction,  x.labels, x.filterOP)
+          case x: ScanNodes => tempOp = ScanNodes(false, x.nodeVar, x.varMap, x.in, tempOp, x.labels, x.filterOP, rets.contains(x.nodeVar.name), false)
+          case x: ScanRels => tempOp = ScanRels(false, x.sVar, x.rel, x.tVar, tempOp, x.direction,  x.labels, x.filterOP, rets.contains(x.rel.name), false)
         }
         rigthOps.remove(0)
       }
       else{
         leftOPs.head._1 match {
-          case x: ScanNodes => tempOp = ScanNodes(false, x.nodeVar, x.varMap, x.in, tempOp, x.labels, x.filterOP)
-          case x: ScanRels => tempOp = ScanRels(false, x.sVar, x.rel, x.tVar, tempOp, x.direction,  x.labels, x.filterOP)
+          case x: ScanNodes => tempOp = ScanNodes(false, x.nodeVar, x.varMap, x.in, tempOp, x.labels, x.filterOP, rets.contains(x.nodeVar.name), false)
+          case x: ScanRels => tempOp = ScanRels(false, x.sVar, x.rel, x.tVar, tempOp, x.direction,  x.labels, x.filterOP, rets.contains(x.rel.name), false)
         }
         leftOPs.remove(0)
       }
     }
     while(leftOPs.nonEmpty){
       leftOPs.head._1 match {
-        case x: ScanNodes => tempOp = ScanNodes(false, x.nodeVar, x.varMap, x.in, tempOp, x.labels, x.filterOP)
-        case x: ScanRels => tempOp = ScanRels(false, x.sVar, x.rel, x.tVar, tempOp, x.direction,  x.labels, x.filterOP)
+        case x: ScanNodes => tempOp = ScanNodes(false, x.nodeVar, x.varMap, x.in, tempOp, x.labels, x.filterOP, rets.contains(x.nodeVar.name), false)
+        case x: ScanRels => tempOp = ScanRels(false, x.sVar, x.rel, x.tVar, tempOp, x.direction,  x.labels, x.filterOP, rets.contains(x.rel.name), false)
       }
       leftOPs.remove(0)
     }
     while(rigthOps.nonEmpty){
       rigthOps.head._1 match {
-        case x: ScanNodes => tempOp = ScanNodes(false, x.nodeVar, x.varMap, x.in, tempOp, x.labels, x.filterOP)
-        case x: ScanRels => tempOp = ScanRels(false, x.sVar, x.rel, x.tVar, tempOp, x.direction,  x.labels, x.filterOP)
+        case x: ScanNodes => tempOp = ScanNodes(false, x.nodeVar, x.varMap, x.in, tempOp, x.labels, x.filterOP, rets.contains(x.nodeVar.name), false)
+        case x: ScanRels => tempOp = ScanRels(false, x.sVar, x.rel, x.tVar, tempOp, x.direction,  x.labels, x.filterOP, rets.contains(x.rel.name), false)
       }
       rigthOps.remove(0)
     }
 
     if (limit != null){
       tempOp match {
-        case x: ScanNodes => tempOp = ScanNodes(x.isEnd, x.nodeVar, x.varMap, x.in, x.next, x.labels, x.filterOP += limit)
-        case x: ScanRels => tempOp = ScanRels(x.isEnd, x.sVar, x.rel, x.tVar, x.next, x.direction,  x.labels, x.filterOP += limit)
+        case x: ScanNodes => tempOp = ScanNodes(x.isEnd, x.nodeVar, x.varMap, x.in, x.next, x.labels, x.filterOP += limit, x.isReturn, x.isTable)
+        case x: ScanRels => tempOp = ScanRels(x.isEnd, x.sVar, x.rel, x.tVar, x.next, x.direction,  x.labels, x.filterOP += limit, x.isReturn, x.isTable)
       }
     }
+
+    //
+
+    tempOp =  tempOp match {
+      case x: ScanNodes => ScanNodes(x.isEnd, x.nodeVar, x.varMap, x.in, x.next, x.labels, x.filterOP , x.isReturn)
+      case x: ScanRels => ScanRels(x.isEnd, x.sVar, x.rel, x.tVar, x.next, x.direction,  x.labels, x.filterOP, x.isReturn)
+    }
+
     //ordinaryOps.reverse
     //var tempOp: PhysicalOperator = Transformer(filterops, endOp, reOrderPredicates(filterops, endOp.graph))
     ordinaryOps.reverse.foreach(u => {
@@ -206,6 +227,15 @@ object PandaPhysicalOptimizer {
     tempOp
 
   }
+
+/*  def getTable(in: PhysicalOperator, table: LinTable):LinTable = {
+    in match {
+      case x:ScanNodes =>{
+        if(x.isEnd)
+      }
+      case x:ScanRels =>
+    }
+  }*/
 
   def filterPushDown(input: PhysicalOperator): PhysicalOperator = {
     val newPlan: PhysicalOperator = extractFilter(new ArrayBuffer[PhysicalOperator](), new ArrayBuffer[PhysicalOperator](), input)

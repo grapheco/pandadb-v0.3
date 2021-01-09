@@ -17,7 +17,7 @@ package cn.pandadb.kernel.store
 //  def removeRelationType(relationType: String): Unit;
 //}
 
-case class StoredRelation(id: Long, from: Long, to: Long, typeId: Int) {
+case class StoredRelation(id: Long, from: Long, to: Long, typeId: Int) extends StoredValue{
 }
 
 class StoredRelationWithProperty(override val id: Long,

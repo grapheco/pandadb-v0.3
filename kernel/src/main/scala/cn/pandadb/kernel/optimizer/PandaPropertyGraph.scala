@@ -211,6 +211,26 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
     }
   }
 
+  def isOkNode(p: NFPredicate, node:StoredNodeWithProperty): Boolean = {
+    p match {
+      case x:NFGreaterThanOrEqual => x.isInRange(node.properties.get(scan.getNodePropertyIdByName(x.propName)))
+      case x:NFLessThanOrEqual => x.isInRange(node.properties.get(scan.getNodePropertyIdByName(x.propName)))
+      case x:NFEquals => {
+        val pid = scan.getNodePropertyIdByName(x.propName)
+        val v = node.properties(pid)
+        if(v.equals(x.value.anyValue) ) {
+          true
+        }
+        else {
+          false
+        }
+      }
+      case x:NFLessThan => x.isInRange(node.properties.get(scan.getNodePropertyIdByName(x.propName)))
+      case x:NFGreaterThan => x.isInRange(node.properties.get(scan.getNodePropertyIdByName(x.propName)))
+    }
+  }
+
+
   def getNodeById(nodeId: Long, labels: Set[String], filterOP: ArrayBuffer[NFPredicate]): Option[Node[Id]] ={
     val node = scan.mapNode(scan.getNodeById(nodeId))
     if(labels.isEmpty){
@@ -232,7 +252,36 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
     }
   }
 
+  def getNodeById(nodeId: Long, labels: Set[String], filterOP: ArrayBuffer[NFPredicate], isReturn: Boolean): Option[StoredNode] ={
+    //todo if else
+    val node = scan.getNodeById(nodeId)
+    if(labels.isEmpty){
+      if(filterOP.isEmpty) Some(node)
+      else {
+        if(filterOP.map(isOkNode(_, node)).reduce(_ && _)) Some(node)
+        else None
+      }
+    }
+    else{
+      if (!labels.map(scan.getNodeLabelsNameByIds(node.labelIds).contains(_)).reduce(_ && _)) None
+      else{
+        if(filterOP.isEmpty) Some(node)
+        else {
+          if(filterOP.map(isOkNode(_, node)).reduce(_ && _)) Some(node)
+          else None
+        }
+      }
+    }
+  }
+
   def filterNode(node: Node[Id], ops: ArrayBuffer[NFPredicate]): Boolean = {
+    if (ops.isEmpty) true
+    else {
+      ops.map(isOkNode(_, node)).reduce(_ && _)
+    }
+  }
+
+  def filterNode(node: StoredNodeWithProperty, ops: ArrayBuffer[NFPredicate]): Boolean = {
     if (ops.isEmpty) true
     else {
       ops.map(isOkNode(_, node)).reduce(_ && _)
@@ -243,6 +292,13 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
     if (labels.isEmpty) true
     else {
       labels.map(node.labels.contains(_)).reduce(_ && _)
+    }
+  }
+
+  def filterNode(node: StoredNodeWithProperty, labels: Set[String]): Boolean = {
+    if (labels.isEmpty) true
+    else {
+      labels.map(scan.getNodeLabelsNameByIds(node.labelIds).contains(_)).reduce(_ && _)
     }
   }
 
@@ -266,6 +322,14 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
     else {
       val label = labels.toArray.map(x => x -> scan.getNodesCountByLabel(x)).minBy(_._2)._1
       scan.getNodesByLabel(label).map(scan.mapNode).filter(filterNode(_, labels -- Set(label)))
+    }
+  }
+
+  def getNodesByFilter(labels: Set[String], isReturn:Boolean): Iterator[StoredNodeWithProperty] = {
+    if (labels.size ==1) scan.getNodesByLabel(labels.head)
+    else {
+      val label = labels.toArray.map(x => x -> scan.getNodesCountByLabel(x)).minBy(_._2)._1
+      scan.getNodesByLabel(label).filter(filterNode(_, labels -- Set(label)))
     }
   }
 
@@ -348,6 +412,78 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
 
 
 
+  def getNodesByFilter(ops: Array[NFPredicate], labels: Set[String], isReturn: Boolean): Iterator[StoredNode] = {
+    if(labels.isEmpty){
+      if(ops.isEmpty)
+        scan.getAllNodes()
+      else{
+        val (opsNew, size) = findLimitPredicate(ops.toArray)
+        if (size > 0 )
+          scan.getAllNodes().filter(filterNode(_, opsNew)).take(size.toInt)
+        else
+          scan.getAllNodes().filter(filterNode(_, opsNew))
+      }
+    }
+    else {
+      if (ops.isEmpty){
+        getNodesByFilter(labels, isReturn)
+      }
+      else{
+        val (opsNew, size) = findLimitPredicate(ops.toArray)
+        val eqlops = opsNew.filter(_.isInstanceOf[NFEquals]).map(_.asInstanceOf[NFEquals]).map(x => x.propName -> x.value.anyValue)
+        val rangeops = opsNew.filter(!_.isInstanceOf[NFEquals]).map(_.asInstanceOf[NFBinaryPredicate]).map(x => {
+          x.getPropName()->(x.getValue().anyValue,x.getType())
+        })
+        if(eqlops.isEmpty&&rangeops.isEmpty){
+          if (size > 0) getNodesByFilter(labels,isReturn).take(size.toInt)
+          else getNodesByFilter(labels,isReturn)
+        }
+        else {
+          if (eqlops.isEmpty){
+            val (indexId,label,props, cnt) = scan.isPropertysWithIndex(labels, rangeops.map(_._1).toSet)
+            if (indexId >= 0) {
+              var (v,t) = props.toSeq.map(rangeops.toMap.get(_)).head.get
+              val max = Float.MaxValue
+              val min = Float.MinValue
+              val value = v match {
+                case v:Long => v.toInt.toFloat
+                case v:Double => v.toFloat
+              }
+
+              val nodes = t match {
+                case "<=" => scan.findRangeNode(indexId, min, value, toClose = true)
+                case "<" => scan.findRangeNode(indexId, min,  value)
+                case ">=" => scan.findRangeNode(indexId,  value, max, fromClose = true)
+                case ">" => scan.findRangeNode(indexId,  value, max)
+              }
+              if (size>0) nodes.filter(filterNode(_, opsNew)).take(size.toInt)
+              else nodes.filter(filterNode(_, opsNew))
+            }
+            else {
+              if (size>0) getNodesByFilter(labels, isReturn).filter(filterNode(_, opsNew)).take(size.toInt)
+              else getNodesByFilter(labels, isReturn).filter(filterNode(_, opsNew))
+            }
+          }
+          else{
+            val (indexId,label, props, cnt) = scan.isPropertysWithIndex(labels, eqlops.map(_._1).toSet)
+            if (indexId >= 0) {
+              val v = props.toSeq.map(eqlops.toMap.get(_)).head
+              if (size>0) scan.findNode(indexId, v.get).filter(filterNode(_, opsNew)).take(size.toInt)
+              else scan.findNode(indexId, v.get).filter(filterNode(_, opsNew))
+            }
+            else{
+              if (size>0) getNodesByFilter(labels, isReturn).filter(filterNode(_, opsNew)).take(size.toInt)
+              else getNodesByFilter(labels, isReturn).filter(filterNode(_, opsNew))
+            }
+
+          }
+        }
+      }
+    }
+  }
+
+
+
 
 
 
@@ -375,10 +511,33 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
     }
   }
 
+  def isOkRel(p: NFPredicate, rel: StoredRelationWithProperty): Boolean = {
+    p match {
+      case x:NFGreaterThanOrEqual => x.isInRange(rel.properties.get(scan.getRelationPropertyIdByName(x.propName)))//if(rel.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] >= x.value.asInstanceOf[Int]) true else false
+      case x:NFLessThanOrEqual => x.isInRange(rel.properties.get(scan.getRelationPropertyIdByName(x.propName)))//if(rel.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] <= x.value.asInstanceOf[Int]) true else false
+      case x:NFEquals => {
+        if(rel.properties.get(scan.getRelationPropertyIdByName(x.propName)).equals(x.value.anyValue) ) {
+          true
+        }
+        else {
+          false
+        }
+      }
+      case x:NFLessThan => x.isInRange(rel.properties.get(scan.getRelationPropertyIdByName(x.propName)))//if(rel.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] < x.value.asInstanceOf[Int]) true else false
+      case x:NFGreaterThan => x.isInRange(rel.properties.get(scan.getRelationPropertyIdByName(x.propName)))//if(rel.properties.get(x.propName).get.getValue.get.asInstanceOf[Int] > x.value.asInstanceOf[Int]) true else false
+    }
+  }
+
   def filterRel(rel: Relationship[Id], ops: ArrayBuffer[NFPredicate]): Boolean = {
     if (ops.isEmpty) true
     else {
       ops.map(isOkRel(_, rel)).reduce(_ && _)
+    }
+  }
+  def filterRel(rel: StoredRelation, ops: ArrayBuffer[NFPredicate]): Boolean = {
+    if (ops.isEmpty) true
+    else {
+      ops.map(isOkRel(_, rel.asInstanceOf[StoredRelationWithProperty])).reduce(_ && _)
     }
   }
 
@@ -402,6 +561,29 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
       rels.map(scan.mapRelation).filter(filterRel(_, ops))
     }
   }
+  def getRelsByFilter(ops: ArrayBuffer[NFPredicate], labels: Set[String], direction: Int, isReturn: Boolean): Iterator[StoredRelation] = {
+    val rels = {
+      if (ops.isEmpty) {
+        if (labels.isEmpty)
+          scan.allRelations()
+        else
+          scan.getRelationByType(labels.head)
+      }
+      else {
+        if (labels.isEmpty)
+          scan.allRelationsWithProperty
+        else
+          scan.getRelationByTypeWithProperty(labels.head)
+      }
+    }
+    if(ops.isEmpty) rels
+    else {
+      rels.filter(filterRel(_, ops))
+
+    }
+  }
+
+
 
   def getRelationById(nodeId: Long, direction: Int, labels: Set[String], ops: ArrayBuffer[NFPredicate]): Iterator[Relationship[Id]] ={
 
@@ -425,7 +607,35 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
     }
   }
 
+  def getRelationById(nodeId: Long, direction: Int, labels: Set[String], ops: ArrayBuffer[NFPredicate], isReturn: Boolean): Iterator[StoredRelation] ={
+
+    val rels = {
+      if (ops.isEmpty) {
+        if (labels.isEmpty)
+          scan.getRelationByNodeId(nodeId, direction)
+        else
+          scan.getRelationByNodeId(nodeId, direction, labels.head)
+      }
+      else {
+        if (labels.isEmpty)
+          scan.getRelationByNodeIdWithProperty(nodeId, direction)
+        else
+          scan.getRelationByNodeIdWithProperty(nodeId, direction, labels.head)
+      }
+    }
+    if(ops.isEmpty) rels
+    else {
+      rels.filter(filterRel(_, ops))
+
+    }
+  }
+
+
+
   override def createElements(nodes: Array[IRNode], rels: Array[IRRelation[Id]]): Unit = writer.createElements(nodes, rels)
+  def mapNode(node: StoredNode): Node[Id] = scan.mapNode(node)
+
+  def mapRelation(relation: StoredRelation): Relationship[Id] = scan.mapRelation(relation)
 }
 
 trait HasStatistics{
@@ -513,5 +723,20 @@ trait PandaPropertyGraphScan[Id] extends PropertyGraphScanner[Id] with HasStatis
   def startWithNodeId(indexId: Int, start: String): Iterator[Long] = ???
 
   def startWithNode(indexId: Int, start: String): Iterator[StoredNodeWithProperty] = ???
+
+  //Int <------>String
+
+  def getRelationPropertyNameById(keyId: Int): String = ???
+  def getRelationPropertyIdByName(name: String): Int = ???
+  def getRelationTypeNameById(keyId: Int): String = ???
+  def getRelationTypeIdByName(name: String): Int = ???
+
+
+  def getNodePropertyNameById(keyId: Int): String = ???
+  def getNodePropertyIdByName(name: String): Int = ???
+  def getNodeLabelNameById(keyId: Int): String = ???
+  def getNodeLabelIdByName(name: String): Int = ???
+  def getNodeLabelsNameByIds(keyId: Array[Int]): Array[String] = keyId.map(getNodeLabelNameById)
+
 
 }

@@ -2,6 +2,7 @@ package org.opencypher.lynx.planning
 
 import cn.pandadb.kernel.optimizer.LynxType.LynxNode
 import cn.pandadb.kernel.optimizer.{NFLimit, NFPredicate, PandaPropertyGraph, Transformer}
+import cn.pandadb.kernel.store.{StoredNode, StoredRelation, StoredValue, StoredValueNull}
 import org.opencypher.lynx.plan.PhysicalOperator
 import org.opencypher.lynx.{LynxRecords, LynxTable, RecordHeader}
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
@@ -64,7 +65,7 @@ case class TargetNode() extends TNode{
 
 }
 
-final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, varMap: Map[Var, TNode], in: PhysicalOperator, next: PhysicalOperator, labels: Set[String], filterOP: ArrayBuffer[NFPredicate]) extends PhysicalOperator{
+final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, varMap: Map[Var, TNode], in: PhysicalOperator, next: PhysicalOperator, labels: Set[String], filterOP: ArrayBuffer[NFPredicate], isReturn: Boolean = true, isTable: Boolean = true) extends PhysicalOperator{
 
   override lazy val recordHeader: RecordHeader = {
     if (isEnd) RecordHeader(Map(NodeVar(nodeVar.name)(CTNode) -> nodeVar.name))
@@ -77,7 +78,69 @@ final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, varMap: Map[Var, TNode
   }
 
 
+  lazy val linTable: LinTable = {
+
+    if (isEnd){
+      val (opsNew, limit) = findLimitPredicate(filterOP.toArray)
+      if(limit>0) new LinTable(Seq(nodeVar.name), graph.asInstanceOf[PandaPropertyGraph[Id]].getNodesByFilter(opsNew.toArray, labels, isReturn).map(Seq(_)).take(limit.toInt), Seq(nodeVar.name -> CTNode))
+      else new LinTable(Seq(nodeVar.name), graph.asInstanceOf[PandaPropertyGraph[Id]].getNodesByFilter(opsNew.toArray, labels, isReturn).map(Seq(_)), Seq(nodeVar.name -> CTNode))
+    }
+    else {
+      next match {
+        case x:ScanNodes =>getNodesByTable(x.linTable)
+        case x:ScanRels =>getNodesByTable(x.linTable)
+      }
+    }
+  }
+
+  def getNodesByTable(t:LinTable):LinTable = {
+    val (opsNew, limit) = findLimitPredicate(filterOP.toArray)
+    val (rel, tNode) = varMap.filter(x => t.schema.contains(x._1.name)).head
+    val isSrc:Boolean = tNode match {
+      case SourceNode() => true
+      case TargetNode() => false
+    }
+    val records  = t.recordes.map(row => {
+
+      /*   val id = tNode match {
+           case SourceNode() => next.table.cell(row, rel.name).asInstanceOf[Relationship[Long]].startId
+           case TargetNode() => next.table.cell(row, rel.name).asInstanceOf[Relationship[Long]].endId
+         }*/
+      val id = {
+        if (isSrc) t.cell(row, rel.name).asInstanceOf[StoredRelation].from
+        else t.cell(row, rel.name).asInstanceOf[StoredRelation].to
+      }
+
+
+      val node = in.graph.asInstanceOf[PandaPropertyGraph[Id]].getNodeById(id, labels, opsNew, isReturn)
+      node match {
+        //rels.map(row ++ Seq(_))
+        case Some(value) => row ++ Seq(value)
+        case None => Seq(StoredValueNull())
+      }
+    })
+
+    //records.filter(!_.equals(Seq(CypherNull)))
+
+    val newRecords = {
+      if (limit>0) records.filter(!_.equals(Seq(StoredValueNull()))).take(limit.toInt)
+      else records.filter(!_.equals(Seq(StoredValueNull())))
+    }
+
+    new LinTable(t.schema ++ Seq(nodeVar.name), newRecords, t.schemas ++ Seq(nodeVar.name -> CTNode))
+
+  }
+
+  def mapStoredValue(v: StoredValue): CypherValue = {
+    v match{
+      case x:StoredNode => in.graph.asInstanceOf[PandaPropertyGraph[Id]].mapNode(x)
+      case x:StoredRelation =>in.graph.asInstanceOf[PandaPropertyGraph[Id]].mapRelation(x)
+    }
+  }
   override lazy val table: LynxTable = {
+    LynxTable(this.linTable.schemas, this.linTable.recordes.map(_.map(mapStoredValue)).toIterable)
+  }
+  /*override lazy val table: LynxTable = {
     if (isEnd) {
       val records = getNodes()
       LynxTable(Seq(nodeVar.name -> CTNode), records.toIterator.map(Seq(_)).toIterable)
@@ -119,7 +182,7 @@ final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, varMap: Map[Var, TNode
 
       LynxTable(next.table.schema ++ Seq(nodeVar.name -> CTNode), newRecords)
     }
-  }
+  }*/
   def getRecords: LynxRecords = {
     if (graph.isInstanceOf[PandaPropertyGraph[Id]]) {
       graph.asInstanceOf[PandaPropertyGraph[Id]].getNodesByFilter(filterOP.toArray, labels, nodeVar.asInstanceOf[NodeVar])
@@ -162,7 +225,7 @@ final case class  ScanRels(isEnd: Boolean,
                            //scanType: ScanType,
                            next: PhysicalOperator,
                            direction: Direction, labels: Set[String],
-                           filterOP: ArrayBuffer[NFPredicate]) extends PhysicalOperator{
+                           filterOP: ArrayBuffer[NFPredicate], isReturn: Boolean = true, isTable: Boolean = true) extends PhysicalOperator{
 
   override val graph = next.graph
 
@@ -177,7 +240,61 @@ final case class  ScanRels(isEnd: Boolean,
     case Outgoing => 2
   }
 
+  lazy val linTable: LinTable = {
+    if (isEnd){
+      val (opsNew, limit) = findLimitPredicate(filterOP.toArray)
+      if (limit>0)
+        new LinTable(Seq(rel.name), next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelsByFilter(filterOP, labels, dir, isReturn).map(Seq(_)).take(limit.toInt), Seq(rel.name -> CTRelationship))
+      else
+        new LinTable(Seq(rel.name), next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelsByFilter(filterOP, labels, dir, isReturn).map(Seq(_)), Seq(rel.name -> CTRelationship))
+    }
+    else {
+      next match {
+        case x:ScanNodes =>getRelsByTable(x.linTable)
+        case x:ScanRels =>getRelsByTable(x.linTable)
+      }
+    }
+  }
+
+  def getRelsByTable(t:LinTable): LinTable = {
+    val isFirst = t.schema.contains(sVar.name)
+    val (opsNew, limit) = findLimitPredicate(filterOP.toArray)
+    val records = t.recordes.flatMap(row => {
+      if (isFirst) {
+        val id = t.cell(row, sVar.name).asInstanceOf[StoredNode].id
+        val rels = next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelationById(id, dir, labels, opsNew, isReturn)
+        rels.map(row ++ Seq(_))
+      }
+      else {
+        dir = dir match {
+          case 0 => 0
+          case 1 => 2
+          case 2 => 1
+        }
+        val id = t.cell(row, tVar.name).asInstanceOf[StoredNode].id
+        val rels = next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelationById(id, dir, labels, opsNew, isReturn)
+        rels.map(row ++ Seq(_))
+      }
+
+    })
+    if(limit > 0)
+      new LinTable(t.schema ++ Seq(rel.name), records.take(limit.toInt), t.schemas ++ Seq(rel.name -> CTRelationship))
+    else
+      new LinTable(t.schema ++ Seq(rel.name), records, t.schemas ++ Seq(rel.name -> CTRelationship))
+  }
+
+  def mapStoredValue(v: StoredValue): CypherValue = {
+    v match{
+      case x:StoredNode => next.graph.asInstanceOf[PandaPropertyGraph[Id]].mapNode(x)
+      case x:StoredRelation =>next.graph.asInstanceOf[PandaPropertyGraph[Id]].mapRelation(x)
+    }
+  }
+
   override lazy val table: LynxTable = {
+    LynxTable(this.linTable.schemas, this.linTable.recordes.map(_.map(mapStoredValue)).toIterable)
+  }
+
+/*  override lazy val table: LynxTable = {
     if (isEnd) {
       val records = next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelsByFilter(filterOP, labels, dir)
       LynxTable(Seq(rel.name -> CTRelationship), records.map(Seq(_)).toIterable)
@@ -205,11 +322,25 @@ final case class  ScanRels(isEnd: Boolean,
 
       LynxTable(next.table.schema ++ Seq(rel.name -> CTRelationship), records)
     }
-  }
+  }*/
 
   def getRecordsNumbers: Long = {
     next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelCnt(filterOP.toArray, labels.headOption.orNull, dir)
 
+  }
+
+  def findLimitPredicate(predicate: Array[NFPredicate]):(ArrayBuffer[NFPredicate], Long) = {
+    var nps: ArrayBuffer[NFPredicate] = ArrayBuffer[NFPredicate]()
+    var limit: Long = -1
+    predicate.foreach(u => {
+      u match {
+        case x: NFLimit => {
+          limit = x.size
+        }
+        case x: NFPredicate => nps += x
+      }
+    })
+    nps -> limit
   }
 
 }

@@ -6,7 +6,7 @@
         </console>
     </appenders>
     <loggers>
-        <logger name="cn.pandadb" level="DEBUG"></logger>
+        <logger name="cn.pandadb" level="debug"></logger>
         <logger name="org.springframework" level="INFO"></logger>
         <root level="all">
             <appender-ref ref="Console"/>
