@@ -17,6 +17,8 @@ class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
 
 
   //node
+
+  override def hasNodeLabel(Id: Long, label: String): Boolean = nodeStore.hasLabel(Id, getNodeLabelIdByName(label))
   override def getNodeLabelIdByName(name: String): Int = nodeStore.getLabelId(name)
 
   override def getNodeLabelNameById(keyId: Int): String = nodeStore.getLabelName(keyId).get

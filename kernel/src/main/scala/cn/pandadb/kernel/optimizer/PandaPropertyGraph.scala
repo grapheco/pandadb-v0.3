@@ -252,6 +252,24 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
     }
   }
 
+  def isOkNodesId(id: Long, labels: Set[String], filterOP: ArrayBuffer[NFPredicate]): Boolean = {
+    if (labels.isEmpty) {
+      if (filterOP.isEmpty) true
+      else {
+        filterOP.map(isOkNode(_, scan.getNodeById(id))).reduce(_ && _)
+      }
+    }
+    else {
+      if (filterOP.isEmpty) scan.hasNodeLabels(id, labels)
+      else scan.hasNodeLabels(id, labels) && filterOP.map(isOkNode(_, scan.getNodeById(id))).reduce(_ && _)
+    }
+  }
+
+  def getNodeById(id: Long, isReturn: Boolean): StoredNode = {
+    if (isReturn) scan.getNodeById(id)
+    else StoredNode(id)
+  }
+
   def getNodeById(nodeId: Long, labels: Set[String], filterOP: ArrayBuffer[NFPredicate], isReturn: Boolean): Option[StoredNode] ={
     //todo if else
     val node = scan.getNodeById(nodeId)
@@ -411,8 +429,12 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
   }
 
 
-
   def getNodesByFilter(ops: Array[NFPredicate], labels: Set[String], isReturn: Boolean): Iterator[StoredNode] = {
+    if(isReturn) getNodesByFilter2(ops, labels, isReturn)
+    else getNodesByFilter2(ops, labels, isReturn).map(node => StoredNode(node.id))
+  }
+
+  def getNodesByFilter2(ops: Array[NFPredicate], labels: Set[String], isReturn: Boolean): Iterator[StoredNode] = {
     if(labels.isEmpty){
       if(ops.isEmpty)
         scan.getAllNodes()
@@ -702,6 +724,9 @@ trait PandaPropertyGraphScan[Id] extends PropertyGraphScanner[Id] with HasStatis
   def getNodeIdsByLabel(labelString: String): Iterator[Id] = ???
 
   def getAllNodes(): Iterator[StoredNodeWithProperty] = ???
+
+  def hasNodeLabels(Id: Long, labels: Set[String]): Boolean = labels.map(hasNodeLabel(Id, _)).reduce(_&&_)
+  def hasNodeLabel(Id: Long, label: String): Boolean = ???
 
   // index
   def isPropertyWithIndex(labels: Set[String], propertyName: String): (Int, String, Set[String], Long) = ???

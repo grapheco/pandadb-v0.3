@@ -93,6 +93,7 @@ final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, varMap: Map[Var, TNode
     }
   }
 
+
   def getNodesByTable(t:LinTable):LinTable = {
     val (opsNew, limit) = findLimitPredicate(filterOP.toArray)
     val (rel, tNode) = varMap.filter(x => t.schema.contains(x._1.name)).head
@@ -100,31 +101,32 @@ final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, varMap: Map[Var, TNode
       case SourceNode() => true
       case TargetNode() => false
     }
-    val records  = t.recordes.map(row => {
 
-      /*   val id = tNode match {
-           case SourceNode() => next.table.cell(row, rel.name).asInstanceOf[Relationship[Long]].startId
-           case TargetNode() => next.table.cell(row, rel.name).asInstanceOf[Relationship[Long]].endId
-         }*/
+    def isOkValue(row: Seq[_ <: StoredValue]): Boolean = {
       val id = {
         if (isSrc) t.cell(row, rel.name).asInstanceOf[StoredRelation].from
         else t.cell(row, rel.name).asInstanceOf[StoredRelation].to
       }
+      in.graph.asInstanceOf[PandaPropertyGraph[Id]].isOkNodesId(id, labels, opsNew)
+    }
+
+    val tempRecords1 = t.recordes.filter(isOkValue)
 
 
-      val node = in.graph.asInstanceOf[PandaPropertyGraph[Id]].getNodeById(id, labels, opsNew, isReturn)
-      node match {
-        //rels.map(row ++ Seq(_))
-        case Some(value) => row ++ Seq(value)
-        case None => Seq(StoredValueNull())
+    val records  = tempRecords1.map(row => {
+
+      val id = {
+        if (isSrc) t.cell(row, rel.name).asInstanceOf[StoredRelation].from
+        else t.cell(row, rel.name).asInstanceOf[StoredRelation].to
       }
+      val node = in.graph.asInstanceOf[PandaPropertyGraph[Id]].getNodeById(id, isReturn)
+      row ++ Seq(node)
     })
 
-    //records.filter(!_.equals(Seq(CypherNull)))
 
     val newRecords = {
-      if (limit>0) records.filter(!_.equals(Seq(StoredValueNull()))).take(limit.toInt)
-      else records.filter(!_.equals(Seq(StoredValueNull())))
+      if (limit>0) records.take(limit.toInt)
+      else records
     }
 
     new LinTable(t.schema ++ Seq(nodeVar.name), newRecords, t.schemas ++ Seq(nodeVar.name -> CTNode))
@@ -244,9 +246,9 @@ final case class  ScanRels(isEnd: Boolean,
     if (isEnd){
       val (opsNew, limit) = findLimitPredicate(filterOP.toArray)
       if (limit>0)
-        new LinTable(Seq(rel.name), next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelsByFilter(filterOP, labels, dir, isReturn).map(Seq(_)).take(limit.toInt), Seq(rel.name -> CTRelationship))
+        new LinTable(Seq(rel.name), next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelsByFilter(opsNew, labels, dir, isReturn).map(Seq(_)).take(limit.toInt), Seq(rel.name -> CTRelationship))
       else
-        new LinTable(Seq(rel.name), next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelsByFilter(filterOP, labels, dir, isReturn).map(Seq(_)), Seq(rel.name -> CTRelationship))
+        new LinTable(Seq(rel.name), next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelsByFilter(opsNew, labels, dir, isReturn).map(Seq(_)), Seq(rel.name -> CTRelationship))
     }
     else {
       next match {
