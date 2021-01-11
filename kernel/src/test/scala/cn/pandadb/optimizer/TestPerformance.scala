@@ -14,7 +14,7 @@ import scala.collection.mutable.ArrayBuffer
 
 object TestPerformance {
 //  val dbPath = "/hdfs_data2/panda-1229/base_1B-1231"
-  val dbPath = "F:\\graph500"
+  val dbPath = "C:\\PandaDB_rocksDB"
 
   val nodeStore = new NodeStoreAPI(dbPath)
   val relationStore = new RelationStoreAPI(dbPath)
@@ -92,8 +92,18 @@ object TestPerformance {
   def relationApiTest(): Unit ={
     Profiler.timing({
       println("Test preheat")
-      nodeStore.allNodes().take(10000)
-      relationStore.allRelations().take(10000)
+      val label0 = nodeStore.getLabelId("label8")
+      val label1 = nodeStore.getLabelId("label9")
+      val limit = 10000
+
+      val res = nodeStore
+        //.getNodeIdsByLabel(label0)
+        .getNodesByLabel(label0).map(mapNode(_)).map(_.id)
+        .flatMap(relationStore.findOutRelations)
+        .filter(rel =>nodeStore.hasLabel(rel.to, label1))
+        .take(limit)
+        .map(mapRelation)
+      println(res.size)
     })
 
     print("match (n:label0)-[r]->(m:label1) return r limit 10000   ")
@@ -105,9 +115,10 @@ object TestPerformance {
       val res = nodeStore
         //.getNodeIdsByLabel(label0)
           .getNodesByLabel(label0).map(mapNode(_)).map(_.id)
-        .flatMap(relationStore.findOutRelations).map(mapRelation(_))
-        .filter(rel =>nodeStore.hasLabel(rel.endId, label1))
+        .flatMap(relationStore.findOutRelations)
+        .filter(rel =>nodeStore.hasLabel(rel.to, label1))
         .take(limit)
+        .map(mapRelation)
       println(res.size)
     })
 
@@ -126,6 +137,7 @@ object TestPerformance {
         .flatMap(relationStore.findOutRelations)
         .filter(rel =>nodeStore.hasLabel(rel.to, label2))
         .take(limit)
+        .map(mapRelation)
 
       println(res.size)
     })
@@ -151,6 +163,7 @@ object TestPerformance {
         .flatMap(relationStore.findOutRelations)
         .filter(rel =>nodeStore.hasLabel(rel.to, label3))
         .take(limit)
+        .map(mapRelation)
       println(res.length)
     })
 
@@ -166,6 +179,7 @@ object TestPerformance {
         .flatMap(nodeId => relationStore.findOutRelations(nodeId, type0))
         .filter(rel =>nodeStore.hasLabel(rel.to, label1))
         .take(limit)
+        .map(mapRelation)
       println(res.length)
     })
 
@@ -180,12 +194,14 @@ object TestPerformance {
         .flatMap(relationStore.findOutRelations)
         .filter(rel =>nodeStore.hasLabel(rel.to, label1))
         .take(limit)
+        .map(mapRelation)
       println(res.length)
     })
   }
 
   def relationCypherTest(): Unit ={
     val cyphers = List(
+      "match (n:label8)-[r]->(m:label9) return r limit 10000",
       "match (n:label0)-[r]->(m:label1) return r limit 10000",
       "match (n:label2)-[r1]->(m:label3)-[r2]->(p:label4) return r2  limit 10000",
       "match (n:label5)-[r1]->(m:label6)-[r2]->(p:label7)-[r3]->(q:label8) return r3  limit 10000",
