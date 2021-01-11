@@ -9,7 +9,7 @@ import net.neoremind.kraps.rpc.netty.{HippoEndpointRef, HippoRpcEnv, HippoRpcEnv
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
-object client {
+object HippoClient {
   val PANDA_SERVER_NAME = "pandadb-server"
 
   def main(args: Array[String]): Unit = {

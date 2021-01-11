@@ -25,7 +25,10 @@ class PandaDriverFactory(uri: String, authtoken: PandaAuthToken, config: PandaDr
 
   def verifyConnectivity(client: PandaRpcClient, username: String, password: String): Unit ={
     val res = client.verifyConnectionRequest(username, password)
-    if (res == "no") throw new UsernameOrPasswordErrorException
+    if (res == "no") {
+      client.close
+      throw new UsernameOrPasswordErrorException
+    }
   }
 
   def getPublicKey(client: PandaRpcClient): String ={

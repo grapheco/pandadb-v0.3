@@ -8,21 +8,18 @@ import org.neo4j.driver.types.Relationship
 class TestDriver {
   @Test
   def test(): Unit ={
-    val driver = GraphDatabase.driver("127.0.0.1:8878", PandaAuthToken.basic("panda", "db"))
+    val driver = GraphDatabase.driver("127.0.0.1:52000", PandaAuthToken.basic("panda", "db"))
     val session = driver.session()
-    val res = session.run("match (n) where n.name=$nn return n.name", Values.parameters("nn", "alex"))
-//        val res = session.run("match (n) delete n")
 
-    //    val res = session.run("match (n) where n.age=10 return n")
-//    val res = session.run("match (n:person) where n.age=10 return n")
-//    val res = session.run("match (n:perwwson) where n.age=10 return n")
-
-    //    val res = session.run("create (n:person{age:10, name:'bob'})")
-
-    while (res.hasNext){
-      val record = res.next()
+//    val res1 = session.run("match (n) where n.name={nn} return n.name", Values.parameters("nn", "alex"))
+    val res2 = session.run("match (n) return n, n.name, n.age")
+    println(res2.keys())
+    while (res2.hasNext){
+      val record = res2.next()
       println(record)
     }
+
+//    println(res1.next(), "~~~")
     session.close()
     driver.close()
   }

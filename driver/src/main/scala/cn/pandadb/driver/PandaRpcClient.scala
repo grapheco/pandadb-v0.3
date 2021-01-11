@@ -23,6 +23,7 @@ class PandaRpcClient(hostName:String, port: Int, clientName: String, serverName:
         res.asInstanceOf[Stream[DriverValue]]
       }
       case e: String => {
+        close
         throw new CypherErrorException(e)
       }
     }
