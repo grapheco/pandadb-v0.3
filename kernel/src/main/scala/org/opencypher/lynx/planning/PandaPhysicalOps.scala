@@ -82,8 +82,8 @@ final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, varMap: Map[Var, TNode
 
     if (isEnd){
       val (opsNew, limit) = findLimitPredicate(filterOP.toArray)
-      if(limit>0) new LinTable(Seq(nodeVar.name), graph.asInstanceOf[PandaPropertyGraph[Id]].getNodesByFilter(opsNew.toArray, labels, isReturn).map(Seq(_)).take(limit.toInt), Seq(nodeVar.name -> CTNode))
-      else new LinTable(Seq(nodeVar.name), graph.asInstanceOf[PandaPropertyGraph[Id]].getNodesByFilter(opsNew.toArray, labels, isReturn).map(Seq(_)), Seq(nodeVar.name -> CTNode))
+      if(limit>0) new LinTable(Seq(nodeVar.name), graph.asInstanceOf[PandaPropertyGraph[Id]].getNodesByFilter(opsNew.toArray, labels, isReturn).map(Seq(_)).take(limit.toInt), Seq(nodeVar.name -> CTNode), Seq(nodeVar.name -> isReturn))
+      else new LinTable(Seq(nodeVar.name), graph.asInstanceOf[PandaPropertyGraph[Id]].getNodesByFilter(opsNew.toArray, labels, isReturn).map(Seq(_)), Seq(nodeVar.name -> CTNode), Seq(nodeVar.name -> isReturn))
     }
     else {
       next match {
@@ -129,7 +129,7 @@ final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, varMap: Map[Var, TNode
       else records
     }
 
-    new LinTable(t.schema ++ Seq(nodeVar.name), newRecords, t.schemas ++ Seq(nodeVar.name -> CTNode))
+    new LinTable(t.schema ++ Seq(nodeVar.name), newRecords, t.schemas ++ Seq(nodeVar.name -> CTNode), t.reSchemas ++Seq(nodeVar.name -> isReturn))
 
   }
 
@@ -140,7 +140,8 @@ final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, varMap: Map[Var, TNode
     }
   }
   override lazy val table: LynxTable = {
-    LynxTable(this.linTable.schemas, this.linTable.recordes.map(_.map(mapStoredValue)).toIterable)
+    //LynxTable(this.linTable.schemas, this.linTable.recordes.map(_.map(mapStoredValue)).toIterable)
+    LynxTable(this.linTable.selectSchema(), this.linTable.selectRecordes().map(_.map(mapStoredValue)).toIterable)
   }
   /*override lazy val table: LynxTable = {
     if (isEnd) {
@@ -246,9 +247,9 @@ final case class  ScanRels(isEnd: Boolean,
     if (isEnd){
       val (opsNew, limit) = findLimitPredicate(filterOP.toArray)
       if (limit>0)
-        new LinTable(Seq(rel.name), next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelsByFilter(opsNew, labels, dir, isReturn).map(Seq(_)).take(limit.toInt), Seq(rel.name -> CTRelationship))
+        new LinTable(Seq(rel.name), next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelsByFilter(opsNew, labels, dir, isReturn).map(Seq(_)).take(limit.toInt), Seq(rel.name -> CTRelationship), Seq(rel.name -> isReturn))
       else
-        new LinTable(Seq(rel.name), next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelsByFilter(opsNew, labels, dir, isReturn).map(Seq(_)), Seq(rel.name -> CTRelationship))
+        new LinTable(Seq(rel.name), next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelsByFilter(opsNew, labels, dir, isReturn).map(Seq(_)), Seq(rel.name -> CTRelationship), Seq(rel.name -> isReturn))
     }
     else {
       next match {
@@ -261,6 +262,11 @@ final case class  ScanRels(isEnd: Boolean,
   def getRelsByTable(t:LinTable): LinTable = {
     val isFirst = t.schema.contains(sVar.name)
     val (opsNew, limit) = findLimitPredicate(filterOP.toArray)
+    val tdir = dir match {
+      case 0 => 0
+      case 1 => 2
+      case 2 => 1
+    }
     val records = t.recordes.flatMap(row => {
       if (isFirst) {
         val id = t.cell(row, sVar.name).asInstanceOf[StoredNode].id
@@ -268,21 +274,17 @@ final case class  ScanRels(isEnd: Boolean,
         rels.map(row ++ Seq(_))
       }
       else {
-        dir = dir match {
-          case 0 => 0
-          case 1 => 2
-          case 2 => 1
-        }
+
         val id = t.cell(row, tVar.name).asInstanceOf[StoredNode].id
-        val rels = next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelationById(id, dir, labels, opsNew, isReturn)
+        val rels = next.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelationById(id, tdir, labels, opsNew, isReturn)
         rels.map(row ++ Seq(_))
       }
 
     })
     if(limit > 0)
-      new LinTable(t.schema ++ Seq(rel.name), records.take(limit.toInt), t.schemas ++ Seq(rel.name -> CTRelationship))
+      new LinTable(t.schema ++ Seq(rel.name), records.take(limit.toInt), t.schemas ++ Seq(rel.name -> CTRelationship), t.reSchemas ++ Seq(rel.name -> isReturn))
     else
-      new LinTable(t.schema ++ Seq(rel.name), records, t.schemas ++ Seq(rel.name -> CTRelationship))
+      new LinTable(t.schema ++ Seq(rel.name), records, t.schemas ++ Seq(rel.name -> CTRelationship), t.reSchemas ++ Seq(rel.name -> isReturn))
   }
 
   def mapStoredValue(v: StoredValue): CypherValue = {
@@ -293,7 +295,8 @@ final case class  ScanRels(isEnd: Boolean,
   }
 
   override lazy val table: LynxTable = {
-    LynxTable(this.linTable.schemas, this.linTable.recordes.map(_.map(mapStoredValue)).toIterable)
+    //LynxTable(this.linTable.schemas, this.linTable.recordes.map(_.map(mapStoredValue)).toIterable)
+    LynxTable(this.linTable.selectSchema(), this.linTable.selectRecordes().map(_.map(mapStoredValue)).toIterable)
   }
 
 /*  override lazy val table: LynxTable = {

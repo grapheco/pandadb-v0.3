@@ -16,8 +16,13 @@ object PandaPhysicalOptimizer {
   def process(input: PhysicalOperator)(implicit context: LynxPlannerContext): PhysicalOperator = {
     //InsertCachingOperators(input)
     //filterPushDown(input)
+    //val t1 = System.currentTimeMillis()
+    //val i = filterPushDown2(new ArrayBuffer[PhysicalOperator](), new ArrayBuffer[PhysicalOperator](), input)
+    //val t2 = System.currentTimeMillis()
+    //println(s"Optimizer cost time:${t2-t1}")
     filterPushDown2(new ArrayBuffer[PhysicalOperator](), new ArrayBuffer[PhysicalOperator](), input)
     //input
+
   }
 
   def filterPushDown2(filterOps: ArrayBuffer[PhysicalOperator], ordinaryOps: ArrayBuffer[PhysicalOperator], input: PhysicalOperator): PhysicalOperator = {
