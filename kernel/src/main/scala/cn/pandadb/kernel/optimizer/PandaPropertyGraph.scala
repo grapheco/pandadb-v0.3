@@ -371,11 +371,12 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
             val (indexId,label,props, cnt) = scan.isPropertysWithIndex(labels, rangeops.map(_._1).toSet)
             if (indexId >= 0) {
               var (v,t) = props.toSeq.map(rangeops.toMap.get(_)).head.get
-              val max = Float.MaxValue
-              val min = Float.MinValue
+              val max = Double.MaxValue
+              val min = Double.MinValue
               val value = v match {
-                case v:Long => v.toInt.toFloat
-                case v:Double => v.toFloat
+                case v:Long => v.toDouble
+                case v:Double => v
+                case _ => 0
               }
 
               val nodes = t match {
@@ -716,9 +717,9 @@ trait PandaPropertyGraphScan[Id] extends PropertyGraphScanner[Id] with HasStatis
 
   def findNode(indexId: Int, value: Any): Iterator[StoredNodeWithProperty] = ???
 
-  def findRangeNodeId(indexId: Int, from: Float, to: Float, fromClose:Boolean = false, toClose:Boolean = false): Iterator[Long] = ???
+  def findRangeNodeId(indexId: Int, from: Double, to: Double, fromClose:Boolean = false, toClose:Boolean = false): Iterator[Long] = ???
 
-  def findRangeNode(indexId: Int, from: Float, to: Float, fromClose:Boolean = false, toClose:Boolean = false): Iterator[StoredNodeWithProperty] = ???
+  def findRangeNode(indexId: Int, from: Double, to: Double, fromClose:Boolean = false, toClose:Boolean = false): Iterator[StoredNodeWithProperty] = ???
 
   def startWithNodeId(indexId: Int, start: String): Iterator[Long] = ???
 

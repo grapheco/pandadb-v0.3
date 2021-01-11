@@ -36,8 +36,8 @@ class PNodeImporter(dbPath: String, nodeHeadFile: File, nodeFile: File) extends 
   service.scheduleWithFixedDelay(importerFileReader.fillQueue, 0, 50, TimeUnit.MILLISECONDS)
   service.scheduleAtFixedRate(closer, 1, 1, TimeUnit.SECONDS)
 
-  private val nodeDB = RocksDBStorage.getInitDB(s"${dbPath}/nodes")
-  private val nodeLabelDB = RocksDBStorage.getInitDB(s"${dbPath}/nodeLabel")
+  private val nodeDB = RocksDBStorage.getDB(s"${dbPath}/nodes", useForImporter = true)
+  private val nodeLabelDB = RocksDBStorage.getDB(s"${dbPath}/nodeLabel", useForImporter = true)
 
   val estNodeCount: Long = estLineCount(nodeFile)
   var globalCount: AtomicLong = new AtomicLong(0)

@@ -152,14 +152,14 @@ class IndexTest extends Assert {
       d=>
         ni.insertIndexRecord(indexId, d._1, d._2)
     }
-    Assert.assertArrayEquals(Array[Long](9,8,7,6,5,0,1,2,3,4), ni.findIntRange(indexId).toArray)
+    Assert.assertArrayEquals(Array[Long](9,8,7,6,5,0,1,2,3,4), ni.findIntegerRange(indexId).toArray)
 //    ni.findIntRange(indexId, 3,20).toList.foreach(println(_))
-    Assert.assertArrayEquals(Array[Long](2,3), ni.findIntRange(indexId, 3,100).toArray)
-    Assert.assertArrayEquals(Array[Long](2,3,4), ni.findIntRange(indexId, 3,100, endClosed = true).toArray)
-    Assert.assertArrayEquals(Array[Long](0,1,2,3), ni.findIntRange(indexId, 0,99).toArray)
-    Assert.assertArrayEquals(Array[Long](5,0,1,2,3), ni.findIntRange(indexId, 0,99, startClosed = true).toArray)
-    Assert.assertArrayEquals(Array[Long](0,1,2,3), ni.findIntRange(indexId, 0,99, endClosed = true).toArray)
-    Assert.assertArrayEquals(Array[Long](8,7,6,5,0,1,2,3), ni.findIntRange(indexId, -60,60).toArray)
+    Assert.assertArrayEquals(Array[Long](2,3), ni.findIntegerRange(indexId, 3,100).toArray)
+    Assert.assertArrayEquals(Array[Long](2,3,4), ni.findIntegerRange(indexId, 3,100, endClosed = true).toArray)
+    Assert.assertArrayEquals(Array[Long](0,1,2,3), ni.findIntegerRange(indexId, 0,99).toArray)
+    Assert.assertArrayEquals(Array[Long](5,0,1,2,3), ni.findIntegerRange(indexId, 0,99, startClosed = true).toArray)
+    Assert.assertArrayEquals(Array[Long](0,1,2,3), ni.findIntegerRange(indexId, 0,99, endClosed = true).toArray)
+    Assert.assertArrayEquals(Array[Long](8,7,6,5,0,1,2,3), ni.findIntegerRange(indexId, -60,60).toArray)
   }
 
   @Test
@@ -189,9 +189,9 @@ class IndexTest extends Assert {
 
 //    ni.findFloatRange(indexId, -99999.toFloat, Double.MaxValue.toFloat).foreach(println(_))
 //    ni.findFloatRange(indexId, -99999.toFloat, Double.MaxValue.toFloat).foreach(println(_))
-    Assert.assertArrayEquals(Array[Long](0,1,2,3,4,5,6,7,8,9,10), ni.findFloatRange(indexId, -99999, Double.MaxValue.toFloat).toArray)
-    Assert.assertArrayEquals(Array[Long](2,3,4,5,6,7,8), ni.findFloatRange(indexId, -99, 100).toArray)
-    Assert.assertArrayEquals(Array[Long](3,4,5,6), ni.findFloatRange(indexId, -4, 0.001.toFloat).toArray)
+    Assert.assertArrayEquals(Array[Long](0,1,2,3,4,5,6,7,8,9,10), ni.findFloatRange(indexId, -99999, Double.MaxValue).toArray)
+    Assert.assertArrayEquals(Array[Long](3,4,5,6,7,8), ni.findFloatRange(indexId, -99, 100).toArray)
+    Assert.assertArrayEquals(Array[Long](3,4,5,6), ni.findFloatRange(indexId, -4, 0.001).toArray)
 
   }
 

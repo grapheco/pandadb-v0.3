@@ -171,16 +171,16 @@ class IndexStoreAPI(dbPath: String) {
     store.topDocs2NodeIdArray(store.search(props.map(v=>s"$v"),keyword))
   }
 
-  def findIntRange(indexId: IndexId,
-                   startValue: Int = Int.MinValue,
-                   endValue: Int = Int.MaxValue,
+  def findIntegerRange(indexId: IndexId,
+                   startValue: Long = Long.MinValue,
+                   endValue: Long = Long.MaxValue,
                    startClosed: Boolean = false,
                    endClosed: Boolean = false): Iterator[Long] =
-    findRange(indexId, IndexEncoder.INT_CODE, IndexEncoder.encode(startValue), IndexEncoder.encode(endValue), startClosed, endClosed)
+    findRange(indexId, IndexEncoder.INTEGER_CODE, IndexEncoder.encode(startValue), IndexEncoder.encode(endValue), startClosed, endClosed)
 
   def findFloatRange(indexId: IndexId,
-                     startValue: Float = Float.MinValue,
-                     endValue: Float = Float.MinValue,
+                     startValue: Double = Double.MinValue,
+                     endValue: Double = Double.MinValue,
                      startClosed: Boolean = false,
                      endClosed: Boolean = false): Iterator[Long] =
     findRange(indexId, IndexEncoder.FLOAT_CODE, IndexEncoder.encode(startValue), IndexEncoder.encode(endValue), startClosed, endClosed)

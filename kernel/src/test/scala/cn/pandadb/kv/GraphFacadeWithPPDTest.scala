@@ -232,26 +232,23 @@ class GraphFacadeWithPPDTest {
 //      "match (n:person) where n.name starts with 'alice' return n",
 //      "match (n:person) where n.name starts with 'b' return n",
       "match (n:person) where n.age = 31 return n",
-      "match (n:person) where n.age < 31 return n", // error
-//      "match (n:worker) where n.age < 31 return n", // error
-      "match (n:person) where n.age <= 31 return n", // error
-      "match (n:person) where n.age <= 31.00 return n", //error
-      "match (n:person) where n.age > -100 return n", //
+      "match (n:person) where n.age < 31 return n",
+//      "match (n:worker) where n.age < 31 return n",
+      "match (n:person) where n.age <= 31 return n",
+      "match (n:person) where n.age <= 31.00 return n",
+      "match (n:person) where n.age > -100 return n",
       "match (n:person) where n.age > -100.0000001 return n",
     )
 
     matchCypher.foreach{
       c=>
         println(c)
-//        graphFacade.cypher(c).show
+        graphFacade.cypher(c).show
     }
 
 
     val indexId = indexStore.getIndexId(nodeStore.getLabelId("person"),
       Array(nodeStore.getPropertyKeyId("age"))).get
-
-    indexStore.findIntRange(indexId).foreach(println("int",_))
-    indexStore.findFloatRange(indexId, -200, 500).foreach(println("double",_))
 
     graphFacade.close()
   }

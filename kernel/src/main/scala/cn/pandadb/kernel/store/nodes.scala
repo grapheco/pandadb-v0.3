@@ -101,7 +101,6 @@ trait StoredValue{
 
 case class StoredValueNull() extends StoredValue
 
-
 case class StoredNode(id: Long, labelIds: Array[Int]=null) extends StoredValue {
 }
 
@@ -113,8 +112,6 @@ class StoredNodeWithProperty(override val id: Long,
 
 trait NodeStoreSPI {
   def allLabels(): Array[String];
-
-
 
   def allLabelIds(): Array[Int];
 

@@ -161,12 +161,12 @@ trait BaseSerializer {
     byteBuf.writeFloat(value)
   }
 
-  protected def _writeBoolean(value: Boolean, byteBuf: ByteBuf) = {
+  protected def _writeBoolean(value: Boolean, byteBuf: ByteBuf): ByteBuf = {
     byteBuf.writeByte(6)
     byteBuf.writeBoolean(value)
   }
 
-  protected def _writeKV(keyId: Int, value: Any, byteBuf: ByteBuf) = {
+  protected def _writeKV(keyId: Int, value: Any, byteBuf: ByteBuf): Any = {
     byteBuf.writeByte(keyId)
     value match {
       case s: Boolean => _writeBoolean(value.asInstanceOf[Boolean], byteBuf)

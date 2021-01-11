@@ -234,12 +234,12 @@ class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
   override def findNode(indexId: Int, value: Any): Iterator[StoredNodeWithProperty] =
     indexStore.find(indexId, value).map(nodeStore.getNodeById).filter(_.isDefined).map(_.get)
 
-  override def findRangeNodeId(indexId: Int, from: Float, to: Float, fromClosed:Boolean = false, toClosed:Boolean = false): Iterator[Long] = {
+  override def findRangeNodeId(indexId: Int, from: Double, to: Double, fromClosed:Boolean = false, toClosed:Boolean = false): Iterator[Long] = {
     indexStore.findFloatRange(indexId, from, to, startClosed = fromClosed, endClosed = toClosed) ++
-      indexStore.findIntRange(indexId, from.toInt, to.toInt, startClosed = fromClosed, endClosed = toClosed)
+      indexStore.findIntegerRange(indexId, from.toLong, to.toLong, startClosed = fromClosed, endClosed = toClosed)
   }
 
-  override def findRangeNode(indexId: Int, from: Float, to: Float, fromClosed:Boolean = false, toClosed:Boolean = false): Iterator[StoredNodeWithProperty] =
+  override def findRangeNode(indexId: Int, from: Double, to: Double, fromClosed:Boolean = false, toClosed:Boolean = false): Iterator[StoredNodeWithProperty] =
     findRangeNodeId(indexId, from, to, fromClosed, toClosed).map(nodeStore.getNodeById).filter(_.isDefined).map(_.get)
 
   override def startWithNodeId(indexId: Int, start: String): Iterator[Long] =

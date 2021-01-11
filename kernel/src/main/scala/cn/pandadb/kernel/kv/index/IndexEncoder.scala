@@ -15,9 +15,9 @@ object IndexEncoder {
   val NULL: Byte = -1
   val FALSE_CODE: Byte = 0
   val TRUE_CODE: Byte = 1
-  val INT_CODE: Byte = 2
+  val INTEGER_CODE: Byte = 2
   val FLOAT_CODE: Byte = 3
-  val LONG_CODE: Byte = 4
+//  val LONG_CODE: Byte = 4
   val STRING_CODE: Byte = 5
   val MAP_CODE: Byte = 6
 
@@ -32,17 +32,17 @@ object IndexEncoder {
    * ╠═══════════════╬══════════════╬══════════════╣
    * ║      True     ║    Empty     ║      1       ║
    * ╠═══════════════╬══════════════╬══════════════╣
-   * ║      Byte     ║    *Int*     ║      2       ║
+   * ║      Byte     ║    *Long*    ║      2       ║
    * ╠═══════════════╬══════════════╬══════════════╣
-   * ║      Short    ║    *Int*     ║      2       ║
+   * ║      Short    ║    *Long*    ║      2       ║
    * ╠═══════════════╬══════════════╬══════════════╣
-   * ║      Int      ║     Int      ║      2       ║
+   * ║      Int      ║    *Long*    ║      2       ║
    * ╠═══════════════╬══════════════╬══════════════╣
-   * ║      Float    ║    Float     ║      3       ║
+   * ║      Float    ║   *Double*   ║      3       ║
    * ╠═══════════════╬══════════════╬══════════════╣
-   * ║     Double    ║   *Float*    ║      3       ║
+   * ║     Double    ║    double    ║      3       ║
    * ╠═══════════════╬══════════════╬══════════════╣
-   * ║      Long     ║     Long     ║      4       ║
+   * ║      Long     ║     Long     ║      2       ║
    * ╠═══════════════╬══════════════╬══════════════╣
    * ║     String    ║    String    ║      5       ║
    * ╠═══════════════╬══════════════╬══════════════╣
@@ -56,12 +56,12 @@ object IndexEncoder {
     data match {
       //case data == null => Array.emptyByteArray
       case data: Boolean => Array.emptyByteArray
-      case data: Byte => intEncode(data.toInt)
-      case data: Short => intEncode(data.toInt)
-      case data: Int => intEncode(data)
-      case data: Float => floatEncode(data)
-      case data: Long => intEncode(data.toInt)// fixme
-      case data: Double => floatEncode(data.toFloat)
+      case data: Byte => integerEncode(data.toLong)
+      case data: Short => integerEncode(data.toLong)
+      case data: Int => integerEncode(data.toLong)
+      case data: Float => floatEncode(data.toDouble)
+      case data: Long => integerEncode(data)
+      case data: Double => floatEncode(data)
       case data: String => stringEncode(data)
       case data: Map[Int, Any] => BaseSerializer.map2Bytes(data)
       case data: Any => throw new Exception(s"this value type: ${data.getClass} is not supported")
@@ -73,11 +73,11 @@ object IndexEncoder {
       //case data == null => NULL
       case data: Boolean if data => TRUE_CODE
       case data: Boolean if !data => FALSE_CODE
-      case data: Byte => INT_CODE
-      case data: Short => INT_CODE
-      case data: Int => INT_CODE
+      case data: Byte => INTEGER_CODE
+      case data: Short => INTEGER_CODE
+      case data: Int => INTEGER_CODE
       case data: Float => FLOAT_CODE
-      case data: Long => INT_CODE // fixme
+      case data: Long => INTEGER_CODE
       case data: Double => FLOAT_CODE
       case data: String => STRING_CODE
       case data: Map[Int, Any] => MAP_CODE
@@ -86,34 +86,25 @@ object IndexEncoder {
   }
 
 
-  private def intEncode(int: Int): Array[Byte] = {
-    ByteUtils.intToBytes(int ^ Int.MinValue)
+  private def integerEncode(int: Long): Array[Byte] = {
+    ByteUtils.longToBytes(int ^ Long.MinValue)
   }
 
   /**
    * if float greater than or equal 0, the highest bit set to 1
    * else NOT each bit
    */
-  private def floatEncode(float: Float): Array[Byte] = {
-    val buf = ByteUtils.floatToBytes(float)
+  private def floatEncode(float: Double): Array[Byte] = {
+    val buf = ByteUtils.doubleToBytes(float)
     if (float >= 0) {
       // 0xxxxxxx => 1xxxxxxx
       ByteUtils.setInt(buf, 0, ByteUtils.getInt(buf, 0) ^ Int.MinValue)
     } else {
       // ~
-      ByteUtils.setInt(buf, 0, ~ByteUtils.getInt(buf, 0))
+      ByteUtils.setLong(buf, 0, ~ByteUtils.getLong(buf, 0))
     }
     buf
   }
-
-  private def longEncode(long: Long): Array[Byte] = {
-    ByteUtils.longToBytes(long ^ Long.MinValue)
-  }
-
-  private def stringEncode_old(string: String): Array[Byte] = {
-    ByteUtils.stringToBytes(string)
-  }
-
 
   /**
    * The string is divided into groups according to 8 bytes.
