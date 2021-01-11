@@ -5,14 +5,16 @@ import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
-import cn.pandadb.kernel.store.{StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
+import cn.pandadb.kernel.store.{StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
 import cn.pandadb.kernel.util.Profiler
+import org.opencypher.okapi.api.value.CypherValue
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship}
 
 import scala.collection.mutable.ArrayBuffer
 
 object TestPerformance {
 //  val dbPath = "/hdfs_data2/panda-1229/base_1B-1231"
-  val dbPath = "D:\\data\\graph500\\db"
+  val dbPath = "F:\\graph500"
 
   val nodeStore = new NodeStoreAPI(dbPath)
   val relationStore = new RelationStoreAPI(dbPath)
@@ -30,13 +32,15 @@ object TestPerformance {
     heatDB()
 //    memTest()
 //    memTestApi()
+
     relationCypherTest()
+    relationApiTest()
 //    cypherWithoutIndex()
 //    createIndex()
 //    cypherWithIndex()
 //    APIWithoutIndex()
 //    APIWithIndex()
-//    relationApiTest()
+
     graphFacade.close()
 
   }
@@ -92,21 +96,22 @@ object TestPerformance {
       relationStore.allRelations().take(10000)
     })
 
-    println("match (n:label0)-[r]->(m:label1) return r limit 10000")
+    print("match (n:label0)-[r]->(m:label1) return r limit 10000   ")
     Profiler.timing({
       val label0 = nodeStore.getLabelId("label0")
       val label1 = nodeStore.getLabelId("label1")
       val limit = 10000
 
       val res = nodeStore
-        .getNodeIdsByLabel(label0)
-        .flatMap(relationStore.findOutRelations)
-        .filter(rel =>nodeStore.hasLabel(rel.to, label1))
+        //.getNodeIdsByLabel(label0)
+          .getNodesByLabel(label0).map(mapNode(_)).map(_.id)
+        .flatMap(relationStore.findOutRelations).map(mapRelation(_))
+        .filter(rel =>nodeStore.hasLabel(rel.endId, label1))
         .take(limit)
-      println(res.length)
+      println(res.size)
     })
 
-    println("match (n:label2)-[r1]->(m:label3)-[r2]->(p:label4) return r2  limit 10000")
+    print("match (n:label2)-[r1]->(m:label3)-[r2]->(p:label4) return r2  limit 10000    ")
     Profiler.timing({
       val label0 = nodeStore.getLabelId("label2")
       val label1 = nodeStore.getLabelId("label3")
@@ -122,16 +127,18 @@ object TestPerformance {
         .filter(rel =>nodeStore.hasLabel(rel.to, label2))
         .take(limit)
 
-      println(res.length)
+      println(res.size)
     })
 
-    println("match (n:label5)-[r1]->(m:label6)-[r2]->(p:label7)-[r3]->(q:label8) return r3  limit 10000")
+    print("match (n:label5)-[r1]->(m:label6)-[r2]->(p:label7)-[r3]->(q:label8) return r3  limit 10000    ")
     Profiler.timing({
       val label0 = nodeStore.getLabelId("label5")
       val label1 = nodeStore.getLabelId("label6")
       val label2 = nodeStore.getLabelId("label7")
       val label3 = nodeStore.getLabelId("label8")
       val limit = 10000
+
+
 
       val res = nodeStore
         .getNodeIdsByLabel(label0)
@@ -147,7 +154,7 @@ object TestPerformance {
       println(res.length)
     })
 
-    println("match (n:label0)-[r:type0]->(m:label2) return r  limit 10000")
+    print("match (n:label0)-[r:type0]->(m:label2) return r  limit 10000    ")
     Profiler.timing({
       val label0 = nodeStore.getLabelId("label0")
       val label1 = nodeStore.getLabelId("label2")
@@ -162,7 +169,7 @@ object TestPerformance {
       println(res.length)
     })
 
-    println("match (n:label2)-[r]->(m:label4) return r limit 10000")
+    print("match (n:label2)-[r]->(m:label4) return r limit 10000     ")
     Profiler.timing({
       val label0 = nodeStore.getLabelId("label2")
       val label1 = nodeStore.getLabelId("label4")
@@ -183,8 +190,8 @@ object TestPerformance {
       "match (n:label2)-[r1]->(m:label3)-[r2]->(p:label4) return r2  limit 10000",
       "match (n:label5)-[r1]->(m:label6)-[r2]->(p:label7)-[r3]->(q:label8) return r3  limit 10000",
       "match (n:label0)-[r:type0]->(m:label2) return r  limit 10000",
-//      "match (n:label0)-[r:type1]->(m:label1) return r limit 10000",
       "match (n:label2)-[r]->(m:label4) return r limit 10000",
+      // "match (n:label0)-[r:type1]->(m:label1) return r limit 10000",
 //      "match (n:label3)-[r]->(m:label6) return r limit 10000",
 //      "match (n:label3)-[r:type1]->(m:label6) return r limit 10000",
 //      "match (n:label4)-[r]->(m:label8) return r limit 10000"
@@ -192,7 +199,9 @@ object TestPerformance {
     cyphers.foreach(c =>{
       Profiler.timing({
         val res = graphFacade.cypher(c)
-        println(res.records.size, "~~~~")
+        println(res.records.size, "CypherQuery", c)
+        //println(res.getRecords.get.show, "~~~~")
+        //println(c)
       })
     })
   }
@@ -408,5 +417,61 @@ object TestPerformance {
     })
     println("============================API with Index End...========================================================")
 
+  }
+
+  protected def mapRelation(rel: StoredRelation): Relationship[Long] = {
+    new Relationship[Long] {
+      override type I = this.type
+
+      override def id: Long = rel.id
+
+      override def startId: Long = rel.from
+
+      override def endId: Long = rel.to
+
+      override def relType: String = relationStore.getRelationTypeName(rel.typeId).get
+
+      override def copy(id: Long, source: Long, target: Long, relType: String, properties: CypherMap): this.type = ???
+
+      override def properties: CypherMap = {
+        var props: Map[String, Any] = Map.empty[String, Any]
+        rel match {
+          case rel: StoredRelationWithProperty =>
+            props = rel.properties.map(kv => (relationStore.getRelationTypeName(kv._1).getOrElse("unknown"), kv._2))
+          case _ =>
+        }
+        CypherMap(props.toSeq: _*)
+      }
+    }
+  }
+
+  protected def mapNode(node: StoredNode): Node[Long] = {
+    new Node[Long] {
+      override type I = this.type
+
+      override def id: Long = node.id
+
+      override def labels: Set[String] = node.labelIds.toSet.map((id: Int) => nodeStore.getLabelName(id).get)
+
+      override def copy(id: Long, labels: Set[String], properties: CypherValue.CypherMap): this.type = ???
+
+      override def properties: CypherMap = {
+        var props: Map[String, Any] = Map.empty[String, Any]
+        node match {
+          case node: StoredNodeWithProperty =>
+            props = node.properties.map {
+              kv =>
+                (nodeStore.getPropertyKeyName(kv._1).get, kv._2)
+            }
+          case _ =>
+            val n = nodeStore.getNodeById(node.id)
+            props = n.asInstanceOf[StoredNodeWithProperty].properties.map {
+              kv =>
+                (nodeStore.getPropertyKeyName(kv._1).get, kv._2)
+            }
+        }
+        CypherMap(props.toSeq: _*)
+      }
+    }
   }
 }
