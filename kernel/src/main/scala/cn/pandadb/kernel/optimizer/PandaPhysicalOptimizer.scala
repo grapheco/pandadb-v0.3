@@ -17,6 +17,7 @@ object PandaPhysicalOptimizer {
     //InsertCachingOperators(input)
     //filterPushDown(input)
     filterPushDown2(new ArrayBuffer[PhysicalOperator](), new ArrayBuffer[PhysicalOperator](), input)
+    //input
   }
 
   def filterPushDown2(filterOps: ArrayBuffer[PhysicalOperator], ordinaryOps: ArrayBuffer[PhysicalOperator], input: PhysicalOperator): PhysicalOperator = {
