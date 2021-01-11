@@ -630,12 +630,12 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
     }
   }
 
-  def getRelationById(nodeId: Long, direction: Int, labels: Set[String], ops: ArrayBuffer[NFPredicate], isReturn: Boolean): Iterator[StoredRelation] = {
+  def getRelationById2(nodeId: Long, direction: Int, labels: Set[String], ops: ArrayBuffer[NFPredicate], isReturn: Boolean): Iterator[StoredRelation] = {
     if (isReturn) getRelationById2(nodeId, direction, labels, ops, isReturn).map(rel => scan.getRelationByIdWithProperty(rel.id))
     else getRelationById2(nodeId, direction, labels, ops, isReturn).map(rel => StoredRelation(rel.id, rel.from, rel.to, rel.typeId))
   }
 
-  def getRelationById2(nodeId: Long, direction: Int, labels: Set[String], ops: ArrayBuffer[NFPredicate], isReturn: Boolean): Iterator[StoredRelation] ={
+  def getRelationById(nodeId: Long, direction: Int, labels: Set[String], ops: ArrayBuffer[NFPredicate], isReturn: Boolean): Iterator[StoredRelation] ={
 
     val rels = {
       if (ops.isEmpty) {
@@ -664,6 +664,9 @@ class PandaPropertyGraph[Id](scan: PandaPropertyGraphScan[Id], writer: PropertyG
   def mapNode(node: StoredNode): Node[Id] = scan.mapNode(node)
 
   def mapRelation(relation: StoredRelation): Relationship[Id] = scan.mapRelation(relation)
+
+  def getNodeById(Id: Long): StoredNodeWithProperty = scan.getNodeById(Id)
+  def getRelById(Id: Long): StoredRelationWithProperty = scan.getRelationByIdWithProperty(Id)
 }
 
 trait HasStatistics{

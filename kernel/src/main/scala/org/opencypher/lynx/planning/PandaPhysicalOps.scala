@@ -2,7 +2,7 @@ package org.opencypher.lynx.planning
 
 import cn.pandadb.kernel.optimizer.LynxType.LynxNode
 import cn.pandadb.kernel.optimizer.{NFLimit, NFPredicate, PandaPropertyGraph, Transformer}
-import cn.pandadb.kernel.store.{StoredNode, StoredRelation, StoredValue, StoredValueNull}
+import cn.pandadb.kernel.store.{StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty, StoredValue, StoredValueNull}
 import org.opencypher.lynx.plan.PhysicalOperator
 import org.opencypher.lynx.{LynxRecords, LynxTable, RecordHeader}
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
@@ -135,8 +135,14 @@ final case class  ScanNodes(isEnd: Boolean, nodeVar: Var, varMap: Map[Var, TNode
 
   def mapStoredValue(v: StoredValue): CypherValue = {
     v match{
-      case x:StoredNode => in.graph.asInstanceOf[PandaPropertyGraph[Id]].mapNode(x)
-      case x:StoredRelation =>in.graph.asInstanceOf[PandaPropertyGraph[Id]].mapRelation(x)
+      case x:StoredNode =>
+      val y = in.graph.asInstanceOf[PandaPropertyGraph[Id]].getNodeById(x.id)
+        in.graph.asInstanceOf[PandaPropertyGraph[Id]].mapNode(y)
+      case x:StoredRelation =>
+        val y = in.graph.asInstanceOf[PandaPropertyGraph[Id]].getRelById(x.id)
+        in.graph.asInstanceOf[PandaPropertyGraph[Id]].mapRelation(y)
+      case x:StoredNodeWithProperty =>in.graph.asInstanceOf[PandaPropertyGraph[Id]].mapNode(x)
+      case x:StoredRelationWithProperty =>in.graph.asInstanceOf[PandaPropertyGraph[Id]].mapRelation(x)
     }
   }
   override lazy val table: LynxTable = {
@@ -289,8 +295,14 @@ final case class  ScanRels(isEnd: Boolean,
 
   def mapStoredValue(v: StoredValue): CypherValue = {
     v match{
-      case x:StoredNode => next.graph.asInstanceOf[PandaPropertyGraph[Id]].mapNode(x)
-      case x:StoredRelation =>next.graph.asInstanceOf[PandaPropertyGraph[Id]].mapRelation(x)
+      case x:StoredNode =>
+        val y = graph.asInstanceOf[PandaPropertyGraph[Id]].getNodeById(x.id)
+        graph.asInstanceOf[PandaPropertyGraph[Id]].mapNode(y)
+      case x:StoredRelation =>
+        val y = graph.asInstanceOf[PandaPropertyGraph[Id]].getRelById(x.id)
+        graph.asInstanceOf[PandaPropertyGraph[Id]].mapRelation(y)
+      case x:StoredNodeWithProperty =>graph.asInstanceOf[PandaPropertyGraph[Id]].mapNode(x)
+      case x:StoredRelationWithProperty =>graph.asInstanceOf[PandaPropertyGraph[Id]].mapRelation(x)
     }
   }
 
