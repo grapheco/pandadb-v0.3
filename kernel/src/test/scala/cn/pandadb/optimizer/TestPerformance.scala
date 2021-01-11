@@ -14,7 +14,7 @@ import scala.collection.mutable.ArrayBuffer
 
 object TestPerformance {
 //  val dbPath = "/hdfs_data2/panda-1229/base_1B-1231"
-  val dbPath = "C:\\PandaDB_rocksDB"
+  val dbPath = "D:\\data\\graph500\\db2"
 
   val nodeStore = new NodeStoreAPI(dbPath)
   val relationStore = new RelationStoreAPI(dbPath)
@@ -102,7 +102,7 @@ object TestPerformance {
         .flatMap(relationStore.findOutRelations)
         .filter(rel =>nodeStore.hasLabel(rel.to, label1))
         .take(limit)
-        .map(mapRelation)
+        .map(rel=>mapRelation(relationStore.getRelationById(rel.id).get))
       println(res.size)
     })
 
@@ -118,7 +118,7 @@ object TestPerformance {
         .flatMap(relationStore.findOutRelations)
         .filter(rel =>nodeStore.hasLabel(rel.to, label1))
         .take(limit)
-        .map(mapRelation)
+        .map(rel=>mapRelation(relationStore.getRelationById(rel.id).get))
       println(res.size)
     })
 
@@ -137,7 +137,7 @@ object TestPerformance {
         .flatMap(relationStore.findOutRelations)
         .filter(rel =>nodeStore.hasLabel(rel.to, label2))
         .take(limit)
-        .map(mapRelation)
+        .map(rel=>mapRelation(relationStore.getRelationById(rel.id).get))
 
       println(res.size)
     })
@@ -163,7 +163,8 @@ object TestPerformance {
         .flatMap(relationStore.findOutRelations)
         .filter(rel =>nodeStore.hasLabel(rel.to, label3))
         .take(limit)
-        .map(mapRelation)
+        .map(rel=>mapRelation(relationStore.getRelationById(rel.id).get))
+
       println(res.length)
     })
 
@@ -179,7 +180,7 @@ object TestPerformance {
         .flatMap(nodeId => relationStore.findOutRelations(nodeId, type0))
         .filter(rel =>nodeStore.hasLabel(rel.to, label1))
         .take(limit)
-        .map(mapRelation)
+        .map(rel=>mapRelation(relationStore.getRelationById(rel.id).get))
       println(res.length)
     })
 
@@ -194,7 +195,7 @@ object TestPerformance {
         .flatMap(relationStore.findOutRelations)
         .filter(rel =>nodeStore.hasLabel(rel.to, label1))
         .take(limit)
-        .map(mapRelation)
+        .map(rel=>mapRelation(relationStore.getRelationById(rel.id).get))
       println(res.length)
     })
   }
