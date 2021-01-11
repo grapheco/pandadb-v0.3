@@ -122,6 +122,10 @@ class PandaPropertyGraphScanImpl(nodeStore: NodeStoreSPI,
 
   // PandaPropertyGraphScan
 
+  override def getRelationByIdWithProperty(relId: Long): StoredRelationWithProperty = {
+    relationStore.getRelationById(relId).get
+  }
+
   override def getRelationByNodeId(nodeId: Long, direction: Int): Iterator[StoredRelation] = {
     direction match{
       case OUT => relationStore.findOutRelations(nodeId)
