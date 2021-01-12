@@ -12,7 +12,7 @@ import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
-import cn.pandadb.kernel.store.{FileBasedIdGen, NodeStoreSPI, RelationStoreSPI}
+import cn.pandadb.kernel.store.{ NodeStoreSPI, RelationStoreSPI}
 import cn.pandadb.utils.ValueConverter
 import net.neoremind.kraps.RpcConf
 import net.neoremind.kraps.rpc.{RpcCallContext, RpcEndpoint, RpcEnvServerConfig}

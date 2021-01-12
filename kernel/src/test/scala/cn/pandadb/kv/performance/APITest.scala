@@ -176,7 +176,7 @@ class APITest {
         val res5 = graphFacade.cypher("match (n:label0) where n.idStr='ha' return n")
     Profiler.timing({
     val res7 = graphFacade.cypher("match (n:label0) where n.idStr='ha' return n")
-    res7.show})
+    res7.show()})
 
 //      val res = graphFacade.cypher("match (n:label1) where n.idStr='b' return n")
 //    Profiler.timing({

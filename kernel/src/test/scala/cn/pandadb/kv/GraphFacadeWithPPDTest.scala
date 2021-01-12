@@ -10,6 +10,7 @@ import cn.pandadb.kernel.kv.relation.RelationStoreAPI
 import cn.pandadb.kernel.optimizer.AnyValue
 import cn.pandadb.kernel.store.{NodeStoreSPI, RelationStoreSPI}
 import org.apache.commons.io.FileUtils
+import org.grapheco.lynx.{LynxNode, LynxResult}
 import org.junit.{Assert, Before, Test}
 import org.opencypher.okapi.api.graph.CypherResult
 import org.opencypher.okapi.api.value.CypherValue.{Node, Relationship}
@@ -94,17 +95,17 @@ class GraphFacadeWithPPDTest {
     val n3: Long = graphFacade.addNode2(Map("name" -> "simba", "age" -> 10), "worker")
     val n4: Long = graphFacade.addNode2(Map("name" -> "bob", "age" -> 50), "person")
 
-    var res: CypherResult = null
+    var res: LynxResult = null
     res = graphFacade.cypher("match (n) return n")
-    res.show
+    res.show()
     Assert.assertEquals(4, res.records.size)
 
     res = graphFacade.cypher("match (n) where n.name='alex' return n")
-    res.show
+    res.show()
     Assert.assertEquals(1, res.records.size)
 
     res = graphFacade.cypher("match (n) where n.age=20 return n")
-    res.show
+    res.show()
     Assert.assertEquals(1, res.records.size)
 
     // test index
@@ -112,17 +113,17 @@ class GraphFacadeWithPPDTest {
     graphFacade.writeNodeIndexRecord(indexId, n1, "bob")
 
     res = graphFacade.cypher("match (n) where n.name='bob' return n")
-    res.show
+    res.show()
     Assert.assertEquals(2, res.records.size)
 
     return
     res = graphFacade.cypher("match (n:person) where n.name='alex' return n")
-    res.show
+    res.show()
     Assert.assertEquals(1, res.records.size)
 
     graphFacade.writeNodeIndexRecord(indexId, n4, "bob")
     res = graphFacade.cypher("match (n:person) where n.name='bob' return n")
-    res.show
+    res.show()
     Assert.assertEquals(2, res.records.size)
 
     graphFacade.close()
@@ -151,6 +152,11 @@ class GraphFacadeWithPPDTest {
 
   }
 
+
+  def printNode(node: LynxNode): Unit ={
+    println(s"id = ${node.id.value}, labels = ${node.labels}, name = ${node.property("name").get.value}, age = ${node.property("age").get.value}")
+  }
+
   @Test
   def testQueryRelation(): Unit = {
     val n1: Long = graphFacade.addNode2(Map("name" -> "bob", "age" -> 40), "person")
@@ -158,18 +164,22 @@ class GraphFacadeWithPPDTest {
     val n3: Long = graphFacade.addNode2(Map("name" -> "simba", "age" -> 10), "worker")
     graphFacade.addRelation("friend", 1L, 2L, Map())
     //graphFacade.allRelations().foreach(println)
-    val res = graphFacade.cypher("match (n:person)-[r]->(m:person) where n.age=40 and m.age = 20 return n,r")
-    //val res = graphFacade.cypher("match (n:person) where n.age=40 return n")
+    //val res = graphFacade.cypher("match (n:person)-[r]->(m:person) where n.age=40 and m.age = 20 return n,r")
+    val res = graphFacade.cypher("match (n:person)  return n")
     //val res = graphFacade.cypher("match (n)-[r]-(m) return r")
-    res.show
+   // rs.records.toSeq.apply(1).apply("y")
+    res.records.toSeq.map(_.apply("n").asInstanceOf[LynxNode]).foreach(printNode)
+
+
   }
 
   @Test
   def testCreate(): Unit ={
     val res = graphFacade.cypher("create (n:person{name:'joejoe'}) ")
     //nodeStore.allNodes().foreach(n=>println(n.properties))
-    val res2 = graphFacade.cypher("match (n:person) where n.name='joejoe' return n")
-    res2.show
+    val res2 = graphFacade.cypher("match (n:person)  return n")
+    //res2.show()
+    res.records.toSeq.map(_.apply("n").asInstanceOf[LynxNode]).foreach(printNode)
 //    val res3 = graphFacade.cypher("match (n) return n")
 //    res3.show
 
@@ -179,7 +189,7 @@ class GraphFacadeWithPPDTest {
   def testCreateRel(): Unit ={
     val res = graphFacade.cypher("CREATE (n:person {name: 'bluejoe', age: 40}),(m:test {name: 'alex', age: 30}),(n)-[:fans]->(m)")
     val res2 = graphFacade.cypher("match (n:person)-[r:fans]->(m: test) where n.name='bluejoe' and m.age=30 return n,r,m")
-    res2.show
+    res2.show()
   }
 
 
@@ -243,7 +253,7 @@ class GraphFacadeWithPPDTest {
     matchCypher.foreach{
       c=>
         println(c)
-        graphFacade.cypher(c).show
+        graphFacade.cypher(c).show()
     }
 
 

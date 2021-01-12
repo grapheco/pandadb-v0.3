@@ -1,11 +1,12 @@
 package cn.pandadb.kernel
 
+import org.grapheco.lynx.LynxResult
 import org.opencypher.okapi.api.graph.CypherResult
 
 trait GraphService {
   type Id = Long
 
-  def cypher(query: String, parameters: Map[String, Any] = Map.empty): CypherResult
+  def cypher(query: String, parameters: Map[String, Any] = Map.empty): LynxResult
 
   def close(): Unit
 

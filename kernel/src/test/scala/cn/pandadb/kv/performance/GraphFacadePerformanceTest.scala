@@ -118,7 +118,7 @@ class GraphFacadePerformanceTest {
   @Test
   def t(): Unit ={
     val res = graphFacade.cypher("Match (n:label1)  where n.idStr = 'b' return n limit 10")
-    res.show
+    res.show()
   }
   @Test
   def testQueryAll(): Unit ={
@@ -126,52 +126,52 @@ class GraphFacadePerformanceTest {
     Profiler.timing(
       {
         val res = graphFacade.cypher("Match (n) where  n.idStr='b' return n limit 10")
-        res.show
+        res.show()
       }
     )
 //    var res = graphFacade.cypher("Match (n) return n limit 10")
-//    res.show
+//    res.show()
 //    return
 //    res = graphFacade.cypher("match ()-[r]->() return r")
-//    res.show
+//    res.show()
 //    res = graphFacade.cypher("match (n:person)-[r]->() return r")
-//    res.show
+//    res.show()
   }
 
   @Test
   def testFilterWithSingleProperty(): Unit ={
     var res = graphFacade.cypher("match (n) where n.id_p=1 return n")
-    res.show
+    res.show()
     res = graphFacade.cypher("match (n) where n.idStr='a' return n")
-    res.show
+    res.show()
     res = graphFacade.cypher("match (n) where n.flag=false return n")
-    res.show
+    res.show()
   }
   @Test
   def testFilterWithMultipleProperties(): Unit ={
     var res = graphFacade.cypher("match (n) where n.id_p=1 and n.idStr='a' return n")
-    res.show
+    res.show()
     res = graphFacade.cypher("match (n) where n.id_p=1 and n.flag= false return n")
-    res.show
+    res.show()
     res = graphFacade.cypher("match (n) where n.idStr='c' and n.flag= false return n")
-    res.show
+    res.show()
   }
   @Test
   def testFilterWithLabelAndProperties(): Unit ={
     var res = graphFacade.cypher("match (n:person) return n")
-    res.show
+    res.show()
     res = graphFacade.cypher("match (n:person) where n.id_p=1 return n")
-    res.show
+    res.show()
     res = graphFacade.cypher("match (n:person) where n.idStr='a' return n")
-    res.show
+    res.show()
     res = graphFacade.cypher("match (n:person) where n.flag = false return n")
-    res.show
+    res.show()
     res = graphFacade.cypher("match (n:person) where n.id_p=1 and n.idStr = 'a' return n")
-    res.show
+    res.show()
     res = graphFacade.cypher("match (n:person) where n.id_p=1 and n.flag = false return n")
-    res.show
+    res.show()
     res = graphFacade.cypher("match (n:person) where n.id_p=1 and n.idStr = 'a' and n.flag = false return n")
-    res.show
+    res.show()
   }
 
 
