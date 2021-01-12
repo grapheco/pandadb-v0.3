@@ -46,9 +46,13 @@ class IndexStoreAPI(dbPath: String) {
     }
     val store = fulltextIndexMap.get(indexId)
     if(store.isEmpty){
-      fulltextIndexMap.put(indexId, (props, new FulltextIndexStore(s"$fulltextIndexPathPrefix/$indexId")))
+      fulltextIndexMap.put(indexId, (props, getFulltextIndexStore(indexId)))
     }
     indexId
+  }
+
+  def getFulltextIndexStore(indexId: Int): FulltextIndexStore = {
+    new FulltextIndexStore(s"$fulltextIndexPathPrefix/$indexId")
   }
 
   def getIndexId(label: Int, props: Array[Int]): Option[IndexId] = meta.getIndexId(label, props)
@@ -64,6 +68,7 @@ class IndexStoreAPI(dbPath: String) {
   def insertIndexRecordBatch(indexId: IndexId, data: Iterator[(Any, Long)]): Unit =
     index.set(indexId, data)
 
+  //data: (prop1Value, Prop2Value)
   def insertFulltextIndexRecord(indexId: IndexId, data: Array[Any], id: Long): Unit = {
     val (propIds, store) = fulltextIndexMap.get(indexId).get
     store.insert(id, propIds.zip(data).toMap.map(p => {s"${p._1}" -> p._2.asInstanceOf[String]}))
@@ -103,10 +108,10 @@ class IndexStoreAPI(dbPath: String) {
   }
 
   def dropFulltextIndex(label: Int, props: Array[Int]): Unit = {
-    meta.getIndexId(label, props).foreach{
+    meta.getIndexId(label, props, true).foreach{
       id=>
         meta.deleteIndexMeta(label, props, true)
-        fulltextIndexMap.get(id).get._2.dropAndClose()
+        getFulltextIndexStore(id).dropAndClose()
         fulltextIndexMap -= id
     }
   }

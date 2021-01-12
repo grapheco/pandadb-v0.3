@@ -7,11 +7,11 @@ import org.junit.{After, Assert, Test}
 
 @Test
 class FulltextIndexTest extends Assert {
-  val dbPath = "D:\\PandaDB-tmp\\100M.2"
+  val dbPath = "D:\\PandaDB-tmp\\100M"
   val api = new IndexStoreAPI(dbPath)
   val nodeStore = new NodeStoreAPI(dbPath)
-  val label = 1
-  val props = Array[Int](3)
+  val label = nodeStore.getLabelId("label1")
+  val props = Array[Int](nodeStore.getPropertyKeyId("name"))
 
   @Test
   def create: Unit = {
@@ -21,22 +21,21 @@ class FulltextIndexTest extends Assert {
   @Test
   def insert: Unit = {
     val indexId = api.createFulltextIndex(label, props)
-    nodeStore.allNodes().take(100).foreach {
+    nodeStore.getNodesByLabel(label).take(100).foreach {
       n =>
         api.insertFulltextIndexRecord(indexId, props.map(n.properties.get(_).get), n.id)
     }
+    println("insert all")
     Profiler.timing {
-      nodeStore.allNodes().take(1000).foreach {
+      nodeStore.getNodesByLabel(label).foreach {
         n =>
           api.insertFulltextIndexRecord(indexId, props.map(n.properties.get(_).get), n.id)
       }
     }
-    indexId
   }
 
   @Test
   def search: Unit ={
-    insert
     val indexId = api.createFulltextIndex(label, props)
     println(api.search(indexId, props, "Bob").length)
     Profiler.timing {
@@ -44,7 +43,7 @@ class FulltextIndexTest extends Assert {
     }
   }
 
-  @After
+  @Test
   def cleanup: Unit ={
     api.dropFulltextIndex(label, props)
     api.close()

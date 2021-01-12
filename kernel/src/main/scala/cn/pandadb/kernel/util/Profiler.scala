@@ -7,7 +7,7 @@ object Profiler extends Logging {
     val t1 = System.currentTimeMillis()
     val t = f
     val t2 = System.currentTimeMillis()
-    logger.debug(s"time cost: ${t2 - t1} ms")
+    logger.info(s"time cost: ${t2 - t1} ms")
     t
   }
 
@@ -15,7 +15,7 @@ object Profiler extends Logging {
     val t1 = System.nanoTime()
     val t = f
     val t2 = System.nanoTime()
-    logger.debug(s"time cost: ${((t2 - t1)/1000).toInt} us")
+    logger.info(s"time cost: ${((t2 - t1)/1000).toInt} us")
     t
   }
 }
