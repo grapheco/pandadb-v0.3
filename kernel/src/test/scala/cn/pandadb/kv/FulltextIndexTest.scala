@@ -10,7 +10,7 @@ class FulltextIndexTest extends Assert {
   val dbPath = "D:\\PandaDB-tmp\\100M"
   val api = new IndexStoreAPI(dbPath)
   val nodeStore = new NodeStoreAPI(dbPath)
-  val label = nodeStore.getLabelId("label1")
+  val label = nodeStore.getLabelId("label0")
   val props = Array[Int](nodeStore.getPropertyKeyId("name"))
 
   @Test
@@ -19,17 +19,21 @@ class FulltextIndexTest extends Assert {
   }
 
   @Test
+  def insertBatch: Unit = {
+    val indexId = api.createFulltextIndex(label, props)
+    Profiler.timing {
+      api.insertFulltextIndexRecordBatch(indexId, nodeStore.getNodesByLabel(label).map(
+        n=>(props.map(n.properties.get(_).get), n.id)
+      ))
+    }
+  }
+
+  @Test
   def insert: Unit = {
     val indexId = api.createFulltextIndex(label, props)
-    nodeStore.getNodesByLabel(label).take(100).foreach {
-      n =>
-        api.insertFulltextIndexRecord(indexId, props.map(n.properties.get(_).get), n.id)
-    }
-    println("insert all")
     Profiler.timing {
       nodeStore.getNodesByLabel(label).foreach {
-        n =>
-          api.insertFulltextIndexRecord(indexId, props.map(n.properties.get(_).get), n.id)
+        n => api.insertFulltextIndexRecord(indexId, props.map(n.properties.get(_).get), n.id)
       }
     }
   }
@@ -39,7 +43,10 @@ class FulltextIndexTest extends Assert {
     val indexId = api.createFulltextIndex(label, props)
     println(api.search(indexId, props, "Bob").length)
     Profiler.timing {
-      api.search(indexId, props, "Panda").length
+      println(api.search(indexId, props, "Panda"))
+    }
+    Profiler.timing {
+      println(api.search(indexId, props, "Panda").length)
     }
   }
 

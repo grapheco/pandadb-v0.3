@@ -15,7 +15,9 @@ class FulltextIndexStore(val indexPath: String) {
   val directory: Directory = FSDirectory.open(dir.toPath)
   val analyzer = new StandardAnalyzer
   val conf = new IndexWriterConfig(analyzer)
-  val maxBufferedDocs = 500
+  val defaultMaxBufferedDocs: Int = 1024
+  conf.setMaxBufferedDocs(defaultMaxBufferedDocs*100)
+  conf.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH)
   val indexWriter = new IndexWriter(directory, conf)
   var reader = DirectoryReader.open(indexWriter)
   var searcher = new IndexSearcher(reader)
@@ -30,7 +32,7 @@ class FulltextIndexStore(val indexPath: String) {
     indexWriter.commit()
   }
 
-  def insert(id: Long, props: Map[String, String]): Unit = {
+  def insert(id: Long, props: Map[String, String], maxBufferedDocs: Int = defaultMaxBufferedDocs): Unit = {
     val document = new Document
     document.add(new StringField("_id", s"${id}", Store.YES))
     props.foreach { x =>

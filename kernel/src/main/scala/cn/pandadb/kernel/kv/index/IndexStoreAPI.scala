@@ -77,7 +77,7 @@ class IndexStoreAPI(dbPath: String) {
   def insertFulltextIndexRecordBatch(indexId: IndexId, data: Iterator[(Array[Any], Long)]): Unit = {
     val (propIds, store) = fulltextIndexMap.get(indexId).get
     data.foreach(d => {
-      store.insert(d._2, propIds.zip(d._1).toMap.map(p => {s"${p._1}" -> p._2.asInstanceOf[String]}))
+      store.insert(d._2, propIds.zip(d._1).toMap.map(p => {s"${p._1}" -> p._2.asInstanceOf[String]}), maxBufferedDocs = 102400)
     })
   }
 
