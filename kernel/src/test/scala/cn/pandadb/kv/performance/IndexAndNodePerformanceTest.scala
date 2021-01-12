@@ -2,7 +2,7 @@ package cn.pandadb.kv.performance
 
 import cn.pandadb.kernel.kv.index.IndexEncoder
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
-import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler, RocksDBStorage}
+import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter, RocksDBStorage}
 import cn.pandadb.kernel.util.Profiler
 import cn.pandadb.kernel.util.serializer.NodeSerializer
 import org.junit.Test
@@ -35,7 +35,7 @@ class IndexAndNodePerformanceTest {
       val keys = new Array[Int](10000).map { i =>
         val id = Random.nextInt(100000000)
         val str = id.toString.map { c => (Char.char2int(c) + 49).toChar }
-        KeyHandler.nodePropertyIndexKeyToBytes(id % 10, IndexEncoder.STRING_CODE, IndexEncoder.encode(str), id.toLong)
+        KeyConverter.toIndexKey(id % 10, IndexEncoder.STRING_CODE, IndexEncoder.encode(str), id.toLong)
       }
       val t1 = System.currentTimeMillis()
       println(s"create 10000 keys cost: ${t1 - t0} ms")
@@ -59,7 +59,7 @@ class IndexAndNodePerformanceTest {
         val id = Random.nextInt(10)
         val str = id.toString.map { c => (Char.char2int(c) + 49).toChar }
         println(str)
-        KeyHandler.nodePropertyIndexKeyToBytes(id % 10, IndexEncoder.STRING_CODE, IndexEncoder.encode(str), id.toLong)
+        KeyConverter.toIndexKey(id % 10, IndexEncoder.STRING_CODE, IndexEncoder.encode(str), id.toLong)
     }
     var time2:Long = 0
     keys.foreach {
@@ -95,7 +95,7 @@ class IndexAndNodePerformanceTest {
       val keys = new Array[Int](10000).map { i =>
         val id = Random.nextInt(1000000)
 //        println(id)
-        KeyHandler.nodeKeyToBytes(id%10, id.toLong)
+        KeyConverter.toNodeKey(id%10, id.toLong)
       }
       val t1 = System.currentTimeMillis()
       val values = keys.map {
@@ -119,7 +119,7 @@ class IndexAndNodePerformanceTest {
   @Test
   def nodeScanTest():Unit = {
     val db:RocksDB = if(!READONLE) RocksDB.open(path+"\\nodes") else RocksDB.openReadOnly(path+"\\nodes")
-    val keyPrefix = KeyHandler.nodePrefix(0)
+    val keyPrefix = KeyConverter.toNodeKey(0)
     val t0 = System.currentTimeMillis()
     val iter = db.newIterator()
     iter.seek(keyPrefix)

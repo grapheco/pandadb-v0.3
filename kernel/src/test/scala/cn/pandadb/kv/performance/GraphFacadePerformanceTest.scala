@@ -7,7 +7,7 @@ import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
 import cn.pandadb.kernel.kv.{GraphFacadeWithPPD, RocksDBStorage}
-import cn.pandadb.kernel.store.{FileBasedIdGen, NodeStoreSPI, RelationStoreSPI, StoredNodeWithProperty}
+import cn.pandadb.kernel.store.{NodeStoreSPI, RelationStoreSPI, StoredNodeWithProperty}
 import cn.pandadb.kernel.util.Profiler
 import org.apache.commons.io.FileUtils
 import org.junit.{Before, Test}

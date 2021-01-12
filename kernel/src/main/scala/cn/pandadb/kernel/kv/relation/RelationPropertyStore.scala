@@ -1,6 +1,6 @@
 package cn.pandadb.kernel.kv.relation
 
-import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler}
+import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import cn.pandadb.kernel.store.{StoredRelation, StoredRelationWithProperty}
 import cn.pandadb.kernel.util.serializer.RelationSerializer
 import org.rocksdb.RocksDB
@@ -8,20 +8,20 @@ import org.rocksdb.RocksDB
 class RelationPropertyStore(db: RocksDB) {
 
   def set(relation: StoredRelationWithProperty): Unit = {
-    val keyBytes = KeyHandler.relationKeyToBytes(relation.id)
+    val keyBytes = KeyConverter.toRelationKey(relation.id)
     db.put(keyBytes, RelationSerializer.serialize(relation))
   }
 
   def set(relation: StoredRelation): Unit = {
-    val keyBytes = KeyHandler.relationKeyToBytes(relation.id)
+    val keyBytes = KeyConverter.toRelationKey(relation.id)
     db.put(keyBytes, RelationSerializer.serialize(
       new StoredRelationWithProperty(relation.id, relation.from, relation.to, relation.typeId, Map())))
   }
 
-  def delete(relationId: Long): Unit = db.delete(KeyHandler.relationKeyToBytes(relationId))
+  def delete(relationId: Long): Unit = db.delete(KeyConverter.toRelationKey(relationId))
 
   def get(relationId: Long): Option[StoredRelationWithProperty] = {
-    val keyBytes = KeyHandler.relationKeyToBytes(relationId)
+    val keyBytes = KeyConverter.toRelationKey(relationId)
     val res = db.get(keyBytes)
     if (res != null)
       Some(RelationSerializer.deserializeRelWithProps(res))
@@ -29,7 +29,7 @@ class RelationPropertyStore(db: RocksDB) {
       None
   }
 
-  def exist(relationId: Long): Boolean = db.get(KeyHandler.relationKeyToBytes(relationId)) != null
+  def exist(relationId: Long): Boolean = db.get(KeyConverter.toRelationKey(relationId)) != null
 
   def all(): Iterator[StoredRelationWithProperty] = {
     new Iterator[StoredRelationWithProperty]{

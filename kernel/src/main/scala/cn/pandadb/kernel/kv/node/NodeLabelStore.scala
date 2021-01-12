@@ -1,48 +1,45 @@
 package cn.pandadb.kernel.kv.node
 
-import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler}
-import cn.pandadb.kernel.util.serializer.BaseSerializer
-import org.rocksdb.{ReadOptions, RocksDB}
-
-import scala.collection.mutable
+import cn.pandadb.kernel.kv.KeyConverter.{LabelId, NodeId}
+import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
+import org.rocksdb.RocksDB
 
 
 class NodeLabelStore(db: RocksDB)  {
-  // [nodeId,labelId] -> []
 
-  def set(nodeId: Long, labelId: Int): Unit =
-    db.put(KeyHandler.nodeLabelToBytes(nodeId, labelId), Array.emptyByteArray)
+  def set(nodeId: NodeId, labelId: LabelId): Unit =
+    db.put(KeyConverter.toNodeLabelKey(nodeId, labelId), Array.emptyByteArray)
 
-  def set(nodeId: Long, labels: Array[Int]): Unit = labels.foreach(set(nodeId, _))
+  def set(nodeId: NodeId, labels: Array[LabelId]): Unit = labels.foreach(set(nodeId, _))
 
-  def delete(nodeId: Long, labelId: Int): Unit =
-    db.delete(KeyHandler.nodeLabelToBytes(nodeId, labelId))
+  def delete(nodeId: NodeId, labelId: LabelId): Unit =
+    db.delete(KeyConverter.toNodeLabelKey(nodeId, labelId))
 
-  def delete(nodeId: Long): Unit =
-    db.deleteRange(KeyHandler.nodeLabelToBytes(nodeId, 0),
-      KeyHandler.nodeLabelToBytes(nodeId, -1))
+  def delete(nodeId: NodeId): Unit =
+    db.deleteRange(KeyConverter.toNodeLabelKey(nodeId, 0),
+      KeyConverter.toNodeLabelKey(nodeId, -1))
 
-  def get(nodeId: Long): Option[Int] = {
-    val keyPrefix = KeyHandler.nodeLabelPrefix(nodeId)
+  def get(nodeId: NodeId): Option[LabelId] = {
+    val keyPrefix = KeyConverter.toNodeLabelKey(nodeId)
     val iter = db.newIterator()
     iter.seek(keyPrefix)
-    if (iter.isValid && iter.key().startsWith(keyPrefix)) Some(ByteUtils.getInt(iter.key(), keyPrefix.length))
+    if (iter.isValid && iter.key().startsWith(keyPrefix)) Some(KeyConverter.getLabelIdInNodeLabelKey(iter.key()))
     else None
   }
 
-  def exist(nodeId: Long, label: Int): Boolean = {
-    val key = KeyHandler.nodeLabelToBytes(nodeId, label)
+  def exist(nodeId: NodeId, label: LabelId): Boolean = {
+    val key = KeyConverter.toNodeLabelKey(nodeId, label)
     db.get(key)!=null
   }
 
-  def getAll(nodeId: Long): Array[Int] = {
-    val keyPrefix = KeyHandler.nodeLabelPrefix(nodeId)
+  def getAll(nodeId: NodeId): Array[LabelId] = {
+    val keyPrefix = KeyConverter.toNodeLabelKey(nodeId)
     val iter = db.newIterator()
     iter.seek(keyPrefix)
-    new Iterator[Int] (){
+    new Iterator[LabelId] (){
       override def hasNext: Boolean = iter.isValid && iter.key().startsWith(keyPrefix)
 
-      override def next(): Int = {
+      override def next(): LabelId = {
         val label = ByteUtils.getInt(iter.key(), keyPrefix.length)
         iter.next()
         label

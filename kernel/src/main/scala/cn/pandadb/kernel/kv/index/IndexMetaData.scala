@@ -1,7 +1,7 @@
 package cn.pandadb.kernel.kv.index
 
-import cn.pandadb.kernel.kv.KeyHandler.KeyType
-import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler}
+import cn.pandadb.kernel.kv.KeyConverter.KeyType
+import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import org.rocksdb.RocksDB
 
 /**
@@ -24,21 +24,21 @@ class IndexMetaData(db: RocksDB) {
    * ╚═══════╩═══════╩══════════════╩══════════════╝
    */
   def addIndexMeta(label: Int, props: Array[Int], fulltext:Boolean = false, id: IndexId): Unit = {
-    val key = KeyHandler.nodePropertyIndexMetaKeyToBytes(label, props, fulltext)
+    val key = KeyConverter.toIndexMetaKey(label, props, fulltext)
     db.put(key, ByteUtils.intToBytes(id))
   }
 
   def deleteIndexMeta(label: Int, props: Array[Int], fulltext:Boolean = false): Unit = {
-    db.delete(KeyHandler.nodePropertyIndexMetaKeyToBytes(label, props, fulltext))
+    db.delete(KeyConverter.toIndexMetaKey(label, props, fulltext))
   }
 
   def getIndexId(label: Int, props: Array[Int], fulltext:Boolean = false): Option[IndexId] = {
-    val v = db.get(KeyHandler.nodePropertyIndexMetaKeyToBytes(label, props, fulltext))
+    val v = db.get(KeyConverter.toIndexMetaKey(label, props, fulltext))
     if (v == null || v.length < 4) None else Some(ByteUtils.getInt(v, 0))
   }
 
   def getIndexId(label: Int): Array[(Array[Int],IndexId, Boolean)] = {
-    val prefix = KeyHandler.nodePropertyIndexMetaKeyToBytes(label, Array.emptyIntArray, false)
+    val prefix = KeyConverter.toIndexMetaKey(label, Array.emptyIntArray, false)
     val iter = db.newIterator()
     iter.seek(prefix)
     new Iterator[(Array[Int],IndexId,Boolean)] {

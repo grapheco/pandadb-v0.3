@@ -5,8 +5,8 @@ import java.io.File
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
-import cn.pandadb.kernel.kv.{ByteUtils, GraphFacadeWithPPD, KeyHandler, RocksDBStorage}
-import cn.pandadb.kernel.store.{FileBasedIdGen, StoredNode, StoredRelation, StoredRelationWithProperty}
+import cn.pandadb.kernel.kv.{ByteUtils, GraphFacadeWithPPD, KeyConverter, RocksDBStorage}
+import cn.pandadb.kernel.store.{StoredNode, StoredRelation, StoredRelationWithProperty}
 import cn.pandadb.kernel.util.Profiler
 import cn.pandadb.kernel.util.serializer.RelationSerializer
 import org.junit.{Before, Test}
@@ -132,7 +132,7 @@ class RelationPerformanceTest {
     val keys = new Array[Int](1000).map { i =>
       val id = Random.nextInt(2000000)
       //        println(id)
-      KeyHandler.relationKeyToBytes(id)
+      KeyConverter.toRelationKey(id)
     }
 
 //    val t1 = System.currentTimeMillis()

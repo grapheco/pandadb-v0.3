@@ -1,6 +1,6 @@
 package cn.pandadb.kernel.kv.node
 
-import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler}
+import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import cn.pandadb.kernel.store.StoredNodeWithProperty
 import cn.pandadb.kernel.util.serializer.{BaseSerializer, NodeSerializer}
 import org.rocksdb.{ReadOptions, RocksDB}
@@ -12,16 +12,16 @@ class NodeStore(db: RocksDB) {
 
   def set(nodeId: NodeId, labelIds: Array[LabelId], value: Array[Byte]): Unit =
     labelIds.foreach(labelId =>
-      db.put(KeyHandler.nodeKeyToBytes(labelId, nodeId), value))
+      db.put(KeyConverter.toNodeKey(labelId, nodeId), value))
 
   def set(labelId: LabelId, node: StoredNodeWithProperty): Unit =
-    db.put(KeyHandler.nodeKeyToBytes(labelId, node.id), NodeSerializer.serialize(node))
+    db.put(KeyConverter.toNodeKey(labelId, node.id), NodeSerializer.serialize(node))
 
   def set(node: StoredNodeWithProperty): Unit =
     set(node.id, node.labelIds, NodeSerializer.serialize(node))
 
   def get(nodeId: NodeId, labelId: LabelId): Option[StoredNodeWithProperty] = {
-    val value = db.get(KeyHandler.nodeKeyToBytes(labelId, nodeId))
+    val value = db.get(KeyConverter.toNodeKey(labelId, nodeId))
     if(value.nonEmpty) Some(NodeSerializer.deserializeNodeValue(value))
     else None
   }
@@ -44,7 +44,7 @@ class NodeStore(db: RocksDB) {
 
   def getNodesByLabel(labelId: LabelId): Iterator[StoredNodeWithProperty] = {
     val iter = db.newIterator()
-    val prefix = KeyHandler.nodePrefix(labelId)
+    val prefix = KeyConverter.toNodeKey(labelId)
     iter.seek(prefix)
 
     new Iterator[StoredNodeWithProperty] (){
@@ -59,7 +59,7 @@ class NodeStore(db: RocksDB) {
 
   def getNodeIdsByLabel(labelId: LabelId): Iterator[NodeId] = {
     val iter = db.newIterator()
-    val prefix = KeyHandler.nodePrefix(labelId)
+    val prefix = KeyConverter.toNodeKey(labelId)
     iter.seek(prefix)
 
     new Iterator[NodeId] (){
@@ -73,11 +73,11 @@ class NodeStore(db: RocksDB) {
   }
 
   def deleteByLabel(labelId: LabelId): Unit =
-    db.deleteRange(KeyHandler.nodeKeyToBytes(labelId, 0.toLong),
-      KeyHandler.nodeKeyToBytes(labelId, -1.toLong))
+    db.deleteRange(KeyConverter.toNodeKey(labelId, 0.toLong),
+      KeyConverter.toNodeKey(labelId, -1.toLong))
 
 
-  def delete(nodeId: NodeId, labelId: LabelId): Unit = db.delete(KeyHandler.nodeKeyToBytes(labelId, nodeId))
+  def delete(nodeId: NodeId, labelId: LabelId): Unit = db.delete(KeyConverter.toNodeKey(labelId, nodeId))
 
 
   def delete(nodeId:Long, labelIds: Array[LabelId]): Unit = labelIds.foreach(delete(nodeId, _))

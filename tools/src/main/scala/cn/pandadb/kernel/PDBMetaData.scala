@@ -2,7 +2,7 @@ package cn.pandadb.kernel
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 
-import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler, RocksDBStorage}
+import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter, RocksDBStorage}
 import cn.pandadb.kernel.util.serializer.BaseSerializer
 import org.rocksdb.FlushOptions
 
@@ -37,21 +37,21 @@ object PDBMetaData {
 
     val nodeMetaDB = RocksDBStorage.getDB(s"${dbPath}/nodeMeta")
     val relMetaDB = RocksDBStorage.getDB(s"${dbPath}/relationMeta")
-    nodeMetaDB.put(KeyHandler.nodeIdGeneratorKeyToBytes(), ByteUtils.longToBytes(_nodeIdAllocator.get()))
-    relMetaDB.put(KeyHandler.relationIdGeneratorKeyToBytes(), ByteUtils.longToBytes(_relationIdAllocator.get()))
+    nodeMetaDB.put(KeyConverter.nodeIdGeneratorKeyToBytes(), ByteUtils.longToBytes(_nodeIdAllocator.get()))
+    relMetaDB.put(KeyConverter.relationIdGeneratorKeyToBytes(), ByteUtils.longToBytes(_relationIdAllocator.get()))
     _labelIdManager.all.foreach{
       kv=>
-        val key = KeyHandler.nodeLabelKeyToBytes(kv._1)
+        val key = KeyConverter.nodeLabelKeyToBytes(kv._1)
         nodeMetaDB.put(key, ByteUtils.stringToBytes(kv._2))
     }
     _typeIdManager.all.foreach{
       kv=>
-        val key = KeyHandler.relationTypeKeyToBytes(kv._1)
+        val key = KeyConverter.relationTypeKeyToBytes(kv._1)
         relMetaDB.put(key, ByteUtils.stringToBytes(kv._2))
     }
     _propIdManager.all.foreach{
       kv=>
-        val key = KeyHandler.propertyNameKeyToBytes(kv._1)
+        val key = KeyConverter.propertyNameKeyToBytes(kv._1)
         nodeMetaDB.put(key, ByteUtils.stringToBytes(kv._2))
         relMetaDB.put(key, ByteUtils.stringToBytes(kv._2))
     }

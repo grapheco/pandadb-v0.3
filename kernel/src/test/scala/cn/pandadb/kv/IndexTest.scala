@@ -3,7 +3,7 @@ package cn.pandadb.kv
 import java.nio.ByteBuffer
 
 import cn.pandadb.kernel.kv.index.{IndexStore, IndexStoreAPI}
-import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler, RocksDBStorage}
+import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter, RocksDBStorage}
 import org.junit.{After, Assert, Before, Test}
 import org.rocksdb.{ReadOptions, RocksDB}
 import org.apache.commons.lang3.RandomStringUtils

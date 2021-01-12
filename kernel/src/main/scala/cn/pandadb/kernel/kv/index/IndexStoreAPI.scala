@@ -1,7 +1,7 @@
 package cn.pandadb.kernel.kv.index
 
 import cn.pandadb.kernel.kv.meta.{IndexIdGenerator, RelationIdGenerator}
-import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler, RocksDBStorage}
+import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter, RocksDBStorage}
 
 import scala.collection.mutable
 
@@ -133,7 +133,7 @@ class IndexStoreAPI(dbPath: String) {
   }
 
   def find(indexId: IndexId, value: Any): Iterator[Long] =
-    findByPrefix(KeyHandler.nodePropertyIndexPrefixToBytes(indexId, IndexEncoder.typeCode(value), IndexEncoder.encode(value)))
+    findByPrefix(KeyConverter.toIndexKey(indexId, IndexEncoder.typeCode(value), IndexEncoder.encode(value)))
 
   private def findRange(indexId:IndexId,
                         valueType: Byte,
@@ -143,9 +143,9 @@ class IndexStoreAPI(dbPath: String) {
                         endClosed: Boolean): Iterator[Long] = {
     val startTail = if(startClosed) 0 else -1
     val endTail = if(endClosed) -1 else 0
-    val typePrefix  = KeyHandler.nodePropertyIndexTypePrefix(indexId, valueType)
-    val startPrefix = KeyHandler.nodePropertyIndexKeyToBytes(indexId, valueType, startValue, startTail.toLong)
-    val endPrefix   = KeyHandler.nodePropertyIndexKeyToBytes(indexId, valueType, endValue, endTail.toLong)
+    val typePrefix  = KeyConverter.toIndexKey(indexId, valueType)
+    val startPrefix = KeyConverter.toIndexKey(indexId, valueType, startValue, startTail.toLong)
+    val endPrefix   = KeyConverter.toIndexKey(indexId, valueType, endValue, endTail.toLong)
     val iter = indexDB.newIterator()
     iter.seekForPrev(endPrefix)
     val endKey = iter.key()
@@ -165,7 +165,7 @@ class IndexStoreAPI(dbPath: String) {
 
   def findStringStartWith(indexId: IndexId, string: String): Iterator[Long] =
     findByPrefix(
-      KeyHandler.nodePropertyIndexPrefixToBytes(
+      KeyConverter.toIndexKey(
         indexId,
         IndexEncoder.STRING_CODE,
         IndexEncoder.encode(string).take(string.getBytes().length / 8 + string.getBytes().length)))

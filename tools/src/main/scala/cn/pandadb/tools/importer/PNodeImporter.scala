@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
 
 import cn.pandadb.kernel.PDBMetaData
-import cn.pandadb.kernel.kv.{KeyHandler, RocksDBStorage}
+import cn.pandadb.kernel.kv.{KeyConverter, RocksDBStorage}
 import cn.pandadb.kernel.util.serializer.NodeSerializer
 import org.apache.logging.log4j.scala.Logging
 import org.rocksdb.{FlushOptions, WriteBatch, WriteOptions}
@@ -111,13 +111,13 @@ class PNodeImporter(dbPath: String, nodeHeadFile: File, nodeFile: File) extends 
 
   private def _getNodeKeys(id: Long, labelIds: Array[Int]): Array[(Array[Byte], Array[Byte])] = {
     if(labelIds.isEmpty) {
-      val nodeKey = KeyHandler.nodeKeyToBytes(NONE_LABEL_ID, id)
-      val labelKey = KeyHandler.nodeLabelToBytes(id, NONE_LABEL_ID)
+      val nodeKey = KeyConverter.toNodeKey(NONE_LABEL_ID, id)
+      val labelKey = KeyConverter.toNodeLabelKey(id, NONE_LABEL_ID)
       Array((nodeKey, labelKey))
     } else {
       labelIds.map(label => {
-        val nodeKey = KeyHandler.nodeKeyToBytes(label, id)
-        val labelKey = KeyHandler.nodeLabelToBytes(id, label)
+        val nodeKey = KeyConverter.toNodeKey(label, id)
+        val labelKey = KeyConverter.toNodeLabelKey(id, label)
         (nodeKey, labelKey)
       })
     }

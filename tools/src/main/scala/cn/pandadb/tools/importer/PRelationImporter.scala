@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
 
 import cn.pandadb.kernel.PDBMetaData
-import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler, RocksDBStorage}
+import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter, RocksDBStorage}
 import cn.pandadb.kernel.store.StoredRelationWithProperty
 import cn.pandadb.kernel.util.serializer.RelationSerializer
 import org.apache.logging.log4j.scala.Logging
@@ -75,10 +75,10 @@ class PRelationImporter(dbPath: String, headFile: File, edgeFile: File) extends 
           val lineArr = line.replace("\n", "").split(",")
           val relation = _wrapEdge(lineArr)
           val serializedRel = serializer.serialize(relation)
-          storeBatch.put(KeyHandler.relationKeyToBytes(relation.id), serializedRel)
-          inBatch.put(KeyHandler.edgeKeyToBytes(relation.to, relation.typeId, relation.from), ByteUtils.longToBytes(relation.id))
-          outBatch.put(KeyHandler.edgeKeyToBytes(relation.from, relation.typeId, relation.to), ByteUtils.longToBytes(relation.id))
-          labelBatch.put(KeyHandler.relationLabelIndexKeyToBytes(relation.typeId, relation.id), Array.emptyByteArray)
+          storeBatch.put(KeyConverter.toRelationKey(relation.id), serializedRel)
+          inBatch.put(KeyConverter.edgeKeyToBytes(relation.to, relation.typeId, relation.from), ByteUtils.longToBytes(relation.id))
+          outBatch.put(KeyConverter.edgeKeyToBytes(relation.from, relation.typeId, relation.to), ByteUtils.longToBytes(relation.id))
+          labelBatch.put(KeyConverter.toRelationTypeKey(relation.typeId, relation.id), Array.emptyByteArray)
 
           if(innerCount % 1000000 == 0) {
             relationDB.write(writeOptions, storeBatch)

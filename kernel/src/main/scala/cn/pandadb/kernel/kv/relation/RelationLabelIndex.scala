@@ -1,22 +1,22 @@
 package cn.pandadb.kernel.kv.relation
 
-import cn.pandadb.kernel.kv.{ByteUtils, KeyHandler}
+import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import org.rocksdb.{ReadOptions, RocksDB}
 
 class RelationLabelIndex(db: RocksDB) {
 
   def set(labelId: Int, relId: Long): Unit ={
-    val keyBytes = KeyHandler.relationLabelIndexKeyToBytes(labelId, relId)
+    val keyBytes = KeyConverter.toRelationTypeKey(labelId, relId)
     db.put(keyBytes, Array.emptyByteArray)
   }
 
   def delete(labelId: Int, relId: Long): Unit = {
-    val keyBytes = KeyHandler.relationLabelIndexKeyToBytes(labelId, relId)
+    val keyBytes = KeyConverter.toRelationTypeKey(labelId, relId)
     db.delete(keyBytes)
   }
 
   def getRelations(labelId: Int): Iterator[Long] = {
-    val keyPrefix = KeyHandler.relationLabelIndexKeyPrefixToBytes(labelId)
+    val keyPrefix = KeyConverter.toRelationTypeKey(labelId)
     val iter = db.newIterator()
     iter.seek(keyPrefix)
 

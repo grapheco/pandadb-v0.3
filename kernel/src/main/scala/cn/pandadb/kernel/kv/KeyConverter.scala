@@ -1,15 +1,11 @@
 package cn.pandadb.kernel.kv
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
 import java.nio.charset.{Charset, StandardCharsets}
-
-import cn.pandadb.kernel.kv.KeyHandler.KeyType.{KeyType, Value}
-import cn.pandadb.kernel.util.serializer.NodeSerializer
 
 class IllegalKeyException(s: String) extends RuntimeException(s) {
 }
 
-object KeyHandler {
+object KeyConverter {
   object KeyType extends Enumeration {
     type KeyType = Value
 
@@ -34,108 +30,143 @@ object KeyHandler {
 
   }
 
+  type NodeId     = Long
+  type RelationId = Long
+  type LabelId    = Int
+  type TypeId     = Int
+  type PropertyId = Int
+  type IndexId    = Int
+  type Value      = Array[Byte]
 
-  // [labelId(4Bytes),nodeId(8Bytes)]
-  def nodeKeyToBytes(labelId: Int, nodeId: Long): Array[Byte] = {
-    val bytes = new Array[Byte](12)
+  val NODE_ID_SIZE     = 8
+  val RELATION_ID_SIZE = 8
+  val LABEL_ID_SIZE    = 4
+  val TYPE_ID_SIZE     = 4
+  val PROPERTY_ID_SIZE = 4
+  val INDEX_ID_SIZE    = 4
+
+
+  /**
+   * ╔══════════════════╗
+   * ║        key       ║
+   * ╠═════════╦════════╣
+   * ║ labelId ║ nodeId ║
+   * ╚═════════╩════════╝
+   */
+  def toNodeKey(labelId: LabelId, nodeId: NodeId): Array[Byte] = {
+    val bytes = new Array[Byte](LABEL_ID_SIZE + NODE_ID_SIZE)
     ByteUtils.setInt(bytes, 0, labelId)
-    ByteUtils.setLong(bytes, 4, nodeId)
+    ByteUtils.setLong(bytes, LABEL_ID_SIZE, nodeId)
     bytes
   }
 
-  // [labelId(4Bytes),----]
-  def nodePrefix(labelId: Int): Array[Byte] = {
-    ByteUtils.intToBytes(labelId)
-  }
+  def toNodeKey(labelId: LabelId): Array[Byte] = ByteUtils.intToBytes(labelId)
 
-  // [nodeId(8Bytes), labelId(4Bytes)]
-  def nodeLabelToBytes(nodeId: Long, labelId: Int): Array[Byte] = {
-    val bytes = new Array[Byte](12)
+  def getLabelIdInNodeKey(array: Array[Byte]):LabelId = ByteUtils.getInt(array, 0)
+
+  def getNodeIdInNodeKey(array: Array[Byte]):NodeId = ByteUtils.getLong(array, LABEL_ID_SIZE)
+
+  /**
+   * ╔═══════════════════╗
+   * ║        key        ║
+   * ╠═════════╦═════════╣
+   * ║ nodeId  ║ labelId ║
+   * ╚═════════╩═════════╝
+   */
+  def toNodeLabelKey(nodeId: NodeId, labelId: LabelId): Array[Byte] = {
+    val bytes = new Array[Byte](LABEL_ID_SIZE + NODE_ID_SIZE)
     ByteUtils.setLong(bytes, 0, nodeId)
-    ByteUtils.setInt(bytes, 8, labelId)
+    ByteUtils.setInt(bytes, NODE_ID_SIZE, labelId)
     bytes
   }
 
   // [nodeId(8Bytes), ----]
-  def nodeLabelPrefix(nodeId: Long): Array[Byte] = {
-    ByteUtils.longToBytes(nodeId)
-  }
+  def toNodeLabelKey(nodeId: NodeId): Array[Byte] = ByteUtils.longToBytes(nodeId)
 
-  // [labelId(4Bytes), properties(x*4Bytes), isFullText(1Bytes)]
-  def nodePropertyIndexMetaKeyToBytes(labelId: Int, props:Array[Int], isFullText: Boolean): Array[Byte] = {
-    val bytes = new Array[Byte](4+4*props.length+1)
+  def getNodeIdInNodeLabelKey(array: Array[Byte]):NodeId = ByteUtils.getLong(array, 0)
+
+  def getLabelIdInNodeLabelKey(array: Array[Byte]):LabelId = ByteUtils.getInt(array, NODE_ID_SIZE)
+
+
+  /**
+   * ╔═════════════════════════════╗
+   * ║              key            ║
+   * ╠═══════╦═══════╦═════════════╣
+   * ║ label ║ props ║   fullText  ║
+   * ╚═══════╩═══════╩═════════════╝
+   */
+  def toIndexMetaKey(labelId: LabelId, props:Array[PropertyId], isFullText: Boolean): Array[Byte] = {
+    val bytes = new Array[Byte](LABEL_ID_SIZE + PROPERTY_ID_SIZE*props.length + 1)
     ByteUtils.setInt(bytes, 0, labelId)
-    var index=5
+    var index = LABEL_ID_SIZE
     props.foreach{
       p=>ByteUtils.setInt(bytes,index,p)
-        index+=4
+        index += PROPERTY_ID_SIZE
     }
-    ByteUtils.setBoolean(bytes, 4+4*props.length, isFullText)
+    ByteUtils.setBoolean(bytes, bytes.length - 1, isFullText)
     bytes
   }
 
-  // [indexId(4),typeCode(1),propValue(xBytes),nodeId(8Bytes)]
-  def nodePropertyIndexKeyToBytes(indexId:Int, typeCode:Byte, value: Array[Byte], nodeId: Long): Array[Byte] = {
-    val bytesLength = 13 + value.length
-    val bytes = new Array[Byte](bytesLength)
+  /**
+   * ╔══════════════════════════════════════════╗
+   * ║                   key                    ║
+   * ╠═════════╦══════════╦══════════╦══════════╣
+   * ║ indexId ║ typeCode ║  value   ║  nodeId  ║
+   * ╚═════════╩══════════╩══════════╩══════════╝
+   */
+  def toIndexKey(indexId: IndexId, typeCode: Byte, value: Array[Byte], nodeId: NodeId): Array[Byte] = {
+    val bytes = new Array[Byte](INDEX_ID_SIZE + NODE_ID_SIZE + 1 + value.length)
     ByteUtils.setInt(bytes, 0, indexId)
-    ByteUtils.setByte(bytes, 4, typeCode)
+    ByteUtils.setByte(bytes, INDEX_ID_SIZE, typeCode)
     for (i <- value.indices)
-      bytes(5+i) = value(i)
-    ByteUtils.setLong(bytes, bytesLength-8, nodeId)
+      bytes(INDEX_ID_SIZE+1+i) = value(i)
+    ByteUtils.setLong(bytes, bytes.length - NODE_ID_SIZE, nodeId)
     bytes
   }
 
-  // [indexId(4),length(4),propValue(xBytes),nodeId(8Bytes)]
-  def nodePropertyCombinedIndexKeyToBytes(indexId:Int, length:Int, value: Array[Byte], nodeId: Long): Array[Byte] = {
-    val bytesLength = 16 + value.length
-    val bytes = new Array[Byte](bytesLength)
+  def toIndexKey(indexId:IndexId, typeCode:Byte, value: Array[Byte]): Array[Byte] = {
+    val bytes = new Array[Byte](INDEX_ID_SIZE + 1 + value.length)
     ByteUtils.setInt(bytes, 0, indexId)
-    ByteUtils.setInt(bytes, 4, length)
+    ByteUtils.setByte(bytes, INDEX_ID_SIZE, typeCode)
     for (i <- value.indices)
-      bytes(8+i) = value(i)
-    ByteUtils.setLong(bytes, bytesLength-8, nodeId)
+      bytes(INDEX_ID_SIZE+1+i) = value(i)
     bytes
   }
 
-  // [indexId(4),typeCode(1),propValue(xBytes),----]
-  def nodePropertyIndexPrefixToBytes(indexId:Int, typeCode:Byte, value: Array[Byte]): Array[Byte] = {
-    val bytesLength = 5 + value.length
-    val bytes = new Array[Byte](bytesLength)
+  def toIndexKey(indexId:IndexId, typeCode:Byte): Array[Byte] = {
+    val bytes = new Array[Byte](INDEX_ID_SIZE + 1)
     ByteUtils.setInt(bytes, 0, indexId)
-    ByteUtils.setByte(bytes, 4, typeCode)
-    for (i <- value.indices)
-      bytes(5+i) = value(i)
+    ByteUtils.setByte(bytes, INDEX_ID_SIZE, typeCode)
     bytes
   }
 
-  // [indexId(4),typeCode(1),----,----]
-  def nodePropertyIndexTypePrefix(indexId:Int, typeCode:Byte): Array[Byte] = {
-    val bytes = new Array[Byte](5)
-    ByteUtils.setInt(bytes, 0, indexId)
-    ByteUtils.setByte(bytes, 4, typeCode)
+  /**
+   * ╔═════════════╗
+   * ║     key     ║
+   * ╠═════════════╣
+   * ║ relationId  ║
+   * ╚═════════════╝
+   */
+  def toRelationKey(relationId: RelationId): Array[Byte] = ByteUtils.longToBytes(relationId)
+
+  /**
+   * ╔═════════════════════╗
+   * ║         key         ║
+   * ╠════════╦════════════╣
+   * ║ typeId ║ relationId ║
+   * ╚════════╩════════════╝
+   */
+  def toRelationTypeKey(typeId: TypeId, relationId: RelationId): Array[Byte] = {
+    val bytes = new Array[Byte](TYPE_ID_SIZE+RELATION_ID_SIZE)
+    ByteUtils.setInt(bytes, 0, typeId)
+    ByteUtils.setLong(bytes, TYPE_ID_SIZE, relationId)
     bytes
   }
 
-  // [relationId(8Bytes)]
-  def relationKeyToBytes(relationId: Long): Array[Byte] = {
-    ByteUtils.longToBytes(relationId)
-  }
+  def toRelationTypeKey(typeId: TypeId): Array[Byte] = ByteUtils.intToBytes(typeId)
 
-  // [relLabelId(4Bytes),relationId(8Bytes)]
-  def relationLabelIndexKeyToBytes(labelId: Int, relationId: Long): Array[Byte] = {
-    val bytes = new Array[Byte](12)
-    ByteUtils.setInt(bytes, 0, labelId)
-    ByteUtils.setLong(bytes, 4, relationId)
-    bytes
-  }
+  // TODO change blow
 
-  // [relLabelId(4Bytes),----]
-  def relationLabelIndexKeyPrefixToBytes(labelId: Int): Array[Byte] = {
-    ByteUtils.intToBytes(labelId)
-  }
-
-  // [fromNodeId(8Bytes),relationType(4Bytes),toNodeId(8Bytes)]
   def edgeKeyToBytes(fromNodeId: Long, labelId: Int, toNodeId: Long): Array[Byte] = {
     val bytes = new Array[Byte](20)
     ByteUtils.setLong(bytes, 0, fromNodeId)
@@ -310,19 +341,27 @@ object ByteUtils {
     bytes(index) == 1.toByte
   }
 
-//  import org.nustaq.serialization.FSTConfiguration
-//  val conf: FSTConfiguration = FSTConfiguration.createDefaultConfiguration
-//  def mapToBytes(map: Map[String, Any]): Array[Byte] = {
-//      conf.asByteArray(map)
-//    }
-//
-//  def mapFromBytes(bytes: Array[Byte]): Map[String, Any] = {
-////    val bis=new ByteArrayInputStream(bytes)
-////    val ois=new ObjectInputStream(bis)
-////    ois.readObject.asInstanceOf[Map[String, Any]]
-//    conf.asObject(bytes).asInstanceOf[Map[String, Any]]
-//  }
-
+  def toBytes(value: Any): Array[Byte] = {
+    val bytes:Array[Byte] = value match {
+      case value: Boolean => if(value) Array[Byte](1) else Array[Byte](0)
+      case value: Byte => Array[Byte](value)
+      case value: Short => new Array[Byte](2)
+      case value: Int => new Array[Byte](4)
+      case value: Long => new Array[Byte](8)
+      case value: Float => new Array[Byte](4)
+      case value: Double =>  new Array[Byte](8)
+      case value: String =>  value.getBytes
+      case _ => Array.emptyByteArray
+    }
+    value match {
+      case value: Short => ByteUtils.setShort(bytes, 0, value)
+      case value: Int => ByteUtils.setInt(bytes, 0, value)
+      case value: Long => ByteUtils.setLong(bytes, 0, value)
+      case value: Float => ByteUtils.setFloat(bytes, 0, value)
+      case value: Double =>  ByteUtils.setDouble(bytes, 0, value)
+    }
+    bytes
+  }
 
   def longToBytes(num: Long): Array[Byte] = {
     val bytes = new Array[Byte](8)
