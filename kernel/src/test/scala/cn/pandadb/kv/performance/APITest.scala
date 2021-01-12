@@ -7,6 +7,7 @@ import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
 import cn.pandadb.kernel.store.{NodeStoreSPI, RelationStoreSPI, StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
 import cn.pandadb.kernel.util.Profiler
+import org.grapheco.lynx.{LynxId, LynxNode, LynxValue}
 import org.junit.{Before, Test}
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship}
@@ -31,7 +32,7 @@ class APITest {
   @Before
   def setup(): Unit = {
 
-    val dbPath = "F:\\PandaDB_rocksDB\\10kw"
+    val dbPath = "F:\\graph500"
     nodeStore = new NodeStoreAPI(dbPath)
     relationStore = new RelationStoreAPI(dbPath)
     indexStore = new IndexStoreAPI(dbPath)
@@ -232,35 +233,35 @@ class APITest {
       }
     })
 
-    Profiler.timing({
-      println("Test match (n:label0) where n.idStr='ha' return n")
-      val label = nodeStore.getLabelId("label0")
-      val prop = nodeStore.getPropertyKeyId("idStr")
-      val nodes = nodeStore.getNodesByLabel(label).map(mapNode)
-      val res = ArrayBuffer[Node[Long]]()
-      while (nodes.hasNext) {
-        val node = nodes.next()
-        val value = node.properties.value
-//        if (node.properties.value) {
-////          res += node
-//        }
-      }
-    })
-
-    Profiler.timing({
-      println("Test match (n:label0) where n.idStr='ha' return n")
-      val label = nodeStore.getLabelId("label0")
-      val prop = nodeStore.getPropertyKeyId("idStr")
-      nodeStore
-        .getNodesByLabel(label)
-        .map(mapNode)
-        .toIterable
-        .iterator
-        .filter{
-        node =>
-          node.properties.getOrElse("idStr", null).value == "ha"
-      }.foreach(println)
-    })
+//    Profiler.timing({
+//      println("Test match (n:label0) where n.idStr='ha' return n")
+//      val label = nodeStore.getLabelId("label0")
+//      val prop = nodeStore.getPropertyKeyId("idStr")
+//      val nodes = nodeStore.getNodesByLabel(label).map(mapNode)
+//      val res = ArrayBuffer[Node[Long]]()
+//      while (nodes.hasNext) {
+//        val node = nodes.next()
+//        val value = node.properties.value
+////        if (node.properties.value) {
+//////          res += node
+////        }
+//      }
+//    })
+//
+//    Profiler.timing({
+//      println("Test match (n:label0) where n.idStr='ha' return n")
+//      val label = nodeStore.getLabelId("label0")
+//      val prop = nodeStore.getPropertyKeyId("idStr")
+//      nodeStore
+//        .getNodesByLabel(label)
+//        .map(mapNode)
+//        .toIterable
+//        .iterator
+//        .filter{
+//        node =>
+//          node.properties.getOrElse("idStr", null).value == "ha"
+//      }.foreach(println)
+//    })
 
 //    Profiler.timing({
 //      println("Test match (n:label0) where n.idStr='ha' return n")
@@ -306,7 +307,7 @@ class APITest {
     }
   }
 
-  protected def mapNode(node: StoredNode): Node[Long] = {
+  protected def mapNode2(node: StoredNode): Node[Long] = {
     new Node[Long] {
       override type I = this.type
 
@@ -335,14 +336,28 @@ class APITest {
       }
     }
   }
+  case class NodeId(value: Long) extends LynxId {
+
+  }
+
+  protected def mapNode(node: StoredNode): LynxNode = {
+    new LynxNode {
+      override val id: LynxId = NodeId(node.id)
+
+      override def labels: Seq[String] = node.labelIds.map((id: Int) => nodeStore.getLabelName(id).get).toSeq
+
+      override def property(name: String): Option[LynxValue] =
+        node.asInstanceOf[StoredNodeWithProperty].properties.get(nodeStore.getPropertyKeyId(name)).map(LynxValue(_))
+    }
+  }
 
   @Test
   def mapNodeTest(): Unit ={
     val keyMap = Map(0->"idStr0", 1-> "idStr1", 2-> "idStr2", 3->"idStr3", 4 ->"idStr4")
     val t0 = System.currentTimeMillis()
-    val storedNodes = nodeStore.getNodesByLabel(9).take(1000000).toArray
+    val storedNodes = nodeStore.allNodes().take(1000000).toArray
     val t1 = System.currentTimeMillis()
-    val nodes = storedNodes.map(mapNode).map(_.properties.value)
+    val nodes = storedNodes.map(mapNode).map(_.property("idStr"))
     val t2 = System.currentTimeMillis()
     val nodes1 = storedNodes.map(node => CypherMap(node.properties.map(kv => (nodeStore.getPropertyKeyName(kv._1).get, kv._2)).toSeq: _*))
     val t3 = System.currentTimeMillis()

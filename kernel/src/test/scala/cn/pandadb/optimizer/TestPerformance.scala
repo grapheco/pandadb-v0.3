@@ -14,7 +14,7 @@ import scala.collection.mutable.ArrayBuffer
 
 object TestPerformance {
 //  val dbPath = "/hdfs_data2/panda-1229/base_1B-1231"
-  val dbPath = "D:\\data\\graph500\\db2"
+  val dbPath = "F:\\graph500"
 
   val nodeStore = new NodeStoreAPI(dbPath)
   val relationStore = new RelationStoreAPI(dbPath)

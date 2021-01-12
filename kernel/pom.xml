@@ -30,7 +30,7 @@
         <dependency>
             <groupId>org.grapheco</groupId>
             <artifactId>lynx-framework</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>0.2-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.grapheco</groupId>

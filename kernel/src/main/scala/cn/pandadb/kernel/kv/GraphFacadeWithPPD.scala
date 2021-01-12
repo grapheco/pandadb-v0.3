@@ -3,10 +3,9 @@ package cn.pandadb.kernel.kv
 import cn.pandadb.kernel.GraphService
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.{NameStore, Statistics}
-import cn.pandadb.kernel.optimizer.PandaCypherSession
 import cn.pandadb.kernel.store._
 import org.apache.logging.log4j.scala.Logging
-import org.opencypher.lynx.LynxSession
+import org.grapheco.lynx.{GraphModel, LynxId, LynxNode, LynxRelationship, LynxValue, NodeInput, RelationshipInput}
 import org.opencypher.okapi.api.graph.CypherResult
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship}
@@ -16,19 +15,14 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
                           indexStore: IndexStoreAPI,
                           statistics: Statistics,
                           onClose: => Unit
-                 ) extends Logging with GraphService {
+                 ) extends Logging with GraphService with GraphModel{
 
-  private val propertyGraph = new PandaCypherSession().createPropertyGraph(
-    new PandaPropertyGraphScanImpl(nodeStore, relationStore, indexStore, statistics),
-    new PandaPropertyGraphWriterImpl(nodeStore, relationStore, indexStore, statistics)
-  )
+
 
 
   init()
 
-  override def cypher(query: String, parameters: Map[String, Any] = Map.empty): CypherResult = {
-    propertyGraph.cypher(query, CypherMap(parameters.toSeq: _*))
-  }
+  override def cypher(query: String, parameters: Map[String, Any] = Map.empty): CypherResult = ???
 
   override def close(): Unit = {
     statistics.flush()
@@ -237,4 +231,27 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
   def snapshot(): Unit = {
     //TODO: transaction safe
   }
+
+  case class NodeId(value: Long) extends LynxId {
+
+  }
+
+  protected def mapNode(node: StoredNode): LynxNode = {
+    new LynxNode {
+      override val id: LynxId = NodeId(node.id)
+
+      override def labels: Seq[String] = node.labelIds.map((id: Int) => nodeStore.getLabelName(id).get).toSeq
+
+      override def property(name: String): Option[LynxValue] =
+        node.asInstanceOf[StoredNodeWithProperty].properties.get(nodeStore.getPropertyKeyId(name)).map(LynxValue(_))
+    }
+  }
+
+  override def rels(includeStartNodes: Boolean, includeEndNodes: Boolean): Iterator[(LynxRelationship, Option[LynxNode], Option[LynxNode])] = ???
+
+  override def createElements[T](nodes: Array[(Option[String], NodeInput)], rels: Array[(Option[String], RelationshipInput)], onCreated: (Map[Option[String], LynxNode], Map[Option[String], LynxRelationship]) => T): T = ???
+
+  override def nodes(): Iterator[LynxNode] = nodeStore.allNodes().map(mapNode)
+
+  override def nodeAt(id: LynxId): Option[LynxNode] = ???
 }
