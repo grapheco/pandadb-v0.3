@@ -8,17 +8,16 @@ import org.neo4j.driver.internal.util.Format.formatPairs
 import cn.pandadb.driver.utils.{Types, TypesToNeo4jValue}
 import cn.pandadb.hipporpc.utils.DriverValue
 import cn.pandadb.hipporpc.values.{Value => HippoValue}
-import org.neo4j.blob.Blob
 import org.neo4j.driver.internal.value.BooleanValue
 import org.neo4j.driver.summary.ResultSummary
 import org.neo4j.driver.types.{Entity, IsoDuration, Node, Path, Point, Relationship, Type}
-import org.neo4j.driver.{Record, StatementResult, Value, util}
+import org.neo4j.driver.{Record, Result, Value, util}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class PandaStatementResult(driverStreamRecords: Stream[DriverValue], rpcClient: PandaRpcClient, cypher: String, params:Map[String,Any]) extends StatementResult{
+class PandaStatementResult(driverStreamRecords: Stream[DriverValue], rpcClient: PandaRpcClient, cypher: String, params:Map[String,Any]) extends Result {
   val metadata = driverStreamRecords.head
   val resultIterator = driverStreamRecords.tail.iterator
 
@@ -124,5 +123,4 @@ class PandaStatementResult(driverStreamRecords: Stream[DriverValue], rpcClient: 
 
   override def consume(): ResultSummary = ???
 
-  override def summary(): ResultSummary = ???
 }

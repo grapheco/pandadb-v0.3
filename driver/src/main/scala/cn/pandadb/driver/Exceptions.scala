@@ -1,7 +1,7 @@
 package cn.pandadb.driver
 
-class NotImplementMethodException extends Exception{
-  override def getMessage: String = "Method not implemented..."
+class NotImplementMethodException(msg: String) extends Exception{
+  override def getMessage: String = s"${msg} Method not implemented..."
 }
 
 class UsernameOrPasswordErrorException extends Exception{

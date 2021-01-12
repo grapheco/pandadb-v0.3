@@ -6,19 +6,21 @@ import java.security.spec.X509EncodedKeySpec
 import cn.pandadb.driver.utils.RegexUtils
 import javax.crypto.Cipher
 import org.apache.commons.codec.binary.Base64
+import org.neo4j.driver.AuthToken
+import org.neo4j.driver.internal.security.InternalAuthToken
 
-class PandaDriverFactory(uri: String, authtoken: PandaAuthToken, config: PandaDriverConfig) {
+class PandaDriverFactory(host: String, port:Int, authtoken: InternalAuthToken, config: PandaDriverConfig) {
 
   def newInstance(): PandaDriver ={
-    val res = RegexUtils.getIpAndPort(uri)
+    val res = RegexUtils.getIpAndPort(host + ":" + port.toString)
     val address = res._1
-    val port = res._2
+    val _port = res._2
 
-    val rpcClient = new PandaRpcClient(address, port, config.RPC_CLIENT_NAME, config.RPC_SERVER_NAME)
+    val rpcClient = new PandaRpcClient(address, _port, config.RPC_CLIENT_NAME, config.RPC_SERVER_NAME)
 
     val publicKey = rpcClient.getPublicKey()
 
-    verifyConnectivity(rpcClient, rsaEncrypt(authtoken.username, publicKey), rsaEncrypt(authtoken.password, publicKey))
+    verifyConnectivity(rpcClient, rsaEncrypt("panda", publicKey), rsaEncrypt("db", publicKey))
 
     new PandaDriver(rpcClient)
   }

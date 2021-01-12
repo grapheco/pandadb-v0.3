@@ -1,6 +1,6 @@
-package cn.pandadb.hipporpc.utils
+package cn.pandadb.utils
 
-import cn.pandadb.hipporpc.values.{BooleanValue, DateValue, FloatValue, IntegerValue, Label, LocalDateTimeValue, Node, NodeValue, NullValue, Relationship, RelationshipType, RelationshipValue, StringValue, Value}
+import cn.pandadb.hipporpc.values._
 import org.opencypher.okapi.api.value.CypherValue
 
 import scala.collection.mutable

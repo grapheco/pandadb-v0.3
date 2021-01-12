@@ -1,7 +1,5 @@
 package cn.pandadb.hipporpc.message
 
-import cn.pandadb.hipporpc.utils.DriverValue
-
 case class CypherRequest(cypher: String, params:Map[String, Any]){}
 
 case class SayHelloRequest(msg: String){}

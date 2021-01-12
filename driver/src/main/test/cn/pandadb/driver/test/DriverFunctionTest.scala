@@ -1,10 +1,8 @@
 package cn.pandadb.driver.test
 
-import cn.pandadb.driver.{CypherErrorException, PandaAuthToken, PandaDriver}
+import cn.pandadb.driver.{CypherErrorException, PandaDriver}
 import org.junit.{After, Assert, Before, Test}
-import org.neo4j.driver.{Driver, GraphDatabase, Session}
-import org.opencypher.okapi.ir.impl.exception.ParsingException
-import org.opencypher.v9_0.util.SyntaxException
+import org.neo4j.driver.{AuthTokens, Driver, GraphDatabase, Session}
 
 import scala.collection.JavaConverters._
 
@@ -15,7 +13,7 @@ class DriverFunctionTest {
 
   @Before
   def init(): Unit ={
-    driver = GraphDatabase.driver("127.0.0.1:52000", PandaAuthToken.basic("panda", "db"))
+    driver = GraphDatabase.driver("127.0.0.1:52000", AuthTokens.basic("panda", "db"))
     session = driver.session()
   }
   @After

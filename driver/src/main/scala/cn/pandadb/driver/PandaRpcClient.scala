@@ -2,11 +2,9 @@ package cn.pandadb.driver
 
 import cn.pandadb.hipporpc.message.{CypherRequest, SecurityRequest, VerifyConnectionRequest, VerifyConnectionResponse}
 import cn.pandadb.hipporpc.utils.DriverValue
-import cn.pandadb.hipporpc.values.{Value => HippoValue}
 import net.neoremind.kraps.RpcConf
 import net.neoremind.kraps.rpc.netty.HippoRpcEnvFactory
 import net.neoremind.kraps.rpc.{RpcAddress, RpcEnvClientConfig}
-import org.opencypher.v9_0.util.SyntaxException
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration

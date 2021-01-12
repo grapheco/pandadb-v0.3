@@ -11,11 +11,4 @@
 
     <artifactId>hipporpc</artifactId>
 
-<dependencies>
-    <dependency>
-        <groupId>org.grapheco</groupId>
-        <artifactId>lynx-framework</artifactId>
-        <version>0.1-SNAPSHOT</version>
-    </dependency>
-</dependencies>
 </project>

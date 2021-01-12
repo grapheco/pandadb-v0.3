@@ -1,25 +1,21 @@
-import cn.pandadb.driver.{PandaAuthToken, PandaDriver}
 import cn.pandadb.driver.utils.Types
 import org.junit.Test
-import org.neo4j.driver.{AuthToken, AuthTokens, GraphDatabase, Record, Values}
+import org.neo4j.driver.{AuthTokens, GraphDatabase}
 import org.neo4j.driver.internal.value.RelationshipValue
 import org.neo4j.driver.types.Relationship
 
 class TestDriver {
   @Test
   def test(): Unit ={
-    val driver = GraphDatabase.driver("127.0.0.1:52000", PandaAuthToken.basic("panda", "db"))
+    val driver = GraphDatabase.driver("bolt://127.0.0.1:8878", AuthTokens.basic("panda", "db"))
     val session = driver.session()
 
 //    val res1 = session.run("match (n) where n.name={nn} return n.name", Values.parameters("nn", "alex"))
-    val res2 = session.run("match (n) return n, n.name, n.age")
+    val res1 = session.run("match (n) return n, n.name, n.age")
+    println(res1.keys())
+    val res2 = session.run("match (n) return n, n.age")
     println(res2.keys())
-    while (res2.hasNext){
-      val record = res2.next()
-      println(record)
-    }
 
-//    println(res1.next(), "~~~")
     session.close()
     driver.close()
   }

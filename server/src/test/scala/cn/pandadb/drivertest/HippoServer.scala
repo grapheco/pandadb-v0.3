@@ -5,7 +5,7 @@ import java.nio.ByteBuffer
 
 import cn.pandadb.dbms.RsaSecurity
 import cn.pandadb.hipporpc.message.{CypherRequest, SayHelloRequest, SayHelloResponse, SecurityRequest, VerifyConnectionRequest, VerifyConnectionResponse}
-import cn.pandadb.hipporpc.utils.{DriverValue, ValueConverter}
+import cn.pandadb.hipporpc.utils.DriverValue
 import cn.pandadb.hipporpc.values.Value
 import cn.pandadb.kernel.kv.GraphFacadeWithPPD
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
@@ -13,6 +13,7 @@ import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
 import cn.pandadb.kernel.store.{FileBasedIdGen, NodeStoreSPI, RelationStoreSPI}
+import cn.pandadb.utils.ValueConverter
 import net.neoremind.kraps.RpcConf
 import net.neoremind.kraps.rpc.{RpcCallContext, RpcEndpoint, RpcEnvServerConfig}
 import net.neoremind.kraps.rpc.netty.{HippoRpcEnv, HippoRpcEnvFactory}
@@ -38,8 +39,8 @@ object HippoServer {
     FileUtils.deleteDirectory(new File("./testdata"))
     new File("./testdata/output").mkdirs()
 
-//    val dbPath = "D:\\data\\graph500\\db"
-val dbPath = "./testdata/output/db"
+    //    val dbPath = "D:\\data\\graph500\\db"
+    val dbPath = "./testdata/output/db"
     nodeStore = new NodeStoreAPI(dbPath)
     relationStore = new RelationStoreAPI(dbPath)
     indexStore = new IndexStoreAPI(dbPath)
