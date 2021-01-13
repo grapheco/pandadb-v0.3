@@ -54,8 +54,8 @@ object TestPerformance {
 //    graphFacade.cypher("match(n:label1) where n.name = 'Alice Panda' return n")
 
     graphFacade.cypher("match (n:label0)-[r]->(m:label1) return r limit 10000")
-    graphFacade.cypher("match (n:label2)-[r1]->(m:label3)-[r2]->(p:label4) return r2  limit 10000")
-    graphFacade.cypher("match (n:label5)-[r1]->(m:label6)-[r2]->(p:label7)-[r3]->(q:label8) return r3  limit 10000")
+   // graphFacade.cypher("match (n:label2)-[r1]->(m:label3)-[r2]->(p:label4) return r2  limit 10000")
+  //  graphFacade.cypher("match (n:label5)-[r1]->(m:label6)-[r2]->(p:label7)-[r3]->(q:label8) return r3  limit 10000")
     graphFacade.cypher("match (n:label0)-[r:type0]->(m:label2) return r  limit 10000")
     graphFacade.cypher("match (n:label2)-[r]->(m:label4) return r  limit 10000")
 //    graphFacade.cypher("match (n:label3)-[r:type1]->(m:label6) return r limit 10000")
@@ -204,8 +204,8 @@ object TestPerformance {
     val cyphers = List(
       "match (n:label8)-[r]->(m:label9) return r limit 10000",
       "match (n:label0)-[r]->(m:label1) return r limit 10000",
-      "match (n:label2)-[r1]->(m:label3)-[r2]->(p:label4) return r2  limit 10000",
-      "match (n:label5)-[r1]->(m:label6)-[r2]->(p:label7)-[r3]->(q:label8) return r3  limit 10000",
+    //  "match (n:label2)-[r1]->(m:label3)-[r2]->(p:label4) return r2  limit 10000",
+    //  "match (n:label5)-[r1]->(m:label6)-[r2]->(p:label7)-[r3]->(q:label8) return r3  limit 10000",
       "match (n:label0)-[r:type0]->(m:label2) return r  limit 10000",
       "match (n:label2)-[r]->(m:label4) return r limit 10000",
       // "match (n:label0)-[r:type1]->(m:label1) return r limit 10000",
