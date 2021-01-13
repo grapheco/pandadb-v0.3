@@ -65,6 +65,8 @@ class IndexMetaData(db: RocksDB) {
   def getIndexId(label: Int, props: Array[Int], fulltext:Boolean = false): Option[IndexId] =
     getIndexId(label).filter(_.props == props.sorted.toSeq).map(_.indexId).headOption
 
+  def getIndexMeta(indexId: IndexId): Option[IndexMeta] = idMap.get(indexId)
+
   def getIndexId(label: Int): Set[IndexMeta] = labelMap.getOrElse(label, Set.empty)
 
   def all(): Iterator[IndexMeta] = idMap.values.iterator

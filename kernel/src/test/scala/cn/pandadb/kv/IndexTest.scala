@@ -195,8 +195,6 @@ class IndexTest extends Assert {
 
   }
 
-
-
   def showAll(db: RocksDB): Unit = {
     val it = db.newIterator()
     it.seek(Array[Byte](0))
