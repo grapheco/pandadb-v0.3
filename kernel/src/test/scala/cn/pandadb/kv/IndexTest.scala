@@ -35,7 +35,7 @@ class IndexTest extends Assert {
     assert(indexId == indexId2)
 
     // get Index id
-    val indexId3 = ni.getIndexId(LABEL, PROPS)
+    val indexId3 = ni.getIndexId(LABEL, PROPS).get
     assert(indexId == indexId3)
 
     // insert index
@@ -55,7 +55,7 @@ class IndexTest extends Assert {
     val LABEL2 = 2
     val PROPS2 = Array[Int](2)
     val indexId4 = ni.createIndex(LABEL2, PROPS2)
-    assert(indexId4 == ni.getIndexId(LABEL2, PROPS2))
+    assert(indexId4 == ni.getIndexId(LABEL2, PROPS2).get)
     val data2 = (0 until 50).iterator.map(_.toLong).map{
       l=>
         val v = (l%10).toInt

@@ -66,7 +66,7 @@ class GraphFacadePerformanceTest {
 //    graphFacade.refresh()
     statistics
 //    statistics = new Statistics(dbPath)
-    indexStore.getIndexIdByLabel(nodeStore.getLabelId("label1")).foreach( s =>println(s._1(0)))
+    indexStore.getIndexIdByLabel(nodeStore.getLabelId("label1")).foreach( s =>println(s.props.head))
   }
 
   @Test

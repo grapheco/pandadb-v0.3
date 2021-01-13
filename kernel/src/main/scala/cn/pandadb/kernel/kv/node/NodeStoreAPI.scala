@@ -4,9 +4,6 @@ import cn.pandadb.kernel.kv.RocksDBStorage
 import cn.pandadb.kernel.kv.meta.{NodeIdGenerator, NodeLabelNameStore, PropertyNameStore}
 import cn.pandadb.kernel.store.{NodeStoreSPI, StoredNodeWithProperty}
 
-/**
- * TODO
- */
 
 class NodeStoreAPI(dbPath: String) extends NodeStoreSPI {
 

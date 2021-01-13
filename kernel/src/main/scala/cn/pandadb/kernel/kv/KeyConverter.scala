@@ -44,6 +44,7 @@ object KeyConverter {
   val TYPE_ID_SIZE     = 4
   val PROPERTY_ID_SIZE = 4
   val INDEX_ID_SIZE    = 4
+  val IS_FULLTEXT_SIZE = 1
 
 
   /**
@@ -96,15 +97,25 @@ object KeyConverter {
    * ╚═══════╩═══════╩═════════════╝
    */
   def toIndexMetaKey(labelId: LabelId, props:Array[PropertyId], isFullText: Boolean): Array[Byte] = {
-    val bytes = new Array[Byte](LABEL_ID_SIZE + PROPERTY_ID_SIZE*props.length + 1)
+    val bytes = new Array[Byte](LABEL_ID_SIZE + PROPERTY_ID_SIZE*props.length + IS_FULLTEXT_SIZE)
     ByteUtils.setInt(bytes, 0, labelId)
     var index = LABEL_ID_SIZE
     props.foreach{
       p=>ByteUtils.setInt(bytes,index,p)
         index += PROPERTY_ID_SIZE
     }
-    ByteUtils.setBoolean(bytes, bytes.length - 1, isFullText)
+    ByteUtils.setBoolean(bytes, bytes.length - IS_FULLTEXT_SIZE, isFullText)
     bytes
+  }
+
+  def getIndexMetaFromKey(keyBytes: Array[Byte]): (LabelId, Array[PropertyId], Boolean) = {
+    if(keyBytes.length < LABEL_ID_SIZE + PROPERTY_ID_SIZE + IS_FULLTEXT_SIZE) return null
+    (
+      ByteUtils.getInt(keyBytes, 0),
+      (0 until (keyBytes.length - LABEL_ID_SIZE - IS_FULLTEXT_SIZE)/PROPERTY_ID_SIZE).
+        toArray.map(i => ByteUtils.getInt(keyBytes, LABEL_ID_SIZE+PROPERTY_ID_SIZE*i)),
+      ByteUtils.getBoolean(keyBytes, keyBytes.length - IS_FULLTEXT_SIZE)
+    )
   }
 
   /**

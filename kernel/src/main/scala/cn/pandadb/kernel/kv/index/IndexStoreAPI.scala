@@ -21,7 +21,8 @@ class IndexStoreAPI(dbPath: String) {
   private val meta = new IndexMetaData(metaDB)
   private val indexDB = RocksDBStorage.getDB(s"${dbPath}/index")
   private val index = new IndexStore(indexDB)
-  private val indexIdGenerator = new IndexIdGenerator(metaDB)
+  private val indexIdDB = RocksDBStorage.getDB(s"${dbPath}/indexId")
+  private val indexIdGenerator = new IndexIdGenerator(indexIdDB)
 
   //indexId->([name, address], Store)
   private val fulltextIndexMap = new mutable.HashMap[Int, (Array[Int], FulltextIndexStore)]()
@@ -57,9 +58,9 @@ class IndexStoreAPI(dbPath: String) {
 
   def getIndexId(label: Int, props: Array[Int]): Option[IndexId] = meta.getIndexId(label, props)
 
-  def getIndexIdByLabel(label: Int): Array[(Array[Int], IndexId, Boolean)] = meta.getIndexId(label)
+  def getIndexIdByLabel(label: Int): Set[IndexMeta] = meta.getIndexId(label)
 
-  def allIndexId: Iterator[IndexId] = meta.all()
+  def allIndexId: Iterator[IndexMeta] = meta.all()
 
   def insertIndexRecord(indexId: IndexId, data: Any, id: Long): Unit = {
     index.set(indexId, IndexEncoder.typeCode(data), IndexEncoder.encode(data), id)

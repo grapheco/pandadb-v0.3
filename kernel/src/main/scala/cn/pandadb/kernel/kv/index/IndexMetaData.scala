@@ -1,8 +1,10 @@
 package cn.pandadb.kernel.kv.index
 
-import cn.pandadb.kernel.kv.KeyConverter.KeyType
+import cn.pandadb.kernel.kv.KeyConverter.{IndexId, KeyType, LabelId, PropertyId}
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import org.rocksdb.RocksDB
+
+import scala.collection.mutable
 
 /**
  * @ClassName IndexMeta
@@ -11,9 +13,14 @@ import org.rocksdb.RocksDB
  * @Date 2020/12/23
  * @Version 0.1
  */
+case class IndexMeta(indexId: IndexId, labelId: LabelId, isFullText: Boolean, props: PropertyId*)
+
 class IndexMetaData(db: RocksDB) {
 
-  type IndexId   = Int
+  val idMap: mutable.Map[IndexId, IndexMeta] = mutable.Map[IndexId, IndexMeta]()
+  val labelMap: mutable.Map[LabelId, Set[IndexMeta]] = mutable.Map[IndexId, Set[IndexMeta]]()
+
+  init()
   /**
    * Index MetaData
    *
@@ -23,47 +30,42 @@ class IndexMetaData(db: RocksDB) {
    * ║ label ║ props ║   fullText   ║   indexId    ║
    * ╚═══════╩═══════╩══════════════╩══════════════╝
    */
+  def init(): Unit ={
+    val iter = db.newIterator()
+    iter.seekToFirst()
+    while (iter.isValid) {
+      val (l,p,f) = KeyConverter.getIndexMetaFromKey(iter.key())
+      val id = ByteUtils.getInt(iter.value(),0)
+      addMap(IndexMeta(id, l,f,p.sorted.toSeq:_*))
+      iter.next()
+    }
+  }
+
+  def addMap(meta: IndexMeta): Unit = {
+    idMap.put(meta.indexId, meta)
+    labelMap.put(meta.labelId, labelMap.getOrElse(meta.labelId, Set.empty) + meta)
+  }
+
+  def deleteMap(meta: IndexMeta): Unit = {
+    idMap.remove(meta.indexId)
+    labelMap.put(meta.labelId, labelMap.getOrElse(meta.labelId, Set.empty) - meta)
+  }
+
   def addIndexMeta(label: Int, props: Array[Int], fulltext:Boolean = false, id: IndexId): Unit = {
     val key = KeyConverter.toIndexMetaKey(label, props, fulltext)
+    addMap(IndexMeta(id, label,fulltext,props.sorted.toSeq:_*))
     db.put(key, ByteUtils.intToBytes(id))
   }
 
   def deleteIndexMeta(label: Int, props: Array[Int], fulltext:Boolean = false): Unit = {
+    deleteMap(IndexMeta(getIndexId(label, props, fulltext).getOrElse(-1), label,fulltext,props.sorted.toSeq:_*))
     db.delete(KeyConverter.toIndexMetaKey(label, props, fulltext))
   }
 
-  def getIndexId(label: Int, props: Array[Int], fulltext:Boolean = false): Option[IndexId] = {
-    val v = db.get(KeyConverter.toIndexMetaKey(label, props, fulltext))
-    if (v == null || v.length < 4) None else Some(ByteUtils.getInt(v, 0))
-  }
+  def getIndexId(label: Int, props: Array[Int], fulltext:Boolean = false): Option[IndexId] =
+    getIndexId(label).filter(_.props == props.sorted.toSeq).map(_.indexId).headOption
 
-  def getIndexId(label: Int): Array[(Array[Int],IndexId, Boolean)] = {
-    val prefix = KeyConverter.toIndexMetaKey(label, Array.emptyIntArray, false)
-    val iter = db.newIterator()
-    iter.seek(prefix)
-    new Iterator[(Array[Int],IndexId,Boolean)] {
-      override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
-      override def next(): (Array[Int],IndexId,Boolean) = {
-        val props = (0 until (iter.key().length-5)/4).toArray.map(i => ByteUtils.getInt(iter.key(), 4+4*i))
-        val id = ByteUtils.getInt(iter.value(), 0)
-        val isFullText = ByteUtils.getBoolean(iter.key(), iter.key().length - 1)
-        iter.next()
-        (props, id, isFullText)
-      }
-    }.toArray
-  }
+  def getIndexId(label: Int): Set[IndexMeta] = labelMap.getOrElse(label, Set.empty)
 
-  def all(): Iterator[IndexId] = {
-    val iter = db.newIterator()
-    iter.seekToFirst()
-    new Iterator[IndexId] {
-      override def hasNext: Boolean = iter.isValid
-
-      override def next(): IndexId = {
-        val id = ByteUtils.getInt(iter.value(), 0)
-        iter.next()
-        id
-      }
-    }
-  }
+  def all(): Iterator[IndexMeta] = idMap.values.iterator
 }

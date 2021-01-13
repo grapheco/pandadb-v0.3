@@ -6,9 +6,7 @@ import cn.pandadb.kernel.kv.meta.{NameStore, Statistics}
 import cn.pandadb.kernel.store._
 import org.apache.logging.log4j.scala.Logging
 import org.grapheco.lynx.{ContextualNodeInputRef, CypherRunner, GraphModel, LynxId, LynxNode, LynxRelationship, LynxResult, LynxValue, NodeInput, NodeInputRef, RelationshipInput, StoredNodeInputRef}
-import org.opencypher.okapi.api.graph.CypherResult
-import org.opencypher.okapi.api.value.CypherValue
-import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship}
+
 
 class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
                           relationStore: RelationStoreSPI,
@@ -61,12 +59,12 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
     labelIds.map(indexStore.getIndexIdByLabel).foreach(
       _.foreach{
         propsIndex =>
-          if (propsIndex._1.length<=1){
-            indexStore.insertIndexRecord(propsIndex._2, props.getOrElse(propsIndex._1(0), null), nodeId)
+          if (propsIndex.props.length<=1){
+            indexStore.insertIndexRecord(propsIndex.indexId, props.getOrElse(propsIndex.props.head, null), nodeId)
           }else {
             // TODO combined index
           }
-          statistics.increaseIndexPropertyCount(propsIndex._2, 1)
+          statistics.increaseIndexPropertyCount(propsIndex.indexId, 1)
     })
     this
   }
@@ -105,12 +103,12 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
         node.labelIds.map(indexStore.getIndexIdByLabel).foreach(
           _.foreach{
             propsIndex =>
-              if (propsIndex._1.length<=1){
-                indexStore.deleteIndexRecord(propsIndex._2, node.properties.getOrElse(propsIndex._1(0), null), node.id)
+              if (propsIndex.props.length<=1){
+                indexStore.deleteIndexRecord(propsIndex.indexId, node.properties.getOrElse(propsIndex.props.head, null), node.id)
               }else {
                 // TODO combined index
               }
-              statistics.decreaseIndexPropertyCount(propsIndex._2, 1)
+              statistics.decreaseIndexPropertyCount(propsIndex.indexId, 1)
           })
     }
     this
@@ -221,10 +219,10 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
         println(s"type ${t} count: ${statistics.getRelationTypeCount(t)}")
     }
     indexStore.allIndexId.foreach{
-      id =>
-        statistics.setIndexPropertyCount(id,
-          indexStore.findByPrefix(ByteUtils.intToBytes(id)).length)
-        println(s"index ${id} count: ${statistics.getIndexPropertyCount(id)}")
+      meta =>
+        statistics.setIndexPropertyCount(meta.indexId,
+          indexStore.findByPrefix(ByteUtils.intToBytes(meta.indexId)).length)
+        println(s"index ${meta.indexId} count: ${statistics.getIndexPropertyCount(meta.indexId)}")
     }
     statistics.flush()
   }
