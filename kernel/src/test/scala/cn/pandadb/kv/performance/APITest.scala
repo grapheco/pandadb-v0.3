@@ -32,7 +32,7 @@ class APITest {
   @Before
   def setup(): Unit = {
 
-    val dbPath = "F:\\graph500"
+    val dbPath = "F:\\PandaDB_rocksDB\\10kw"
     nodeStore = new NodeStoreAPI(dbPath)
     relationStore = new RelationStoreAPI(dbPath)
     indexStore = new IndexStoreAPI(dbPath)

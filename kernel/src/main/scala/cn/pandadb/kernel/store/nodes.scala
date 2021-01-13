@@ -1,6 +1,7 @@
 package cn.pandadb.kernel.store
 
 import cn.pandadb.kernel.util.serializer.BaseSerializer
+import org.grapheco.lynx.{LynxId, LynxNode, LynxValue}
 import org.opencypher.v9_0.util.LabelId
 
 //
@@ -101,13 +102,22 @@ trait StoredValue{
 
 case class StoredValueNull() extends StoredValue
 
-case class StoredNode(id: Long, labelIds: Array[Int]=null) extends StoredValue {
+case class StoredNode(id: Long, labelIds: Array[Int]) extends StoredValue {
+  val properties:Map[Int,Any] = Map.empty
 }
 
 class StoredNodeWithProperty(override val id: Long,
                              override val labelIds: Array[Int],
-                             val properties:Map[Int,Any])
+                             override val properties:Map[Int,Any])
   extends StoredNode(id, labelIds){
+}
+
+case class NodeId(value: Long) extends LynxId {}
+
+case class PandaNode(longId: Long, labels: Seq[String], props: (String, LynxValue)*) extends LynxNode {
+  lazy val properties: Map[String, LynxValue] = props.toMap
+  override val id: LynxId = NodeId(longId)
+  override def property(name: String): Option[LynxValue] = properties.get(name)
 }
 
 trait NodeStoreSPI {
