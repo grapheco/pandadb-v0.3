@@ -292,4 +292,38 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
 
     onCreated(nodesMap.values.toMap, relsMap.toMap)
   }
+
+  override def rels(types: Seq[String],
+                    labels1: Seq[String],
+                    labels2: Seq[String],
+                    includeStartNodes: Boolean,
+                    includeEndNodes: Boolean): Iterator[(LynxRelationship, Option[LynxNode], Option[LynxNode])] = {
+    // TODO if types is small
+    val label1Id = labels1.map(nodeLabelNameMap)
+    val label2Id = labels2.map(nodeLabelNameMap)
+    val typeIds  = types.map(relTypeNameMap)
+    nodes(labels1, exact = false).flatMap{
+      startNode =>
+        relationStore
+          .findOutRelations(startNode.longId)
+          .map(rel => (
+            mapRelation(rel),
+            if (includeStartNodes) Some(startNode) else None,
+            if (includeEndNodes) nodeStore.getNodeById(rel.to).map(mapNode) else None))
+    }
+  }
+
+  override def nodes(labels: Seq[String], exact: Boolean): Iterator[PandaNode] = {
+//    val (label,count) = labels.map(label=> (nodeLabelNameMap(label), statistics.getNodeLabelCount(nodeLabelNameMap(label)).getOrElse(-1)))
+//      .filter(_._2>0)
+//      .minBy(_._2)
+    val labelIds = labels.map(nodeLabelNameMap).sorted
+    val label = nodeLabelNameMap(labels.head)
+    nodeStore.getNodesByLabel(label).filter{
+      if (exact)
+        _.labelIds.sorted.toSeq == labelIds
+      else
+        _.labelIds.sorted.containsSlice(labelIds)
+    }.map(mapNode)
+  }
 }
