@@ -238,69 +238,37 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
     //TODO: transaction safe
   }
 
-  protected def mapNode(node: StoredNode): LynxNode = {
-    new LynxNode {
-      override val id: LynxId = NodeId(node.id)
+  protected def mapNode(node: StoredNode): PandaNode = {
+    PandaNode(node.id,
+      node.labelIds.map((id: Int) => nodeStore.getLabelName(id).get).toSeq,
+      node.properties.map(kv=>(nodeStore.getPropertyKeyName(kv._1).getOrElse("unknown"), LynxValue(kv._2))).toSeq:_*)
+  }
 
-      override def labels: Seq[String] = node.labelIds.map((id: Int) => nodeStore.getLabelName(id).get).toSeq
+  protected def mapRelation(rel: StoredRelation): PandaRelationship = {
+    PandaRelationship(rel.id,
+      rel.from, rel.to,
+      relationStore.getRelationTypeName(rel.typeId),
+      rel.properties.map(kv=>(relationStore.getPropertyKeyName(kv._1).getOrElse("unknown"), LynxValue(kv._2))).toSeq:_*)
+  }
 
-      override def property(name: String): Option[LynxValue] =
-        node.asInstanceOf[StoredNodeWithProperty].properties.get(nodeStore.getPropertyKeyId(name)).map(LynxValue(_))
+  override def rels(includeStartNodes: Boolean, includeEndNodes: Boolean): Iterator[(PandaRelationship, Option[PandaNode], Option[PandaNode])] = {
+    relationStore.allRelationsWithProperty().map(mapRelation).map{ rel =>
+      (rel,
+        if (includeStartNodes) nodeAt(rel.startNodeId) else None,
+        if (includeEndNodes) nodeAt(rel.endNodeId) else None)
     }
   }
 
-  protected def mapRelation(rel: StoredRelation): LynxRelationship = {
-   new LynxRelationship {
-     override val id: LynxId = RelationId(rel.id)
-     override val startNodeId: LynxId = NodeId(rel.from)
-     override val endNodeId: LynxId = NodeId(rel.to)
+  override def nodes(): Iterator[PandaNode] = nodeStore.allNodes().map(mapNode)
 
-     override def relationType: Option[String] = relationStore.getRelationTypeName(rel.typeId)
-
-     override def property(name: String): Option[LynxValue] = rel.asInstanceOf[StoredRelationWithProperty].properties.get(relationStore.getPropertyKeyId(name)).map(LynxValue(_))
-   }
-  }
-
-  override def rels(includeStartNodes: Boolean, includeEndNodes: Boolean): Iterator[(LynxRelationship, Option[LynxNode], Option[LynxNode])] = {
-    relationStore.allRelations().map(mapRelation).map(rel =>
-      (rel,
-        if (includeStartNodes) {
-          nodeAt(rel.startNodeId)
-        }
-        else {
-          None
-        },
-        if (includeEndNodes) {
-          nodeAt(rel.endNodeId)
-        }
-        else {
-          None
-        })
-    )
-  }
-  case class NodeId(value: Long) extends LynxId {}
-  case class RelationId(value: Long) extends LynxId {}
-  case class TestNode(longId: Long, labels: Seq[String], props: (String, LynxValue)*) extends LynxNode {
-    lazy val properties = props.toMap
-    override val id: LynxId = NodeId(longId)
-
-    override def property(name: String): Option[LynxValue] = properties.get(name)
-  }
-
-  case class TestRelationship(id0: Long, startId: Long, endId: Long, relationType: Option[String], props: (String, LynxValue)*) extends LynxRelationship {
-    lazy val properties = props.toMap
-    override val id: LynxId = RelationId(id0)
-    override val startNodeId: LynxId = NodeId(startId)
-    override val endNodeId: LynxId = NodeId(endId)
-
-    override def property(name: String): Option[LynxValue] = properties.get(name)
-  }
+  override def nodeAt(id: LynxId): Option[PandaNode] =
+    nodeStore.getNodeById(id.value.asInstanceOf[Long]).map(mapNode)
 
   override def createElements[T](nodes: Array[(Option[String], NodeInput)], rels: Array[(Option[String], RelationshipInput)], onCreated: (Map[Option[String], LynxNode], Map[Option[String], LynxRelationship]) => T): T = {
-    val nodesMap: Map[NodeInput, (Option[String], TestNode)] = nodes.map(x => {
+    val nodesMap: Map[NodeInput, (Option[String], PandaNode)] = nodes.map(x => {
       val (varname, input) = x
       val id = nodeStore.newNodeId()
-      input -> (varname, TestNode(id, input.labels, input.props: _*))
+      input -> (varname, PandaNode(id, input.labels, input.props:_*))
     }).toMap
 
     def nodeId(ref: NodeInputRef): Long = {
@@ -310,9 +278,9 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
       }
     }
 
-    val relsMap: Array[(Option[String], TestRelationship)] = rels.map(x => {
+    val relsMap: Array[(Option[String], PandaRelationship)] = rels.map(x => {
       val (varname, input) = x
-      varname -> TestRelationship(relationStore.newRelationId(), nodeId(input.startNodeRef), nodeId(input.endNodeRef), input.types.headOption)
+      varname -> PandaRelationship(relationStore.newRelationId(), nodeId(input.startNodeRef), nodeId(input.endNodeRef), input.types.headOption)
     }
     )
 
@@ -326,10 +294,4 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
 
     onCreated(nodesMap.values.toMap, relsMap.toMap)
   }
-
-
-
-  override def nodes(): Iterator[LynxNode] = nodeStore.allNodes().map(mapNode)
-
-  override def nodeAt(id: LynxId): Option[LynxNode] = Some(mapNode(nodeStore.getNodeById(id.value.asInstanceOf[Long]).get))
 }
