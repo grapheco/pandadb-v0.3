@@ -103,9 +103,10 @@ class RelationStoreAPI(dbPath: String) extends RelationStoreSPI{
     }
   }
 
-  override def allRelationsWithProperty(): Iterator[StoredRelationWithProperty] = relationStore.all()
-
-  override def allRelations(): Iterator[StoredRelation] = inRelationStore.all()
+  override def allRelations(withProperty: Boolean=false): Iterator[StoredRelation] = {
+    if(withProperty) relationStore.all()
+    else inRelationStore.all()
+  }
 
   override def findOutRelations(fromNodeId: Long): Iterator[StoredRelation] = outRelationStore.getRelations(fromNodeId)
 

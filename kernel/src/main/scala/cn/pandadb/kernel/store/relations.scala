@@ -182,9 +182,7 @@ trait RelationStoreSPI {
 
   def addRelation(relation: StoredRelationWithProperty): Unit
 
-  def allRelationsWithProperty(): Iterator[StoredRelationWithProperty]
-
-  def allRelations(): Iterator[StoredRelation]
+  def allRelations(withProperty: Boolean = false): Iterator[StoredRelation]
 
   def findOutRelations(fromNodeId: Long): Iterator[StoredRelation]
 
