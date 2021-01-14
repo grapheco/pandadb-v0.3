@@ -7,9 +7,8 @@ import org.neo4j.driver.internal.{AbstractQueryRunner, InternalResult}
 import java.util.Collections.emptyMap
 import java.util.Map
 
-import org.neo4j.driver.async.ResultCursor
-import org.neo4j.driver.internal.spi.Connection
-import org.neo4j.driver.internal.util.Futures
+import cn.pandadb.NotImplementMethodException
+import cn.pandadb.hipporpc.PandaRpcClient
 
 import scala.collection.JavaConverters._
 
@@ -37,7 +36,7 @@ class PandaSession(rpcClient: PandaRpcClient) extends AbstractQueryRunner with S
         val params = mapAsScalaMap(query.parameters().asMap()).seq.toMap
 
         val res = rpcClient.sendCypherRequest(cypher, params)
-        new PandaStatementResult(res, rpcClient, cypher, params)
+        new PandaStatementResult(res, cypher, params)
   }
 
   override def beginTransaction(): Transaction = throw new NotImplementMethodException("beginTransaction")

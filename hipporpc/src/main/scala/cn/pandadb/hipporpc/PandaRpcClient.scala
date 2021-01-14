@@ -1,10 +1,11 @@
-package cn.pandadb.driver
+package cn.pandadb.hipporpc
 
+import cn.pandadb.CypherErrorException
 import cn.pandadb.hipporpc.message.{CypherRequest, SecurityRequest, VerifyConnectionRequest, VerifyConnectionResponse}
 import cn.pandadb.hipporpc.utils.DriverValue
 import net.neoremind.kraps.RpcConf
-import net.neoremind.kraps.rpc.netty.HippoRpcEnvFactory
 import net.neoremind.kraps.rpc.{RpcAddress, RpcEnvClientConfig}
+import net.neoremind.kraps.rpc.netty.HippoRpcEnvFactory
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration

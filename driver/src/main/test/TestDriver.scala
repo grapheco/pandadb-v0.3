@@ -11,10 +11,10 @@ class TestDriver {
     val session = driver.session()
 
 //    val res1 = session.run("match (n) where n.name={nn} return n.name", Values.parameters("nn", "alex"))
-    val res1 = session.run("match (n) return n, n.name, n.age")
+    val res1 = session.run("return 1")
     println(res1.keys())
-    val res2 = session.run("match (n) return n, n.age")
-    println(res2.keys())
+//    val res2 = session.run("match (n) return n, n.age")
+//    println(res2.keys())
 
     session.close()
     driver.close()
@@ -22,21 +22,20 @@ class TestDriver {
 
   @Test
   def testOriginDriver(): Unit ={
-//    val driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "123123"))
-//    val session = driver.session()
-//
+    val driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "123456"))
+    val session = driver.session()
+
 //    val res = session.run("match (n:label0) where n.idStr=$NNN return n limit 1", Values.parameters("NNN", "caa"))
+      val res = session.run("return 1")
 //
-//    println(res.keys())
-//    println(res.list())
-//    println("++++++++++++++++++")
-//    while (res.hasNext){
-//      val record = res.next()
-//      println(record)
-//      println("===================")
-//    }
-//    session.close()
-//    driver.close()
+    println(res.keys())
+    println("===================")
+    while (res.hasNext){
+      val record = res.next()
+      println(record.keys(), record.values(), record.fields(), record.asMap())
+    }
+    session.close()
+    driver.close()
   }
 
   @Test

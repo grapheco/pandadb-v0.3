@@ -11,4 +11,11 @@
 
     <artifactId>hipporpc</artifactId>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.grapheco</groupId>
+            <artifactId>hippo-rpc_2.12</artifactId>
+            <version>0.1.2-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
 </project>

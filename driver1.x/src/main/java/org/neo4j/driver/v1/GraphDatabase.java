@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2020 "Neo4j,"
+ * Copyright (c) 2002-2019 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -16,30 +16,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.driver;
+package org.neo4j.driver.v1;
 
 import cn.pandadb.driver.PandaDriverConfig;
 import cn.pandadb.driver.PandaDriverFactory;
-import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.internal.DriverFactory;
-import org.neo4j.driver.internal.SecuritySettings;
 import org.neo4j.driver.internal.cluster.RoutingSettings;
 import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.InternalAuthToken;
-import org.neo4j.driver.internal.security.SecurityPlan;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
+import javax.swing.*;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.List;
 
-import static org.neo4j.driver.internal.Scheme.NEO4J_URI_SCHEME;
+import static org.neo4j.driver.internal.DriverFactory.BOLT_ROUTING_URI_SCHEME;
+import static org.neo4j.driver.internal.DriverFactory.NEO4J_URI_SCHEME;
 
 /**
  * Creates {@link Driver drivers}, optionally letting you {@link #driver(URI, Config)} to configure them.
+ *
  * @see Driver
  * @since 1.0
  */
 public class GraphDatabase
 {
     private static final String LOGGER_NAME = GraphDatabase.class.getSimpleName();
+    private static final List<String> VALID_ROUTING_URIS = Arrays.asList( BOLT_ROUTING_URI_SCHEME, NEO4J_URI_SCHEME );
 
     /**
      * Return a driver for a Neo4j instance with the default configuration settings
@@ -134,23 +138,17 @@ public class GraphDatabase
      */
     public static Driver driver(URI uri, AuthToken authToken, Config config )
     {
-//        config = getOrDefault( config );
-//        RoutingSettings routingSettings = config.routingSettings();
-//        RetrySettings retrySettings = config.retrySettings();
-//        SecuritySettings securitySettings = config.securitySettings();
-//        SecurityPlan securityPlan = securitySettings.createSecurityPlan( uri.getScheme() );
-//        return new DriverFactory().newInstance( uri, authToken, routingSettings, retrySettings, config, securityPlan );
         InternalAuthToken authToken1 = (InternalAuthToken) authToken;
         return new PandaDriverFactory(uri.getAuthority(), authToken1.toMap(), PandaDriverConfig.defaultConfiguration()).newInstance();
     }
 
     /**
-     * Try to create a neo4j driver from the <b>first</b> available address.
+     * Try to create a routing driver from the <b>first</b> available address.
      * This is wrapper for the {@link #driver} method that finds the <b>first</b>
      * server to respond positively.
      *
      * @param routingUris an {@link Iterable} of server {@link URI}s for Neo4j instances. All given URIs should
-     * have 'neo4j' scheme.
+     * have 'bolt+routing' or 'neo4j' scheme.
      * @param authToken authentication to use, see {@link AuthTokens}
      * @param config user defined configuration
      * @return a new driver instance
@@ -162,48 +160,28 @@ public class GraphDatabase
 
         for ( URI uri : routingUris )
         {
-            final Driver driver = driver( uri, authToken, config );
             try
             {
-                driver.verifyConnectivity();
-                return driver;
+                return driver( uri, authToken, config );
             }
             catch ( ServiceUnavailableException e )
             {
                 log.warn( "Unable to create routing driver for URI: " + uri, e );
-                closeDriver( driver, uri, log );
-            }
-            catch ( Throwable e )
-            {
-                // for any other errors, we first close the driver and then rethrow the original error out.
-                closeDriver( driver, uri, log );
-                throw e;
             }
         }
 
         throw new ServiceUnavailableException( "Failed to discover an available server" );
     }
 
-    private static void closeDriver(Driver driver, URI uri, Logger log )
-    {
-        try
-        {
-            driver.close();
-        }
-        catch ( Throwable closeError )
-        {
-            log.warn( "Unable to close driver towards URI: " + uri, closeError );
-        }
-    }
-
     private static void assertRoutingUris( Iterable<URI> uris )
     {
         for ( URI uri : uris )
         {
-            if ( !NEO4J_URI_SCHEME.equals( uri.getScheme() ) )
+            if ( !VALID_ROUTING_URIS.contains( uri.getScheme() ) )
             {
                 throw new IllegalArgumentException(
-                        "Illegal URI scheme, expected '" + NEO4J_URI_SCHEME + "' in '" + uri + "'" );
+                        String.format(
+                                "Illegal URI scheme, expected URI scheme '%s' to be among '%s'", uri.getScheme(), VALID_ROUTING_URIS.toString() ) );
             }
         }
     }

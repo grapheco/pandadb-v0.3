@@ -93,9 +93,11 @@ class PandaStreamHandler(graphFacade:GraphService) extends HippoRpcHandler {
   override def openChunkedStream(): PartialFunction[Any, ChunkedStream] = {
     case CypherRequest(cypher, params) => {
       try {
-        val result = graphFacade.cypher(cypher, params).records
-        val metadata = result.physicalColumns.toList
-        val pandaIterator = new PandaRecordsIterator(metadata, result.iterator)
+        val result = graphFacade.cypher(cypher, params)
+        val metadata = result.columns().toList
+        val data = result.records()
+
+        val pandaIterator = new PandaRecordsIterator(metadata, data)
         ChunkedStream.grouped(100, pandaIterator.toIterable)
       }catch {
         case e:Exception => ChunkedStream.grouped(1, new ExceptionMessage(e.getMessage).toIterable)
@@ -103,7 +105,7 @@ class PandaStreamHandler(graphFacade:GraphService) extends HippoRpcHandler {
     }
   }
 
-  class PandaRecordsIterator(metadata: List[String], openCypherIter: Iterator[CypherValue.CypherMap]) extends Iterator[DriverValue]{
+  class PandaRecordsIterator(metadata: List[String], openCypherIter: Iterator[Map[String, Any]]) extends Iterator[DriverValue]{
     var isPutMetadata = false
     var isUsed = false
 
@@ -123,15 +125,15 @@ class PandaStreamHandler(graphFacade:GraphService) extends HippoRpcHandler {
         DriverValue(metaMap.toMap)
       }else{
         val cypherMap = openCypherIter.next()
-        valueConverter(metadata, cypherMap)
+        valueConverter(cypherMap)
       }
     }
   }
-  def valueConverter(metadata: List[String], cypherMap:CypherValue.CypherMap): DriverValue ={
+  def valueConverter(cypherMap:Map[String, Any]): DriverValue ={
     val rowMap = mutable.Map[String, Value]()
     val keys = cypherMap.keys
     keys.foreach(key => {
-      val v = converter.converterValue(cypherMap.getOrElse(key))
+      val v = converter.converterValue(cypherMap(key))
       rowMap.put(key, v)
     })
     DriverValue(rowMap.toMap)

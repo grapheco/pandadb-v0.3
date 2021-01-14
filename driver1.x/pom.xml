@@ -9,29 +9,33 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>pandadb</groupId>
-    <artifactId>driver</artifactId>
+    <artifactId>driver1.x</artifactId>
 
-<dependencies>
-    <dependency>
-        <groupId>org.neo4j.driver</groupId>
-        <artifactId>neo4j-java-driver</artifactId>
-        <version>4.2.0</version>
-    </dependency>
+    <dependencies>
+        <dependency>
+            <groupId>org.neo4j.driver</groupId>
+            <artifactId>neo4j-java-driver</artifactId>
+            <version>1.7.5</version>
+        </dependency>
 
-    <dependency>
-        <groupId>pandadb</groupId>
-        <artifactId>hipporpc</artifactId>
-        <version>1.0-SNAPSHOT</version>
-    </dependency>
-    <!-- https://mvnrepository.com/artifact/junit/junit -->
-    <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit</artifactId>
-        <version>4.12</version>
-        <scope>test</scope>
-    </dependency>
-</dependencies>
+        <dependency>
+            <groupId>org.grapheco</groupId>
+            <artifactId>hippo-rpc_2.12</artifactId>
+            <version>0.1.2-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>pandadb</groupId>
+            <artifactId>hipporpc</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/junit/junit -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
     <build>
         <!-- Define project structure -->
@@ -40,7 +44,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <configuration>
-                    <finalName>pandadb-driver-${pandadb.version}</finalName>
+                    <finalName>pandadb-driver1.x-${pandadb.version}</finalName>
                     <artifactSet>
                         <includes>
                             <include>*:*</include>
@@ -65,12 +69,12 @@
                         </goals>
                         <configuration>
                             <outputDirectory>${project.build.directory}</outputDirectory>
-                            <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>cn.pandadb.driver.startup.RunDriver</mainClass>
-                                </transformer>
-                            </transformers>
+<!--                            <transformers>-->
+<!--                                <transformer-->
+<!--                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">-->
+<!--                                    <mainClass>cn.pandadb.driver.startup.RunDriver</mainClass>-->
+<!--                                </transformer>-->
+<!--                            </transformers>-->
                         </configuration>
                     </execution>
                 </executions>
@@ -94,5 +98,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

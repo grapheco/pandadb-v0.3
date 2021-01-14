@@ -1,6 +1,6 @@
 package cn.pandadb.driver.test
 
-import cn.pandadb.driver.{NotValidAddressException, UsernameOrPasswordErrorException}
+import cn.pandadb.{NotValidAddressException, UsernameOrPasswordErrorException}
 import net.neoremind.kraps.RpcException
 import org.junit.{Before, Test}
 import org.neo4j.driver.{AuthTokens, GraphDatabase}

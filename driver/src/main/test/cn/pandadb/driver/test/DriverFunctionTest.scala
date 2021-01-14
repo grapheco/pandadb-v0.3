@@ -1,6 +1,7 @@
 package cn.pandadb.driver.test
 
-import cn.pandadb.driver.{CypherErrorException, PandaDriver}
+import cn.pandadb.CypherErrorException
+import cn.pandadb.driver.PandaDriver
 import org.junit.{After, Assert, Before, Test}
 import org.neo4j.driver.{AuthTokens, Driver, GraphDatabase, Session}
 

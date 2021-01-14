@@ -8,8 +8,8 @@ import cn.pandadb.hipporpc.PandaRpcClient
 import cn.pandadb.hipporpc.utils.RegexUtils
 import javax.crypto.Cipher
 import org.apache.commons.codec.binary.Base64
-import org.neo4j.driver.{AuthToken, Value}
 import org.neo4j.driver.internal.security.InternalAuthToken
+import org.neo4j.driver.v1.Value
 
 class PandaDriverFactory(uriAuthority: String, authtoken: java.util.Map[String, Value], config: PandaDriverConfig) {
 
@@ -20,12 +20,11 @@ class PandaDriverFactory(uriAuthority: String, authtoken: java.util.Map[String, 
     val rpcClient = new PandaRpcClient(_address, _port, config.RPC_CLIENT_NAME, config.RPC_SERVER_NAME)
 
     val publicKey = rpcClient.getPublicKey()
-
     val username = authtoken.get(InternalAuthToken.PRINCIPAL_KEY).asString()
     val password = authtoken.get(InternalAuthToken.CREDENTIALS_KEY).asString()
     verifyConnectivity(rpcClient, rsaEncrypt(username, publicKey), rsaEncrypt(password, publicKey))
 
-    new PandaDriver(rpcClient)
+    new PandaDriver(rpcClient, uriAuthority)
   }
 
   def verifyConnectivity(client: PandaRpcClient, username: String, password: String): Unit ={
