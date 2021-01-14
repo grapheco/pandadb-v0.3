@@ -393,4 +393,36 @@ class APITest {
     println(res.length)
   }
 
+
+  @Test
+  def containTest(): Unit ={
+    Profiler.timing{
+      for (i <- 0 until 10000){
+        Seq(1,2,3).containsSlice(Seq(1,2))
+      }
+    }
+    Profiler.timing{
+      for (i <- 0 until 10000){
+        Seq(1).containsSlice(Seq(1))
+      }
+    }
+    Profiler.timing{
+      for (i <- 0 until 10000){
+        1==1
+      }
+    }
+    Profiler.timing{
+      for (i <- 0 until 10000){
+        seqContain(Seq(1,2,3), Seq(1,2))
+      }
+    }
+  }
+
+  def seqContain(seq1: Seq[Int], seq2: Seq[Int]): Boolean ={
+    if (seq1.length < seq2.length) return false
+    for (i <- seq2.indices){
+      if (seq1(i) != seq2(i)) return false
+    }
+    true
+  }
 }

@@ -278,4 +278,19 @@ class GraphFacadeWithPPDTest {
     val path = "./testdata/index"
 
   }
+
+  @Test
+  def relTest(): Unit ={
+    val types = Seq("label0")
+    val label1 = Seq("label1")
+    val label2 = Seq("label2")
+    graphFacade.rels(label1, types, label2, false, false)
+    graphFacade.rels(label1, Seq(), label2, false, false)
+    graphFacade.rels(label1, types, Seq(), false, false)
+    graphFacade.rels(label1, Seq(), Seq(), false, false)
+    graphFacade.rels(Seq(), types, label2, false, false)
+    graphFacade.rels(Seq(), Seq(), label2, false, false)
+    graphFacade.rels(Seq(), types, Seq(), false, false)
+    graphFacade.rels(Seq(), Seq(), Seq(), false, false)
+  }
 }

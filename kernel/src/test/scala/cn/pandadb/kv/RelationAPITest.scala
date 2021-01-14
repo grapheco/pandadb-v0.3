@@ -59,7 +59,7 @@ class RelationAPITest {
 
   @Test
   def getTest(): Unit = {
-    Assert.assertArrayEquals(Array[Long](1,2,3,4,5), relationAPI.allRelationsWithProperty().toArray.map(_.id))
+    Assert.assertArrayEquals(Array[Long](1,2,3,4,5), relationAPI.allRelations().toArray.map(_.id))
     Assert.assertArrayEquals(Array[Long](1,3,5), relationAPI.getRelationIdsByRelationType(1).toArray)
     Assert.assertEquals(1, relationAPI.getRelationById(1).get.typeId)
     Assert.assertArrayEquals(Array[Long](2,3,5), relationAPI.findToNodeIds(1).toArray.sorted)
@@ -71,7 +71,7 @@ class RelationAPITest {
   @Test
   def deleteTest(): Unit = {
     relationAPI.deleteRelation(1)
-    Assert.assertArrayEquals(Array[Long](2,3,4,5), relationAPI.allRelationsWithProperty().toArray.map(_.id))
+    Assert.assertArrayEquals(Array[Long](2,3,4,5), relationAPI.allRelations().toArray.map(_.id))
     Assert.assertArrayEquals(Array[Long](3,5), relationAPI.getRelationIdsByRelationType(1).toArray)
     Assert.assertArrayEquals(Array[Long](3), relationAPI.findFromNodeIds(2).toArray.sorted)
     Assert.assertArrayEquals(Array[Long](5), relationAPI.findToNodeIds(1,1).toArray.sorted)

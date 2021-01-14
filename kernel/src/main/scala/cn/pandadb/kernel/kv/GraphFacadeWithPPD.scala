@@ -311,54 +311,54 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
         // TODO if types is small
         typeIds.map(
           typeId =>
-          nodes(labels1, exact = false).flatMap{
+          getNodes(labels1, exact = false).flatMap{
             startNode =>
               relationStore
-                .findOutRelations(startNode.longId, typeId)
-                .map(rel => (rel, nodeAt(rel.to).get))
-                .withFilter(_._2.labels.sorted.containsSlice(label2Id))
+                .findOutRelations(startNode.id, typeId)
+                .map(rel => (rel, nodeStore.getNodeById(rel.to).get))
+                .withFilter(_._2.labelIds.toSeq.containsSlice(label2Id))
                 .map(relEnd => (
                   if (includeProperty) relationStore.getRelationById(relEnd._1.id).map(mapRelation).get else mapRelation(relEnd._1),
-                  if (includeStartNodes) Some(startNode) else None,
-                  if (includeEndNodes) Some(relEnd._2) else None
+                  if (includeStartNodes) Some(mapNode(startNode)) else None,
+                  if (includeEndNodes) Some(mapNode(relEnd._2)) else None
                 ))
           }
         ).reduce(_++_)
       case (_, false, true)   => // [nodesWithLabel1]-[rels]-[nodesWithLabel2]
-        nodes(labels1, exact = false).flatMap{
+        getNodes(labels1, exact = false).flatMap{
           startNode =>
             relationStore
-              .findOutRelations(startNode.longId)
-              .map(rel => (rel, nodeAt(rel.to).get))
-              .withFilter(_._2.labels.sorted.containsSlice(label2Id))
+              .findOutRelations(startNode.id)
+              .map(rel => (rel, nodeStore.getNodeById(rel.to).get))
+              .withFilter(_._2.labelIds.toSeq.containsSlice(label2Id))
               .map(relEnd => (
                 if (includeProperty) relationStore.getRelationById(relEnd._1.id).map(mapRelation).get else mapRelation(relEnd._1),
-                if (includeStartNodes) Some(startNode) else None,
-                if (includeEndNodes) Some(relEnd._2) else None
+                if (includeStartNodes) Some(mapNode(startNode)) else None,
+                if (includeEndNodes) Some(mapNode(relEnd._2)) else None
               ))
         }
       case (_, true, false)   => // [nodesWithLabel1]-[relsWithTypes]-[nodes]
         typeIds.map(
           typeId =>
-            nodes(labels1, exact = false).flatMap{
+            getNodes(labels1, exact = false).flatMap{
               startNode =>
                 relationStore
-                  .findOutRelations(startNode.longId, typeId)
+                  .findOutRelations(startNode.id, typeId)
                   .map(rel => (
                     if (includeProperty) relationStore.getRelationById(rel.id).map(mapRelation).get else mapRelation(rel),
-                    if (includeStartNodes) Some(startNode) else None,
+                    if (includeStartNodes) Some(mapNode(startNode)) else None,
                     if (includeEndNodes) nodeAt(rel.to) else None
                   ))
             }
         ).reduce(_++_)
       case (true, false, false)  =>  // [nodesWithLabel1]-[allRel]-[allNodes]
-        nodes(labels1, exact = false).flatMap{
+        getNodes(labels1, exact = false).flatMap{
           startNode =>
             relationStore
-              .findOutRelations(startNode.longId)
+              .findOutRelations(startNode.id)
               .map(rel => (
                 if (includeProperty) relationStore.getRelationById(rel.id).map(mapRelation).get else mapRelation(rel),
-                if (includeStartNodes) Some(startNode) else None,
+                if (includeStartNodes) Some(mapNode(startNode)) else None,
                 if (includeEndNodes) nodeAt(rel.to) else None
               ))
         }
@@ -373,12 +373,14 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
     }
   }
 
-  override def nodes(labels: Seq[String], exact: Boolean): Iterator[PandaNode] = {
+  override def nodes(labels: Seq[String], exact: Boolean): Iterator[PandaNode] = getNodes(labels, exact).map(mapNode)
+
+  def getNodes(labels: Seq[String], exact: Boolean): Iterator[StoredNode] = {
     if (labels.isEmpty) {
-      nodeStore.allNodes().map(mapNode)
+      nodeStore.allNodes()
     } else if(labels.size == 1){
       val labelId = labels.map(nodeLabelNameMap).head
-      nodeStore.getNodesByLabel(labelId).map(mapNode)
+      nodeStore.getNodesByLabel(labelId)
     } else {
       //TODO statistics choose one min count
       val labelIds = labels.map(nodeLabelNameMap).sorted
@@ -388,7 +390,7 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
           _.labelIds.sorted.toSeq == labelIds
         else
           _.labelIds.sorted.containsSlice(labelIds)
-      }.map(mapNode)
+      }
     }
   }
 }
