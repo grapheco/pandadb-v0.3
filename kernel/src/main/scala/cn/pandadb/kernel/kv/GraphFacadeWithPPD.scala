@@ -301,7 +301,7 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
                     includeStartNodes: Boolean,
                     includeEndNodes: Boolean): Iterator[(LynxRelationship, Option[LynxNode], Option[LynxNode])] = {
 
-    val includeProperty = true
+    val includeProperty = false
     val label1Id = labels1.map(nodeLabelNameMap).sorted
     val label2Id = labels2.map(nodeLabelNameMap).sorted
     val typeIds  = types.map(relTypeNameMap).sorted
