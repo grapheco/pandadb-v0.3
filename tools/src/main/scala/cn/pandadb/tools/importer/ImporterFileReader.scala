@@ -2,9 +2,7 @@ package cn.pandadb.tools.importer
 
 import java.io.File
 import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue}
-
 import scala.collection.mutable.ListBuffer
-import scala.io.Source
 
 /**
  * @Author: Airzihao
@@ -13,14 +11,24 @@ import scala.io.Source
  * @Modified By:
  */
 
-class ImporterFileReader(file: File ,batchSize: Int = 1000000) {
+trait ReaderMode{
 
-//TODO: implement a thread-safe file reader
+}
+case class WithHead() extends ReaderMode
+case class WithOutHead() extends ReaderMode
+class ImporterFileReader(file: File, delimeter: String, batchSize: Int = 1000000, mode: ReaderMode = WithHead()) {
 
-  val fileIter = this.synchronized(Source.fromFile(file).getLines())
+  val fileIter: Iterator[CSVLine] = this.synchronized(new CSVReader(file, delimeter).getAsCSVLines)
+
+  private val _head: CSVLine = {
+    mode match {
+      case WithHead() => fileIter.next()
+      case WithOutHead() => new CSVLine(Array(""))
+    }
+  }
 
   val supposedQueueLength: Int = Runtime.getRuntime().availableProcessors()/2
-  var batchQueue: BlockingQueue[List[String]] = new LinkedBlockingQueue[List[String]](supposedQueueLength)
+  var batchQueue: BlockingQueue[List[CSVLine]] = new LinkedBlockingQueue[List[CSVLine]](supposedQueueLength)
 
   val fillQueue = new Runnable {
     override def run(): Unit = {
@@ -30,10 +38,10 @@ class ImporterFileReader(file: File ,batchSize: Int = 1000000) {
     }
   }
 
-  private def _prepareBatch: List[String] = {
+  private def _prepareBatch: List[CSVLine] = {
     this.synchronized{
       var innercount = 0
-      val listBuf: ListBuffer[String] = new ListBuffer[String]()
+      val listBuf: ListBuffer[CSVLine] = new ListBuffer[CSVLine]()
       while (fileIter.hasNext && innercount < batchSize) {
         listBuf.append(fileIter.next())
         innercount += 1
@@ -41,10 +49,13 @@ class ImporterFileReader(file: File ,batchSize: Int = 1000000) {
       listBuf.toList
     }
   }
+  def getHead: CSVLine = {
+    _head
+  }
 
-  def getLines: List[String] = {
+  def getLines: List[CSVLine] = {
     this.synchronized{
-      if(batchQueue.isEmpty) List[String]()
+      if(batchQueue.isEmpty) List[CSVLine]()
       else batchQueue.take()
     }
   }
