@@ -295,9 +295,20 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
     onCreated(nodesMap.values.toMap, relsMap.toMap)
   }
 
+
   override def rels(types: Seq[String],
                     labels1: Seq[String],
                     labels2: Seq[String],
+                    includeStartNodes: Boolean,
+                    includeEndNodes: Boolean): Iterator[(LynxRelationship, Option[LynxNode], Option[LynxNode])] ={
+    val includeProperty = false
+    rels(types, labels1, labels2, includeProperty, includeStartNodes, includeEndNodes)
+  }
+
+  def rels(types: Seq[String],
+                    labels1: Seq[String],
+                    labels2: Seq[String],
+                    includeProperty: Boolean,
                     includeStartNodes: Boolean,
                     includeEndNodes: Boolean): Iterator[(LynxRelationship, Option[LynxNode], Option[LynxNode])] = {
 
