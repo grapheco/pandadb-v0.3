@@ -28,7 +28,7 @@ import scala.util.Random
  */
 class PRelationImporter(dbPath: String, headFile: File, edgeFile: File) extends Importer with Logging{
 
-  override val importerFileReader = new ImporterFileReader(edgeFile, 500000)
+  override val importerFileReader = new ImporterFileReader(edgeFile, ",",500000)
   override var propSortArr: Array[Int] = null
   override val headMap: Map[Int, String] = _setEdgeHead()
 
@@ -72,7 +72,8 @@ class PRelationImporter(dbPath: String, headFile: File, edgeFile: File) extends 
       if(batchData.nonEmpty) {
         batchData.foreach(line => {
           innerCount += 1
-          val lineArr = line.replace("\n", "").split(",")
+//          val lineArr = line.replace("\n", "").split(",")
+          val lineArr = line.getAsArray
           val relation = _wrapEdge(lineArr)
           val serializedRel = serializer.serialize(relation)
           storeBatch.put(KeyConverter.toRelationKey(relation.id), serializedRel)

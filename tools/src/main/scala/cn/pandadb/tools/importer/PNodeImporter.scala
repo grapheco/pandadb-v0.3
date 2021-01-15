@@ -5,12 +5,11 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
-
 import cn.pandadb.kernel.PDBMetaData
 import cn.pandadb.kernel.kv.{KeyConverter, RocksDBStorage}
 import cn.pandadb.kernel.util.serializer.NodeSerializer
 import org.apache.logging.log4j.scala.Logging
-import org.rocksdb.{FlushOptions, WriteBatch, WriteOptions}
+import org.rocksdb.{FlushOptions, RocksDB, WriteBatch, WriteOptions}
 
 /**
  * @Author: Airzihao
@@ -24,12 +23,20 @@ import org.rocksdb.{FlushOptions, WriteBatch, WriteOptions}
 headMap(propName1 -> type, propName2 -> type ...)
  */
 // protocol: :ID :LABELS propName1:type1 proName2:type2
+
+class SingleFileNodeImporter(nodeFile: File, nodeDB: RocksDB, nodeLabelDB: RocksDB) {
+
+
+}
 class PNodeImporter(dbPath: String, nodeHeadFile: File, nodeFile: File) extends Importer with Logging {
+//class PNodeImporter(importCmd: ImportCmd) extends Importer with Logging {
+
+//  val dbPath = importCmd.exportDBPath
 
   val NONE_LABEL_ID: Int = -1
   override protected var propSortArr: Array[Int] = null //Array(propId), record the sort of propId in head file
   override val headMap: Map[Int, String] = _setNodeHead()  // map(propId -> type)
-  override val importerFileReader = new ImporterFileReader(nodeFile, 500000)
+  override val importerFileReader = new ImporterFileReader(nodeFile, ",",500000)
 
   override val service: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 //  override val service: ScheduledExecutorService = Executors.newScheduledThreadPool(2)
@@ -64,7 +71,8 @@ class PNodeImporter(dbPath: String, nodeHeadFile: File, nodeFile: File) extends 
       val batchData = importerFileReader.getLines
       batchData.foreach(line => {
         innerCount += 1
-        val lineArr = line.replace("\n", "").split(",")
+//        val lineArr = line.replace("\n", "").split(",")
+        val lineArr = line.getAsArray
         val node = _wrapNode(lineArr)
         val keys: Array[(Array[Byte], Array[Byte])] = _getNodeKeys(node._1, node._2)
         val serializedNodeValue = serializer.serialize(node._1, node._2, node._3)
