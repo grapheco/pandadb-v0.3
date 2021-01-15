@@ -17,7 +17,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class PandaStatementResult(driverStreamRecords: Stream[DriverValue], rpcClient: PandaRpcClient, cypher: String, params:Map[String,Any]) extends Result {
+class PandaStatementResult(driverStreamRecords: Stream[DriverValue], cypher: String, params:Map[String,Any]) extends Result {
   val metadata = driverStreamRecords.head
   val resultIterator = driverStreamRecords.tail.iterator
 

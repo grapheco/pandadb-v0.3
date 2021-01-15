@@ -28,32 +28,22 @@ class IndexStoreAPI(dbPath: String) {
   private val fulltextIndexMap = new mutable.HashMap[Int, (Array[Int], FulltextIndexStore)]()
   private val fulltextIndexPathPrefix = s"${dbPath}/index/fulltextIndex"
 
-  def createIndex(label: Int, props: Array[Int]): IndexId =
+  def createIndex(label: Int, props: Array[Int], fulltext: Boolean = false): IndexId =
     meta.getIndexId(label, props).getOrElse{
       val id = indexIdGenerator.nextId().toInt
-      meta.addIndexMeta(label, props, fulltext = false, id)
+      meta.addIndexMeta(label, props, fulltext, id)
       id
     }
 
-  def createIndex(label: Int, prop: Int): IndexId = createIndex(label, Array(prop))
+//  def createIndex(label: Int, prop: Int, fulltext: Boolean = false): IndexId = createIndex(label, Array(prop), fulltext)
 
-  def createFulltextIndex(label: Int, prop: Int): IndexId = createFulltextIndex(label, Array(prop))
-
-  def createFulltextIndex(label: Int, props: Array[Int]): IndexId = {
-    val indexId = meta.getIndexId(label, props, fulltext = true).getOrElse{
-      val id = indexIdGenerator.nextId().toInt
-      meta.addIndexMeta(label, props, fulltext = true, id)
-      id
+  def getFulltextIndex(indexId: Int): (Array[Int], FulltextIndexStore) = {
+    fulltextIndexMap.get(indexId).getOrElse{
+      val props = meta.getIndexMeta(indexId).get.props.toArray[Int]
+      val store = new FulltextIndexStore(s"$fulltextIndexPathPrefix/$indexId")
+      fulltextIndexMap +=indexId->(props, store)
+      (props, store)
     }
-    val store = fulltextIndexMap.get(indexId)
-    if(store.isEmpty){
-      fulltextIndexMap.put(indexId, (props, getFulltextIndexStore(indexId)))
-    }
-    indexId
-  }
-
-  def getFulltextIndexStore(indexId: Int): FulltextIndexStore = {
-    new FulltextIndexStore(s"$fulltextIndexPathPrefix/$indexId")
   }
 
   def getIndexId(label: Int, props: Array[Int]): Option[IndexId] = meta.getIndexId(label, props)
@@ -71,15 +61,17 @@ class IndexStoreAPI(dbPath: String) {
 
   //data: (prop1Value, Prop2Value)
   def insertFulltextIndexRecord(indexId: IndexId, data: Array[Any], id: Long): Unit = {
-    val (propIds, store) = fulltextIndexMap.get(indexId).get
+    val (propIds, store) = getFulltextIndex(indexId)
     store.insert(id, propIds.zip(data).toMap.map(p => {s"${p._1}" -> p._2.asInstanceOf[String]}))
+    store.commit()
   }
 
   def insertFulltextIndexRecordBatch(indexId: IndexId, data: Iterator[(Array[Any], Long)]): Unit = {
-    val (propIds, store) = fulltextIndexMap.get(indexId).get
+    val (propIds, store) = getFulltextIndex(indexId)
     data.foreach(d => {
       store.insert(d._2, propIds.zip(d._1).toMap.map(p => {s"${p._1}" -> p._2.asInstanceOf[String]}), maxBufferedDocs = 102400)
     })
+    store.commit()
   }
 
   def updateIndexRecord(indexId: IndexId, value: Any, id: Long, newValue: Any): Unit = {
@@ -88,7 +80,7 @@ class IndexStoreAPI(dbPath: String) {
   }
 
   def updateFulltextIndexRecord(indexId: IndexId, value: Any, id: Long, newValue: Array[Any]): Unit = {
-    val (propIds, store) = fulltextIndexMap.get(indexId).get
+    val (propIds, store) = getFulltextIndex(indexId)
     store.delete(id)
     store.insert(id, propIds.zip(newValue).toMap.map(p => {s"${p._1}" -> p._2.asInstanceOf[String]}))
   }
@@ -98,7 +90,7 @@ class IndexStoreAPI(dbPath: String) {
   }
 
   def deleteFulltextIndexRecord(indexId: IndexId, value: Any, id: Long): Unit =
-    fulltextIndexMap.get(indexId).get._2.delete(id)
+    getFulltextIndex(indexId)._2.delete(id)
 
   def dropIndex(label: Int, props: Array[Int]): Unit = {
     meta.getIndexId(label, props).foreach{
@@ -112,7 +104,7 @@ class IndexStoreAPI(dbPath: String) {
     meta.getIndexId(label, props, true).foreach{
       id=>
         meta.deleteIndexMeta(label, props, true)
-        getFulltextIndexStore(id).dropAndClose()
+        new FulltextIndexStore(s"$fulltextIndexPathPrefix/$id").dropAndClose()
         fulltextIndexMap -= id
     }
   }
@@ -172,8 +164,7 @@ class IndexStoreAPI(dbPath: String) {
         IndexEncoder.encode(string).take(string.getBytes().length / 8 + string.getBytes().length)))
 
   def search(indexId: IndexId, props: Array[Int], keyword: String): Iterator[Long] = {
-    println(indexId, fulltextIndexMap.get(indexId).get._2)
-    val store = fulltextIndexMap.get(indexId).get._2
+    val store = getFulltextIndex(indexId)._2
     store.topDocs2NodeIdArray(store.search(props.map(v=>s"$v"),keyword))
   }
 

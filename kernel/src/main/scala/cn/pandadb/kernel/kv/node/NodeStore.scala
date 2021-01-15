@@ -1,12 +1,13 @@
 package cn.pandadb.kernel.kv.node
 
 import cn.pandadb.kernel.kv.KeyConverter.{LabelId, NodeId}
+import cn.pandadb.kernel.kv.db.KeyValueDB
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import cn.pandadb.kernel.store.StoredNodeWithProperty
 import cn.pandadb.kernel.util.serializer.{BaseSerializer, NodeSerializer}
 import org.rocksdb.{ReadOptions, RocksDB}
 
-class NodeStore(db: RocksDB) {
+class NodeStore(db: KeyValueDB) {
   // [type,labelId,nodeId]->[Node]
 
   def set(nodeId: NodeId, labelIds: Array[LabelId], value: Array[Byte]): Unit =

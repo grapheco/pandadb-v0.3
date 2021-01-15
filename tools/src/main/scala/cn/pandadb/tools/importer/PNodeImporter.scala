@@ -98,9 +98,9 @@ class PNodeImporter(dbPath: String, nodeHeadFile: File, nodeFile: File) extends 
       // forbid to access file reader at same time
       Thread.sleep(10*taskId)
     }
-    val flushOptions = new FlushOptions
-    nodeDB.flush(flushOptions)
-    nodeLabelDB.flush(flushOptions)
+
+    nodeDB.flush()
+    nodeLabelDB.flush()
     logger.info(s"$innerCount, $taskId")
     true
   }

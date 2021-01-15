@@ -1,12 +1,14 @@
 package cn.pandadb.kernel.kv.meta
 
 import java.util.concurrent.atomic.AtomicLong
+
 import cn.pandadb.kernel.kv.ByteUtils
+import cn.pandadb.kernel.kv.db.KeyValueDB
 import org.rocksdb.RocksDB
 
 
 trait IdGenerator {
-  val db: RocksDB
+  val db: KeyValueDB
   val keyBytes: Array[Byte]
   val sequenceSize: Int
 

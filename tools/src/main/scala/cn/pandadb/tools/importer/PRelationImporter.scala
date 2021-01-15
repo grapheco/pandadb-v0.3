@@ -109,11 +109,11 @@ class PRelationImporter(dbPath: String, headFile: File, edgeFile: File) extends 
       Thread.sleep(10*taskId)
     }
 
-    val flushOptions = new FlushOptions
-    relationDB.flush(flushOptions)
-    inRelationDB.flush(flushOptions)
-    outRelationDB.flush(flushOptions)
-    relationTypeDB.flush(flushOptions)
+
+    relationDB.flush()
+    inRelationDB.flush()
+    outRelationDB.flush()
+    relationTypeDB.flush()
     logger.info(s"$innerCount, $taskId")
     true
   }

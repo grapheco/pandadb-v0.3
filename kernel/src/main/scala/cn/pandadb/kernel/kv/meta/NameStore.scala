@@ -3,12 +3,13 @@ package cn.pandadb.kernel.kv.meta
 import java.util.concurrent.atomic.AtomicInteger
 
 import cn.pandadb.kernel.kv.ByteUtils
+import cn.pandadb.kernel.kv.db.KeyValueDB
 import org.rocksdb.RocksDB
 
 import scala.collection.mutable
 
 trait NameStore {
-  val db: RocksDB
+  val db: KeyValueDB
   val initInt: Int
   val key2ByteArrayFunc: (Int) => Array[Byte]
   val keyPrefixFunc: () => Array[Byte]

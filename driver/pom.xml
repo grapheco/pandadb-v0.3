@@ -13,17 +13,12 @@
     <artifactId>driver</artifactId>
 
 <dependencies>
-
     <dependency>
         <groupId>org.neo4j.driver</groupId>
         <artifactId>neo4j-java-driver</artifactId>
         <version>4.2.0</version>
     </dependency>
-    <dependency>
-        <groupId>org.grapheco</groupId>
-        <artifactId>hippo-rpc_2.12</artifactId>
-        <version>0.1.2-SNAPSHOT</version>
-    </dependency>
+
     <dependency>
         <groupId>pandadb</groupId>
         <artifactId>hipporpc</artifactId>

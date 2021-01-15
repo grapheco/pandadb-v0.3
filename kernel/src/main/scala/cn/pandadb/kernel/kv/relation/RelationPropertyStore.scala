@@ -1,11 +1,12 @@
 package cn.pandadb.kernel.kv.relation
 
+import cn.pandadb.kernel.kv.db.KeyValueDB
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import cn.pandadb.kernel.store.{StoredRelation, StoredRelationWithProperty}
 import cn.pandadb.kernel.util.serializer.RelationSerializer
 import org.rocksdb.RocksDB
 
-class RelationPropertyStore(db: RocksDB) {
+class RelationPropertyStore(db: KeyValueDB) {
 
   def set(relation: StoredRelationWithProperty): Unit = {
     val keyBytes = KeyConverter.toRelationKey(relation.id)

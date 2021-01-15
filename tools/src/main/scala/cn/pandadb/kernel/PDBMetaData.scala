@@ -55,11 +55,11 @@ object PDBMetaData {
         nodeMetaDB.put(key, ByteUtils.stringToBytes(kv._2))
         relMetaDB.put(key, ByteUtils.stringToBytes(kv._2))
     }
-    nodeMetaDB.flush(new FlushOptions)
+    nodeMetaDB.flush()
     nodeMetaDB.close()
-    relMetaDB.flush(new FlushOptions)
+    relMetaDB.flush()
     relMetaDB.close()
-    rocksDB.flush(new FlushOptions)
+    rocksDB.flush()
     rocksDB.close()
   }
 

@@ -3,24 +3,27 @@ package cn.pandadb.driver
 import java.security.KeyFactory
 import java.security.spec.X509EncodedKeySpec
 
-import cn.pandadb.driver.utils.RegexUtils
+import cn.pandadb.UsernameOrPasswordErrorException
+import cn.pandadb.hipporpc.PandaRpcClient
+import cn.pandadb.hipporpc.utils.RegexUtils
 import javax.crypto.Cipher
 import org.apache.commons.codec.binary.Base64
-import org.neo4j.driver.AuthToken
+import org.neo4j.driver.{AuthToken, Value}
 import org.neo4j.driver.internal.security.InternalAuthToken
 
-class PandaDriverFactory(host: String, port:Int, authtoken: InternalAuthToken, config: PandaDriverConfig) {
+class PandaDriverFactory(uriAuthority: String, authtoken: java.util.Map[String, Value], config: PandaDriverConfig) {
 
   def newInstance(): PandaDriver ={
-    val res = RegexUtils.getIpAndPort(host + ":" + port.toString)
-    val address = res._1
+    val res = RegexUtils.getIpAndPort(uriAuthority)
+    val _address = res._1
     val _port = res._2
-
-    val rpcClient = new PandaRpcClient(address, _port, config.RPC_CLIENT_NAME, config.RPC_SERVER_NAME)
+    val rpcClient = new PandaRpcClient(_address, _port, config.RPC_CLIENT_NAME, config.RPC_SERVER_NAME)
 
     val publicKey = rpcClient.getPublicKey()
 
-    verifyConnectivity(rpcClient, rsaEncrypt("panda", publicKey), rsaEncrypt("db", publicKey))
+    val username = authtoken.get(InternalAuthToken.PRINCIPAL_KEY).asString()
+    val password = authtoken.get(InternalAuthToken.CREDENTIALS_KEY).asString()
+    verifyConnectivity(rpcClient, rsaEncrypt(username, publicKey), rsaEncrypt(password, publicKey))
 
     new PandaDriver(rpcClient)
   }

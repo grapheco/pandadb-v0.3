@@ -1,4 +1,4 @@
-package cn.pandadb.driver
+package cn.pandadb
 
 class NotImplementMethodException(msg: String) extends Exception{
   override def getMessage: String = s"${msg} Method not implemented..."

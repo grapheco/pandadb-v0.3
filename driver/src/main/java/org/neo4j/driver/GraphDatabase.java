@@ -141,7 +141,7 @@ public class GraphDatabase
 //        SecurityPlan securityPlan = securitySettings.createSecurityPlan( uri.getScheme() );
 //        return new DriverFactory().newInstance( uri, authToken, routingSettings, retrySettings, config, securityPlan );
         InternalAuthToken authToken1 = (InternalAuthToken) authToken;
-        return new PandaDriverFactory(uri.getHost(),uri.getPort(), authToken1, PandaDriverConfig.defaultConfiguration()).newInstance();
+        return new PandaDriverFactory(uri.getAuthority(), authToken1.toMap(), PandaDriverConfig.defaultConfiguration()).newInstance();
     }
 
     /**

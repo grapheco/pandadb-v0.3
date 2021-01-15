@@ -249,8 +249,9 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
       rel.properties.map(kv=>(relationStore.getPropertyKeyName(kv._1).getOrElse("unknown"), LynxValue(kv._2))).toSeq:_*)
   }
 
+  //TODO need props?
   override def rels(includeStartNodes: Boolean, includeEndNodes: Boolean): Iterator[(PandaRelationship, Option[PandaNode], Option[PandaNode])] = {
-    relationStore.allRelationsWithProperty().map(mapRelation).map{ rel =>
+    relationStore.allRelations().map(mapRelation).map{ rel =>
       (rel,
         if (includeStartNodes) nodeAt(rel.startNodeId) else None,
         if (includeEndNodes) nodeAt(rel.endNodeId) else None)
@@ -259,8 +260,9 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
 
   override def nodes(): Iterator[PandaNode] = nodeStore.allNodes().map(mapNode)
 
-  override def nodeAt(id: LynxId): Option[PandaNode] =
-    nodeStore.getNodeById(id.value.asInstanceOf[Long]).map(mapNode)
+  override def nodeAt(id: LynxId): Option[PandaNode] = nodeAt(id.value.asInstanceOf[Long])
+
+  def nodeAt(id: Long): Option[PandaNode] = nodeStore.getNodeById(id).map(mapNode)
 
   override def createElements[T](nodes: Array[(Option[String], NodeInput)], rels: Array[(Option[String], RelationshipInput)], onCreated: (Map[Option[String], LynxNode], Map[Option[String], LynxRelationship]) => T): T = {
     val nodesMap: Map[NodeInput, (Option[String], PandaNode)] = nodes.map(x => {
@@ -293,37 +295,113 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
     onCreated(nodesMap.values.toMap, relsMap.toMap)
   }
 
+
   override def rels(types: Seq[String],
                     labels1: Seq[String],
                     labels2: Seq[String],
                     includeStartNodes: Boolean,
+                    includeEndNodes: Boolean): Iterator[(LynxRelationship, Option[LynxNode], Option[LynxNode])] ={
+    val includeProperty = false
+    rels(types, labels1, labels2, includeProperty, includeStartNodes, includeEndNodes)
+  }
+
+  def rels(types: Seq[String],
+                    labels1: Seq[String],
+                    labels2: Seq[String],
+                    includeProperty: Boolean,
+                    includeStartNodes: Boolean,
                     includeEndNodes: Boolean): Iterator[(LynxRelationship, Option[LynxNode], Option[LynxNode])] = {
-    // TODO if types is small
-    val label1Id = labels1.map(nodeLabelNameMap)
-    val label2Id = labels2.map(nodeLabelNameMap)
-    val typeIds  = types.map(relTypeNameMap)
-    nodes(labels1, exact = false).flatMap{
-      startNode =>
+
+    val includeProperty = false
+    val label1Id = labels1.map(nodeLabelNameMap).sorted
+    val label2Id = labels2.map(nodeLabelNameMap).sorted
+    val typeIds  = types.map(relTypeNameMap).sorted
+
+    (label1Id.nonEmpty, typeIds.nonEmpty, label2Id.nonEmpty) match {
+      case (_, true, true)    =>  // [nodesWithLabel1]-[relWithTypes]-[nodesWithLabel2]
+        // TODO if types is small
+        typeIds.map(
+          typeId =>
+          getNodes(labels1, exact = false).flatMap{
+            startNode =>
+              relationStore
+                .findOutRelations(startNode.id, typeId)
+                .map(rel => (rel, nodeStore.getNodeById(rel.to).get))
+                .withFilter(_._2.labelIds.toSeq.containsSlice(label2Id))
+                .map(relEnd => (
+                  if (includeProperty) relationStore.getRelationById(relEnd._1.id).map(mapRelation).get else mapRelation(relEnd._1),
+                  if (includeStartNodes) Some(mapNode(startNode)) else None,
+                  if (includeEndNodes) Some(mapNode(relEnd._2)) else None
+                ))
+          }
+        ).reduce(_++_)
+      case (_, false, true)   => // [nodesWithLabel1]-[rels]-[nodesWithLabel2]
+        getNodes(labels1, exact = false).flatMap{
+          startNode =>
+            relationStore
+              .findOutRelations(startNode.id)
+              .map(rel => (rel, nodeStore.getNodeById(rel.to).get))
+              .withFilter(_._2.labelIds.toSeq.containsSlice(label2Id))
+              .map(relEnd => (
+                if (includeProperty) relationStore.getRelationById(relEnd._1.id).map(mapRelation).get else mapRelation(relEnd._1),
+                if (includeStartNodes) Some(mapNode(startNode)) else None,
+                if (includeEndNodes) Some(mapNode(relEnd._2)) else None
+              ))
+        }
+      case (_, true, false)   => // [nodesWithLabel1]-[relsWithTypes]-[nodes]
+        typeIds.map(
+          typeId =>
+            getNodes(labels1, exact = false).flatMap{
+              startNode =>
+                relationStore
+                  .findOutRelations(startNode.id, typeId)
+                  .map(rel => (
+                    if (includeProperty) relationStore.getRelationById(rel.id).map(mapRelation).get else mapRelation(rel),
+                    if (includeStartNodes) Some(mapNode(startNode)) else None,
+                    if (includeEndNodes) nodeAt(rel.to) else None
+                  ))
+            }
+        ).reduce(_++_)
+      case (true, false, false)  =>  // [nodesWithLabel1]-[allRel]-[allNodes]
+        getNodes(labels1, exact = false).flatMap{
+          startNode =>
+            relationStore
+              .findOutRelations(startNode.id)
+              .map(rel => (
+                if (includeProperty) relationStore.getRelationById(rel.id).map(mapRelation).get else mapRelation(rel),
+                if (includeStartNodes) Some(mapNode(startNode)) else None,
+                if (includeEndNodes) nodeAt(rel.to) else None
+              ))
+        }
+      case (false, false, false) => // [allRelations]
         relationStore
-          .findOutRelations(startNode.longId)
-          .map(rel => (
+          .allRelations(withProperty = includeProperty)
+          .map(rel=>(
             mapRelation(rel),
-            if (includeStartNodes) Some(startNode) else None,
-            if (includeEndNodes) nodeStore.getNodeById(rel.to).map(mapNode) else None))
+            if (includeStartNodes) nodeAt(rel.from) else None,
+            if (includeEndNodes) nodeAt(rel.to) else None
+          ))
     }
   }
 
-  override def nodes(labels: Seq[String], exact: Boolean): Iterator[PandaNode] = {
-//    val (label,count) = labels.map(label=> (nodeLabelNameMap(label), statistics.getNodeLabelCount(nodeLabelNameMap(label)).getOrElse(-1)))
-//      .filter(_._2>0)
-//      .minBy(_._2)
-    val labelIds = labels.map(nodeLabelNameMap).sorted
-    val label = nodeLabelNameMap(labels.head)
-    nodeStore.getNodesByLabel(label).filter{
-      if (exact)
-        _.labelIds.sorted.toSeq == labelIds
-      else
-        _.labelIds.sorted.containsSlice(labelIds)
-    }.map(mapNode)
+  override def nodes(labels: Seq[String], exact: Boolean): Iterator[PandaNode] = getNodes(labels, exact).map(mapNode)
+
+  def getNodes(labels: Seq[String], exact: Boolean): Iterator[StoredNode] = {
+    if (labels.isEmpty) {
+      nodeStore.allNodes()
+    } else if(labels.size == 1){
+      val labelId = labels.map(nodeLabelNameMap).head
+      nodeStore.getNodesByLabel(labelId)
+    } else {
+      //TODO statistics choose one min count
+      val labelIds = labels.map(nodeLabelNameMap).sorted
+      val label = nodeLabelNameMap(labels.head)
+      nodeStore.getNodesByLabel(label).filter {
+        if (exact)
+          _.labelIds.sorted.toSeq == labelIds
+        else
+          _.labelIds.sorted.containsSlice(labelIds)
+      }
+    }
   }
 }

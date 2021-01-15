@@ -1,5 +1,6 @@
 package cn.pandadb.kernel.kv.meta
 
+import cn.pandadb.kernel.kv.db.KeyValueDB
 import cn.pandadb.kernel.kv.meta.Statistics.{INDEXPROPERTYCOUNT, NODELABELCOUNT, NODESCOUNT, RELATIONSCOUNT, RELATIONTYPECOUNT, emptyLong}
 import cn.pandadb.kernel.kv.{ByteUtils, RocksDBStorage}
 import org.rocksdb.{FlushOptions, RocksDB}
@@ -19,7 +20,7 @@ object Statistics {
 
 class Statistics(path: String) {
 
-  val db: RocksDB = RocksDBStorage.getDB(s"${path}/statistics")
+  val db: KeyValueDB = RocksDBStorage.getDB(s"${path}/statistics")
 
   var allNodesCount: Long = -1
   var allRelationCount: Long = -1
@@ -75,7 +76,7 @@ class Statistics(path: String) {
       kv=>
       db.put(getKey(INDEXPROPERTYCOUNT, kv._1), ByteUtils.longToBytes(kv._2))
     }
-    db.flush(new FlushOptions)
+    db.flush()
   }
 
   def nodeCount: Long = allNodesCount

@@ -2,7 +2,8 @@ package cn.pandadb.kernel.kv
 
 import java.io.File
 
-import org.rocksdb.{BlockBasedTableConfig, BloomFilter, CompactionStyle, CompressionType, IndexType, LRUCache, Options, RocksDB}
+import cn.pandadb.kernel.kv.db.{KeyValueDB, KeyValueIterator, KeyValueWriteBatch}
+import org.rocksdb.{BlockBasedTableConfig, BloomFilter, CompactionStyle, CompressionType, FlushOptions, IndexType, LRUCache, Options, RocksDB, WriteBatch, WriteOptions}
 
 object RocksDBStorage {
   RocksDB.loadLibrary()
@@ -11,9 +12,9 @@ object RocksDBStorage {
   def getDB(path:String,
             createIfMissing:Boolean = true,
             withBloomFilter:Boolean = true,
-            isHDD: Boolean = true,
+            isHDD: Boolean = false,
             useForImporter: Boolean = false,
-            prefix: Int = 0): RocksDB = {
+            prefix: Int = 0): KeyValueDB = {
     val options: Options = new Options()
     val tableConfig = new BlockBasedTableConfig()
 
@@ -71,13 +72,48 @@ object RocksDBStorage {
     if (dir.exists && !dir.isDirectory)
       throw new IllegalStateException("Invalid db path, it's a regular file: " + path)
 
-    RocksDB.open(options, path)
+    new RocksDBStorage(RocksDB.open(options, path))
   }
 }
 
-class RocksDBStorage(path: String) {
-  val db: RocksDB = RocksDBStorage.getDB(path)
-  def close(): Unit = ???
+class RocksDBStorage(val rocksDB: RocksDB) extends KeyValueDB{
 
+  override def get(key: Array[Byte]): Array[Byte] = rocksDB.get(key)
+
+  override def put(key: Array[Byte], value: Array[Byte]): Unit = rocksDB.put(key, value)
+
+  override def write(option: Any, batch: Any): Unit = rocksDB.write(option.asInstanceOf[WriteOptions], batch.asInstanceOf[WriteBatch])
+
+  override def delete(key: Array[Byte]): Unit = rocksDB.delete(key)
+
+  override def deleteRange(key1: Array[Byte], key2: Array[Byte]): Unit = rocksDB.deleteRange(key1, key2)
+
+  override def newIterator(): KeyValueIterator = {
+    val iter = rocksDB.newIterator()
+    new KeyValueIterator {
+      override def isValid: Boolean = iter.isValid
+
+      override def seek(key: Array[Byte]): Unit = iter.seek(key)
+
+      override def seekToFirst(): Unit = iter.seekToFirst()
+
+      override def seekToLast(): Unit = iter.seekToLast()
+
+      override def seekForPrev(key: Array[Byte]): Unit = iter.seekForPrev(key)
+
+      override def next(): Unit = iter.next()
+
+      override def prev(): Unit = iter.prev()
+
+      override def key(): Array[Byte] = iter.key()
+
+      override def value(): Array[Byte] = iter.value()
+    }
+  }
+
+
+  override def flush(): Unit = rocksDB.flush(new FlushOptions)
+
+  override def close(): Unit = rocksDB.close()
 }
 

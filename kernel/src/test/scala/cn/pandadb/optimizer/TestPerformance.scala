@@ -5,8 +5,10 @@ import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
-import cn.pandadb.kernel.store.{StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
+import cn.pandadb.kernel.store.{PandaNode, PandaRelationship, StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
 import cn.pandadb.kernel.util.Profiler
+import org.grapheco.lynx.LynxValue
+import org.junit.Test
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship}
 
@@ -14,7 +16,7 @@ import scala.collection.mutable.ArrayBuffer
 
 object TestPerformance {
 //  val dbPath = "/hdfs_data2/panda-1229/base_1B-1231"
-  val dbPath = "F:\\graph500"
+  val dbPath = "F:\\PandaDB_rocksDB\\graph500"
 
   val nodeStore = new NodeStoreAPI(dbPath)
   val relationStore = new RelationStoreAPI(dbPath)
@@ -29,11 +31,11 @@ object TestPerformance {
   )
 
   def main(args: Array[String]): Unit = {
-    heatDB()
+//    heatDB()
 //    memTest()
 //    memTestApi()
 
-    relationCypherTest()
+//    relationCypherTest()
     relationApiTest()
 //    cypherWithoutIndex()
 //    createIndex()
@@ -97,8 +99,8 @@ object TestPerformance {
       val limit = 10000
 
       val res = nodeStore
-        //.getNodeIdsByLabel(label0)
-        .getNodesByLabel(label0).map(mapNode(_)).map(_.id)
+        .getNodeIdsByLabel(label0)
+//        .getNodesByLabel(label0).map(mapNode(_)).map(_.longId)
         .flatMap(relationStore.findOutRelations)
         .filter(rel =>nodeStore.hasLabel(rel.to, label1))
         .take(limit)
@@ -113,12 +115,34 @@ object TestPerformance {
       val limit = 10000
 
       val res = nodeStore
-        //.getNodeIdsByLabel(label0)
-          .getNodesByLabel(label0).map(mapNode(_)).map(_.id)
+        .getNodeIdsByLabel(label0)
+//          .getNodesByLabel(label0).map(mapNode(_)).map(_.longId)
         .flatMap(relationStore.findOutRelations)
-        .filter(rel =>nodeStore.hasLabel(rel.to, label1))
+        .withFilter(rel =>nodeStore.hasLabel(rel.to, label1))
         .take(limit)
         .map(rel=>mapRelation(relationStore.getRelationById(rel.id).get))
+      println(res.size)
+    })
+
+    print("match (n:label0)-[r]->(m:label1) return r limit 10000 by rels() ")
+    Profiler.timing({
+      val label0 = nodeStore.getLabelId("label0")
+      val label1 = nodeStore.getLabelId("label1")
+      val limit = 10000
+
+//      val res = graphFacade.rels(Seq(), Seq("label0"), Seq("label1"),false,false).take(limit)
+      val res = graphFacade.getNodes(Seq("label0"), exact = false).flatMap{
+        startNode =>
+          relationStore
+            .findOutRelations(startNode.id)
+            .map(rel => (rel, nodeStore.getNodeById(rel.to).get))
+            .withFilter(_._2.labelIds.head == label1)
+            .map(relEnd => (
+              if (false) relationStore.getRelationById(relEnd._1.id).map(mapRelation).get else mapRelation(relEnd._1),
+              if (false) Some(mapNode(startNode)) else None,
+              if (false) Some(mapNode(relEnd._2)) else None
+            ))
+      }.take(limit)
       println(res.size)
     })
 
@@ -436,59 +460,24 @@ object TestPerformance {
 
   }
 
-  protected def mapRelation(rel: StoredRelation): Relationship[Long] = {
-    new Relationship[Long] {
-      override type I = this.type
-
-      override def id: Long = rel.id
-
-      override def startId: Long = rel.from
-
-      override def endId: Long = rel.to
-
-      override def relType: String = relationStore.getRelationTypeName(rel.typeId).get
-
-      override def copy(id: Long, source: Long, target: Long, relType: String, properties: CypherMap): this.type = ???
-
-      override def properties: CypherMap = {
-        var props: Map[String, Any] = Map.empty[String, Any]
-        rel match {
-          case rel: StoredRelationWithProperty =>
-            props = rel.properties.map(kv => (relationStore.getRelationTypeName(kv._1).getOrElse("unknown"), kv._2))
-          case _ =>
-        }
-        CypherMap(props.toSeq: _*)
-      }
-    }
+  protected def mapNode(node: StoredNode): PandaNode = {
+    PandaNode(node.id,
+      node.labelIds.map((id: Int) => nodeStore.getLabelName(id).get).toSeq,
+      node.properties.map(kv=>(nodeStore.getPropertyKeyName(kv._1).getOrElse("unknown"), LynxValue(kv._2))).toSeq:_*)
   }
 
-  protected def mapNode(node: StoredNode): Node[Long] = {
-    new Node[Long] {
-      override type I = this.type
+  protected def mapRelation(rel: StoredRelation): PandaRelationship = {
+    PandaRelationship(rel.id,
+      rel.from, rel.to,
+      relationStore.getRelationTypeName(rel.typeId),
+      rel.properties.map(kv=>(relationStore.getPropertyKeyName(kv._1).getOrElse("unknown"), LynxValue(kv._2))).toSeq:_*)
+  }
 
-      override def id: Long = node.id
-
-      override def labels: Set[String] = node.labelIds.toSet.map((id: Int) => nodeStore.getLabelName(id).get)
-
-      override def copy(id: Long, labels: Set[String], properties: CypherValue.CypherMap): this.type = ???
-
-      override def properties: CypherMap = {
-        var props: Map[String, Any] = Map.empty[String, Any]
-        node match {
-          case node: StoredNodeWithProperty =>
-            props = node.properties.map {
-              kv =>
-                (nodeStore.getPropertyKeyName(kv._1).get, kv._2)
-            }
-          case _ =>
-            val n = nodeStore.getNodeById(node.id)
-            props = n.asInstanceOf[StoredNodeWithProperty].properties.map {
-              kv =>
-                (nodeStore.getPropertyKeyName(kv._1).get, kv._2)
-            }
-        }
-        CypherMap(props.toSeq: _*)
-      }
+  def seqContain(seq1: Seq[Int], seq2: Seq[Int]): Boolean ={
+    if (seq1.length < seq2.length) return false
+    for (i <- seq2.indices){
+      if (seq1(i) != seq2(i)) return false
     }
+    true
   }
 }
