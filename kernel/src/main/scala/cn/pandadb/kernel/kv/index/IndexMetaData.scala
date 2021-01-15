@@ -1,6 +1,7 @@
 package cn.pandadb.kernel.kv.index
 
 import cn.pandadb.kernel.kv.KeyConverter.{IndexId, KeyType, LabelId, PropertyId}
+import cn.pandadb.kernel.kv.db.KeyValueDB
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import org.rocksdb.RocksDB
 
@@ -15,7 +16,7 @@ import scala.collection.mutable
  */
 case class IndexMeta(indexId: IndexId, labelId: LabelId, isFullText: Boolean, props: PropertyId*)
 
-class IndexMetaData(db: RocksDB) {
+class IndexMetaData(db: KeyValueDB) {
 
   val idMap: mutable.Map[IndexId, IndexMeta] = mutable.Map[IndexId, IndexMeta]()
   val labelMap: mutable.Map[LabelId, Set[IndexMeta]] = mutable.Map[IndexId, Set[IndexMeta]]()

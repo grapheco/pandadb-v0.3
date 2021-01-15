@@ -1,6 +1,7 @@
 package cn.pandadb.kernel.kv.relation
 
 
+import cn.pandadb.kernel.kv.db.KeyValueDB
 import cn.pandadb.kernel.kv.relation.RelationDirection.{Direction, IN}
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import cn.pandadb.kernel.store.StoredRelation
@@ -18,7 +19,7 @@ object RelationDirection extends Enumeration {
   val IN = Value (0)
   val OUT = Value (1)
 }
-class RelationDirectionStore(db: RocksDB, DIRECTION: Direction) {
+class RelationDirectionStore(db: KeyValueDB, DIRECTION: Direction) {
   /**
    * in edge data structure
    * ------------------------
@@ -71,7 +72,7 @@ class RelationDirectionStore(db: RocksDB, DIRECTION: Direction) {
     new NodeIdIterator(db, prefix)
   }
 
-  class NodeIdIterator(db: RocksDB, prefix: Array[Byte]) extends Iterator[Long]{
+  class NodeIdIterator(db: KeyValueDB, prefix: Array[Byte]) extends Iterator[Long]{
     val iter = db.newIterator()
     iter.seek(prefix)
 
@@ -94,7 +95,7 @@ class RelationDirectionStore(db: RocksDB, DIRECTION: Direction) {
     new RelationIdIterator(db, prefix)
   }
 
-  class RelationIdIterator(db: RocksDB, prefix: Array[Byte]) extends Iterator[Long]{
+  class RelationIdIterator(db: KeyValueDB, prefix: Array[Byte]) extends Iterator[Long]{
     val iter = db.newIterator()
     iter.seek(prefix)
 
@@ -117,7 +118,7 @@ class RelationDirectionStore(db: RocksDB, DIRECTION: Direction) {
     new RelationIterator(db, prefix)
   }
 
-  class RelationIterator(db: RocksDB, prefix: Array[Byte]) extends Iterator[StoredRelation]{
+  class RelationIterator(db: KeyValueDB, prefix: Array[Byte]) extends Iterator[StoredRelation]{
     val iter = db.newIterator()
     iter.seek(prefix)
 

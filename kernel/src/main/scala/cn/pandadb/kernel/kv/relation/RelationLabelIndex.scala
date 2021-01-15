@@ -1,9 +1,10 @@
 package cn.pandadb.kernel.kv.relation
 
+import cn.pandadb.kernel.kv.db.KeyValueDB
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import org.rocksdb.{ReadOptions, RocksDB}
 
-class RelationLabelIndex(db: RocksDB) {
+class RelationLabelIndex(db: KeyValueDB) {
 
   def set(labelId: Int, relId: Long): Unit ={
     val keyBytes = KeyConverter.toRelationTypeKey(labelId, relId)

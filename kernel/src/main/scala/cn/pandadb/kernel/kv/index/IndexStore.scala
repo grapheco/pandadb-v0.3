@@ -1,11 +1,12 @@
 package cn.pandadb.kernel.kv.index
 
 
+import cn.pandadb.kernel.kv.db.KeyValueDB
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import cn.pandadb.kernel.util.serializer.BaseSerializer
 import org.rocksdb.{RocksDB, WriteBatch, WriteOptions}
 
-class IndexStore(db: RocksDB){
+class IndexStore(db: KeyValueDB){
 
   type IndexId   = Int
   type NodeId    = Long
