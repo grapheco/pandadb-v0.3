@@ -312,7 +312,6 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
                     includeStartNodes: Boolean,
                     includeEndNodes: Boolean): Iterator[(LynxRelationship, Option[LynxNode], Option[LynxNode])] = {
 
-    val includeProperty = false
     val label1Id = labels1.map(nodeLabelNameMap).sorted
     val label2Id = labels2.map(nodeLabelNameMap).sorted
     val typeIds  = types.map(relTypeNameMap).sorted
@@ -326,12 +325,12 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
             startNode =>
               relationStore
                 .findOutRelations(startNode.id, typeId)
-                .map(rel => (rel, nodeStore.getNodeById(rel.to).get))
-                .withFilter(_._2.labelIds.toSeq.containsSlice(label2Id))
+                .map(rel => (rel, nodeStore.getNodeLabelsById(rel.to)))
+                .withFilter(_._2.toSeq.containsSlice(label2Id))
                 .map(relEnd => (
                   if (includeProperty) relationStore.getRelationById(relEnd._1.id).map(mapRelation).get else mapRelation(relEnd._1),
                   if (includeStartNodes) Some(mapNode(startNode)) else None,
-                  if (includeEndNodes) Some(mapNode(relEnd._2)) else None
+                  if (includeEndNodes) nodeStore.getNodeById(relEnd._1.to, relEnd._2.head).map(mapNode) else None
                 ))
           }
         ).reduce(_++_)
@@ -340,12 +339,12 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
           startNode =>
             relationStore
               .findOutRelations(startNode.id)
-              .map(rel => (rel, nodeStore.getNodeById(rel.to).get))
-              .withFilter(_._2.labelIds.toSeq.containsSlice(label2Id))
+              .map(rel => (rel, nodeStore.getNodeLabelsById(rel.to)))
+              .withFilter(_._2.toSeq.containsSlice(label2Id))
               .map(relEnd => (
                 if (includeProperty) relationStore.getRelationById(relEnd._1.id).map(mapRelation).get else mapRelation(relEnd._1),
                 if (includeStartNodes) Some(mapNode(startNode)) else None,
-                if (includeEndNodes) Some(mapNode(relEnd._2)) else None
+                if (includeEndNodes) nodeStore.getNodeById(relEnd._1.to, relEnd._2.head).map(mapNode) else None
               ))
         }
       case (_, true, false)   => // [nodesWithLabel1]-[relsWithTypes]-[nodes]

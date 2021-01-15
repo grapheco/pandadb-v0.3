@@ -108,7 +108,6 @@ class PRelationImporter(dbPath: String, headFile: File, edgeFile: File) extends 
       Thread.sleep(10*taskId)
     }
 
-
     relationDB.flush()
     inRelationDB.flush()
     outRelationDB.flush()

@@ -195,4 +195,6 @@ trait NodeStoreSPI {
   def getLabelIds(labelNames: Set[String]): Set[Int]
 
   def close(): Unit
+
+  def getNodeById(nodeId: Long, label: Int): Option[StoredNodeWithProperty]
 }
