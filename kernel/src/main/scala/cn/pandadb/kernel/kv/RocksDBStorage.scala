@@ -55,14 +55,13 @@ object RocksDBStorage {
 
     if (useForImporter){
       options.setAllowConcurrentMemtableWrite(true)
-        .setMaxBackgroundFlushes(1)
         .setWriteBufferSize(256*1024*1024)
         .setMaxWriteBufferNumber(8)
         .setMinWriteBufferNumberToMerge(4)
         .setArenaBlockSize(512*1024)
         .setLevel0FileNumCompactionTrigger(512)
         .setDisableAutoCompactions(true)
-        .setMaxBackgroundCompactions(8)
+//        .setMaxBackgroundCompactions(8)
     }
 
     val dir = new File(path)
