@@ -11,7 +11,7 @@ import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
  */
 
 // byteBuf [id][byte:labelsLen][labels]...[propNum][propId][proptype][propLen(ifNeed)][propValue]
-// Map("String"->1, "Int" -> 2, "Long" -> 3, "Double" -> 4, "Float" -> 5, "Boolean" -> 6)
+// Map("String"->1, "Int" -> 2, "Long" -> 3, "Double" -> 4, "Float" -> 5, "Boolean" -> 6, "Array[String]" -> 7)
 object NodeSerializer extends BaseSerializer {
   override val allocator: ByteBufAllocator = ByteBufAllocator.DEFAULT
 

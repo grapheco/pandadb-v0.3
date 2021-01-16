@@ -113,7 +113,7 @@ object BaseSerializer extends BaseSerializer {
 
 trait BaseSerializer {
 
-  // data type:  Map("String"->1, "Int" -> 2, "Long" -> 3, "Double" -> 4, "Float" -> 5, "Boolean" -> 6)
+  // data type:  Map("String"->1, "Int" -> 2, "Long" -> 3, "Double" -> 4, "Float" -> 5, "Boolean" -> 6, "Array[String] -> 7")
   val allocator: ByteBufAllocator
 
   def serialize(longNum: Long): Array[Byte] = {
@@ -174,11 +174,13 @@ trait BaseSerializer {
       case s: Float => _writeFloat(value.asInstanceOf[Float], byteBuf)
       case s: Int => _writeInt(value.asInstanceOf[Int], byteBuf)
       case s: Long => _writeLong(value.asInstanceOf[Long], byteBuf)
+      case s: Array[Any] => _writeAnyArray(value.asInstanceOf[Array[Any]], byteBuf)
       case _ => _writeString(value.asInstanceOf[String], byteBuf)
     }
   }
 
   protected def _writeAnyArray(array: Array[Any], byteBuf: ByteBuf): Unit = {
+    byteBuf.writeByte(7)
     val len = array.length
     byteBuf.writeInt(len)
     array.foreach(item => {
@@ -249,6 +251,7 @@ trait BaseSerializer {
         case 4 => byteBuf.readDouble()
         case 5 => byteBuf.readFloat()
         case 6 => byteBuf.readBoolean()
+        case 7 => _readAnyArray(byteBuf)
         case _ => _readString(byteBuf)
       }
       propId -> propValue
