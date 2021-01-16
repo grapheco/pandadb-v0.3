@@ -1,6 +1,15 @@
 package cn.pandadb.tools.importer
 
+import cn.pandadb.kernel.PDBMetaData
+
 import java.io.{File, FileInputStream}
+import java.util.concurrent.{Executors, ScheduledExecutorService}
+import org.apache.logging.log4j.scala.Logging
+
+import java.util.concurrent.atomic.AtomicInteger
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.Duration
 import scala.io.Source
 
 /**
@@ -9,15 +18,47 @@ import scala.io.Source
  * @Date: Created at 9:35 2021/1/15
  * @Modified By:
  */
-trait SingleFileImporter {
-//  val csvIter: Iterator[CSVLine]
-  val headLine: Array[String]
+trait SingleFileImporter extends Logging{
+  val csvFile: File
   val idIndex: Int
   val labelIndex: Int
   val importerFileReader: ImporterFileReader
+  val headLine: Array[String]
+  val estLineCount: Long
+  val service: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
+  val taskCount: Int
 
   // [index, (propId, propTypeId)]
-  val propHeadMap: Map[Int, (Int, String)]
+  lazy val propHeadMap: Map[Int, (Int, String)] = {
+//    val buffer = headLine.toBuffer
+//    buffer -= headLine(idIndex)
+//    buffer -= headLine(labelIndex)
+//    buffer.remove(idIndex)
+//    buffer.remove(labelIndex)
+    headLine.zipWithIndex.map(item => {
+      if(item._2 == idIndex || item._2 == labelIndex){
+        (-1, (-1, ""))
+      } else {
+        val pair = item._1.split(":")
+        val propId = PDBMetaData.getPropId(pair(0))
+        val propType = {
+          if (pair.length == 2) pair(1).toLowerCase()
+          else "string"
+        }
+        (item._2, (propId, propType))
+      }
+    }).toMap.filter(item => item._1 > -1)
+  }
+
+  val closer = new Runnable {
+    override def run(): Unit = {
+      if(!importerFileReader.notFinished) {
+        service.shutdown()
+      }
+    }
+  }
+
+  protected def _importTask(taskId: Int): Boolean
 
   protected def _getPropMap(lineArr: Array[String], propHeadMap: Map[Int, (Int, String)]): Map[Int, Any] = {
     var propMap: Map[Int, Any] = Map[Int, Any]()
@@ -39,19 +80,13 @@ trait SingleFileImporter {
   }
 
   def estLineCount(file: File): Long = {
-    val fileSize: Long = file.length() // count by Byte
-    if(fileSize < 1024*1024) {
-      Source.fromFile(file).getLines().size
-    } else {
-      // get 1/1000 of the file to estimate line count.
-      val fis: FileInputStream = new FileInputStream(file)
-      val sampleSize: Int = (fileSize/1000).toInt
-      val bytes: Array[Byte] = new Array[Byte](sampleSize)
-      fis.read(bytes)
-      val sampleCount = new String(bytes, "utf-8").split("\n").length
-      val lineCount = fileSize/sampleSize * sampleCount
-      lineCount
-    }
+    CSVIOTools.estLineCount(file)
+  }
+
+  def importData(): Unit = {
+    val taskId: AtomicInteger = new AtomicInteger(0)
+    val taskArray: Array[Future[Boolean]] = new Array[Int](taskCount).map(item => Future{_importTask(taskId.getAndIncrement())})
+    taskArray.foreach(task => {Await.result(task, Duration.Inf)})
   }
 
 }
