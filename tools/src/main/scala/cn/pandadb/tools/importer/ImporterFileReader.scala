@@ -16,7 +16,7 @@ trait ReaderMode{
 }
 case class WithHead() extends ReaderMode
 case class WithOutHead() extends ReaderMode
-class ImporterFileReader(file: File, delimeter: String, batchSize: Int = 1000000, mode: ReaderMode = WithHead()) {
+class ImporterFileReader(file: File, delimeter: String, batchSize: Int = 500000, mode: ReaderMode = WithHead()) {
 
   val fileIter: Iterator[CSVLine] = this.synchronized(new CSVReader(file, delimeter).getAsCSVLines)
 
@@ -27,7 +27,7 @@ class ImporterFileReader(file: File, delimeter: String, batchSize: Int = 1000000
     }
   }
 
-  val supposedQueueLength: Int = Runtime.getRuntime().availableProcessors()/2
+  val supposedQueueLength: Int = Runtime.getRuntime().availableProcessors()/4
   var batchQueue: BlockingQueue[List[CSVLine]] = new LinkedBlockingQueue[List[CSVLine]](supposedQueueLength)
 
   val fillQueue = new Runnable {
@@ -37,6 +37,7 @@ class ImporterFileReader(file: File, delimeter: String, batchSize: Int = 1000000
       }
     }
   }
+
 
   private def _prepareBatch: List[CSVLine] = {
     this.synchronized{

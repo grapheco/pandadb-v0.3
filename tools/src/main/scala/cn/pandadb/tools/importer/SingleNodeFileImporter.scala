@@ -18,12 +18,28 @@ import org.rocksdb.{WriteBatch, WriteOptions}
  */
 class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: GlobalArgs) extends SingleFileImporter {
   override val csvFile: File = file
+  override val cmd: ImportCmd = importCmd
   override val importerFileReader: ImporterFileReader = new ImporterFileReader(file, importCmd.delimeter)
   override val headLine: Array[String] = importerFileReader.getHead.getAsArray
   override val idIndex: Int = headLine.indexWhere(item => item.contains(":ID"))
   override val labelIndex: Int = headLine.indexWhere(item => item.contains(":LABEL"))
   override val estLineCount: Long = estLineCount(csvFile)
   override val taskCount: Int = globalArgs.coreNum/4
+  override val propHeadMap: Map[Int, (Int, String)] = {
+    headLine.zipWithIndex.map(item => {
+      if(item._2 == idIndex || item._2 == labelIndex){
+        (-1, (-1, ""))
+      } else {
+        val pair = item._1.split(":")
+        val propId = PDBMetaData.getPropId(pair(0))
+        val propType = {
+          if (pair.length == 2) pair(1).toLowerCase()
+          else "string"
+        }
+        (item._2, (propId, propType))
+      }
+    }).toMap.filter(item => item._1 > -1)
+  }
 
   service.scheduleWithFixedDelay(importerFileReader.fillQueue, 0, 50, TimeUnit.MILLISECONDS)
   service.scheduleAtFixedRate(closer, 1, 1, TimeUnit.SECONDS)
@@ -58,33 +74,24 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
           nodeBatch.put(pair._1, serializedNodeValue)
           labelBatch.put(pair._2, Array.emptyByteArray)
         })
-        if (innerCount % 1000000 == 0) {
-          nodeDB.write(writeOptions, nodeBatch)
-          nodeLabelDB.write(writeOptions, labelBatch)
-          nodeBatch.clear()
-          labelBatch.clear()
-        }
+//        if (innerCount % 1000000 == 0) {
+//          nodeDB.write(writeOptions, nodeBatch)
+//          nodeLabelDB.write(writeOptions, labelBatch)
+//          nodeBatch.clear()
+//          labelBatch.clear()
+//        }
       })
       nodeDB.write(writeOptions, nodeBatch)
       nodeLabelDB.write(writeOptions, labelBatch)
       nodeBatch.clear()
       labelBatch.clear()
-      if (globalCount.addAndGet(batchData.length) % 10000000 == 0) {
-        val time = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
-//        logger.info(s"${globalCount.get() / 10000000}kw of $estNodeCount(est) nodes imported. $time, thread$taskId")
-        println(s"${globalCount.get() / 10000000}kw of $estNodeCount(est) nodes imported. $time, thread$taskId")
-      }
-      // forbid to access file reader at same time
-      Thread.sleep(10*taskId)
+      globalCount.addAndGet(batchData.length)
     }
 
     nodeDB.flush()
     nodeLabelDB.flush()
-//    logger.info(s"$innerCount, $taskId")
-    println(s"$innerCount, $taskId")
     true
   }
-
 
   private def _wrapNode(lineArr: Array[String]): (Long, Array[Int], Map[Int, Any]) = {
     val id = lineArr(idIndex).toLong
@@ -107,7 +114,4 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
       })
     }
   }
-
-
-
 }

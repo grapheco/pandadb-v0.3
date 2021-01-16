@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicLong
   */
 class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: GlobalArgs) extends SingleFileImporter {
   override val csvFile: File = file
+  override val cmd: ImportCmd = importCmd
   override val importerFileReader: ImporterFileReader = new ImporterFileReader(csvFile, importCmd.delimeter)
   override val headLine: Array[String] = importerFileReader.getHead.getAsArray
   override val idIndex: Int = headLine.indexWhere(item => item.contains("REL_ID"))
@@ -32,6 +33,22 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
 
   val fromIdIndex: Int = headLine.indexWhere(item => item.contains(":START_ID"))
   val toIdIndex: Int = headLine.indexWhere(item => item.contains(":END_ID"))
+
+  override val propHeadMap: Map[Int, (Int, String)] = {
+    headLine.zipWithIndex.map(item => {
+      if(item._2 == idIndex || item._2 == labelIndex || item._2 == fromIdIndex || item._2 == toIdIndex){
+        (-1, (-1, ""))
+      } else {
+        val pair = item._1.split(":")
+        val propId = PDBMetaData.getPropId(pair(0))
+        val propType = {
+          if (pair.length == 2) pair(1).toLowerCase()
+          else "string"
+        }
+        (item._2, (propId, propType))
+      }
+    }).toMap.filter(item => item._1 > -1)
+  }
 
   val relationDB = globalArgs.relationDB
   val inRelationDB = globalArgs.inrelationDB
@@ -60,7 +77,6 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
       if(batchData.nonEmpty) {
         batchData.foreach(line => {
           innerCount += 1
-          //          val lineArr = line.replace("\n", "").split(",")
           val lineArr = line.getAsArray
           val relation = _wrapEdge(lineArr)
           val serializedRel = serializer.serialize(relation)
@@ -69,16 +85,16 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
           outBatch.put(KeyConverter.edgeKeyToBytes(relation.from, relation.typeId, relation.to), ByteUtils.longToBytes(relation.id))
           labelBatch.put(KeyConverter.toRelationTypeKey(relation.typeId, relation.id), Array.emptyByteArray)
 
-          if(innerCount % 1000000 == 0) {
-            relationDB.write(writeOptions, storeBatch)
-            inRelationDB.write(writeOptions, inBatch)
-            outRelationDB.write(writeOptions, outBatch)
-            relationTypeDB.write(writeOptions, labelBatch)
-            storeBatch.clear()
-            inBatch.clear()
-            outBatch.clear()
-            labelBatch.clear()
-          }
+//          if(innerCount % 1000000 == 0) {
+//            relationDB.write(writeOptions, storeBatch)
+//            inRelationDB.write(writeOptions, inBatch)
+//            outRelationDB.write(writeOptions, outBatch)
+//            relationTypeDB.write(writeOptions, labelBatch)
+//            storeBatch.clear()
+//            inBatch.clear()
+//            outBatch.clear()
+//            labelBatch.clear()
+//          }
         })
         relationDB.write(writeOptions, storeBatch)
         inRelationDB.write(writeOptions, inBatch)
@@ -88,22 +104,14 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
         inBatch.clear()
         outBatch.clear()
         labelBatch.clear()
-        if(globalCount.addAndGet(batchData.length) % 10000000 == 0){
-          val time1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
-//          logger.info(s"${globalCount.get() / 10000000}kw of $estEdgeCount(est) edges imported. $time1")
-          println(s"${globalCount.get() / 10000000}kw of $estEdgeCount(est) edges imported. $time1")
-        }
+        globalCount.addAndGet(batchData.length)
       }
-      // forbid to access file reader at same time
-      Thread.sleep(10*taskId)
     }
 
     relationDB.flush()
     inRelationDB.flush()
     outRelationDB.flush()
     relationTypeDB.flush()
-//    logger.info(s"$innerCount, $taskId")
-    println(s"$innerCount, $taskId")
     true
   }
 

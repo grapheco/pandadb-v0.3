@@ -27,28 +27,10 @@ trait SingleFileImporter extends Logging{
   val estLineCount: Long
   val service: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
   val taskCount: Int
+  val cmd: ImportCmd
 
   // [index, (propId, propTypeId)]
-  lazy val propHeadMap: Map[Int, (Int, String)] = {
-//    val buffer = headLine.toBuffer
-//    buffer -= headLine(idIndex)
-//    buffer -= headLine(labelIndex)
-//    buffer.remove(idIndex)
-//    buffer.remove(labelIndex)
-    headLine.zipWithIndex.map(item => {
-      if(item._2 == idIndex || item._2 == labelIndex){
-        (-1, (-1, ""))
-      } else {
-        val pair = item._1.split(":")
-        val propId = PDBMetaData.getPropId(pair(0))
-        val propType = {
-          if (pair.length == 2) pair(1).toLowerCase()
-          else "string"
-        }
-        (item._2, (propId, propType))
-      }
-    }).toMap.filter(item => item._1 > -1)
-  }
+  val propHeadMap: Map[Int, (Int, String)]
 
   val closer = new Runnable {
     override def run(): Unit = {
@@ -71,6 +53,13 @@ trait SingleFileImporter extends Logging{
           case "int" => lineArr(index).toInt
           case "boolean" => lineArr(index).toBoolean
           case "double" => lineArr(index).toBoolean
+          case "string" => lineArr(index).replace("\"", "")
+          case "date" => lineArr(index).replace("\"", "")
+          case "long[]" => lineArr(index).split(cmd.arrayDelimeter).map(item => item.toLong)
+          case "int[]" => lineArr(index).split(cmd.arrayDelimeter).map(item => item.toInt)
+          case "string[]" => lineArr(index).split(cmd.arrayDelimeter).map(item => item.replace("{","").replace("}",""))
+          case "boolean[]" => lineArr(index).split(cmd.arrayDelimeter).map(item => item.toBoolean)
+          case "double[]" => lineArr(index).split(cmd.arrayDelimeter).map(item => item.toDouble)
           case _ => lineArr(index).replace("\"", "")
         }
       }

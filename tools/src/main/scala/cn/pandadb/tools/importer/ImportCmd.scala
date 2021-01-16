@@ -42,7 +42,7 @@ case class ImportCmd(args: Array[String]) {
   val arrayDelimeter: String = {
     val arrayDelimeter: String = _getArgByName("array-delimeter")
     if (arrayDelimeter.length>1) throw new Exception(s"The array-delimeter takes only one character, modify your input $arrayDelimeter please.")
-    if(arrayDelimeter.length == 1) _transferDelimeter(delimeter)
+    if(arrayDelimeter.length == 1) _transferDelimeter(arrayDelimeter)
     else "|"
   }
 

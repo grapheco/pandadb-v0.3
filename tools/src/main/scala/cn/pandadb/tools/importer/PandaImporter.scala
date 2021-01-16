@@ -1,14 +1,14 @@
 package cn.pandadb.tools.importer
 
-import java.io.File
-import java.util.concurrent.atomic.AtomicLong
 import cn.pandadb.kernel.PDBMetaData
 import cn.pandadb.kernel.kv.RocksDBStorage
 import cn.pandadb.kernel.kv.db.KeyValueDB
 import org.apache.logging.log4j.scala.Logging
-import org.rocksdb.RocksDB
 
-import scala.io.Source
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
 
 /**
  * @Author: Airzihao
@@ -16,60 +16,27 @@ import scala.io.Source
  * @Date: Created at 20:20 2020/12/9
  * @Modified By:
  */
-//object PandaImporter extends Logging{
-//
-////  val stdNodeHeadPrefix: Array[String] = Array(":ID", ":LABEL")
-////  val stdRelationHeadPrefix: Array[String] = Array(":REL_ID", ":FROMID", ":TOID", ":TYPE")
-//
-//  def main(args: Array[String]): Unit = {
-//    // args: dbPath, nodeHead file path, node file path, relHead file path, relation file path
-////    _argsCheck(args)
-//    val nodeImporter = new PNodeImporter(args(0), new File(args(1)), new File(args(2)))
-//    val relationImporter = new PRelationImporter(args(0), new File(args(3)), new File(args(4)))
-//    logger.info("Import task started.")
-//    nodeImporter.importNodes()
-//    relationImporter.importRelations()
-//    PDBMetaData.persist(args(0))
-//    logger.info("import task finished.")
-//  }
-//
-////  private def _argsCheck(args: Array[String]): Boolean = {
-////    if(args.length!=5)
-////      throw new Exception(s"Wrong args number. The importer needs 5 args. args: dbPath, nodeHead file path, node file path, relHead file path, relation file path")
-////    if(!_isEnvAvailable(args(0)))
-////      throw new Exception(s"The dbPath ${args(0)} is not empty, try an empty directory please.")
-////    // files exist?
-////    for(i<-1 until 5){
-////      if(!new File(args(i)).exists()) throw new Exception(s"The file ${args(i)} not exists.")
-////    }
-////    _csvFormatCheck(new File(args(1)), new File(args(2)), stdNodeHeadPrefix)
-////    _csvFormatCheck(new File(args(3)), new File(args(4)), stdRelationHeadPrefix)
-////    true
-////  }
-//
-//  private def _isEnvAvailable(dbPath: String): Boolean = {
-//    val dbFile = new File(dbPath)
-//    val isEmptyDirectory: Boolean = dbFile.isDirectory && dbFile.listFiles().length == 0
-//    val notExist: Boolean = !dbFile.exists()
-//    isEmptyDirectory || notExist
-//  }
-//
-//  private def _csvFormatCheck(headFile: File, dataFile: File, standardHead: Array[String]): Boolean = {
-//    val headArray = Source.fromFile(headFile).getLines().next().split(",").map(item => item.toUpperCase)
-//    val dataArray = Source.fromFile(dataFile).getLines().next().split(",")
-//    if(headArray.length != dataArray.length) throw new Exception(s"The column number of ${headFile.getCanonicalPath} and ${dataFile.getCanonicalPath} not match.")
-//    //:ID,:LABEL,id_p:Long,idStr:String,flag:Boolean,name:String
-//    //:REL_ID,:FROMID,:TOID,:type,fromID:long,toID:String,weight:int
-//    val pairArray = standardHead.zip(headArray)
-//    if(pairArray.length < standardHead.length) throw new Exception(s"The head file ${headFile.getCanonicalPath} doesn't contain enough elems")
-//    standardHead.zip(headArray).foreach(pair => if(pair._1 != pair._2) throw new Exception(s"Wrong item in head file, supposed ${pair._1}, actual ${pair._2}."))
-//    true
-//  }
-//}
-
 object PandaImporter extends Logging {
   val globalNodeCount = new AtomicLong(0)
   val globalRelCount = new AtomicLong(0)
+
+  def time: String = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
+
+  val service: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
+
+  val nodeCountProgressLogger: Runnable = new Runnable {
+    override def run(): Unit = {
+//      logger.info(s"$globalNodeCount nodes imported. $time")
+      println(s"$globalNodeCount nodes imported. $time")
+    }
+  }
+
+  val relCountProgressLogger: Runnable = new Runnable {
+    override def run(): Unit = {
+//      logger.info(s"$globalRelCount relations imported. $time")
+      println(s"$globalRelCount relations imported. $time")
+    }
+  }
 
   def main(args: Array[String]): Unit = {
     val importCmd: ImportCmd = ImportCmd(args)
@@ -83,6 +50,9 @@ object PandaImporter extends Logging {
         CSVIOTools.estLineCount(file)
       }).sum
     }
+
+    println(s"Estimated node count: $estNodeCount.")
+    println(s"Estimated relation count: $estRelCount.")
 
     val nodeDB = RocksDBStorage.getDB(path = s"${importCmd.database}/nodes", useForImporter = true)
     val nodeLabelDB = RocksDBStorage.getDB(s"${importCmd.database}/nodeLabel", useForImporter = true)
@@ -98,25 +68,24 @@ object PandaImporter extends Logging {
       outRelationDB = outRelationDB, relationTypeDB = relationTypeDB
     )
 
-    val nodeImporters: List[SingleNodeFileImporter] = importCmd.nodeFileList.map(file => new SingleNodeFileImporter(file, importCmd, globalArgs))
-    val relImporters: List[SingleRelationFileImporter] = importCmd.relFileList.map(file => new SingleRelationFileImporter(file, importCmd, globalArgs))
+    println(s"Import task started. $time")
+    service.scheduleAtFixedRate(nodeCountProgressLogger, 0, 30, TimeUnit.SECONDS)
+    service.scheduleAtFixedRate(relCountProgressLogger, 0, 30, TimeUnit.SECONDS)
 
-//    logger.info("Import task started.")
-    println("Import task started.")
-    nodeImporters.foreach(importer => importer.importData())
-
+    val nodeImporters: List[Unit] = importCmd.nodeFileList.map(file => new SingleNodeFileImporter(file, importCmd, globalArgs).importData())
     nodeDB.close()
     nodeLabelDB.close()
-    println(s"$globalNodeCount nodes imported.")
-    relImporters.foreach(importer => importer.importData())
+    println(s"$globalNodeCount nodes imported. $time")
 
-
+    val relImporters: List[Unit] = importCmd.relFileList.map(file => new SingleRelationFileImporter(file, importCmd, globalArgs).importData())
     relationDB.close()
     inRelationDB.close()
     outRelationDB.close()
     relationTypeDB.close()
+    println(s"$globalRelCount relations imported. $time")
 
     PDBMetaData.persist(args(0))
+    service.shutdown()
 //    logger.info("import task finished.")
     println("import task finished.")
 
