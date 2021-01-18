@@ -5,7 +5,8 @@ import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.{NameStore, Statistics}
 import cn.pandadb.kernel.store._
 import org.apache.logging.log4j.scala.Logging
-import org.grapheco.lynx.{ContextualNodeInputRef, CypherRunner, GraphModel, LynxId, LynxNode, LynxRelationship, LynxResult, LynxValue, NodeInput, NodeInputRef, RelationshipInput, StoredNodeInputRef}
+import org.grapheco.lynx.{CallableProcedure, ContextualNodeInputRef, CypherRunner, GraphModel, LynxId, LynxNode, LynxRelationship, LynxResult, LynxValue, NodeFilter, NodeInput, NodeInputRef, PathTriple, RelationshipFilter, RelationshipInput, StoredNodeInputRef}
+import org.opencypher.v9_0.expressions.SemanticDirection
 
 
 class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
@@ -250,7 +251,7 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
   }
 
   //TODO need props?
-  override def rels(includeStartNodes: Boolean, includeEndNodes: Boolean): Iterator[(PandaRelationship, Option[PandaNode], Option[PandaNode])] = {
+  def rels(includeStartNodes: Boolean, includeEndNodes: Boolean): Iterator[(PandaRelationship, Option[PandaNode], Option[PandaNode])] = {
     relationStore.allRelations().map(mapRelation).map{ rel =>
       (rel,
         if (includeStartNodes) nodeAt(rel.startNodeId) else None,
@@ -260,7 +261,7 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
 
   override def nodes(): Iterator[PandaNode] = nodeStore.allNodes().map(mapNode)
 
-  override def nodeAt(id: LynxId): Option[PandaNode] = nodeAt(id.value.asInstanceOf[Long])
+  def nodeAt(id: LynxId): Option[PandaNode] = nodeAt(id.value.asInstanceOf[Long])
 
   def nodeAt(id: Long): Option[PandaNode] = nodeStore.getNodeById(id).map(mapNode)
 
@@ -296,7 +297,7 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
   }
 
 
-  override def rels(types: Seq[String],
+  def rels(types: Seq[String],
                     labels1: Seq[String],
                     labels2: Seq[String],
                     includeStartNodes: Boolean,
@@ -383,7 +384,7 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
     }
   }
 
-  override def nodes(labels: Seq[String], exact: Boolean): Iterator[PandaNode] = getNodes(labels, exact).map(mapNode)
+  def nodes(labels: Seq[String], exact: Boolean): Iterator[PandaNode] = getNodes(labels, exact).map(mapNode)
 
   def getNodes(labels: Seq[String], exact: Boolean): Iterator[StoredNode] = {
     if (labels.isEmpty) {
@@ -403,4 +404,71 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
       }
     }
   }
+
+  def filterNodes(p: PandaNode, properties: Map[String, LynxValue]): Boolean = {
+    properties.map(x =>p.property(x._1).get.equals(x._2)).reduce(_&&_)
+  }
+
+  def isPropertysWithIndex(labels: Set[String], propertyNames: Set[String]): (Int, String, Set[String], Long) = {
+      println("isPropertyWithIndex")
+      val propertyIds = propertyNames.map(nodeStore.getPropertyKeyId).toArray.sorted
+      val range = propertyIds.indices
+      val combinations = range.flatMap{
+        i => (i until propertyIds.length).map(j => propertyIds.slice(i,j+1))
+      }.toSet
+      val res = labels.flatMap{
+        label =>
+        combinations.map {
+          props =>
+          (indexStore.getIndexId(nodeStore.getLabelId(label), props), label, props)
+        }
+      }
+        .filter(_._1.isDefined)
+        .map{ p => (p._1.get, p._2, p._3, statistics.getIndexPropertyCount(p._1.get))}
+        .filter(_._4.isDefined)
+        .map{ p => (p._1, p._2, p._3, p._4.get)}
+      if (res.isEmpty)
+        (-1, null, null, -1)
+      else {
+        val resMin = res.minBy(_._4)
+        (resMin._1, resMin._2, resMin._3.map(nodeStore.getPropertyKeyName(_).get).toSet, resMin._4)
+      }
+    }
+
+  def findNode(indexId: Int, value: Any): Iterator[StoredNodeWithProperty] = indexStore.find(indexId, value).map(nodeStore.getNodeById).filter(_.isDefined).map(_.get)
+
+  override def getProcedure(prefix: List[String], name: String): Option[CallableProcedure] = super.getProcedure(prefix, name) //todo when procedure is need
+
+  override def paths(startNodeFilter: NodeFilter, relationshipFilter: RelationshipFilter, endNodeFilter: NodeFilter, direction: SemanticDirection): Iterator[PathTriple] = super.paths(startNodeFilter, relationshipFilter, endNodeFilter, direction)
+
+  override def paths(nodeId: LynxId, direction: SemanticDirection): Iterator[PathTriple] = super.paths(nodeId, direction)
+
+  override def paths(nodeId: LynxId, relationshipFilter: RelationshipFilter, endNodeFilter: NodeFilter, direction: SemanticDirection): Iterator[PathTriple] = super.paths(nodeId, relationshipFilter, endNodeFilter, direction)
+
+  override def paths(nodeFilter: NodeFilter, expandFilters: (RelationshipFilter, NodeFilter, SemanticDirection)*): Iterator[Seq[PathTriple]] = ???
+
+  override def nodes(nodeFilter: NodeFilter): Iterator[LynxNode] = {
+    (nodeFilter.labels.isEmpty, nodeFilter.properties.isEmpty) match {
+      case (true, true) => allNodes().toIterator.map(mapNode)
+      case (false, true) => {
+        val minis = nodeFilter.labels.map(nodeStore.getLabelId).map(x => x-> statistics.getNodeLabelCount(x)).minBy(_._2.get)
+        nodeStore.getNodesByLabel(minis._1).map(mapNode).filter(nodeFilter.matches)
+      }
+      case (true, false) => allNodes().toIterator.map(mapNode).filter(filterNodes(_, nodeFilter.properties))
+
+      case (false, false) => {
+        //todo find index
+        val (index,proPertyName,_,_) = isPropertysWithIndex(nodeFilter.labels.toSet, nodeFilter.properties.keys.toSet)
+        if (index >=0) findNode(index,nodeFilter.properties(proPertyName).value).map(mapNode).filter(x=> nodeFilter.matches(x) &&filterNodes(x, nodeFilter.properties))
+        else {
+          val minis = nodeFilter.labels.map(nodeStore.getLabelId).map(x => x -> statistics.getNodeLabelCount(x)).minBy(_._2.get)
+          nodeStore.getNodesByLabel(minis._1).map(mapNode).filter(nodeFilter.matches).filter(filterNodes(_, nodeFilter.properties))
+        }
+
+      }
+    }
+
+  }
+
+  override def relationships(): Iterator[PathTriple] = allRelations().toIterator.map(rel => PathTriple(nodeAt(rel.from).get, mapRelation(rel), nodeAt(rel.to).get))
 }
