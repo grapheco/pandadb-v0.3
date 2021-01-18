@@ -108,15 +108,13 @@ class RelationStoreAPI(dbPath: String) extends RelationStoreSPI{
     else inRelationStore.all()
   }
 
-  override def findOutRelations(fromNodeId: Long): Iterator[StoredRelation] = outRelationStore.getRelations(fromNodeId)
+  override def findOutRelations(fromNodeId: Long, edgeType:Option[Int] = None): Iterator[StoredRelation] =
+    edgeType.map(outRelationStore.getRelations(fromNodeId, _))
+      .getOrElse(outRelationStore.getRelations(fromNodeId))
 
-  override def findOutRelations(fromNodeId: Long, edgeType: Int): Iterator[StoredRelation] =
-    outRelationStore.getRelations(fromNodeId, edgeType)
-
-  override def findInRelations(toNodeId: Long): Iterator[StoredRelation] = inRelationStore.getRelations(toNodeId)
-
-  override def findInRelations(toNodeId: Long, edgeType: Int): Iterator[StoredRelation] =
-    inRelationStore.getRelations(toNodeId, edgeType)
+  override def findInRelations(toNodeId: Long, edgeType:Option[Int] = None): Iterator[StoredRelation] =
+    edgeType.map(inRelationStore.getRelations(toNodeId, _))
+      .getOrElse(inRelationStore.getRelations(toNodeId))
 
   override def close(): Unit ={
     relationIdGenerator.flush()

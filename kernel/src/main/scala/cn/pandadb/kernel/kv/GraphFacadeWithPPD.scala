@@ -265,6 +265,10 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
 
   def nodeAt(id: Long): Option[PandaNode] = nodeStore.getNodeById(id).map(mapNode)
 
+  def relationAt(id: Long): Option[PandaRelationship] = relationStore.getRelationById(id).map(mapRelation)
+
+  def relationAt(id: LynxId): Option[PandaRelationship] = relationAt(id.value.asInstanceOf[Long])
+
   override def createElements[T](nodes: Array[(Option[String], NodeInput)], rels: Array[(Option[String], RelationshipInput)], onCreated: (Map[Option[String], LynxNode], Map[Option[String], LynxRelationship]) => T): T = {
     val nodesMap: Map[NodeInput, (Option[String], PandaNode)] = nodes.map(x => {
       val (varname, input) = x
@@ -322,53 +326,53 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
         // TODO if types is small
         typeIds.map(
           typeId =>
-          getNodes(labels1, exact = false).flatMap{
+            getNodesByLabels(labels1, exact = false).flatMap{
             startNode =>
               relationStore
-                .findOutRelations(startNode.id, typeId)
+                .findOutRelations(startNode.id, Some(typeId))
                 .map(rel => (rel, nodeStore.getNodeLabelsById(rel.to)))
                 .withFilter(_._2.toSeq.containsSlice(label2Id))
                 .map(relEnd => (
-                  if (includeProperty) relationStore.getRelationById(relEnd._1.id).map(mapRelation).get else mapRelation(relEnd._1),
+                  if (includeProperty) relationAt(relEnd._1.id).orNull else mapRelation(relEnd._1),
                   if (includeStartNodes) Some(mapNode(startNode)) else None,
-                  if (includeEndNodes) nodeStore.getNodeById(relEnd._1.to, relEnd._2.head).map(mapNode) else None
+                  if (includeEndNodes) nodeStore.getNodeById(relEnd._1.to, relEnd._2.headOption).map(mapNode) else None
                 ))
           }
         ).reduce(_++_)
       case (_, false, true)   => // [nodesWithLabel1]-[rels]-[nodesWithLabel2]
-        getNodes(labels1, exact = false).flatMap{
+        getNodesByLabels(labels1, exact = false).flatMap{
           startNode =>
             relationStore
               .findOutRelations(startNode.id)
               .map(rel => (rel, nodeStore.getNodeLabelsById(rel.to)))
               .withFilter(_._2.toSeq.containsSlice(label2Id))
               .map(relEnd => (
-                if (includeProperty) relationStore.getRelationById(relEnd._1.id).map(mapRelation).get else mapRelation(relEnd._1),
+                if (includeProperty) relationAt(relEnd._1.id).orNull else mapRelation(relEnd._1),
                 if (includeStartNodes) Some(mapNode(startNode)) else None,
-                if (includeEndNodes) nodeStore.getNodeById(relEnd._1.to, relEnd._2.head).map(mapNode) else None
+                if (includeEndNodes) nodeStore.getNodeById(relEnd._1.to, relEnd._2.headOption).map(mapNode) else None
               ))
         }
       case (_, true, false)   => // [nodesWithLabel1]-[relsWithTypes]-[nodes]
         typeIds.map(
           typeId =>
-            getNodes(labels1, exact = false).flatMap{
+            getNodesByLabels(labels1, exact = false).flatMap{
               startNode =>
                 relationStore
-                  .findOutRelations(startNode.id, typeId)
+                  .findOutRelations(startNode.id, Some(typeId))
                   .map(rel => (
-                    if (includeProperty) relationStore.getRelationById(rel.id).map(mapRelation).get else mapRelation(rel),
+                    if (includeProperty) relationAt(rel.id).orNull else mapRelation(rel),
                     if (includeStartNodes) Some(mapNode(startNode)) else None,
                     if (includeEndNodes) nodeAt(rel.to) else None
                   ))
             }
         ).reduce(_++_)
       case (true, false, false)  =>  // [nodesWithLabel1]-[allRel]-[allNodes]
-        getNodes(labels1, exact = false).flatMap{
+        getNodesByLabels(labels1, exact = false).flatMap{
           startNode =>
             relationStore
               .findOutRelations(startNode.id)
               .map(rel => (
-                if (includeProperty) relationStore.getRelationById(rel.id).map(mapRelation).get else mapRelation(rel),
+                if (includeProperty) relationAt(rel.id).orNull else mapRelation(rel),
                 if (includeStartNodes) Some(mapNode(startNode)) else None,
                 if (includeEndNodes) nodeAt(rel.to) else None
               ))
@@ -384,9 +388,9 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
     }
   }
 
-  def nodes(labels: Seq[String], exact: Boolean): Iterator[PandaNode] = getNodes(labels, exact).map(mapNode)
+  def nodes(labels: Seq[String], exact: Boolean): Iterator[PandaNode] = getNodesByLabels(labels, exact).map(mapNode)
 
-  def getNodes(labels: Seq[String], exact: Boolean): Iterator[StoredNode] = {
+  def getNodesByLabels(labels: Seq[String], exact: Boolean): Iterator[StoredNode] = {
     if (labels.isEmpty) {
       nodeStore.allNodes()
     } else if(labels.size == 1){
@@ -405,12 +409,10 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
     }
   }
 
-  def filterNodes(p: PandaNode, properties: Map[String, LynxValue]): Boolean = {
-    properties.map(x =>p.property(x._1).get.equals(x._2)).reduce(_&&_)
-  }
+  def filterNodes(p: PandaNode, properties: Map[String, LynxValue]): Boolean =
+    properties.forall(x => p.properties.exists(x.eq))
 
-  def isPropertysWithIndex(labels: Set[String], propertyNames: Set[String]): (Int, String, Set[String], Long) = {
-      println("isPropertyWithIndex")
+  def hasIndex(labels: Set[String], propertyNames: Set[String]): Option[(Int, String, Set[String], Long)] = { //TODO make it simple
       val propertyIds = propertyNames.map(nodeStore.getPropertyKeyId).toArray.sorted
       val range = propertyIds.indices
       val combinations = range.flatMap{
@@ -428,47 +430,66 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
         .filter(_._4.isDefined)
         .map{ p => (p._1, p._2, p._3, p._4.get)}
       if (res.isEmpty)
-        (-1, null, null, -1)
+        None
       else {
         val resMin = res.minBy(_._4)
-        (resMin._1, resMin._2, resMin._3.map(nodeStore.getPropertyKeyName(_).get).toSet, resMin._4)
+        Some(resMin._1, resMin._2, resMin._3.map(nodeStore.getPropertyKeyName(_).get).toSet, resMin._4)
       }
     }
 
-  def findNode(indexId: Int, value: Any): Iterator[StoredNodeWithProperty] = indexStore.find(indexId, value).map(nodeStore.getNodeById).filter(_.isDefined).map(_.get)
+  def findNodeByIndex(indexId: Int, value: Any): Iterator[StoredNodeWithProperty] =
+    indexStore.find(indexId, value).flatMap(nodeStore.getNodeById(_))
 
   override def getProcedure(prefix: List[String], name: String): Option[CallableProcedure] = super.getProcedure(prefix, name) //todo when procedure is need
 
-  override def paths(startNodeFilter: NodeFilter, relationshipFilter: RelationshipFilter, endNodeFilter: NodeFilter, direction: SemanticDirection): Iterator[PathTriple] = super.paths(startNodeFilter, relationshipFilter, endNodeFilter, direction)
+  override def paths(startNodeFilter: NodeFilter,
+                     relationshipFilter: RelationshipFilter,
+                     endNodeFilter: NodeFilter,
+                     direction: SemanticDirection): Iterator[PathTriple] =
+    nodes(startNodeFilter)
+      .flatMap(node => paths(node.id, direction))
+      .filter(trip => endNodeFilter.matches(trip.endNode))
 
-  override def paths(nodeId: LynxId, direction: SemanticDirection): Iterator[PathTriple] = super.paths(nodeId, direction)
+
+  override def paths(nodeId: LynxId, direction: SemanticDirection): Iterator[PathTriple] = {
+    nodeAt(nodeId).map(
+        n=>
+          direction match {
+            case SemanticDirection.INCOMING => relationStore.findInRelations(n.longId).map(r => (n, r, r.from))
+            case SemanticDirection.OUTGOING => relationStore.findOutRelations(n.longId).map(r => (n, r, r.to))
+            case SemanticDirection.BOTH     => relationStore.findInRelations(n.longId).map(r => (n, r, r.from)) ++
+              relationStore.findOutRelations(n.longId).map(r => (n, r, r.to))
+          }
+      )
+      .getOrElse(Iterator.empty)
+      .map(p => PathTriple(p._1, relationAt(p._2.id).orNull, nodeAt(p._3).orNull))
+  }
 
   override def paths(nodeId: LynxId, relationshipFilter: RelationshipFilter, endNodeFilter: NodeFilter, direction: SemanticDirection): Iterator[PathTriple] = super.paths(nodeId, relationshipFilter, endNodeFilter, direction)
 
   override def paths(nodeFilter: NodeFilter, expandFilters: (RelationshipFilter, NodeFilter, SemanticDirection)*): Iterator[Seq[PathTriple]] = ???
 
-  override def nodes(nodeFilter: NodeFilter): Iterator[LynxNode] = {
-    (nodeFilter.labels.isEmpty, nodeFilter.properties.isEmpty) match {
-      case (true, true) => allNodes().toIterator.map(mapNode)
-      case (false, true) => {
-        val minis = nodeFilter.labels.map(nodeStore.getLabelId).map(x => x-> statistics.getNodeLabelCount(x)).minBy(_._2.get)
-        nodeStore.getNodesByLabel(minis._1).map(mapNode).filter(nodeFilter.matches)
-      }
-      case (true, false) => allNodes().toIterator.map(mapNode).filter(filterNodes(_, nodeFilter.properties))
-
-      case (false, false) => {
-        //todo find index
-        val (index,proPertyName,_,_) = isPropertysWithIndex(nodeFilter.labels.toSet, nodeFilter.properties.keys.toSet)
-        if (index >=0) findNode(index,nodeFilter.properties(proPertyName).value).map(mapNode).filter(x=> nodeFilter.matches(x) &&filterNodes(x, nodeFilter.properties))
-        else {
-          val minis = nodeFilter.labels.map(nodeStore.getLabelId).map(x => x -> statistics.getNodeLabelCount(x)).minBy(_._2.get)
-          nodeStore.getNodesByLabel(minis._1).map(mapNode).filter(nodeFilter.matches).filter(filterNodes(_, nodeFilter.properties))
-        }
-
-      }
+  override def nodes(nodeFilter: NodeFilter): Iterator[PandaNode] = {
+    (nodeFilter.labels.nonEmpty, nodeFilter.properties.nonEmpty) match {
+      case (false, false) => allNodes().iterator.map(mapNode)
+      case (true, false)  => nodes(nodeFilter.labels, exact = false)
+      case (false, true)  => allNodes().iterator.map(mapNode).filter(filterNodes(_, nodeFilter.properties))
+      case (true, true)   =>
+        hasIndex(nodeFilter.labels.toSet, nodeFilter.properties.keys.toSet)
+          .map(
+            indexInfo => // fixme                                      only get one prop ↓
+              findNodeByIndex(indexInfo._1, nodeFilter.properties.getOrElse(indexInfo._3.head, null).value)
+                .map(mapNode)
+                .filter(x=>filterNodes(x, nodeFilter.properties))
+          )
+          .getOrElse(
+            getNodesByLabels(nodeFilter.labels, exact = false)
+              .map(mapNode)
+              .filter(filterNodes(_, nodeFilter.properties))
+          )
     }
-
   }
 
-  override def relationships(): Iterator[PathTriple] = allRelations().toIterator.map(rel => PathTriple(nodeAt(rel.from).get, mapRelation(rel), nodeAt(rel.to).get))
+  override def relationships(): Iterator[PathTriple] =
+    allRelations().toIterator.map(rel => PathTriple(nodeAt(rel.from).get, mapRelation(rel), nodeAt(rel.to).get))
 }

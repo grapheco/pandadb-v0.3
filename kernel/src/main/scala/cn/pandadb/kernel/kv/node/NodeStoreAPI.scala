@@ -40,11 +40,10 @@ class NodeStoreAPI(dbPath: String) extends NodeStoreSPI {
 
   override def addPropertyKey(keyName: String): Int = propertyName.id(keyName)
 
-  override def getNodeById(nodeId: Long): Option[StoredNodeWithProperty] =
-    nodeLabelStore.get(nodeId).map(nodeStore.get(nodeId, _).get)
-
-  override def getNodeById(nodeId: Long, label: Int): Option[StoredNodeWithProperty] =
-    nodeStore.get(nodeId, label)
+  override def getNodeById(nodeId: Long, label: Option[Int] = None): Option[StoredNodeWithProperty] = {
+    label.map(nodeStore.get(nodeId, _))
+      .getOrElse(nodeLabelStore.get(nodeId).map(nodeStore.get(nodeId, _).get))
+  }
 
   override def getNodeLabelsById(nodeId: Long): Array[Int] = nodeLabelStore.getAll(nodeId)
 

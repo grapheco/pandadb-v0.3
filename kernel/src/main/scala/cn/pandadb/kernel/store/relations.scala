@@ -184,13 +184,13 @@ trait RelationStoreSPI {
 
   def allRelations(withProperty: Boolean = false): Iterator[StoredRelation]
 
-  def findOutRelations(fromNodeId: Long): Iterator[StoredRelation]
+  def findOutRelations(fromNodeId: Long): Iterator[StoredRelation] = findOutRelations(fromNodeId, None)
 
-  def findOutRelations(fromNodeId: Long, edgeType: Int): Iterator[StoredRelation]
+  def findOutRelations(fromNodeId: Long, edgeType: Option[Int] = None): Iterator[StoredRelation]
 
-  def findInRelations(toNodeId: Long): Iterator[StoredRelation]
+  def findInRelations(fromNodeId: Long): Iterator[StoredRelation] = findInRelations(fromNodeId, None)
 
-  def findInRelations(toNodeId: Long, edgeType: Int): Iterator[StoredRelation]
+  def findInRelations(fromNodeId: Long, edgeType: Option[Int] = None): Iterator[StoredRelation]
 
   def close(): Unit
 }

@@ -174,7 +174,7 @@ class RelationPerformanceTest {
 
       //      val iter = graphStore.findOutEdgeRelations(chooseId)
       //      val iter = graphStore.findOutEdgeRelations(chooseId,edgeType)
-      val iter = relationStore.findOutRelations(chooseId, edgeType)
+      val iter = relationStore.findOutRelations(chooseId, Some(edgeType))
 
       while (iter.hasNext) {
         val res = iter.next()

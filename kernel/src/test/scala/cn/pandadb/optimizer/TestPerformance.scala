@@ -16,7 +16,7 @@ import scala.collection.mutable.ArrayBuffer
 
 object TestPerformance {
 //  val dbPath = "/hdfs_data2/panda-1229/base_1B-1231"
-  val dbPath = "F:\\PandaDB_rocksDB\\graph500"
+  val dbPath = "C:\\PandaDB_rocksDB\\graph500"
 
   val nodeStore = new NodeStoreAPI(dbPath)
   val relationStore = new RelationStoreAPI(dbPath)
@@ -31,12 +31,13 @@ object TestPerformance {
   )
 
   def main(args: Array[String]): Unit = {
-//    heatDB()
+    heatDB()
 //    memTest()
 //    memTestApi()
 
 //    relationCypherTest()
     relationApiTest()
+    relationCypherTest()
 //    cypherWithoutIndex()
 //    createIndex()
 //    cypherWithIndex()
@@ -124,6 +125,22 @@ object TestPerformance {
       println(res.size)
     })
 
+    print("match (n:label0)-[r]->(m:label1) return r limit 10000  with nodes ")
+    Profiler.timing({
+      val label0 = nodeStore.getLabelId("label0")
+      val label1 = nodeStore.getLabelId("label1")
+      val limit = 10000
+
+      val res = nodeStore
+        .getNodesByLabel(label0)
+        .flatMap(node=>relationStore.findOutRelations(node.id))
+        .map(rel => (rel, nodeStore.getNodeById(rel.to).get))
+        .withFilter(_._2.labelIds.toSeq.containsSlice(Seq(label1)))
+        .take(limit)
+        .map(rel=>mapRelation(relationStore.getRelationById(rel._1.id).get))
+      println(res.size)
+    })
+
     print("match (n:label0)-[r]->(m:label1) return r limit 10000 by rels() ")
     Profiler.timing({
       val label0 = nodeStore.getLabelId("label0")
@@ -131,19 +148,19 @@ object TestPerformance {
       val limit = 10000
 
 //      val res = graphFacade.rels(Seq(), Seq("label0"), Seq("label1"),false,false).take(limit)
-      val res = graphFacade.getNodes(Seq("label0"), exact = false).flatMap{
-        startNode =>
-          relationStore
-            .findOutRelations(startNode.id)
-            .map(rel => (rel, nodeStore.getNodeById(rel.to).get))
-            .withFilter(_._2.labelIds.head == label1)
-            .map(relEnd => (
-              if (false) relationStore.getRelationById(relEnd._1.id).map(mapRelation).get else mapRelation(relEnd._1),
-              if (false) Some(mapNode(startNode)) else None,
-              if (false) Some(mapNode(relEnd._2)) else None
-            ))
-      }.take(limit)
-      println(res.size)
+//      val res = graphFacade.getNodes(Seq("label0"), exact = false).flatMap{
+//        startNode =>
+//          relationStore
+//            .findOutRelations(startNode.id)
+//            .map(rel => (rel, nodeStore.getNodeLabelsById(rel.to)))
+//            .withFilter(_._2.toSeq.containsSlice(Seq(label1)))
+//            .map(relEnd => (
+//              if (false) relationStore.getRelationById(relEnd._1.id).map(mapRelation).get else mapRelation(relEnd._1),
+//              if (false) Some(mapNode(startNode)) else None,
+//              if (false) Some(nodeStore.getNodeById(relEnd._1.to, relEnd._2.head).map(mapNode)) else None
+//            ))
+//      }.take(limit)
+//      println(res.size)
     })
 
     print("match (n:label2)-[r1]->(m:label3)-[r2]->(p:label4) return r2  limit 10000    ")
@@ -201,7 +218,7 @@ object TestPerformance {
 
       val res = nodeStore
         .getNodeIdsByLabel(label0)
-        .flatMap(nodeId => relationStore.findOutRelations(nodeId, type0))
+        .flatMap(nodeId => relationStore.findOutRelations(nodeId, Some(type0)))
         .filter(rel =>nodeStore.hasLabel(rel.to, label1))
         .take(limit)
         .map(rel=>mapRelation(relationStore.getRelationById(rel.id).get))
@@ -228,8 +245,8 @@ object TestPerformance {
     val cyphers = List(
       "match (n:label8)-[r]->(m:label9) return r limit 10000",
       "match (n:label0)-[r]->(m:label1) return r limit 10000",
-    //  "match (n:label2)-[r1]->(m:label3)-[r2]->(p:label4) return r2  limit 10000",
-    //  "match (n:label5)-[r1]->(m:label6)-[r2]->(p:label7)-[r3]->(q:label8) return r3  limit 10000",
+//      "match (n:label2)-[r1]->(m:label3)-[r2]->(p:label4) return r2  limit 10000",
+//      "match (n:label5)-[r1]->(m:label6)-[r2]->(p:label7)-[r3]->(q:label8) return r3  limit 10000",
       "match (n:label0)-[r:type0]->(m:label2) return r  limit 10000",
       "match (n:label2)-[r]->(m:label4) return r limit 10000",
       // "match (n:label0)-[r:type1]->(m:label1) return r limit 10000",
