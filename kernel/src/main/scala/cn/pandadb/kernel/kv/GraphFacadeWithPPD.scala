@@ -269,7 +269,9 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
 
   def relationAt(id: LynxId): Option[PandaRelationship] = relationAt(id.value.asInstanceOf[Long])
 
-  override def createElements[T](nodes: Array[(Option[String], NodeInput)], rels: Array[(Option[String], RelationshipInput)], onCreated: (Map[Option[String], LynxNode], Map[Option[String], LynxRelationship]) => T): T = {
+  override def createElements[T](nodes: Array[(Option[String], NodeInput)],
+                                 rels: Array[(Option[String], RelationshipInput)],
+                                 onCreated: (Map[Option[String], LynxNode], Map[Option[String], LynxRelationship]) => T): T = {
     val nodesMap: Map[NodeInput, (Option[String], PandaNode)] = nodes.map(x => {
       val (varname, input) = x
       val id = nodeStore.newNodeId()
@@ -285,7 +287,11 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
 
     val relsMap: Array[(Option[String], PandaRelationship)] = rels.map(x => {
       val (varname, input) = x
-      varname -> PandaRelationship(relationStore.newRelationId(), nodeId(input.startNodeRef), nodeId(input.endNodeRef), input.types.headOption)
+      varname ->
+        PandaRelationship(relationStore.newRelationId(),
+          nodeId(input.startNodeRef),
+          nodeId(input.endNodeRef),
+          input.types.headOption)
     }
     )
 
@@ -412,30 +418,21 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
   def filterNodes(p: PandaNode, properties: Map[String, LynxValue]): Boolean =
     properties.forall(x => p.properties.exists(x.eq))
 
-  def hasIndex(labels: Set[String], propertyNames: Set[String]): Option[(Int, String, Set[String], Long)] = { //TODO make it simple
-      val propertyIds = propertyNames.map(nodeStore.getPropertyKeyId).toArray.sorted
-      val range = propertyIds.indices
-      val combinations = range.flatMap{
-        i => (i until propertyIds.length).map(j => propertyIds.slice(i,j+1))
-      }.toSet
-      val res = labels.flatMap{
-        label =>
-        combinations.map {
-          props =>
-          (indexStore.getIndexId(nodeStore.getLabelId(label), props), label, props)
-        }
-      }
-        .filter(_._1.isDefined)
-        .map{ p => (p._1.get, p._2, p._3, statistics.getIndexPropertyCount(p._1.get))}
-        .filter(_._4.isDefined)
-        .map{ p => (p._1, p._2, p._3, p._4.get)}
-      if (res.isEmpty)
-        None
-      else {
-        val resMin = res.minBy(_._4)
-        Some(resMin._1, resMin._2, resMin._3.map(nodeStore.getPropertyKeyName(_).get).toSet, resMin._4)
-      }
-    }
+  def hasIndex(labels: Set[String], propertyNames: Set[String]): Option[(Int, String, Set[String], Long)] = {
+    val propertyIds = propertyNames.map(nodeStore.getPropertyKeyId).toArray.sorted
+    val labelIds = labels.map(nodeLabelNameMap)
+    val combinations = propertyIds.toSet.subsets().drop(1)
+    val indexes = labelIds.flatMap(
+      label => combinations.flatMap (
+        props => indexStore.getIndexId(label, props.toArray).map((_, label, props, 0L))
+      )
+    )
+    val res = indexes.flatMap(p => statistics.getIndexPropertyCount(p._1).map((p._1, p._2, p._3 ,_)))
+    res.headOption
+      .map(h => res.minBy(_._4))
+      .orElse(indexes.headOption)
+      .map(res => (res._1, nodeStore.getLabelName(res._2).get, res._3.map(nodeStore.getPropertyKeyName(_).get), res._4))
+  }
 
   def findNodeByIndex(indexId: Int, value: Any): Iterator[StoredNodeWithProperty] =
     indexStore.find(indexId, value).flatMap(nodeStore.getNodeById(_))
@@ -446,12 +443,10 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
                      relationshipFilter: RelationshipFilter,
                      endNodeFilter: NodeFilter,
                      direction: SemanticDirection): Iterator[PathTriple] =
-    nodes(startNodeFilter)
-      .flatMap(node => paths(node.id, direction))
-      .filter(trip => endNodeFilter.matches(trip.endNode))
+    nodes(startNodeFilter).flatMap(node => paths(node.id,relationshipFilter,endNodeFilter, direction))
 
 
-  override def paths(nodeId: LynxId, direction: SemanticDirection): Iterator[PathTriple] = {
+  override def paths(nodeId: LynxId, direction: SemanticDirection): Iterator[PathTriple] =
     nodeAt(nodeId).map(
         n=>
           direction match {
@@ -463,11 +458,18 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
       )
       .getOrElse(Iterator.empty)
       .map(p => PathTriple(p._1, relationAt(p._2.id).orNull, nodeAt(p._3).orNull))
+
+  override def paths(nodeId: LynxId,
+                     relationshipFilter: RelationshipFilter,
+                     endNodeFilter: NodeFilter,
+                     direction: SemanticDirection): Iterator[PathTriple] =
+    paths(nodeId, direction)
+      .filter(trip => relationshipFilter.matches(trip.storedRelation) && endNodeFilter.matches(trip.endNode))
+
+  override def paths(nodeFilter: NodeFilter,
+                     expandFilters: (RelationshipFilter, NodeFilter, SemanticDirection)*): Iterator[Seq[PathTriple]] = {
+
   }
-
-  override def paths(nodeId: LynxId, relationshipFilter: RelationshipFilter, endNodeFilter: NodeFilter, direction: SemanticDirection): Iterator[PathTriple] = super.paths(nodeId, relationshipFilter, endNodeFilter, direction)
-
-  override def paths(nodeFilter: NodeFilter, expandFilters: (RelationshipFilter, NodeFilter, SemanticDirection)*): Iterator[Seq[PathTriple]] = ???
 
   override def nodes(nodeFilter: NodeFilter): Iterator[PandaNode] = {
     (nodeFilter.labels.nonEmpty, nodeFilter.properties.nonEmpty) match {
