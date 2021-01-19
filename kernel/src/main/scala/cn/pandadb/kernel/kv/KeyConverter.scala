@@ -406,6 +406,8 @@ object ByteUtils {
 
   def byteToBytes(num: Byte): Array[Byte] = Array[Byte](num)
 
+  def booleanToBytes(b: Boolean): Array[Byte] = Array[Byte](if(b) 1.toByte else 0.toByte)
+
   def stringToBytes(str: String, charset: Charset = StandardCharsets.UTF_8): Array[Byte] = {
     str.getBytes(charset)
   }
