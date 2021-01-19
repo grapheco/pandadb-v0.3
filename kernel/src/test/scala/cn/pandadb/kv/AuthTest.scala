@@ -20,14 +20,11 @@ class AuthTest {
   var auth:Auth = _
   val path = "./testdata"
 
-  @Before
-  def init(): Unit ={
-    FileUtils.deleteDirectory(new File("./testdata"))
-    auth = new Auth(path)
-  }
 
   @Test
-  def justOneTest(): Unit ={
+  def firstStart(): Unit ={
+    FileUtils.deleteDirectory(new File("path"))
+    auth = new Auth(path)
     // login use "pandadb":"pandadb" as a new user
     assertTrue(auth.isDefault)
     assertTrue(auth.check("pandadb", "pandadb"))
@@ -55,5 +52,15 @@ class AuthTest {
     // show all user
     auth.all().foreach(println)
     assertFalse(auth.isDefault)
+  }
+
+  @Test
+  def secendStart(): Unit ={
+    auth = new Auth(path)
+    assertFalse(auth.isDefault)
+    assertTrue(auth.check("newUser", "123"))
+    assertTrue(auth.check("user2", ""))
+    assertFalse(auth.check("pandadb", "pandadb"))
+    auth.all().foreach(println)
   }
 }
