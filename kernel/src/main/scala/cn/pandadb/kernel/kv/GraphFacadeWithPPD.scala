@@ -467,9 +467,8 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
       .filter(trip => relationshipFilter.matches(trip.storedRelation) && endNodeFilter.matches(trip.endNode))
 
   override def paths(nodeFilter: NodeFilter,
-                     expandFilters: (RelationshipFilter, NodeFilter, SemanticDirection)*): Iterator[Seq[PathTriple]] = {
+                     expandFilters: (RelationshipFilter, NodeFilter, SemanticDirection)*): Iterator[Seq[PathTriple]] = ???
 
-  }
 
   override def nodes(nodeFilter: NodeFilter): Iterator[PandaNode] = {
     (nodeFilter.labels.nonEmpty, nodeFilter.properties.nonEmpty) match {
