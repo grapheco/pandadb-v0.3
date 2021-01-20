@@ -3,13 +3,15 @@ package cn.pandadb.driver
 import java.security.KeyFactory
 import java.security.spec.X509EncodedKeySpec
 
-import cn.pandadb.UsernameOrPasswordErrorException
+import cn.pandadb.{UnknownErrorException, UsernameOrPasswordErrorException, VerifyConnectionMode}
 import cn.pandadb.hipporpc.PandaRpcClient
 import cn.pandadb.hipporpc.utils.RegexUtils
 import javax.crypto.Cipher
 import org.apache.commons.codec.binary.Base64
 import org.neo4j.driver.internal.security.InternalAuthToken
 import org.neo4j.driver.v1.Value
+
+import scala.io.StdIn
 
 class PandaDriverFactory(uriAuthority: String, authtoken: java.util.Map[String, Value], config: PandaDriverConfig) {
 
@@ -22,16 +24,25 @@ class PandaDriverFactory(uriAuthority: String, authtoken: java.util.Map[String, 
     val publicKey = rpcClient.getPublicKey()
     val username = authtoken.get(InternalAuthToken.PRINCIPAL_KEY).asString()
     val password = authtoken.get(InternalAuthToken.CREDENTIALS_KEY).asString()
-    verifyConnectivity(rpcClient, rsaEncrypt(username, publicKey), rsaEncrypt(password, publicKey))
+    verifyConnectivity(rpcClient, username, password, publicKey)
 
     new PandaDriver(rpcClient, uriAuthority)
   }
 
-  def verifyConnectivity(client: PandaRpcClient, username: String, password: String): Unit ={
-    val res = client.verifyConnectionRequest(username, password)
-    if (res == "no") {
-      client.close
+  def verifyConnectivity(client: PandaRpcClient, username: String, password: String, publicKey: String): Unit ={
+    val res = client.verifyConnectionRequest(rsaEncrypt(username, publicKey), rsaEncrypt(password, publicKey))
+    if (res == VerifyConnectionMode.ERROR) {
+      client.shutdown()
       throw new UsernameOrPasswordErrorException
+    }else if (res == VerifyConnectionMode.EDIT)
+    {
+      println("First login, please reset your account and password")
+      val username = StdIn.readLine("username: ")
+      val password = StdIn.readLine("password: ")
+      val res = client.resetAccountRequest(rsaEncrypt(username, publicKey), rsaEncrypt(password, publicKey))
+      if (res == VerifyConnectionMode.RESET_FAILED){
+        throw new UnknownErrorException("reset account")
+      }
     }
   }
 

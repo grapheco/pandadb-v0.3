@@ -17,7 +17,6 @@ class PandaDriver(rpcClient: PandaRpcClient, address: String) extends Driver{
   }
 
   override def session(s: String): Session = {
-    println(s)
     new PandaSession(rpcClient, address)
   }
 
@@ -33,7 +32,9 @@ class PandaDriver(rpcClient: PandaRpcClient, address: String) extends Driver{
     new PandaSession(rpcClient, address)
   }
 
-  override def close(): Unit = {rpcClient.close}
+  override def close(): Unit = {
+    rpcClient.shutdown()
+  }
 
   override def closeAsync(): CompletionStage[Void] = throw new NotImplementMethodException("closeAsync")
 }

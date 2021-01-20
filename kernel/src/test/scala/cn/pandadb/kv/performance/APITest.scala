@@ -5,12 +5,13 @@ import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
-import cn.pandadb.kernel.store.{NodeStoreSPI, RelationStoreSPI, StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
+import cn.pandadb.kernel.store.{NodeId, NodeStoreSPI, PandaNode, RelationStoreSPI, StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
 import cn.pandadb.kernel.util.Profiler
-import org.grapheco.lynx.{LynxId, LynxNode, LynxValue}
+import org.grapheco.lynx.{LynxId, LynxNode, LynxValue, NodeFilter, RelationshipFilter}
 import org.junit.{Before, Test}
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship}
+import org.opencypher.v9_0.expressions.SemanticDirection
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -32,7 +33,7 @@ class APITest {
   @Before
   def setup(): Unit = {
 
-    val dbPath = "F:\\PandaDB_rocksDB\\10kw"
+    val dbPath = "C:\\PandaDB_rocksDB\\graph500"
     nodeStore = new NodeStoreAPI(dbPath)
     relationStore = new RelationStoreAPI(dbPath)
     indexStore = new IndexStoreAPI(dbPath)
@@ -48,381 +49,187 @@ class APITest {
   }
 
   @Test
-  def api(): Unit = {
+  def createIndex(): Unit ={
     Profiler.timing({
-      println("Test preheat")
-      val label = nodeStore.getLabelId("label0")
-      val prop = nodeStore.getPropertyKeyId("flag")
-      var count = 0
-      val nodes = nodeStore.getNodesByLabel(label)
-      val res = ArrayBuffer[StoredNodeWithProperty]()
-      while (nodes.hasNext && count < 10) {
-        val node = nodes.next()
-        if (node.properties.getOrElse(prop, null) == false) {
-          res += node
-          count += 1
-        }
-      }
-    })
-
-    Profiler.timing({
-      println("Test match (n:label0) where n.idStr='ha' return n")
-      val label = nodeStore.getLabelId("label0")
-      val prop = nodeStore.getPropertyKeyId("idStr")
-      val nodes = nodeStore.getNodesByLabel(label)
-      val res = ArrayBuffer[StoredNodeWithProperty]()
-      while (nodes.hasNext) {
-        val node = nodes.next()
-        if (node.properties.getOrElse(prop, null) == "ha") {
-          res += node
-        }
-      }
-    })
-
-    Profiler.timing({
-      println("Test match (n:label0) where n.flag = false return n limit 10")
-      val label = nodeStore.getLabelId("label0")
-      val prop = nodeStore.getPropertyKeyId("flag")
-      var count = 0
-      val nodes = nodeStore.getNodesByLabel(label)
-      val res = ArrayBuffer[StoredNodeWithProperty]()
-      while (nodes.hasNext && count < 10) {
-        val node = nodes.next()
-        if (node.properties.getOrElse(prop, null) == false) {
-          res += node
-          count += 1
-        }
-      }
-    })
-
-    Profiler.timing({
-      println("Test match (n:label0) where n.flag = false and n.id_p=70 return n limit 10")
-      val label = nodeStore.getLabelId("label0")
-      val prop = nodeStore.getPropertyKeyId("flag")
-      val prop2 = nodeStore.getPropertyKeyId("id_p")
-      var count = 0
-      val nodes = nodeStore.getNodesByLabel(label)
-      val res = ArrayBuffer[StoredNodeWithProperty]()
-      while (nodes.hasNext && count < 10) {
-        val node = nodes.next()
-        if (node.properties.getOrElse(prop, null) == false &&
-          node.properties.getOrElse(prop2, null) == 70) {
-          res += node
-          count += 1
-        }
-      }
-    })
-
-    Profiler.timing({
-      println("Test match (n:label0) where n.flag = false and n.idStr='ha' return n limit 10")
-      val label = nodeStore.getLabelId("label0")
-      val prop = nodeStore.getPropertyKeyId("flag")
-      val prop2 = nodeStore.getPropertyKeyId("idStr")
-      var count = 0
-      val nodes = nodeStore.getNodesByLabel(label)
-      val res = ArrayBuffer[StoredNodeWithProperty]()
-      while (nodes.hasNext && count < 10) {
-        val node = nodes.next()
-        if (node.properties.getOrElse(prop, null) == false &&
-          node.properties.getOrElse(prop2, null) == "ha") {
-          res += node
-          count += 1
-        }
-      }
-    })
-
-    Profiler.timing({
-      println("Test match (n:label0) where n.flag = false and n.idStr='ea' and n.id_p=40 return n limit 10")
-      val label = nodeStore.getLabelId("label0")
-      val prop = nodeStore.getPropertyKeyId("flag")
-      val prop2 = nodeStore.getPropertyKeyId("idStr")
-      val prop3 = nodeStore.getPropertyKeyId("id_p")
-      var count = 0
-      val nodes = nodeStore.getNodesByLabel(label)
-      val res = ArrayBuffer[StoredNodeWithProperty]()
-      while (nodes.hasNext && count < 10) {
-        val node = nodes.next()
-        if (node.properties.getOrElse(prop, null) == false &&
-          node.properties.getOrElse(prop2, null) == "ea" &&
-          node.properties.getOrElse(prop3, null) == 40) {
-          res += node
-          count += 1
-        }
-      }
-    })
-
-    Profiler.timing({
-      println("Test match (n:label0) where n.flag = false and n.name='Alice Panda' count(n)")
-      val label = nodeStore.getLabelId("label0")
-      val prop = nodeStore.getPropertyKeyId("flag")
-      val prop2 = nodeStore.getPropertyKeyId("name")
-      var count = 0
-      val nodes = nodeStore.getNodesByLabel(label)
-//      val res = ArrayBuffer[StoredNodeWithProperty]()
-      while (nodes.hasNext) {
-        val node = nodes.next()
-        if (node.properties.getOrElse(prop, null) == false &&
-          node.properties.getOrElse(prop2, null) == "Alice Panda") {
-//          res += node
-          count += 1
-        }
-      }
-      println("count: "+count)
+      graphFacade.createIndexOnNode("label1", Set("idStr"))
     })
   }
 
   @Test
-  def cypher(): Unit ={
-        val res5 = graphFacade.cypher("match (n:label0) where n.idStr='ha' return n")
+  def relsTest(): Unit = {
+    val limit = 100000
     Profiler.timing({
-    val res7 = graphFacade.cypher("match (n:label0) where n.idStr='ha' return n")
-    res7.show()})
-
-//      val res = graphFacade.cypher("match (n:label1) where n.idStr='b' return n")
-//    Profiler.timing({
-//      val res2 = graphFacade.cypher("match (n:label1) where n.idStr='b' return n")
-//      res2.show})
-//
-//    val res3 = graphFacade.cypher("match (n:label0) where n.flag = false return n limit 10")
-//    Profiler.timing({
-//    val res4 = graphFacade.cypher("match (n:label0) where n.flag = false return n limit 10")
-//    res4.show})
-//    Profiler.timing({
-//    val res5 = graphFacade.cypher("match (n:label0) where n.flag = false and n.id_p=70 return n limit 10")
-//    val res6 = graphFacade.cypher("match (n:label0) where n.flag = false and n.id_p=70 return n limit 10")
-//    res6.show})
-//    Profiler.timing({
-//    val res7 = graphFacade.cypher("match (n:label0) where n.flag = false and n.idStr='ha' return n limit 10")
-//    val res8 = graphFacade.cypher("match (n:label0) where n.flag = false and n.idStr='ha' return n limit 10")
-//    res8.show})
-//    Profiler.timing({
-//    val res9 = graphFacade.cypher("match (n:label0) where n.flag = false and n.idStr='ea' and n.id_p=40 return n limit 10")
-//    val res10 = graphFacade.cypher("match (n:label0) where n.flag = false and n.idStr='ea' and n.id_p=40 return n limit 10")
-//    res10.show})
+      println("rels without any nodes")
+      val res = graphFacade.rels(includeStartNodes = false, includeEndNodes = false).take(limit)
+      println(res.length)
+    })
+    Profiler.timing({
+      println("rels with start node")
+      val res = graphFacade.rels(includeStartNodes = true, includeEndNodes = false).take(limit)
+      println(res.length)
+    })
+    Profiler.timing({
+      println("rels with both nodes")
+      val res = graphFacade.rels(includeStartNodes = true, includeEndNodes = true).take(limit)
+      println(res.length)
+    })
+    Profiler.timing({
+      println("nodes")
+      val res = graphFacade.nodes().take(limit)
+      println(res.length)
+    })
   }
 
   @Test
-  def api2(): Unit = {
+  def nodeTest(): Unit ={
     Profiler.timing({
-      println("Test preheat")
-      val label = nodeStore.getLabelId("label0")
-      val prop = nodeStore.getPropertyKeyId("flag")
-      var count = 0
-      val nodes = nodeStore.getNodesByLabel(label)
-      val res = ArrayBuffer[StoredNodeWithProperty]()
-      while (nodes.hasNext && count < 10) {
-        val node = nodes.next()
-        if (node.properties.getOrElse(prop, null) == false) {
-          res += node
-          count += 1
-        }
-      }
+      println("(label2{idStr:'fcic'})")
+      val res = graphFacade.nodes(NodeFilter(Seq("label2"), Map("idStr"->LynxValue("fcic")))).take(10)
+      println(res.length)
     })
-
     Profiler.timing({
-      println("Test match (n:label0) where n.idStr='ha' return n")
-      val label = nodeStore.getLabelId("label0")
-      val prop = nodeStore.getPropertyKeyId("idStr")
-      val nodes = nodeStore.getNodesByLabel(label)
-      val res = ArrayBuffer[StoredNodeWithProperty]()
-      while (nodes.hasNext) {
-        val node = nodes.next()
-        if (node.properties.getOrElse(prop, null) == "ha") {
-          res += node
-        }
-      }
+      println("(label1{idStr:'bgggbab'})")
+      val res = graphFacade.nodes(NodeFilter(Seq("label1"), Map("idStr"->LynxValue("bgggbab")))).take(10)
+      println(res.length)
     })
-
-//    Profiler.timing({
-//      println("Test match (n:label0) where n.idStr='ha' return n")
-//      val label = nodeStore.getLabelId("label0")
-//      val prop = nodeStore.getPropertyKeyId("idStr")
-//      val nodes = nodeStore.getNodesByLabel(label).map(mapNode)
-//      val res = ArrayBuffer[Node[Long]]()
-//      while (nodes.hasNext) {
-//        val node = nodes.next()
-//        val value = node.properties.value
-////        if (node.properties.value) {
-//////          res += node
-////        }
-//      }
-//    })
-//
-//    Profiler.timing({
-//      println("Test match (n:label0) where n.idStr='ha' return n")
-//      val label = nodeStore.getLabelId("label0")
-//      val prop = nodeStore.getPropertyKeyId("idStr")
-//      nodeStore
-//        .getNodesByLabel(label)
-//        .map(mapNode)
-//        .toIterable
-//        .iterator
-//        .filter{
-//        node =>
-//          node.properties.getOrElse("idStr", null).value == "ha"
-//      }.foreach(println)
-//    })
-
-//    Profiler.timing({
-//      println("Test match (n:label0) where n.idStr='ha' return n")
-//      val label = nodeStore.getLabelId("label0")
-//      val prop = nodeStore.getPropertyKeyId("idStr")
-//      nodeStore
-//        .getNodesByLabel(label)
-//        .map(mapNode)
-//        .filter{
-//          node =>
-//            node.properties.getOrElse("idStr", null).value == "ha"
-//        }.foreach(println)
-//    })
-  }
-
-
-
-
-
-  protected def mapRelation(rel: StoredRelation): Relationship[Long] = {
-    new Relationship[Long] {
-      override type I = this.type
-
-      override def id: Long = rel.id
-
-      override def startId: Long = rel.from
-
-      override def endId: Long = rel.to
-
-      override def relType: String = relationStore.getRelationTypeName(rel.typeId).get
-
-      override def copy(id: Long, source: Long, target: Long, relType: String, properties: CypherMap): this.type = ???
-
-      override def properties: CypherMap = {
-        var props: Map[String, Any] = Map.empty[String, Any]
-        rel match {
-          case rel: StoredRelationWithProperty =>
-            props = rel.properties.map(kv => (relationStore.getRelationTypeName(kv._1).getOrElse("unknown"), kv._2))
-          case _ =>
-        }
-        CypherMap(props.toSeq: _*)
-      }
-    }
-  }
-
-  protected def mapNode2(node: StoredNode): Node[Long] = {
-    new Node[Long] {
-      override type I = this.type
-
-      override def id: Long = node.id
-
-      override def labels: Set[String] = node.labelIds.toSet.map((id: Int) => nodeStore.getLabelName(id).get)
-
-      override def copy(id: Long, labels: Set[String], properties: CypherValue.CypherMap): this.type = ???
-
-      override def properties: CypherMap = {
-//        var props: Map[String, Any] = Map.empty[String, Any]
-//        node match {
-//          case node: StoredNodeWithProperty =>
-//            props = node.properties.map {
-//              kv =>
-//                (nodeStore.getPropertyKeyName(kv._1).get, kv._2)
-//            }
-//          case _ =>
-//            val n = nodeStore.getNodeById(node.id)
-//            props = n.asInstanceOf[StoredNodeWithProperty].properties.map {
-//              kv =>
-//                (nodeStore.getPropertyKeyName(kv._1).get, kv._2)
-//            }
-//        }
-        CypherMap(node.asInstanceOf[StoredNodeWithProperty].properties.map(kv => (nodeStore.getPropertyKeyName(kv._1).get, kv._2)).toSeq: _*)
-      }
-    }
-  }
-  case class NodeId(value: Long) extends LynxId {
-
-  }
-
-  protected def mapNode(node: StoredNode): LynxNode = {
-    new LynxNode {
-      override val id: LynxId = NodeId(node.id)
-
-      override def labels: Seq[String] = node.labelIds.map((id: Int) => nodeStore.getLabelName(id).get).toSeq
-
-      override def property(name: String): Option[LynxValue] =
-        node.asInstanceOf[StoredNodeWithProperty].properties.get(nodeStore.getPropertyKeyId(name)).map(LynxValue(_))
-    }
   }
 
   @Test
-  def mapNodeTest(): Unit ={
-    val keyMap = Map(0->"idStr0", 1-> "idStr1", 2-> "idStr2", 3->"idStr3", 4 ->"idStr4")
+  def pathTest(): Unit ={
+    val limit = 1000
+    Profiler.timing({
+      println("(3543605)-[]->(*)")
+      val res = graphFacade.paths(NodeId(3543605),SemanticDirection.OUTGOING).take(limit)
+      println(res.length)
+    })
+    Profiler.timing({
+      println("(3543605)<-[]-(*)")
+      val res = graphFacade.paths(NodeId(3543605),SemanticDirection.INCOMING).take(limit)
+      println(res.length)
+    })
+    Profiler.timing({
+      println("(1298177)-[:type7]->(*)")
+      val res = graphFacade
+        .paths(NodeId(1298177),
+          RelationshipFilter(Seq("type7"),Map()),
+          NodeFilter(Seq(), Map()),
+          SemanticDirection.OUTGOING).take(limit)
+      println(res.length)
+    })
+    Profiler.timing({
+      println("(2925502)-[:type2]->(:label1)")
+      val res = graphFacade
+        .paths(NodeId(2925502),
+          RelationshipFilter(Seq("type2"),Map()),
+          NodeFilter(Seq("label1"), Map()),
+          SemanticDirection.OUTGOING).take(limit)
+      println(res.length)
+    })
+    Profiler.timing({
+      println("(5282)-[:type2]->(:label1{flag:false})")
+      val res = graphFacade
+        .paths(NodeId(5282),
+          RelationshipFilter(Seq("type2"),Map()),
+          NodeFilter(Seq("label1"), Map("flag"->LynxValue(false))),
+          SemanticDirection.OUTGOING).take(limit)
+      println(res.length)
+    })
+    Profiler.timing({
+      println("(3583116)-[]->(:label1{flag:false})")
+      val res = graphFacade
+        .paths(NodeId(3583116),
+          RelationshipFilter(Seq(),Map()),
+          NodeFilter(Seq("label1"), Map("flag"->LynxValue(false))),
+          SemanticDirection.OUTGOING).take(limit)
+      println(res.length)
+    })
+    Profiler.timing({
+      println("(label0)-[]->()")
+      val res = graphFacade
+        .paths(
+          NodeFilter(Seq("label0"), Map()),
+          RelationshipFilter(Seq(),Map()),
+          NodeFilter(Seq(), Map()),
+          SemanticDirection.OUTGOING).take(limit)
+      println(res.length)
+    })
+    Profiler.timing({
+      println("(label0)-[type0]->()")
+      val res = graphFacade
+        .paths(
+          NodeFilter(Seq("label0"), Map()),
+          RelationshipFilter(Seq("type0"),Map()),
+          NodeFilter(Seq(), Map()),
+          SemanticDirection.OUTGOING).take(limit)
+      println(res.length)
+    })
+    Profiler.timing({
+      println("(label2{idStr:'fcic'})-[]->()")
+      val res = graphFacade
+        .paths(
+          NodeFilter(Seq("label2"), Map("idStr"->LynxValue("fcic"))),
+          RelationshipFilter(Seq(),Map()),
+          NodeFilter(Seq(), Map()),
+          SemanticDirection.OUTGOING).take(limit)
+      println(res.length)
+    })
+    Profiler.timing({
+      println("(label1{idStr:'bgggbab'})-[]->() with index")
+      val res = graphFacade
+        .paths(
+          NodeFilter(Seq("label1"), Map("idStr"->LynxValue("bgggbab"))),
+          RelationshipFilter(Seq(),Map()),
+          NodeFilter(Seq(), Map()),
+          SemanticDirection.OUTGOING).take(limit)
+      println(res.length)
+    })
+    Profiler.timing({
+      println("(label0)-[type0]->(label1)-[type1]->(label2)-[type2]->(label3)")
+      val res = graphFacade
+        .paths(
+          NodeFilter(Seq("label0"), Map()),
+          (RelationshipFilter(Seq("type0"),Map()),NodeFilter(Seq("label1"), Map()), SemanticDirection.OUTGOING),
+          (RelationshipFilter(Seq("type1"),Map()),NodeFilter(Seq("label2"), Map()), SemanticDirection.OUTGOING),
+          (RelationshipFilter(Seq("type2"),Map()),NodeFilter(Seq("label3"), Map()), SemanticDirection.OUTGOING),
+          ).take(limit)
+      println(res.length)
+    })
+    Profiler.timing({
+      println("(label0)-[type0]->(label1)<-[type1]-(label2)-[type2]-(label3)")
+      val res = graphFacade
+        .paths(
+          NodeFilter(Seq("label0"), Map()),
+          (RelationshipFilter(Seq("type0"),Map()),NodeFilter(Seq("label1"), Map()), SemanticDirection.OUTGOING),
+          (RelationshipFilter(Seq("type1"),Map()),NodeFilter(Seq("label2"), Map()), SemanticDirection.INCOMING),
+          (RelationshipFilter(Seq("type2"),Map()),NodeFilter(Seq("label3"), Map()), SemanticDirection.BOTH),
+        ).take(limit)
+      println(res.length)
+    })
+  }
+
+  def mapNode(node: StoredNode): PandaNode = {
+    PandaNode(node.id,
+      node.labelIds.map((id: Int) => nodeStore.getLabelName(id).get).toSeq,
+      node.properties.map(kv=>(nodeStore.getPropertyKeyName(kv._1).getOrElse("unknown"), LynxValue(kv._2))).toSeq: _*)
+  }
+
+  @Test
+  def mapNodeTest(): Unit = {
     val t0 = System.currentTimeMillis()
     val storedNodes = nodeStore.allNodes().take(1000000).toArray
     val t1 = System.currentTimeMillis()
-    val nodes = storedNodes.map(mapNode).map(_.property("idStr"))
+    val nodes = storedNodes.map(mapNode).map(_.properties)
     val t2 = System.currentTimeMillis()
-    val nodes1 = storedNodes.map(node => CypherMap(node.properties.map(kv => (nodeStore.getPropertyKeyName(kv._1).get, kv._2)).toSeq: _*))
-    val t3 = System.currentTimeMillis()
-    val nodes2 = storedNodes.map(node => node.properties.map(kv => (nodeStore.getPropertyKeyName(kv._1).get, kv._2)))
-    val t4 = System.currentTimeMillis()
-    val nodes3 = storedNodes.map(node => node.properties.map(kv => (keyMap(kv._1), kv._2)))
-    val t5 = System.currentTimeMillis()
     println("scan time: ", t1 - t0)
     println("mapNode time: ", t2 - t1)
-    println("CypherMap time: ", t3 - t2)
-    println("MapProps time: ", t4 - t3)
-    println("MapProps without API time: ", t5 - t4)
+    println(nodes.head)
   }
 
   @Test
-  def relationAPI(): Unit ={
-    println("match (n:label0)-[r]->(m:label1) return r limit 10000")
+  def mytest(): Unit ={
+    val a = Map("idStr"->LynxValue("bbb"), "1"->LynxValue(2))
+    val b = Map("idStr"->LynxValue("bbb"))
 
-    val label0 = nodeStore.getLabelId("label0")
-    val label1 = nodeStore.getLabelId("label1")
-    val limit  = 10000
-
-    val res = nodeStore
-      .getNodeIdsByLabel(label0)
-      .flatMap(relationStore.findOutRelations)
-      .filter{
-        rel =>
-          nodeStore
-            .getNodeById(rel.to)
-            .exists(_.labelIds.contains(label1))
-      }
-      .take(limit)
-    println(res.length)
-  }
-
-
-  @Test
-  def containTest(): Unit ={
-    Profiler.timing{
-      for (i <- 0 until 10000){
-        Seq(1,2,3).containsSlice(Seq(1,2))
-      }
-    }
-    Profiler.timing{
-      for (i <- 0 until 10000){
-        Seq(1).containsSlice(Seq(1))
-      }
-    }
-    Profiler.timing{
-      for (i <- 0 until 10000){
-        1==1
-      }
-    }
-    Profiler.timing{
-      for (i <- 0 until 10000){
-        seqContain(Seq(1,2,3), Seq(1,2))
-      }
-    }
-  }
-
-  def seqContain(seq1: Seq[Int], seq2: Seq[Int]): Boolean ={
-    if (seq1.length < seq2.length) return false
-    for (i <- seq2.indices){
-      if (seq1(i) != seq2(i)) return false
-    }
-    true
+    println(b.forall(x => a.exists(x.equals(_))))
   }
 }
