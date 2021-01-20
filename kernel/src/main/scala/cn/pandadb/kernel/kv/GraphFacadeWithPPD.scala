@@ -252,7 +252,7 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
 
   //TODO need props?
   def rels(includeStartNodes: Boolean, includeEndNodes: Boolean): Iterator[(PandaRelationship, Option[PandaNode], Option[PandaNode])] = {
-    relationStore.allRelations().map(mapRelation).map{ rel =>
+    relationStore.allRelations(withProperty = true).map(mapRelation).map{ rel =>
       (rel,
         if (includeStartNodes) nodeAt(rel.startNodeId) else None,
         if (includeEndNodes) nodeAt(rel.endNodeId) else None)
@@ -416,7 +416,7 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
   }
 
   def filterNodes(p: PandaNode, properties: Map[String, LynxValue]): Boolean =
-    properties.forall(x => p.properties.exists(x.eq))
+    properties.forall(x => p.properties.exists(x.equals))
 
   def hasIndex(labels: Set[String], propertyNames: Set[String]): Option[(Int, String, Set[String], Long)] = {
     val propertyIds = propertyNames.map(nodeStore.getPropertyKeyId).toArray.sorted
@@ -473,17 +473,19 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
       case (false, true)  => allNodes().iterator.map(mapNode).filter(filterNodes(_, nodeFilter.properties))
       case (true, true)   =>
         hasIndex(nodeFilter.labels.toSet, nodeFilter.properties.keys.toSet)
-          .map(
+          .map {
             indexInfo => // fixme ------------------------------------only get one prop ↓
+              println("seek index: " + indexInfo)
               findNodeByIndex(indexInfo._1, nodeFilter.properties.getOrElse(indexInfo._3.head, null).value)
                 .map(mapNode)
-                .filter(x=>filterNodes(x, nodeFilter.properties))
-          )
-          .getOrElse(
+                .filter(x => filterNodes(x, nodeFilter.properties))
+          }
+          .getOrElse {
+            println("scan label")
             getNodesByLabels(nodeFilter.labels, exact = false)
               .map(mapNode)
               .filter(filterNodes(_, nodeFilter.properties))
-          )
+          }
     }
   }
 
