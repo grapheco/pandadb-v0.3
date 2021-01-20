@@ -28,9 +28,6 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
   override val estLineCount: Long = estLineCount(csvFile)
   override val taskCount: Int = globalArgs.coreNum/4
 
-  service.scheduleWithFixedDelay(importerFileReader.fillQueue, 0, 50, TimeUnit.MILLISECONDS)
-  service.scheduleAtFixedRate(closer, 1, 1, TimeUnit.SECONDS)
-
   val fromIdIndex: Int = headLine.indexWhere(item => item.contains(":START_ID"))
   val toIdIndex: Int = headLine.indexWhere(item => item.contains(":END_ID"))
 
@@ -61,6 +58,7 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
   writeOptions.setSync(false)
 
   val globalCount: AtomicLong = globalArgs.globalRelCount
+  val globalPropCount: AtomicLong = globalArgs.globalRelPropCount
   val estEdgeCount: Long = estLineCount
 
   override protected def _importTask(taskId: Int): Boolean = {
@@ -85,16 +83,6 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
           outBatch.put(KeyConverter.edgeKeyToBytes(relation.from, relation.typeId, relation.to), ByteUtils.longToBytes(relation.id))
           labelBatch.put(KeyConverter.toRelationTypeKey(relation.typeId, relation.id), Array.emptyByteArray)
 
-//          if(innerCount % 1000000 == 0) {
-//            relationDB.write(writeOptions, storeBatch)
-//            inRelationDB.write(writeOptions, inBatch)
-//            outRelationDB.write(writeOptions, outBatch)
-//            relationTypeDB.write(writeOptions, labelBatch)
-//            storeBatch.clear()
-//            inBatch.clear()
-//            outBatch.clear()
-//            labelBatch.clear()
-//          }
         })
         relationDB.write(writeOptions, storeBatch)
         inRelationDB.write(writeOptions, inBatch)
@@ -105,6 +93,7 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
         outBatch.clear()
         labelBatch.clear()
         globalCount.addAndGet(batchData.length)
+        globalPropCount.addAndGet(batchData.length*propHeadMap.size)
       }
     }
 
@@ -124,6 +113,5 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
 
     new StoredRelationWithProperty(relId, fromId, toId, edgeType, propMap)
   }
-
 
 }

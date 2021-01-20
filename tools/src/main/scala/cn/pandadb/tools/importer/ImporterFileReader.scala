@@ -1,7 +1,7 @@
 package cn.pandadb.tools.importer
 
 import java.io.File
-import java.util.concurrent.{BlockingQueue, LinkedBlockingQueue}
+import java.util.concurrent.{BlockingQueue, Executors, LinkedBlockingQueue, ScheduledExecutorService, TimeUnit}
 import scala.collection.mutable.ListBuffer
 
 /**
@@ -12,10 +12,10 @@ import scala.collection.mutable.ListBuffer
  */
 
 trait ReaderMode{
-
 }
 case class WithHead() extends ReaderMode
 case class WithOutHead() extends ReaderMode
+
 class ImporterFileReader(file: File, delimeter: String, batchSize: Int = 500000, mode: ReaderMode = WithHead()) {
 
   val fileIter: Iterator[CSVLine] = this.synchronized(new CSVReader(file, delimeter).getAsCSVLines)
@@ -27,16 +27,18 @@ class ImporterFileReader(file: File, delimeter: String, batchSize: Int = 500000,
     }
   }
 
-  val supposedQueueLength: Int = Runtime.getRuntime().availableProcessors()/4
+  val supposedQueueLength: Int = Runtime.getRuntime().availableProcessors()/2
   var batchQueue: BlockingQueue[List[CSVLine]] = new LinkedBlockingQueue[List[CSVLine]](supposedQueueLength)
+
+  val fileReaderService: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 
   val fillQueue = new Runnable {
     override def run(): Unit = {
-      if(fileIter.hasNext) {
-        batchQueue.put(_prepareBatch)
-      }
+      batchQueue.put(_prepareBatch)
+      if(!fileIter.hasNext) fileReaderService.shutdown()
     }
   }
+  fileReaderService.scheduleWithFixedDelay(fillQueue, 0, 50, TimeUnit.MILLISECONDS)
 
 
   private def _prepareBatch: List[CSVLine] = {
@@ -50,6 +52,7 @@ class ImporterFileReader(file: File, delimeter: String, batchSize: Int = 500000,
       listBuf.toList
     }
   }
+
   def getHead: CSVLine = {
     _head
   }
@@ -62,6 +65,6 @@ class ImporterFileReader(file: File, delimeter: String, batchSize: Int = 500000,
   }
 
   def notFinished: Boolean = {
-    this.synchronized(fileIter.hasNext || batchQueue.size()>0)
+    this.synchronized(fileIter.hasNext || batchQueue.size() > 0)
   }
 }

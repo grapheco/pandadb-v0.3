@@ -25,20 +25,11 @@ trait SingleFileImporter extends Logging{
   val importerFileReader: ImporterFileReader
   val headLine: Array[String]
   val estLineCount: Long
-  val service: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
   val taskCount: Int
   val cmd: ImportCmd
 
   // [index, (propId, propTypeId)]
   val propHeadMap: Map[Int, (Int, String)]
-
-  val closer = new Runnable {
-    override def run(): Unit = {
-      if(!importerFileReader.notFinished) {
-        service.shutdown()
-      }
-    }
-  }
 
   protected def _importTask(taskId: Int): Boolean
 

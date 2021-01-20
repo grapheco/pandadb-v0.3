@@ -1,14 +1,11 @@
 package cn.pandadb.tools.importer
 
 import cn.pandadb.kernel.PDBMetaData
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.concurrent.TimeUnit
-
 import cn.pandadb.kernel.kv.KeyConverter
 import cn.pandadb.kernel.util.serializer.NodeSerializer
 import org.rocksdb.{WriteBatch, WriteOptions}
+
+import java.io.File
 
 /**
  * @Author: Airzihao
@@ -41,12 +38,10 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
     }).toMap.filter(item => item._1 > -1)
   }
 
-  service.scheduleWithFixedDelay(importerFileReader.fillQueue, 0, 50, TimeUnit.MILLISECONDS)
-  service.scheduleAtFixedRate(closer, 1, 1, TimeUnit.SECONDS)
-
   val nodeDB = globalArgs.nodeDB
   val nodeLabelDB = globalArgs.nodeLabelDB
   val globalCount = globalArgs.globalNodeCount
+  val globalPropCount = globalArgs.globalNodePropCount
   val estNodeCount = globalArgs.estNodeCount
   val NONE_LABEL_ID = -1
 
@@ -65,7 +60,6 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
       val batchData = importerFileReader.getLines
       batchData.foreach(line => {
         innerCount += 1
-        //        val lineArr = line.replace("\n", "").split(",")
         val lineArr = line.getAsArray
         val node = _wrapNode(lineArr)
         val keys: Array[(Array[Byte], Array[Byte])] = _getNodeKeys(node._1, node._2)
@@ -74,18 +68,14 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
           nodeBatch.put(pair._1, serializedNodeValue)
           labelBatch.put(pair._2, Array.emptyByteArray)
         })
-//        if (innerCount % 1000000 == 0) {
-//          nodeDB.write(writeOptions, nodeBatch)
-//          nodeLabelDB.write(writeOptions, labelBatch)
-//          nodeBatch.clear()
-//          labelBatch.clear()
-//        }
+
       })
       nodeDB.write(writeOptions, nodeBatch)
       nodeLabelDB.write(writeOptions, labelBatch)
       nodeBatch.clear()
       labelBatch.clear()
       globalCount.addAndGet(batchData.length)
+      globalPropCount.addAndGet(batchData.length*propHeadMap.size)
     }
 
     nodeDB.flush()
