@@ -18,6 +18,7 @@
  */
 package org.neo4j.driver.v1;
 
+import cn.pandadb.NotValidSchemaException;
 import cn.pandadb.driver.PandaDriverConfig;
 import cn.pandadb.driver.PandaDriverFactory;
 import org.neo4j.driver.internal.DriverFactory;
@@ -138,6 +139,14 @@ public class GraphDatabase
      */
     public static Driver driver(URI uri, AuthToken authToken, Config config )
     {
+        if (!uri.getScheme().equals("panda")){
+            try {
+                throw new NotValidSchemaException("panda");
+            } catch (NotValidSchemaException e) {
+                e.printStackTrace();
+                System.exit(1);
+            }
+        }
         InternalAuthToken authToken1 = (InternalAuthToken) authToken;
         return new PandaDriverFactory(uri.getAuthority(), authToken1.toMap(), PandaDriverConfig.defaultConfiguration()).newInstance();
     }

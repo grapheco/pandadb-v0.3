@@ -5,11 +5,12 @@ import java.io.File
 import cn.pandadb.server.common.Logging
 import cn.pandadb.server.common.configuration.Config
 
-class PandaServerBootstrapper {
+class PandaServerBootstrapper() {
   private var pandaServer: PandaServer = null
-  def start(configFile: Option[File] = None, configOverrides: Map[String, String] = Map()): Unit = {
+  def start(configFile: File, configOverrides: Map[String, String] = Map()): Unit = {
     addShutdownHook()
-    val config = new Config().withFile(configFile).withSettings(configOverrides)
+//    val configFile = Option(configFile)
+    val config = new Config().withFile(Option(configFile)).withSettings(configOverrides)
     pandaServer = new PandaServer(config)
     pandaServer.start()
   }
@@ -47,8 +48,18 @@ object PandaServerEntryPoint extends Logging{
 //    else {
 //      sys.error("can not find <conf-file> \r\n")
 //    }
-    val serverBootstrapper = new PandaServerBootstrapper
-    serverBootstrapper.start()
+    if (args.length == 0) sys.error("need conf file path")
+    else if (args.length > 1) sys.error("too much command")
+
+    val configFile = new File(args(0))
+
+    if (configFile.exists() && configFile.isFile()) {
+      val serverBootstrapper = new PandaServerBootstrapper()
+      serverBootstrapper.start(configFile)
+    }
+    else {
+      sys.error("can not find <conf-file> \r\n")
+    }
   }
 
 }

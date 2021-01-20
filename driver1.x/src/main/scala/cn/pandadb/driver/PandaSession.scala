@@ -14,6 +14,8 @@ import cn.pandadb.NotImplementMethodException
 import scala.collection.JavaConverters._
 
 class PandaSession(rpcClient: PandaRpcClient, address: String) extends StatementRunner with Session with BookmarksHolder {
+  var isSessionClosed = false
+  rpcClient.createEndpointRef()
 
   override def run(s: String, value: Value): StatementResult = run(s, value.asMap())
 
@@ -30,10 +32,15 @@ class PandaSession(rpcClient: PandaRpcClient, address: String) extends Statement
   override def runAsync(s: String, record: Record): CompletionStage[StatementResultCursor] = throw new NotImplementMethodException("runAsync")
 
   override def run(s: String): StatementResult = {
-    val startTime = System.currentTimeMillis()
-    val res = rpcClient.sendCypherRequest(s, Map())
-    val receiveDataHeadTime = System.currentTimeMillis() - startTime
-    new PandaStatementResult(res, s, Map(), receiveDataHeadTime, address)
+    synchronized{
+      if (!isSessionClosed){
+        val startTime = System.currentTimeMillis()
+        val res = rpcClient.sendCypherRequest(s, Map())
+        val receiveDataHeadTime = System.currentTimeMillis() - startTime
+        new PandaStatementResult(res, s, Map(), receiveDataHeadTime, address)
+      }
+      else throw new SessionClosedException
+    }
   }
 
   override def runAsync(s: String): CompletionStage[StatementResultCursor] = throw new NotImplementMethodException("runAsync")
@@ -81,13 +88,16 @@ class PandaSession(rpcClient: PandaRpcClient, address: String) extends Statement
   }
 
   override def run(statement: Statement, transactionConfig: TransactionConfig): StatementResult = {
-    val cypher = statement.text()
-    val params = mapAsScalaMapConverter(statement.parameters().asMap()).asScala.seq.toMap
-
-    val startTime = System.currentTimeMillis()
-    val res = rpcClient.sendCypherRequest(cypher, params)
-    val receiveDataHeadTime = System.currentTimeMillis() - startTime
-    new PandaStatementResult(res, cypher, params, receiveDataHeadTime, address)
+    synchronized{
+      if (!isSessionClosed){
+        val cypher = statement.text()
+        val params = mapAsScalaMapConverter(statement.parameters().asMap()).asScala.seq.toMap
+        val startTime = System.currentTimeMillis()
+        val res = rpcClient.sendCypherRequest(cypher, params)
+        val receiveDataHeadTime = System.currentTimeMillis() - startTime
+        new PandaStatementResult(res, cypher, params, receiveDataHeadTime, address)
+      } else throw new SessionClosedException
+    }
   }
 
   override def runAsync(s: String, transactionConfig: TransactionConfig): CompletionStage[StatementResultCursor] = throw new NotImplementMethodException("runAsync")
@@ -100,7 +110,10 @@ class PandaSession(rpcClient: PandaRpcClient, address: String) extends Statement
 
   override def reset(): Unit = {}
 
-  override def close(): Unit = {}
+  override def close(): Unit = {
+    isSessionClosed = true
+    rpcClient.closeEndpointRef()
+  }
 
   override def closeAsync(): CompletionStage[Void] = throw new NotImplementMethodException("closeAsync")
 
@@ -110,4 +123,8 @@ class PandaSession(rpcClient: PandaRpcClient, address: String) extends Statement
 
   // should dynamic
   override def isOpen: Boolean = true
+}
+
+class SessionClosedException extends Exception{
+  override def getMessage: String = "session is closed"
 }

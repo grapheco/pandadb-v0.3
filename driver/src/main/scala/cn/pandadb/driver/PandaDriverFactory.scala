@@ -3,7 +3,7 @@ package cn.pandadb.driver
 import java.security.KeyFactory
 import java.security.spec.X509EncodedKeySpec
 
-import cn.pandadb.UsernameOrPasswordErrorException
+import cn.pandadb.{UsernameOrPasswordErrorException, VerifyConnectionMode}
 import cn.pandadb.hipporpc.PandaRpcClient
 import cn.pandadb.hipporpc.utils.RegexUtils
 import javax.crypto.Cipher
@@ -30,7 +30,7 @@ class PandaDriverFactory(uriAuthority: String, authtoken: java.util.Map[String, 
 
   def verifyConnectivity(client: PandaRpcClient, username: String, password: String): Unit ={
     val res = client.verifyConnectionRequest(username, password)
-    if (res == "no") {
+    if (res == VerifyConnectionMode.ERROR) {
       client.close
       throw new UsernameOrPasswordErrorException
     }

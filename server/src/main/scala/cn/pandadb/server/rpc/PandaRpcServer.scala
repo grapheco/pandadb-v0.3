@@ -2,12 +2,14 @@ package cn.pandadb.server.rpc
 
 import java.nio.ByteBuffer
 
+import cn.pandadb.VerifyConnectionMode
 import cn.pandadb.dbms.{GraphDatabaseManager, RsaSecurity}
-import cn.pandadb.hipporpc.message.{CypherRequest, SayHelloRequest, SayHelloResponse, SecurityRequest, VerifyConnectionRequest, VerifyConnectionResponse}
+import cn.pandadb.hipporpc.message.{CypherRequest, ResetAccountRequest, ResetAccountResponse, SayHelloRequest, SayHelloResponse, SecurityRequest, VerifyConnectionRequest, VerifyConnectionResponse}
 import cn.pandadb.hipporpc.utils.DriverValue
 import cn.pandadb.hipporpc.values.Value
 import cn.pandadb.kernel.GraphService
 import cn.pandadb.kernel.kv.GraphFacadeWithPPD
+import cn.pandadb.kernel.kv.meta.Auth
 import cn.pandadb.server.common.Logging
 import cn.pandadb.server.common.configuration.Config
 import cn.pandadb.server.common.modules.LifecycleServerModule
@@ -39,7 +41,7 @@ class PandaRpcServer(config: Config, dbManager: GraphDatabaseManager)
 
     val graphService = dbManager.getDatabase("default")
     val endpoint = new PandaEndpoint(rpcEnv)
-    val handler = new PandaStreamHandler(graphService)
+    val handler = new PandaStreamHandler(graphService, config)
     rpcEnv.setupEndpoint(config.getRpcServerName(), endpoint)
     rpcEnv.setRpcHandler(handler)
     logger.info("default database: " + graphService.toString)
@@ -67,9 +69,10 @@ class PandaEndpoint(override val rpcEnv: HippoRpcEnv) extends RpcEndpoint {
   }
 }
 
-class PandaStreamHandler(graphFacade:GraphService) extends HippoRpcHandler {
+class PandaStreamHandler(graphFacade:GraphService, config:Config) extends HippoRpcHandler {
   val converter = new ValueConverter
   RsaSecurity.init()
+  val authUtil = new Auth(config.getLocalDataStorePath())
 
   override def receiveWithBuffer(extraInput: ByteBuffer, context: ReceiveContext): PartialFunction[Any, Unit] = {
     case SayHelloRequest(msg) =>
@@ -78,12 +81,22 @@ class PandaStreamHandler(graphFacade:GraphService) extends HippoRpcHandler {
     case VerifyConnectionRequest(usernameKey, passwordKey) => {
       val username = RsaSecurity.rsaDecrypt(usernameKey, RsaSecurity.getPrivateKeyStr())
       val password = RsaSecurity.rsaDecrypt(passwordKey, RsaSecurity.getPrivateKeyStr())
-
-      if (username == "panda" && password == "db"){
-        context.reply(VerifyConnectionResponse("ok"))
-      }else{
-        context.reply(VerifyConnectionResponse("no"))
+      val isLogin = authUtil.check(username, password)
+      if (isLogin){
+        if (authUtil.isDefault){
+          context.reply(VerifyConnectionResponse(VerifyConnectionMode.EDIT))
+        }
+        else context.reply(VerifyConnectionResponse(VerifyConnectionMode.CORRECT))
       }
+      else{
+        context.reply(VerifyConnectionResponse(VerifyConnectionMode.ERROR))
+      }
+    }
+    case ResetAccountRequest(urn, psw) =>{
+      val username = RsaSecurity.rsaDecrypt(urn, RsaSecurity.getPrivateKeyStr())
+      val password = RsaSecurity.rsaDecrypt(psw, RsaSecurity.getPrivateKeyStr())
+      authUtil.set(username, password)
+      context.reply(ResetAccountResponse(VerifyConnectionMode.CORRECT))
     }
     case SecurityRequest() => {
       context.reply(RsaSecurity.getPublicKeyStr())

@@ -22,11 +22,11 @@ class TestDriver {
 
   @Test
   def testOriginDriver(): Unit ={
-    val driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "123456"))
+    val driver = GraphDatabase.driver("bolt://localhost:8887", AuthTokens.basic("neo4j", "123"))
     val session = driver.session()
 
 //    val res = session.run("match (n:label0) where n.idStr=$NNN return n limit 1", Values.parameters("NNN", "caa"))
-      val res = session.run("return 1")
+      val res = session.run("match (n) return n")
 //
     println(res.keys())
     println("===================")
