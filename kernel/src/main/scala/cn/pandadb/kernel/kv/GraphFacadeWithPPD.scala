@@ -269,42 +269,6 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
 
   def relationAt(id: LynxId): Option[PandaRelationship] = relationAt(id.value.asInstanceOf[Long])
 
-  override def createElements[T](nodes: Array[(Option[String], NodeInput)],
-                                 rels: Array[(Option[String], RelationshipInput)],
-                                 onCreated: (Map[Option[String], LynxNode], Map[Option[String], LynxRelationship]) => T): T = {
-    val nodesMap: Map[NodeInput, (Option[String], PandaNode)] = nodes.map(x => {
-      val (varname, input) = x
-      val id = nodeStore.newNodeId()
-      input -> (varname, PandaNode(id, input.labels, input.props:_*))
-    }).toMap
-
-    def nodeId(ref: NodeInputRef): Long = {
-      ref match {
-        case StoredNodeInputRef(id) => id.value.asInstanceOf[Long]
-        case ContextualNodeInputRef(node) => nodesMap(node)._2.longId
-      }
-    }
-
-    val relsMap: Array[(Option[String], PandaRelationship)] = rels.map(x => {
-      val (varname, input) = x
-      varname ->
-        PandaRelationship(relationStore.newRelationId(),
-          nodeId(input.startNodeRef),
-          nodeId(input.endNodeRef),
-          input.types.headOption)
-    }
-    )
-
-    nodesMap.values.foreach{
-      node => addNode(node._2.props.toMap.mapValues(_.value), node._2.labels: _*)
-    }
-
-    relsMap.foreach{
-      rel => addRelation(rel._2.relationType.get, rel._2.startId, rel._2.endId, rel._2.properties.mapValues(_.value))
-    }
-
-    onCreated(nodesMap.values.toMap, relsMap.toMap)
-  }
 
 
   def rels(types: Seq[String],
@@ -491,4 +455,36 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
 
   override def relationships(): Iterator[PathTriple] =
     allRelations().toIterator.map(rel => PathTriple(nodeAt(rel.from).get, mapRelation(rel), nodeAt(rel.to).get))
+
+  override def createElements[T](nodesInput: Seq[(String, NodeInput)], relsInput: Seq[(String, RelationshipInput)], onCreated: (Seq[(String, LynxNode)], Seq[(String, LynxRelationship)]) => T): T = {
+    val nodesMap: Seq[(String, PandaNode)] = nodesInput.map(x => {
+      val (varname, input) = x
+      val id = nodeStore.newNodeId()
+      varname-> PandaNode(id, input.labels, input.props:_*)
+    })
+
+    def nodeId(ref: NodeInputRef): Long = {
+      ref match {
+        case StoredNodeInputRef(id) => id.value.asInstanceOf[Long]
+        //case ContextualNodeInputRef(node) => nodesMap(node)._2.longId
+        case ContextualNodeInputRef(varname) => nodesMap.find(_._1 == varname).get._2.longId
+      }
+    }
+
+    val relsMap: Seq[(String, PandaRelationship)] = relsInput.map(x => {
+      val (varname, input) = x
+      varname -> PandaRelationship(relationStore.newRelationId(), nodeId(input.startNodeRef), nodeId(input.endNodeRef), input.types.headOption)
+    }
+    )
+
+    nodesMap.foreach{
+      node => addNode(node._2.longId, node._2.labels,  node._2.props.toMap.mapValues(_.value))
+    }
+
+    relsMap.foreach{
+      rel => addRelation(rel._2.relationType.get, rel._2.startId, rel._2.endId, rel._2.properties.mapValues(_.value))
+    }
+
+    onCreated(nodesMap, relsMap)
+  }
 }

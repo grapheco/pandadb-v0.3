@@ -156,7 +156,7 @@ class RelationAPITest {
 
       val res = nodeStore
         .getNodeIdsByLabel(label0)
-        .flatMap(nodeId => relationStore.findOutRelations(nodeId, type0))
+        .flatMap(nodeId => relationStore.findOutRelations(nodeId, Some(type0)))
         .filter(rel =>nodeStore.hasLabel(rel.to, label1))
         .take(limit)
         .map(rel => mapRelation(relationStore.getRelationById(rel.id).get))
