@@ -118,6 +118,8 @@ case class PandaNode(longId: Long, labels: Seq[String], props: (String, LynxValu
   lazy val properties: Map[String, LynxValue] = props.toMap
   override val id: LynxId = NodeId(longId)
   override def property(name: String): Option[LynxValue] = properties.get(name)
+
+  override def toString: String = s"{<id>:${id.value}, labels:[${labels.mkString(",")}], properties:{${properties.map(kv=>kv._1+": "+kv._2.value.toString).mkString(",")}}"
 }
 
 trait NodeStoreSPI {

@@ -59,6 +59,12 @@ class GraphFacadeWithPPDTest {
   }
 
   @Test
+  def test(): Unit ={
+    graphFacade.cypher("create (n{name:'123'})").show()
+    graphFacade.cypher("match (n) return n").show()
+  }
+
+  @Test
   def test1(): Unit = {
     Assert.assertEquals(0, nodeStore.allNodes().size)
     Assert.assertEquals(0, relationStore.allRelations().size)

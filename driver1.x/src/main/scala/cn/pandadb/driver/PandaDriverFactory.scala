@@ -36,10 +36,10 @@ class PandaDriverFactory(uriAuthority: String, authtoken: java.util.Map[String, 
       throw new UsernameOrPasswordErrorException
     }else if (res == VerifyConnectionMode.EDIT)
     {
-      println("First login, please reset your account and password")
-      val username = StdIn.readLine("username: ")
+      println("First login, please reset your password")
+      println("username: pandadb")
       val password = StdIn.readLine("password: ")
-      val res = client.resetAccountRequest(rsaEncrypt(username, publicKey), rsaEncrypt(password, publicKey))
+      val res = client.resetAccountRequest(rsaEncrypt("pandadb", publicKey), rsaEncrypt(password, publicKey))
       if (res == VerifyConnectionMode.RESET_FAILED){
         throw new UnknownErrorException("reset account")
       }

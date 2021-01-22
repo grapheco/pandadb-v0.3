@@ -10,24 +10,26 @@ import cn.pandadb.server.rpc.PandaRpcServer
 
 
 class PandaServer(config: Config) extends Logging {
-
+  var pandaRpcServer: PandaRpcServer = _
   val life = new LifecycleSupport
 
   val localStorePath = config.getLocalDataStorePath()
-
   val graphDatabaseManager: DefaultGraphDatabaseManager =
     new DefaultGraphDatabaseManager(config.getLocalDataStorePath())
+
+  pandaRpcServer = new PandaRpcServer(config, graphDatabaseManager)
+
   life.add(graphDatabaseManager)
-  life.add(new PandaRpcServer(config, graphDatabaseManager) )
+  life.add(pandaRpcServer)
 
   def start(): Unit = {
     logger.info("==== PandaDB Server Starting... ====")
     life.start()
-    logger.info("==== PandaDB Server is Started ====")
   }
 
   def shutdown(): Unit = {
     logger.info("==== PandaDB Server Shutting Down... ====")
+    pandaRpcServer.stop()
     life.shutdown()
     logger.info("==== PandaDB Server is Shutdown ====")
   }
