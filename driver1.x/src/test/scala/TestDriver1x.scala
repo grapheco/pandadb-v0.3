@@ -4,7 +4,7 @@ import org.neo4j.driver.v1.{AuthTokens, GraphDatabase, Values}
 class TestDriver1x {
   @Test
   def test(): Unit ={
-    val driver = GraphDatabase.driver("panda://localhost:9989", AuthTokens.basic("pandadb", "pandadb"))
+    val driver = GraphDatabase.driver("panda://127.0.0.1:9989", AuthTokens.basic("pandadb", "pandadb"))
     val session = driver.session()
 
 //    val res1 = session.run("match (n) where n.name={nn} return n.name", Values.parameters("nn", "alex"))

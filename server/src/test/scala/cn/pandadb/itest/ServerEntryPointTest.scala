@@ -6,7 +6,7 @@ import cn.pandadb.server.PandaServerBootstrapper
 import org.apache.commons.io.FileUtils
 
 
-object ServerEntryPoint {
+object ServerEntryPointTest {
   val conf = "./pandadb.conf"
   val dbPath = "./testoutdb/"
   def main(args: Array[String]): Unit = {

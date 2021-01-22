@@ -8,7 +8,6 @@ import cn.pandadb.hipporpc.message.{CypherRequest, ResetAccountRequest, ResetAcc
 import cn.pandadb.hipporpc.utils.DriverValue
 import cn.pandadb.hipporpc.values.Value
 import cn.pandadb.kernel.GraphService
-import cn.pandadb.kernel.kv.GraphFacadeWithPPD
 import cn.pandadb.kernel.kv.meta.Auth
 import cn.pandadb.server.common.Logging
 import cn.pandadb.server.common.configuration.Config
@@ -18,8 +17,7 @@ import net.neoremind.kraps.RpcConf
 import net.neoremind.kraps.rpc.{RpcCallContext, RpcEndpoint, RpcEnvServerConfig}
 import net.neoremind.kraps.rpc.netty.{HippoRpcEnv, HippoRpcEnvFactory}
 import org.grapheco.hippo.{ChunkedStream, HippoRpcHandler, ReceiveContext}
-import org.opencypher.okapi.api.value.CypherValue
-import org.opencypher.v9_0.util.SyntaxException
+
 
 import scala.collection.mutable
 
@@ -49,7 +47,7 @@ class PandaRpcServer(config: Config, dbManager: GraphDatabaseManager)
   }
 
   override def stop(): Unit = {
-    logger.info(this.getClass + ": stop")
+//    logger.info(this.getClass + ": stop")
     rpcEnv.shutdown()
   }
 
