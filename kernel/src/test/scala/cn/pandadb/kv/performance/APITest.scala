@@ -227,9 +227,13 @@ class APITest {
 
   @Test
   def mytest(): Unit ={
-    val a = Map("idStr"->LynxValue("bbb"), "1"->LynxValue(2))
-    val b = Map("idStr"->LynxValue("bbb"))
-
-    println(b.forall(x => a.exists(x.equals(_))))
+    test(1, println)
+    test("1", println)
+    test(1.1, println)
   }
+
+  def test[T](value: T, function: T=>Unit): Unit ={
+    function(value)
+  }
+
 }

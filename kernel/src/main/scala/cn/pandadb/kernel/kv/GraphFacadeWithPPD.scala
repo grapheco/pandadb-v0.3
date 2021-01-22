@@ -44,11 +44,11 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
   def relPropNameMap(name: String): Int = relationStore.getPropertyKeyId(name)
 
   override def addNode(nodeProps: Map[String, Any], labels: String*): this.type = {
-    addNode(nodeStore.newNodeId(), labels, nodeProps)
+    addNode(None, labels, nodeProps)
   }
 
-  def addNode(nodeId:Long, labels: Seq[String], nodeProps: Map[String, Any]): this.type = {
-    val nodeId = nodeStore.newNodeId()
+  def addNode(id: Option[Long], labels: Seq[String], nodeProps: Map[String, Any]): this.type = {
+    val nodeId = id.getOrElse(nodeStore.newNodeId())
     val labelIds = nodeStore.getLabelIds(labels.toSet).toArray
     val props = nodeProps.map{
       v => ( nodePropNameMap(v._1),v._2)
@@ -81,8 +81,11 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
   }
 
 
-  override def addRelation(label: String, from: Long, to: Long, relProps: Map[String, Any]):this.type = {
-    val rid = relationStore.newRelationId()
+  override def addRelation(label: String, from: Id, to: Id, relProps: Map[String, Any]): GraphFacadeWithPPD.this.type =
+    addRelation(None, label, from, to, relProps)
+
+  def addRelation(id: Option[Long], label: String, from: Long, to: Long, relProps: Map[String, Any]):this.type = {
+    val rid = id.getOrElse(relationStore.newRelationId())
     val labelId = relTypeNameMap(label)
     val props = relProps.map{
       v => ( relPropNameMap(v._1),v._2)
@@ -478,7 +481,7 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
     )
 
     nodesMap.foreach{
-      node => addNode(node._2.longId, node._2.labels,  node._2.props.toMap.mapValues(_.value))
+      node => addNode(Some(node._2.longId), node._2.labels,  node._2.props.toMap.mapValues(_.value))
     }
 
     relsMap.foreach{
