@@ -91,7 +91,7 @@ object PandaImporter extends Logging {
     println(s"$globalRelCount relations imported. $time")
     println(s"$globalRealPropCount props of relation imported. $time")
 
-    PDBMetaData.persist(args(0))
+    PDBMetaData.persist(importCmd.exportDBPath.getAbsolutePath)
     service.shutdown()
     val endTime: Long = new Date().getTime
     val timeUsed: String = TimeUtil.millsSecond2Time(endTime - startTime)

@@ -34,7 +34,14 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
   override val propHeadMap: Map[Int, (Int, String)] = {
     headLine.zipWithIndex.map(item => {
       if(item._2 == idIndex || item._2 == labelIndex || item._2 == fromIdIndex || item._2 == toIdIndex){
-        (-1, (-1, ""))
+        if(item._1.split(":")(0).length == 0 || item._1.split(":")(0) == "REL_ID") {
+          (-1, (-1, ""))
+        } else {
+          val pair = item._1.split(":")
+          val propId = PDBMetaData.getPropId(pair(0))
+          val propType = "string"
+          (item._2, (propId, propType))
+        }
       } else {
         val pair = item._1.split(":")
         val propId = PDBMetaData.getPropId(pair(0))

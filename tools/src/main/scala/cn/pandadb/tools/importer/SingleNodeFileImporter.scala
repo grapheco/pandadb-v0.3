@@ -22,10 +22,18 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
   override val labelIndex: Int = headLine.indexWhere(item => item.contains(":LABEL"))
   override val estLineCount: Long = estLineCount(csvFile)
   override val taskCount: Int = globalArgs.coreNum/4
+
   override val propHeadMap: Map[Int, (Int, String)] = {
     headLine.zipWithIndex.map(item => {
       if(item._2 == idIndex || item._2 == labelIndex){
-        (-1, (-1, ""))
+        if(item._1.split(":")(0).length == 0) {
+          (-1, (-1, ""))
+        } else {
+          val pair = item._1.split(":")
+          val propId = PDBMetaData.getPropId(pair(0))
+          val propType = "string"
+          (item._2, (propId, propType))
+        }
       } else {
         val pair = item._1.split(":")
         val propId = PDBMetaData.getPropId(pair(0))
@@ -37,6 +45,7 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
       }
     }).toMap.filter(item => item._1 > -1)
   }
+
 
   val nodeDB = globalArgs.nodeDB
   val nodeLabelDB = globalArgs.nodeLabelDB

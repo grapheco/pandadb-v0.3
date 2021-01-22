@@ -48,7 +48,6 @@ case class ImportCmd(args: Array[String]) {
 
   private def _getArgByName(name: String): String = {
     val filtered: Array[String] = args.filter(arg => arg.startsWith(s"--$name=")).map(arg => arg.replace(s"--$name=", ""))
-//    val index: Int = args.indexWhere(arg => arg.startsWith(s"--$name="))
     if (filtered.length == 0) ""
     else filtered.mkString(",")
   }
