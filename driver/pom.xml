@@ -21,7 +21,7 @@
 
     <dependency>
         <groupId>pandadb</groupId>
-        <artifactId>hipporpc</artifactId>
+        <artifactId>panda-rpc</artifactId>
         <version>1.0-SNAPSHOT</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/junit/junit -->

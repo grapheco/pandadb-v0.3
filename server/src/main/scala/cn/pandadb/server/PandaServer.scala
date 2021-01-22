@@ -23,7 +23,6 @@ class PandaServer(config: Config) extends Logging {
   def start(): Unit = {
     logger.info("==== PandaDB Server Starting... ====")
     life.start()
-    logger.info("==== PandaDB Server is Started ====")
   }
 
   def shutdown(): Unit = {

@@ -21,9 +21,6 @@ package org.neo4j.driver.v1;
 import cn.pandadb.NotValidSchemaException;
 import cn.pandadb.driver.PandaDriverConfig;
 import cn.pandadb.driver.PandaDriverFactory;
-import org.neo4j.driver.internal.DriverFactory;
-import org.neo4j.driver.internal.cluster.RoutingSettings;
-import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
