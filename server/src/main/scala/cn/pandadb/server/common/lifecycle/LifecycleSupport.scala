@@ -8,7 +8,7 @@ class LifecycleSupport extends Lifecycle {
   private val components = ArrayBuffer[Lifecycle]()
   private  var status = LifeStatus.NONE
 
-  override def init(): Unit = this.synchronized {
+  override def init(): Unit =  {
     if (status == LifeStatus.NONE) {
       status = changedStatus(status, LifeStatus.INITIALIZING)
       components.foreach(component => {
@@ -18,7 +18,7 @@ class LifecycleSupport extends Lifecycle {
     }
   }
 
-  override def start(): Unit = this.synchronized {
+  override def start(): Unit = {
     init()
     if (status == LifeStatus.STOPPED) {
       status = changedStatus(status, LifeStatus.STARTING)
@@ -29,7 +29,7 @@ class LifecycleSupport extends Lifecycle {
     }
   }
 
-  override def stop(): Unit = this.synchronized {
+  override def stop(): Unit =  {
     if (status == LifeStatus.STARTED) {
       status = changedStatus(status, LifeStatus.STOPPING)
       components.foreach(component => {
@@ -39,7 +39,7 @@ class LifecycleSupport extends Lifecycle {
     }
   }
 
-  override def shutdown(): Unit = this.synchronized {
+  override def shutdown(): Unit =  {
     stop()
     if (status == LifeStatus.STOPPED) {
       status = changedStatus(status, LifeStatus.SHUTTING_DOWN)
