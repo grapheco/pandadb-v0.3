@@ -7,6 +7,7 @@ import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
 import cn.pandadb.server.common.Logging
+import cn.pandadb.server.common.configuration.Config
 import cn.pandadb.server.common.lifecycle.{Lifecycle, LifecycleAdapter}
 
 import scala.reflect.io.Path
@@ -27,9 +28,10 @@ trait GraphDatabaseManager extends LifecycleAdapter{
 }
 
 
-class DefaultGraphDatabaseManager(dataPath: String) extends GraphDatabaseManager with Logging{
+class DefaultGraphDatabaseManager(config: Config) extends GraphDatabaseManager with Logging{
   var defaultDB: GraphService = null
-  val defaultDBName = "default"
+  val defaultDBName = config.getLocalDBName()
+  val dataPath = config.getLocalDataStorePath()
 
   override def getDatabase(name: String): GraphService = {
     defaultDB
@@ -42,6 +44,7 @@ class DefaultGraphDatabaseManager(dataPath: String) extends GraphDatabaseManager
 
   override def stop(): Unit = {
     allDatabases().foreach(db => db.close())
+    logger.info("==== ...db closed... ====")
   }
 
   override def shutdown(): Unit = {

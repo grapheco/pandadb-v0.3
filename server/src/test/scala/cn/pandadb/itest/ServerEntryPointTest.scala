@@ -9,6 +9,7 @@ import org.apache.commons.io.FileUtils
 object ServerEntryPointTest {
   val conf = "./pandadb.conf"
   val dbPath = "./testoutdb/"
+
   def main(args: Array[String]): Unit = {
     FileUtils.deleteDirectory(new File(dbPath))
 

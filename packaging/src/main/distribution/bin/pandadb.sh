@@ -4,6 +4,7 @@ get_pandadb_home(){
   PANDADB_HOME="$(cd "$(dirname "$0")"/.. && pwd)"
   PANDADB_CONF=$PANDADB_HOME"/conf/pandadb.conf"
   PANDADB_LOG=$PANDADB_HOME"/logs/debug.log"
+  PANDADB_DATA=$PANDADB_HOME"/data/"
   PANDADB_JAR=$PANDADB_HOME"/lib/pandadb-server-all-in-one-0.3.jar"
 }
 check_files() {
@@ -50,10 +51,10 @@ main(){
     ;;
 
   help)
-    echo "Usage: { console | start | stop | status | version }"
+    echo "Usage: { console | start | stop }"
     ;;
   *)
-    echo >&2 "Usage: { console | start | stop | status | version }"
+    echo >&2 "Usage: { console | start | stop}"
     exit 1
     ;;
   esac

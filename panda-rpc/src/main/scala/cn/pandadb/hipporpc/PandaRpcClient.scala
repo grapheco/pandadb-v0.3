@@ -13,11 +13,12 @@ import scala.concurrent.duration.Duration
 class PandaRpcClient(hostName:String, port: Int, clientName: String, serverName: String) {
   var config: RpcEnvClientConfig = new RpcEnvClientConfig(new RpcConf(), clientName)
   val rpcEnv = HippoRpcEnvFactory.create(config)
-
   var endpointRef = rpcEnv.setupEndpointRef(new RpcAddress(hostName, port), serverName)
 
+  val DURATION_TIME = "30s"
+
   def sendCypherRequest(cypher: String, params:Map[String, Any]): Stream[DriverValue] ={
-    val res = endpointRef.getChunkedStream[Any](CypherRequest(cypher, params), Duration("30s"))
+    val res = endpointRef.getChunkedStream[Any](CypherRequest(cypher, params), Duration(DURATION_TIME))
     res.head match {
       case n: DriverValue => {
         res.asInstanceOf[Stream[DriverValue]]
@@ -30,15 +31,15 @@ class PandaRpcClient(hostName:String, port: Int, clientName: String, serverName:
   }
 
   def verifyConnectionRequest(username:String, password: String): VerifyConnectionMode.Value = {
-    Await.result(endpointRef.askWithBuffer[VerifyConnectionResponse](VerifyConnectionRequest(username, password)), Duration("30s")).result
+    Await.result(endpointRef.askWithBuffer[VerifyConnectionResponse](VerifyConnectionRequest(username, password)), Duration(DURATION_TIME)).result
   }
 
   def resetAccountRequest(username:String, password: String): VerifyConnectionMode.Value = {
-    Await.result(endpointRef.askWithBuffer[ResetAccountResponse](ResetAccountRequest(username, password)), Duration("30s")).msg
+    Await.result(endpointRef.askWithBuffer[ResetAccountResponse](ResetAccountRequest(username, password)), Duration(DURATION_TIME)).msg
   }
 
   def getPublicKey(): String = {
-    Await.result(endpointRef.askWithBuffer[String](SecurityRequest()), Duration("30s"))
+    Await.result(endpointRef.askWithBuffer[String](SecurityRequest()), Duration(DURATION_TIME))
   }
 
   def closeEndpointRef(): Unit ={

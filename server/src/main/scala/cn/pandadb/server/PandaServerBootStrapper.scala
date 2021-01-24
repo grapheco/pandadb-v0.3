@@ -4,11 +4,15 @@ import java.io.File
 
 import cn.pandadb.server.common.Logging
 import cn.pandadb.server.common.configuration.Config
+import org.apache.commons.io.IOUtils
 
 class PandaServerBootstrapper() {
+  val logo = IOUtils.toString(this.getClass.getClassLoader.getResourceAsStream("logo.txt"), "utf-8");
+
   private var pandaServer: PandaServer = null
   def start(configFile: File, configOverrides: Map[String, String] = Map()): Unit = {
     addShutdownHook()
+    println(logo)
 //    val configFile = Option(configFile)
     val config = new Config().withFile(Option(configFile)).withSettings(configOverrides)
     pandaServer = new PandaServer(config)
@@ -48,7 +52,7 @@ object PandaServerEntryPoint extends Logging{
 //    else {
 //      sys.error("can not find <conf-file> \r\n")
 //    }
-    if (args.length == 0) sys.error("need conf file path")
+    if (args.length == 0) sys.error("need conf file and db path")
     else if (args.length > 1) sys.error("too much command")
 
     val configFile = new File(args(0))

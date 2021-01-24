@@ -15,7 +15,7 @@ class PandaServer(config: Config) extends Logging {
 
   val localStorePath = config.getLocalDataStorePath()
   val graphDatabaseManager: DefaultGraphDatabaseManager =
-    new DefaultGraphDatabaseManager(config.getLocalDataStorePath())
+    new DefaultGraphDatabaseManager(config)
 
   pandaRpcServer = new PandaRpcServer(config, graphDatabaseManager)
 
@@ -30,6 +30,7 @@ class PandaServer(config: Config) extends Logging {
   def shutdown(): Unit = {
     logger.info("==== PandaDB Server Shutting Down... ====")
     pandaRpcServer.stop()
+    logger.info("==== ...rpc stopped... ====")
     life.shutdown()
     logger.info("==== PandaDB Server is Shutdown ====")
   }

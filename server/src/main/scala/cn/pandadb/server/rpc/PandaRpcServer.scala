@@ -116,7 +116,7 @@ class PandaStreamHandler(graphFacade:GraphService, config:Config) extends HippoR
     }
   }
 
-  class PandaRecordsIterator(metadata: List[String], openCypherIter: Iterator[Map[String, Any]]) extends Iterator[DriverValue]{
+  class PandaRecordsIterator(metadata: List[String], lynxDataIterator: Iterator[Map[String, Any]]) extends Iterator[DriverValue]{
     var isPutMetadata = false
     var isUsed = false
 
@@ -125,7 +125,7 @@ class PandaStreamHandler(graphFacade:GraphService, config:Config) extends HippoR
         isPutMetadata = true
         true
       }else{
-        openCypherIter.hasNext
+        lynxDataIterator.hasNext
       }
     }
     override def next(): DriverValue = {
@@ -135,16 +135,16 @@ class PandaStreamHandler(graphFacade:GraphService, config:Config) extends HippoR
         metadata.foreach(f => metaMap.put(f, null))
         DriverValue(metaMap.toMap)
       }else{
-        val cypherMap = openCypherIter.next()
-        valueConverter(cypherMap)
+        val lynxValue = lynxDataIterator.next()
+        valueConverter(lynxValue)
       }
     }
   }
-  def valueConverter(cypherMap:Map[String, Any]): DriverValue ={
+  def valueConverter(lynxValue:Map[String, Any]): DriverValue ={
     val rowMap = mutable.Map[String, Value]()
-    val keys = cypherMap.keys
+    val keys = lynxValue.keys
     keys.foreach(key => {
-      val v = converter.converterValue(cypherMap(key))
+      val v = converter.converterValue(lynxValue(key))
       rowMap.put(key, v)
     })
     DriverValue(rowMap.toMap)
