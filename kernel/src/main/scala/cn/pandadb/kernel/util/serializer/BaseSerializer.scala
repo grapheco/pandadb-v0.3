@@ -137,7 +137,7 @@ trait BaseSerializer {
     val length: Int = strInBytes.length
     // write type
     byteBuf.writeByte(1)
-    byteBuf.writeByte(length)
+    byteBuf.writeShort(length)
     byteBuf.writeBytes(strInBytes)
   }
 
@@ -229,7 +229,7 @@ trait BaseSerializer {
   }
 
   protected def _readString(byteBuf: ByteBuf): String = {
-    val len: Int = byteBuf.readByte().toInt
+    val len: Int = byteBuf.readShort().toInt
     val bos: ByteArrayOutputStream = new ByteArrayOutputStream()
     byteBuf.readBytes(bos, len)
     bos.toString
