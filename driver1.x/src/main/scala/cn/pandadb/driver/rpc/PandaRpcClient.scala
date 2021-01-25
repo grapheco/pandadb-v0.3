@@ -25,8 +25,7 @@ class PandaRpcClient(hostName:String, port: Int, clientName: String, serverName:
         res.asInstanceOf[Stream[DriverValue]]
       }
       case e: String => {
-//        shutdown()
-        throw new SessionExpiredException(e)
+        throw new CypherErrorException(e)
       }
     }
   }

@@ -9,7 +9,7 @@ class TestDriver1x {
 
   @Test
   def driverBasicTest1(): Unit = {
-    val driver = GraphDatabase.driver("panda://10.0.82.217:9989", AuthTokens.basic("pandadb", "pandadb"))
+    val driver = GraphDatabase.driver("panda://localhost:9989", AuthTokens.basic("pandadb", "pandadb"))
     val session = driver.session()
     val res = session.run("match (n) return n")
     Assert.assertEquals(0,  res.stream().count())
