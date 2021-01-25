@@ -16,60 +16,36 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-buffer</artifactId>
-            <version>4.1.17.Final</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.6</version>
         </dependency>
         <dependency>
             <groupId>org.grapheco</groupId>
             <artifactId>lynx-framework</artifactId>
-            <version>0.2-SNAPSHOT</version>
         </dependency>
-        <dependency>
-            <groupId>org.grapheco</groupId>
-            <version>0.1-SNAPSHOT</version>
-            <artifactId>blob-extension</artifactId>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-csv -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-csv</artifactId>
-            <version>1.8</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.rocksdb/rocksdbjni -->
-        <!-- https://mvnrepository.com/artifact/org.rocksdb/rocksdbjni -->
         <dependency>
             <groupId>org.rocksdb</groupId>
             <artifactId>rocksdbjni</artifactId>
-            <version>6.15.2</version>
         </dependency>
-
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
-            <version>7.5.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-queryparser</artifactId>
-            <version>7.5.0</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.lmdbjava/lmdbjava -->
-        <dependency>
-            <groupId>org.lmdbjava</groupId>
-            <artifactId>lmdbjava</artifactId>
-            <version>0.8.1</version>
-        </dependency>
-
     </dependencies>
 
     <repositories>
