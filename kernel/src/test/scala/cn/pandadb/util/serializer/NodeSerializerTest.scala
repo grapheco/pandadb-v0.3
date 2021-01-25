@@ -38,4 +38,17 @@ class NodeSerializerTest {
     Assert.assertEquals(nodeValue.properties, node.properties)
     Assert.assertEquals(nodeValue.id, id)
   }
+
+  @Test
+  def longStrTest(): Unit = {
+    val shortStr = "abcdefghijklmnopqrstuvwxyz"
+    val longStr = "abcdefghijklmnopqrstuvwxyz,abcdefghijklmnopqrstuvwxyz,abcdefghijklmnopqrstuvwxyz,abcdefghijklmnopqrstuvwxyz,abcdefghijklmnopqrstuvwxyz,abcdefghijklmnopqrstuvwxyz,abcdefghijklmnopqrstuvwxyz,abcdefghijklmnopqrstuvwxyz,abcdefghijklmnopqrstuvwxyz"
+    val shortNode = new StoredNodeWithProperty(123456, Array(1), Map(1 -> shortStr))
+    val longNode = new StoredNodeWithProperty(123456, Array(1), Map(1 -> longStr))
+    val shortBytes = nodeValueSerializer.serialize(shortNode)
+    val longBytes = nodeValueSerializer.serialize(longNode)
+    val node1 = nodeValueSerializer.deserializeNodeValue(shortBytes)
+    val node2 = nodeValueSerializer.deserializeNodeValue(longBytes)
+    Assert.assertEquals(longStr, node2.properties(1))
+  }
 }

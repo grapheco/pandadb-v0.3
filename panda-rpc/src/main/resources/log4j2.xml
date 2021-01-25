@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration status="WARN" monitorInterval="30">
+    <appenders>
+        <console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%d{HH:mm:ss:SSS}] [%p] - %l - %m%n"/>
+        </console>
+    </appenders>
+    <loggers>
+        <logger name="cn.pandadb" level="info"></logger>
+        <logger name="org.springframework" level="INFO"></logger>
+        <root level="all">
+            <appender-ref ref="Console"/>
+        </root>
+    </loggers>
+</configuration>

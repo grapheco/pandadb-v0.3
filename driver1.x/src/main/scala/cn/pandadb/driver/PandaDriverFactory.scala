@@ -3,8 +3,8 @@ package cn.pandadb.driver
 import java.security.KeyFactory
 import java.security.spec.X509EncodedKeySpec
 
+import cn.pandadb.driver.rpc.PandaRpcClient
 import cn.pandadb.{UnknownErrorException, UsernameOrPasswordErrorException, VerifyConnectionMode}
-import cn.pandadb.hipporpc.PandaRpcClient
 import cn.pandadb.hipporpc.utils.RegexUtils
 import javax.crypto.Cipher
 import org.apache.commons.codec.binary.Base64

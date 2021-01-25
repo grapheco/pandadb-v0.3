@@ -21,7 +21,7 @@ import org.grapheco.hippo.{ChunkedStream, HippoRpcHandler, ReceiveContext}
 
 import scala.collection.mutable
 
-class PandaRpcServer(config: Config, dbManager: GraphDatabaseManager)
+class PandaRpcServer(config: Config, dbManager: GraphDatabaseManager, dataHome: String)
   extends LifecycleServerModule with Logging{
   var rpcConfig:RpcEnvServerConfig = _
   var rpcEnv:HippoRpcEnv = _
@@ -39,7 +39,7 @@ class PandaRpcServer(config: Config, dbManager: GraphDatabaseManager)
 
     val graphService = dbManager.getDatabase("default")
     val endpoint = new PandaEndpoint(rpcEnv)
-    val handler = new PandaStreamHandler(graphService, config)
+    val handler = new PandaStreamHandler(graphService, dataHome)
     rpcEnv.setupEndpoint(config.getRpcServerName(), endpoint)
     rpcEnv.setRpcHandler(handler)
     logger.info("default database: " + graphService.toString)
@@ -67,10 +67,10 @@ class PandaEndpoint(override val rpcEnv: HippoRpcEnv) extends RpcEndpoint {
   }
 }
 
-class PandaStreamHandler(graphFacade:GraphService, config:Config) extends HippoRpcHandler {
+class PandaStreamHandler(graphFacade:GraphService, dataHome: String) extends HippoRpcHandler {
   val converter = new ValueConverter
   RsaSecurity.init()
-  val authUtil = new Auth(config.getLocalDataStorePath())
+  val authUtil = new Auth(dataHome)
 
   override def receiveWithBuffer(extraInput: ByteBuffer, context: ReceiveContext): PartialFunction[Any, Unit] = {
     case SayHelloRequest(msg) =>
@@ -116,7 +116,7 @@ class PandaStreamHandler(graphFacade:GraphService, config:Config) extends HippoR
     }
   }
 
-  class PandaRecordsIterator(metadata: List[String], openCypherIter: Iterator[Map[String, Any]]) extends Iterator[DriverValue]{
+  class PandaRecordsIterator(metadata: List[String], lynxDataIterator: Iterator[Map[String, Any]]) extends Iterator[DriverValue]{
     var isPutMetadata = false
     var isUsed = false
 
@@ -125,7 +125,7 @@ class PandaStreamHandler(graphFacade:GraphService, config:Config) extends HippoR
         isPutMetadata = true
         true
       }else{
-        openCypherIter.hasNext
+        lynxDataIterator.hasNext
       }
     }
     override def next(): DriverValue = {
@@ -135,16 +135,16 @@ class PandaStreamHandler(graphFacade:GraphService, config:Config) extends HippoR
         metadata.foreach(f => metaMap.put(f, null))
         DriverValue(metaMap.toMap)
       }else{
-        val cypherMap = openCypherIter.next()
-        valueConverter(cypherMap)
+        val lynxValue = lynxDataIterator.next()
+        valueConverter(lynxValue)
       }
     }
   }
-  def valueConverter(cypherMap:Map[String, Any]): DriverValue ={
+  def valueConverter(lynxValue:Map[String, Any]): DriverValue ={
     val rowMap = mutable.Map[String, Value]()
-    val keys = cypherMap.keys
+    val keys = lynxValue.keys
     keys.foreach(key => {
-      val v = converter.converterValue(cypherMap(key))
+      val v = converter.converterValue(lynxValue(key))
       rowMap.put(key, v)
     })
     DriverValue(rowMap.toMap)

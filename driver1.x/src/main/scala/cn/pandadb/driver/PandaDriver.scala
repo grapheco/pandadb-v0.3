@@ -4,7 +4,7 @@ import java.lang
 import java.util.concurrent.CompletionStage
 
 import cn.pandadb.NotImplementMethodException
-import cn.pandadb.hipporpc.PandaRpcClient
+import cn.pandadb.driver.rpc.PandaRpcClient
 import org.neo4j.driver.v1.{AccessMode, Driver, Session}
 
 class PandaDriver(rpcClient: PandaRpcClient, address: String) extends Driver{

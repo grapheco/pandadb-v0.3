@@ -1,7 +1,5 @@
 package cn.pandadb.server
 
-import java.io.FileInputStream
-
 import cn.pandadb.dbms.{DefaultGraphDatabaseManager, GraphDatabaseManager}
 import cn.pandadb.server.common.Logging
 import cn.pandadb.server.common.configuration.Config
@@ -9,15 +7,14 @@ import cn.pandadb.server.common.lifecycle.LifecycleSupport
 import cn.pandadb.server.rpc.PandaRpcServer
 
 
-class PandaServer(config: Config) extends Logging {
+class PandaServer(config: Config, dataHome: String) extends Logging {
   var pandaRpcServer: PandaRpcServer = _
   val life = new LifecycleSupport
 
-  val localStorePath = config.getLocalDataStorePath()
   val graphDatabaseManager: DefaultGraphDatabaseManager =
-    new DefaultGraphDatabaseManager(config.getLocalDataStorePath())
+    new DefaultGraphDatabaseManager(config, dataHome)
 
-  pandaRpcServer = new PandaRpcServer(config, graphDatabaseManager)
+  pandaRpcServer = new PandaRpcServer(config, graphDatabaseManager, dataHome)
 
   life.add(graphDatabaseManager)
   life.add(pandaRpcServer)
@@ -30,6 +27,7 @@ class PandaServer(config: Config) extends Logging {
   def shutdown(): Unit = {
     logger.info("==== PandaDB Server Shutting Down... ====")
     pandaRpcServer.stop()
+    logger.info("==== ...rpc stopped... ====")
     life.shutdown()
     logger.info("==== PandaDB Server is Shutdown ====")
   }
