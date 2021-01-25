@@ -21,6 +21,9 @@ package org.neo4j.driver.v1;
 import cn.pandadb.NotValidSchemaException;
 import cn.pandadb.driver.PandaDriverConfig;
 import cn.pandadb.driver.PandaDriverFactory;
+import org.neo4j.driver.internal.DriverFactory;
+import org.neo4j.driver.internal.cluster.RoutingSettings;
+import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
@@ -136,16 +139,25 @@ public class GraphDatabase
      */
     public static Driver driver(URI uri, AuthToken authToken, Config config )
     {
-        if (!uri.getScheme().equals("panda")){
+        if (uri.getScheme().equals("panda")){
+            InternalAuthToken authToken1 = (InternalAuthToken) authToken;
+            return new PandaDriverFactory(uri.getAuthority(), authToken1.toMap(), PandaDriverConfig.defaultConfiguration()).newInstance();
+        }
+        else if (uri.getScheme().equals("bolt")){
+            config = getOrDefault( config );
+            RoutingSettings routingSettings = config.routingSettings();
+            RetrySettings retrySettings = config.retrySettings();
+            return new DriverFactory().newInstance( uri, authToken, routingSettings, retrySettings, config );
+        }
+        else{
             try {
-                throw new NotValidSchemaException("panda");
+                throw new NotValidSchemaException("bolt or panda");
             } catch (NotValidSchemaException e) {
                 e.printStackTrace();
                 System.exit(1);
             }
+            return null;
         }
-        InternalAuthToken authToken1 = (InternalAuthToken) authToken;
-        return new PandaDriverFactory(uri.getAuthority(), authToken1.toMap(), PandaDriverConfig.defaultConfiguration()).newInstance();
     }
 
     /**

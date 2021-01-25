@@ -1,11 +1,12 @@
-package cn.pandadb.hipporpc
+package cn.pandadb.driver.rpc
 
 import cn.pandadb.{CypherErrorException, VerifyConnectionMode}
-import cn.pandadb.hipporpc.message.{CypherRequest, ResetAccountRequest, ResetAccountResponse, SecurityRequest, VerifyConnectionRequest, VerifyConnectionResponse}
+import cn.pandadb.hipporpc.message._
 import cn.pandadb.hipporpc.utils.DriverValue
 import net.neoremind.kraps.RpcConf
-import net.neoremind.kraps.rpc.{RpcAddress, RpcEnvClientConfig}
 import net.neoremind.kraps.rpc.netty.HippoRpcEnvFactory
+import net.neoremind.kraps.rpc.{RpcAddress, RpcEnvClientConfig}
+import org.neo4j.driver.v1.exceptions.SessionExpiredException
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -24,8 +25,8 @@ class PandaRpcClient(hostName:String, port: Int, clientName: String, serverName:
         res.asInstanceOf[Stream[DriverValue]]
       }
       case e: String => {
-        shutdown()
-        throw new CypherErrorException(e)
+//        shutdown()
+        throw new SessionExpiredException(e)
       }
     }
   }

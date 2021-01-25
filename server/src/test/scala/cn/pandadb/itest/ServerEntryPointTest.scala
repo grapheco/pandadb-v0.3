@@ -14,7 +14,7 @@ object ServerEntryPointTest {
     FileUtils.deleteDirectory(new File(dbPath))
 
     val serverBootstrapper = new PandaServerBootstrapper()
-    serverBootstrapper.start(new File(conf))
+    serverBootstrapper.start(new File(conf), dbPath)
   }
 
 }

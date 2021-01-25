@@ -1,3 +1,4 @@
+import cn.pandadb.CypherErrorException
 import org.junit.runners.MethodSorters
 import org.junit.{Assert, FixMethodOrder, Test}
 import org.neo4j.driver.v1.{AuthTokens, GraphDatabase, Values}
@@ -8,7 +9,7 @@ class TestDriver1x {
 
   @Test
   def driverBasicTest1(): Unit = {
-    val driver = GraphDatabase.driver("panda://localhost:9989", AuthTokens.basic("pandadb", "pandadb"))
+    val driver = GraphDatabase.driver("panda://10.0.82.217:9989", AuthTokens.basic("pandadb", "pandadb"))
     val session = driver.session()
     val res = session.run("match (n) return n")
     Assert.assertEquals(0,  res.stream().count())
@@ -27,5 +28,24 @@ class TestDriver1x {
 
     session.close()
     driver.close()
+  }
+
+  @Test(expected = classOf[CypherErrorException])
+  def driverBasicTest3(): Unit ={
+    val driver = GraphDatabase.driver("panda://localhost:9989", AuthTokens.basic("pandadb", "pandadb"))
+    val session = driver.session()
+    session.run("cre te (n:person{name:'google'})")
+    session.close()
+    driver.close()
+  }
+
+  @Test
+  def driverOriginTest(): Unit ={
+    val driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "123456"))
+    val session = driver.session()
+    val res = session.run("match (n) return n")
+    while (res.hasNext){
+      println(res.next())
+    }
   }
 }

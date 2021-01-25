@@ -12,14 +12,14 @@ import cn.pandadb.server.common.lifecycle.{Lifecycle, LifecycleAdapter}
 
 import scala.reflect.io.Path
 
-trait GraphDatabaseManager extends LifecycleAdapter{
+trait GraphDatabaseManager extends LifecycleAdapter {
 
   def getDatabase(name: String): GraphService;
 
   def createDatabase(name: String): GraphService;
 
   def shutdownDatabase(name: String): Unit = {
-    allDatabases().foreach(db=>db.close())
+    allDatabases().foreach(db => db.close())
   }
 
   def deleteDatabase(name: String): Unit;
@@ -28,10 +28,20 @@ trait GraphDatabaseManager extends LifecycleAdapter{
 }
 
 
-class DefaultGraphDatabaseManager(config: Config) extends GraphDatabaseManager with Logging{
+class DefaultGraphDatabaseManager(config: Config, dataHome: String) extends GraphDatabaseManager with Logging {
   var defaultDB: GraphService = null
   val defaultDBName = config.getLocalDBName()
-  val dataPath = config.getLocalDataStorePath()
+  val dataPath = {
+    if (config.getLocalDataStorePath() != "not setting") {
+      config.getLocalDataStorePath()
+    } else {
+      dataHome
+    }
+  }
+
+  def getDbHome: String = {
+    dataPath
+  }
 
   override def getDatabase(name: String): GraphService = {
     defaultDB

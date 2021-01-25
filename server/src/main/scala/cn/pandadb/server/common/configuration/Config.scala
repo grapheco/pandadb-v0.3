@@ -57,7 +57,7 @@ class Config extends Logging {
   }
 
   def getLocalDataStorePath(): String = {
-    getValueAsString(SettingKeys.localDataPath, "/pandadb/data")
+    getValueAsString(SettingKeys.localDataPath, "not setting")
   }
 
   def getLocalDBName(): String ={

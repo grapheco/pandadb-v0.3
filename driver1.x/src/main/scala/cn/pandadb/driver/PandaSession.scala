@@ -3,13 +3,13 @@ package cn.pandadb.driver
 import java.util
 import java.util.concurrent.CompletionStage
 
-import cn.pandadb.hipporpc.PandaRpcClient
 import org.neo4j.driver.internal.{BoltServerAddress, Bookmarks, BookmarksHolder}
 import org.neo4j.driver.v1.types.TypeSystem
 import org.neo4j.driver.v1.{Record, Session, Statement, StatementResult, StatementResultCursor, StatementRunner, Transaction, TransactionConfig, TransactionWork, Value}
 import java.util.Collections.emptyMap
 
 import cn.pandadb.NotImplementMethodException
+import cn.pandadb.driver.rpc.PandaRpcClient
 
 import scala.collection.JavaConverters._
 

@@ -10,12 +10,12 @@ class PandaServerBootstrapper() {
   val logo = IOUtils.toString(this.getClass.getClassLoader.getResourceAsStream("logo.txt"), "utf-8");
 
   private var pandaServer: PandaServer = null
-  def start(configFile: File, configOverrides: Map[String, String] = Map()): Unit = {
+  def start(configFile: File, dataHome: String, configOverrides: Map[String, String] = Map()): Unit = {
     addShutdownHook()
     println(logo)
-//    val configFile = Option(configFile)
+
     val config = new Config().withFile(Option(configFile)).withSettings(configOverrides)
-    pandaServer = new PandaServer(config)
+    pandaServer = new PandaServer(config, dataHome)
     pandaServer.start()
   }
 
@@ -41,25 +41,14 @@ class PandaServerBootstrapper() {
 object PandaServerEntryPoint extends Logging{
 
   def main(args: Array[String]): Unit = {
-//    if (args.length == 0) {
-//      sys.error(s"Usage:\r\n");
-//      sys.error(s"PandaServerEntryPoint <conf-file>\r\n");
-//    }
-//    val configFile = new File(args(0))
-//    if (configFile.exists() && configFile.isFile()) {
-//      serverBootstrapper.start(Some(configFile))
-//    }
-//    else {
-//      sys.error("can not find <conf-file> \r\n")
-//    }
-    if (args.length == 0) sys.error("need conf file and db path")
-    else if (args.length > 1) sys.error("too much command")
+    if (args.length <= 1) sys.error("need conf file and db path")
+    else if (args.length > 2) sys.error("too much command")
 
     val configFile = new File(args(0))
-
+    val dataHome = args(1)
     if (configFile.exists() && configFile.isFile()) {
       val serverBootstrapper = new PandaServerBootstrapper()
-      serverBootstrapper.start(configFile)
+      serverBootstrapper.start(configFile, dataHome)
     }
     else {
       sys.error("can not find <conf-file> \r\n")
