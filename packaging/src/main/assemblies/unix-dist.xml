@@ -27,6 +27,12 @@
             </excludes>
         </fileSet>
         <fileSet>
+            <directory>src/main/distribution/bin/tools</directory>
+            <outputDirectory>bin/tools</outputDirectory>
+            <directoryMode>0755</directoryMode>
+            <fileMode>0755</fileMode>
+        </fileSet>
+        <fileSet>
             <directory>src/main/distribution/conf</directory>
             <outputDirectory>conf</outputDirectory>
             <directoryMode>0755</directoryMode>

@@ -25,6 +25,14 @@ do_console(){
 }
 do_start(){
   nohup java -jar $PANDADB_JAR $PANDADB_CONF > $PANDADB_LOG 2>&1 &
+  cat $PANDADB_CONF | while read line
+  do
+    result1=$(echo $line | grep "rpc.listen.host")
+    result2=$(echo $line | grep "rpc.listen.port")
+    if [ "$result1" != "" ] || [ "$result2" != "" ]
+    then echo $line
+    fi
+  done
   PANDADB_PID=`pgrep -f "pandadb-server"`
   echo "pandadb server started...pid: $PANDADB_PID"
 }
