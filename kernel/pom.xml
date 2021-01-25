@@ -53,13 +53,6 @@
             <version>6.15.2</version>
         </dependency>
 
-
-        <dependency>
-            <groupId>com.twitter</groupId>
-            <artifactId>chill_2.12</artifactId>
-            <version>0.9.5</version>
-        </dependency>
-
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
@@ -84,6 +77,11 @@
             <id>repos</id>
             <name>Repository</name>
             <url>http://10.0.82.220:8081/repository/maven-public/</url>
+        </repository>
+        <repository>
+            <id>repos-s</id>
+            <name>Repository</name>
+            <url>http://10.0.82.220:8081/repository/maven-snapshot/</url>
         </repository>
     </repositories>
 </project>
