@@ -3,7 +3,7 @@ package cn.pandadb.kv
 import java.io.File
 
 import cn.pandadb.kernel.kv.meta.{NameStore, NodeLabelNameStore, PropertyNameStore, RelationTypeNameStore, Statistics}
-import cn.pandadb.kernel.kv.GraphFacadeWithPPD
+import cn.pandadb.kernel.kv.GraphFacade
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
@@ -16,40 +16,27 @@ import org.opencypher.okapi.api.graph.CypherResult
 import org.opencypher.okapi.api.value.CypherValue.{Node, Relationship}
 import org.rocksdb.RocksDB
 
-class GraphFacadeWithPPDTest {
-
-//  var nodeLabelStore: NameStore = _
-//  var relLabelStore: NameStore = _
-//  var propNameStore: NameStore = _
-//  var graphStore: RocksDBGraphAPI = _
+class GraphFacadeTest {
 
   var nodeStore: NodeStoreSPI = _
   var relationStore: RelationStoreSPI = _
   var indexStore: IndexStoreAPI = _
   var statistics: Statistics = _
-  var graphFacade: GraphFacadeWithPPD = _
+  var graphFacade: GraphFacade = _
 
 
   @Before
   def setup(): Unit = {
     FileUtils.deleteDirectory(new File("./testdata"))
     new File("./testdata/output").mkdirs()
-
     val dbPath = "./testdata"
+
     nodeStore = new NodeStoreAPI(dbPath)
     relationStore = new RelationStoreAPI(dbPath)
     indexStore = new IndexStoreAPI(dbPath)
     statistics = new Statistics(dbPath+"/statistics")
 
-//    graphStore = new RocksDBGraphAPI("./testdata/output/rocksdb")
-//    nodeLabelStore = new NodeLabelNameStore(graphStore.getRocksDB)
-//    relLabelStore = new RelationTypeNameStore(graphStore.getRocksDB)
-//    propNameStore = new PropertyNameStore(graphStore.getRocksDB)
-
-
-
-
-    graphFacade = new GraphFacadeWithPPD(
+    graphFacade = new GraphFacade(
       nodeStore,
       relationStore,
       indexStore,

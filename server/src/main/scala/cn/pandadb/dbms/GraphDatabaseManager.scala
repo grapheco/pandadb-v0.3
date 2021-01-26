@@ -4,7 +4,7 @@ import scala.reflect.io.Path
 import com.typesafe.scalalogging.LazyLogging
 
 import cn.pandadb.kernel.GraphService
-import cn.pandadb.kernel.kv.GraphFacadeWithPPD
+import cn.pandadb.kernel.kv.GraphFacade
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
@@ -77,12 +77,12 @@ class DefaultGraphDatabaseManager(config: Config) extends GraphDatabaseManager w
     defaultDB = createDatabase(defaultDBName)
   }
 
-  private def newGraphFacade(path: String): GraphFacadeWithPPD = {
+  private def newGraphFacade(path: String): GraphFacade = {
     val nodeStore = new NodeStoreAPI(path)
     val relationStore = new RelationStoreAPI(path)
     val indexStore = new IndexStoreAPI(path)
     val statistics = new Statistics(path)
-    new GraphFacadeWithPPD(
+    new GraphFacade(
       nodeStore,
       relationStore,
       indexStore,

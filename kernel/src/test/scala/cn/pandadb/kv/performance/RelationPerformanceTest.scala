@@ -5,7 +5,7 @@ import java.io.File
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
-import cn.pandadb.kernel.kv.{ByteUtils, GraphFacadeWithPPD, KeyConverter, RocksDBStorage}
+import cn.pandadb.kernel.kv.{ByteUtils, GraphFacade, KeyConverter, RocksDBStorage}
 import cn.pandadb.kernel.store.{StoredNode, StoredRelation, StoredRelationWithProperty}
 import cn.pandadb.kernel.util.Profiler
 import cn.pandadb.kernel.util.serializer.RelationSerializer

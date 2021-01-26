@@ -9,11 +9,11 @@ import org.grapheco.lynx.{CallableProcedure, ContextualNodeInputRef, CypherRunne
 import org.opencypher.v9_0.expressions.SemanticDirection
 
 
-class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
-                          relationStore: RelationStoreSPI,
-                          indexStore: IndexStoreAPI,
-                          statistics: Statistics,
-                          onClose: => Unit
+class GraphFacade(nodeStore: NodeStoreSPI,
+                  relationStore: RelationStoreSPI,
+                  indexStore: IndexStoreAPI,
+                  statistics: Statistics,
+                  onClose: => Unit
                  ) extends LazyLogging with GraphService with GraphModel{
 
   val runner = new CypherRunner(this)
@@ -34,13 +34,13 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
     statistics.close()
     onClose
   }
-  
+
   def nodeLabelNameMap(name: String): Int = nodeStore.getLabelId(name)
-  
+
   def nodePropNameMap(name: String): Int = nodeStore.getPropertyKeyId(name)
-  
+
   def relTypeNameMap(name: String): Int = relationStore.getRelationTypeId(name)
-  
+
   def relPropNameMap(name: String): Int = relationStore.getPropertyKeyId(name)
 
   override def addNode(nodeProps: Map[String, Any], labels: String*): this.type = {
@@ -81,7 +81,7 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
   }
 
 
-  override def addRelation(label: String, from: Id, to: Id, relProps: Map[String, Any]): GraphFacadeWithPPD.this.type =
+  override def addRelation(label: String, from: Id, to: Id, relProps: Map[String, Any]): GraphFacade.this.type =
     addRelation(None, label, from, to, relProps)
 
   def addRelation(id: Option[Long], label: String, from: Long, to: Long, relProps: Map[String, Any]):this.type = {

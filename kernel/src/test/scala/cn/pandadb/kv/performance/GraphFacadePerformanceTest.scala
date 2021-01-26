@@ -6,7 +6,7 @@ import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
-import cn.pandadb.kernel.kv.{GraphFacadeWithPPD, RocksDBStorage}
+import cn.pandadb.kernel.kv.{GraphFacade, RocksDBStorage}
 import cn.pandadb.kernel.store.{NodeStoreSPI, RelationStoreSPI, StoredNodeWithProperty}
 import cn.pandadb.kernel.util.Profiler
 import org.apache.commons.io.FileUtils
@@ -23,7 +23,7 @@ class GraphFacadePerformanceTest {
   var relationStore: RelationStoreSPI = _
   var indexStore: IndexStoreAPI = _
   var statistics: Statistics = _
-  var graphFacade: GraphFacadeWithPPD = _
+  var graphFacade: GraphFacade = _
 
 
   @Before
@@ -35,7 +35,7 @@ class GraphFacadePerformanceTest {
     indexStore = new IndexStoreAPI(dbPath)
     statistics = new Statistics(dbPath)
 
-    graphFacade = new GraphFacadeWithPPD(
+    graphFacade = new GraphFacade(
       nodeStore,
       relationStore,
       indexStore,
