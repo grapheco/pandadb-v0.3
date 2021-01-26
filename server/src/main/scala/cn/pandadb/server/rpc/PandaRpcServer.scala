@@ -21,17 +21,27 @@ import org.grapheco.hippo.{ChunkedStream, HippoRpcHandler, ReceiveContext}
 
 import scala.collection.mutable
 
-class PandaRpcServer(config: Config, dbManager: GraphDatabaseManager, dataHome: String)
-  extends LifecycleServerModule with Logging{
-  var rpcConfig:RpcEnvServerConfig = _
-  var rpcEnv:HippoRpcEnv = _
+class PandaRpcServer(config: Config, dbManager: GraphDatabaseManager)
+  extends LifecycleServerModule with Logging {
+  var rpcConfig: RpcEnvServerConfig = _
+  var rpcEnv: HippoRpcEnv = _
+  var auth: Auth = _
 
   override def init(): Unit = {
     logger.info(this.getClass + ": init")
-
     rpcConfig = RpcEnvServerConfig(new RpcConf(), config.getRpcServerName(),
       config.getListenHost(), config.getRpcPort())
     rpcEnv = HippoRpcEnvFactory.create(rpcConfig)
+    auth = {
+      val path = {
+        if (config.getLocalDataStorePath() != "not setting") {
+          config.getLocalDataStorePath() + "/" + config.getLocalDBName()
+        } else {
+          config.getDefaultDBHome() + "/data/" + config.getLocalDBName()
+        }
+      }
+      new Auth(path)
+    }
   }
 
   override def start(): Unit = {
@@ -39,15 +49,15 @@ class PandaRpcServer(config: Config, dbManager: GraphDatabaseManager, dataHome: 
 
     val graphService = dbManager.getDatabase("default")
     val endpoint = new PandaEndpoint(rpcEnv)
-    val handler = new PandaStreamHandler(graphService, dataHome)
+    val handler = new PandaStreamHandler(graphService, auth)
     rpcEnv.setupEndpoint(config.getRpcServerName(), endpoint)
     rpcEnv.setRpcHandler(handler)
-    logger.info("default database: " + graphService.toString)
+    logger.info("database: " + graphService.toString)
     rpcEnv.awaitTermination()
   }
 
   override def stop(): Unit = {
-//    logger.info(this.getClass + ": stop")
+    //    logger.info(this.getClass + ": stop")
     rpcEnv.shutdown()
   }
 
@@ -67,10 +77,9 @@ class PandaEndpoint(override val rpcEnv: HippoRpcEnv) extends RpcEndpoint {
   }
 }
 
-class PandaStreamHandler(graphFacade:GraphService, dataHome: String) extends HippoRpcHandler {
+class PandaStreamHandler(graphFacade: GraphService, authUtil: Auth) extends HippoRpcHandler {
   val converter = new ValueConverter
   RsaSecurity.init()
-  val authUtil = new Auth(dataHome)
 
   override def receiveWithBuffer(extraInput: ByteBuffer, context: ReceiveContext): PartialFunction[Any, Unit] = {
     case SayHelloRequest(msg) =>
@@ -80,17 +89,17 @@ class PandaStreamHandler(graphFacade:GraphService, dataHome: String) extends Hip
       val username = RsaSecurity.rsaDecrypt(usernameKey, RsaSecurity.getPrivateKeyStr())
       val password = RsaSecurity.rsaDecrypt(passwordKey, RsaSecurity.getPrivateKeyStr())
       val isLogin = authUtil.check(username, password)
-      if (isLogin){
-        if (authUtil.isDefault){
+      if (isLogin) {
+        if (authUtil.isDefault) {
           context.reply(VerifyConnectionResponse(VerifyConnectionMode.EDIT))
         }
         else context.reply(VerifyConnectionResponse(VerifyConnectionMode.CORRECT))
       }
-      else{
+      else {
         context.reply(VerifyConnectionResponse(VerifyConnectionMode.ERROR))
       }
     }
-    case ResetAccountRequest(urn, psw) =>{
+    case ResetAccountRequest(urn, psw) => {
       val username = RsaSecurity.rsaDecrypt(urn, RsaSecurity.getPrivateKeyStr())
       val password = RsaSecurity.rsaDecrypt(psw, RsaSecurity.getPrivateKeyStr())
       authUtil.set(username, password)
@@ -107,40 +116,41 @@ class PandaStreamHandler(graphFacade:GraphService, dataHome: String) extends Hip
         val result = graphFacade.cypher(cypher, params)
         val metadata = result.columns().toList
         val data = result.records()
-
         val pandaIterator = new PandaRecordsIterator(metadata, data)
         ChunkedStream.grouped(100, pandaIterator.toIterable)
-      }catch {
-        case e:Exception => ChunkedStream.grouped(1, new ExceptionMessage(e.getMessage).toIterable)
+      } catch {
+        case e: Exception => ChunkedStream.grouped(1, new ExceptionMessage(e.getMessage).toIterable)
       }
     }
   }
 
-  class PandaRecordsIterator(metadata: List[String], lynxDataIterator: Iterator[Map[String, Any]]) extends Iterator[DriverValue]{
+  class PandaRecordsIterator(metadata: List[String], lynxDataIterator: Iterator[Map[String, Any]]) extends Iterator[DriverValue] {
     var isPutMetadata = false
     var isUsed = false
 
     override def hasNext: Boolean = {
-      if (!isPutMetadata){
+      if (!isPutMetadata) {
         isPutMetadata = true
         true
-      }else{
+      } else {
         lynxDataIterator.hasNext
       }
     }
+
     override def next(): DriverValue = {
-      if (!isUsed && isPutMetadata){
+      if (!isUsed && isPutMetadata) {
         isUsed = true
         val metaMap = mutable.Map[String, Value]()
         metadata.foreach(f => metaMap.put(f, null))
         DriverValue(metaMap.toMap)
-      }else{
+      } else {
         val lynxValue = lynxDataIterator.next()
         valueConverter(lynxValue)
       }
     }
   }
-  def valueConverter(lynxValue:Map[String, Any]): DriverValue ={
+
+  def valueConverter(lynxValue: Map[String, Any]): DriverValue = {
     val rowMap = mutable.Map[String, Value]()
     val keys = lynxValue.keys
     keys.foreach(key => {
@@ -150,15 +160,18 @@ class PandaStreamHandler(graphFacade:GraphService, dataHome: String) extends Hip
     DriverValue(rowMap.toMap)
   }
 
-  class ExceptionMessage(message: String) extends Iterator[String]{
+  class ExceptionMessage(message: String) extends Iterator[String] {
     var _count = 1
+
     override def hasNext: Boolean = {
-      if (_count == 1){
+      if (_count == 1) {
         true
-      }else false
+      } else false
     }
+
     override def next(): String = {
       message
     }
   }
+
 }

@@ -7,14 +7,14 @@ import cn.pandadb.server.common.lifecycle.LifecycleSupport
 import cn.pandadb.server.rpc.PandaRpcServer
 
 
-class PandaServer(config: Config, dataHome: String) extends Logging {
+class PandaServer(config: Config) extends Logging {
   var pandaRpcServer: PandaRpcServer = _
   val life = new LifecycleSupport
 
   val graphDatabaseManager: DefaultGraphDatabaseManager =
-    new DefaultGraphDatabaseManager(config, dataHome)
+    new DefaultGraphDatabaseManager(config)
 
-  pandaRpcServer = new PandaRpcServer(config, graphDatabaseManager, dataHome)
+  pandaRpcServer = new PandaRpcServer(config, graphDatabaseManager)
 
   life.add(graphDatabaseManager)
   life.add(pandaRpcServer)

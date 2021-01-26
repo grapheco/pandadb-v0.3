@@ -2,10 +2,11 @@ package cn.pandadb.driver.utils
 
 import cn.pandadb.hipporpc.values.{Value => HippoValue}
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
-import org.neo4j.driver.internal.value.{BooleanValue, DateTimeValue, FloatValue, IntegerValue, LocalDateTimeValue, NodeValue, RelationshipValue, StringValue}
+import org.neo4j.driver.internal.value.{BooleanValue, DateTimeValue, FloatValue, IntegerValue, ListValue, LocalDateTimeValue, NodeValue, RelationshipValue, StringValue}
 import org.neo4j.driver.v1.{Record, Value => Neo4jValue}
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
 
 object TypesToNeo4jValue {
   def getNeo4jValue(value:HippoValue): Neo4jValue  ={
@@ -35,6 +36,14 @@ object TypesToNeo4jValue {
       case Types.DATE_TIME => new DateTimeValue(value.asDateTime())
       case Types.DATE => new DateTimeValue(value.asDateTime())
       case Types.LOCAL_DATE_TIME => new LocalDateTimeValue(value.asLocalDateTime())
+      case Types.LIST => {
+        val hippoList = value.asList()
+        val neo4jList = new ArrayBuffer[Neo4jValue]()
+        hippoList.foreach(hv => {
+          neo4jList += getNeo4jValue(hv)
+        })
+        new ListValue(neo4jList.seq: _*)
+      }
     }
   }
 

@@ -16,9 +16,9 @@ object SettingKeys {
   val rpcServerName = "dbms.server.rpc.service.name"
   val dataRpcEndpointName = "dbms.server.rpc.data.endpoint"
 
-  val localDataPath = "db.data.path"
+  val localDBHomePath = "db.home.path"
   val localDBName = "db.name"
-
+  val defaultLocalDBHome = "db.default.home.path"
 }
 
 class Config extends Logging {
@@ -57,11 +57,15 @@ class Config extends Logging {
   }
 
   def getLocalDataStorePath(): String = {
-    getValueAsString(SettingKeys.localDataPath, "not setting")
+    getValueAsString(SettingKeys.localDBHomePath, "not setting")
   }
 
   def getLocalDBName(): String ={
     getValueAsString(SettingKeys.localDBName, defaultValue = "pandadb.db")
+  }
+
+  def getDefaultDBHome(): String ={
+    settingsMap.get(SettingKeys.defaultLocalDBHome).get
   }
 
   private def getValueWithDefault[T](key: String, defaultValue: () => T, convert: (String) => T)(implicit m: Manifest[T]): T = {

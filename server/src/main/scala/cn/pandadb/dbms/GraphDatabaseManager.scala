@@ -28,14 +28,14 @@ trait GraphDatabaseManager extends LifecycleAdapter {
 }
 
 
-class DefaultGraphDatabaseManager(config: Config, dataHome: String) extends GraphDatabaseManager with Logging {
+class DefaultGraphDatabaseManager(config: Config) extends GraphDatabaseManager with Logging {
   var defaultDB: GraphService = null
   val defaultDBName = config.getLocalDBName()
   val dataPath = {
     if (config.getLocalDataStorePath() != "not setting") {
       config.getLocalDataStorePath()
     } else {
-      dataHome
+      config.getDefaultDBHome() + "/data"
     }
   }
 
@@ -71,6 +71,8 @@ class DefaultGraphDatabaseManager(config: Config, dataHome: String) extends Grap
   }
 
   override def init(): Unit = {
+    logger.info(s"data path: $dataPath")
+    logger.info(s"db name: $defaultDBName")
     defaultDB = createDatabase(defaultDBName)
   }
 

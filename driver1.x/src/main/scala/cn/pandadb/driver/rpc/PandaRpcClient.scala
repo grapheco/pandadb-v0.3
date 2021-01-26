@@ -16,7 +16,7 @@ class PandaRpcClient(hostName:String, port: Int, clientName: String, serverName:
   val rpcEnv = HippoRpcEnvFactory.create(config)
   var endpointRef = rpcEnv.setupEndpointRef(new RpcAddress(hostName, port), serverName)
 
-  val DURATION_TIME = "30s"
+  val DURATION_TIME = "21600s"
 
   def sendCypherRequest(cypher: String, params:Map[String, Any]): Stream[DriverValue] ={
     val res = endpointRef.getChunkedStream[Any](CypherRequest(cypher, params), Duration(DURATION_TIME))

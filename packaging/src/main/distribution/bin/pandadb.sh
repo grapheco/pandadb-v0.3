@@ -21,10 +21,10 @@ check_files() {
 }
 
 do_console(){
-  java -jar $PANDADB_JAR $PANDADB_CONF $PANDADB_DATA
+  java -jar $PANDADB_JAR $PANDADB_CONF $PANDADB_HOME
 }
 do_start(){
-  nohup java -jar $PANDADB_JAR $PANDADB_CONF $PANDADB_DATA > $PANDADB_LOG 2>&1 &
+  nohup java -jar $PANDADB_JAR $PANDADB_CONF $PANDADB_HOME > $PANDADB_LOG 2>&1 &
   cat $PANDADB_CONF | while read line
   do
     result1=$(echo $line | grep "rpc.listen.host")
