@@ -1,13 +1,14 @@
 package cn.pandadb.server
 
-import cn.pandadb.dbms.{DefaultGraphDatabaseManager, GraphDatabaseManager}
-import cn.pandadb.server.common.Logging
+import com.typesafe.scalalogging.LazyLogging
+
+import cn.pandadb.dbms.DefaultGraphDatabaseManager
 import cn.pandadb.server.common.configuration.Config
 import cn.pandadb.server.common.lifecycle.LifecycleSupport
 import cn.pandadb.server.rpc.PandaRpcServer
 
 
-class PandaServer(config: Config) extends Logging {
+class PandaServer(config: Config) extends LazyLogging {
   var pandaRpcServer: PandaRpcServer = _
   val life = new LifecycleSupport
 

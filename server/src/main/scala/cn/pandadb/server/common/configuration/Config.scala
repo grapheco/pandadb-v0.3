@@ -2,12 +2,9 @@ package cn.pandadb.server.common.configuration
 
 import java.io.{File, FileInputStream}
 import java.util.Properties
-
-import cn.pandadb.server.common.Logging
-
 import scala.collection.mutable
 import scala.collection.JavaConverters._
-
+import com.typesafe.scalalogging.LazyLogging
 
 object SettingKeys {
   val version = "db.version"
@@ -21,7 +18,7 @@ object SettingKeys {
   val defaultLocalDBHome = "db.default.home.path"
 }
 
-class Config extends Logging {
+class Config extends LazyLogging {
   private val settingsMap = new mutable.HashMap[String, String]()
 
   def withFile(configFile: Option[File]): Config = {

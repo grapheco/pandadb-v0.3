@@ -3,7 +3,6 @@ package cn.pandadb.itest
 import java.io.File
 
 import cn.pandadb.server.PandaServerBootstrapper
-import cn.pandadb.server.common.configuration
 import cn.pandadb.server.common.configuration.{Config, SettingKeys}
 import org.apache.commons.io.FileUtils
 import org.junit.{Assert, Test}

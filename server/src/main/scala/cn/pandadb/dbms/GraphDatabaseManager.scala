@@ -1,16 +1,17 @@
 package cn.pandadb.dbms
 
+import scala.reflect.io.Path
+import com.typesafe.scalalogging.LazyLogging
+
 import cn.pandadb.kernel.GraphService
 import cn.pandadb.kernel.kv.GraphFacadeWithPPD
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
-import cn.pandadb.server.common.Logging
 import cn.pandadb.server.common.configuration.Config
-import cn.pandadb.server.common.lifecycle.{Lifecycle, LifecycleAdapter}
+import cn.pandadb.server.common.lifecycle.LifecycleAdapter
 
-import scala.reflect.io.Path
 
 trait GraphDatabaseManager extends LifecycleAdapter {
 
@@ -28,7 +29,7 @@ trait GraphDatabaseManager extends LifecycleAdapter {
 }
 
 
-class DefaultGraphDatabaseManager(config: Config) extends GraphDatabaseManager with Logging {
+class DefaultGraphDatabaseManager(config: Config) extends GraphDatabaseManager with LazyLogging {
   var defaultDB: GraphService = null
   val defaultDBName = config.getLocalDBName()
   val dataPath = {

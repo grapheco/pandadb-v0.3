@@ -1,10 +1,11 @@
 package cn.pandadb.server
 
 import java.io.File
-
-import cn.pandadb.server.common.Logging
-import cn.pandadb.server.common.configuration.{Config, SettingKeys}
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.commons.io.IOUtils
+
+import cn.pandadb.server.common.configuration.{Config, SettingKeys}
+
 
 class PandaServerBootstrapper() {
 
@@ -39,7 +40,7 @@ class PandaServerBootstrapper() {
 
 
 
-object PandaServerEntryPoint extends Logging{
+object PandaServerEntryPoint extends LazyLogging {
 
   def main(args: Array[String]): Unit = {
     /*

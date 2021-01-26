@@ -29,6 +29,8 @@
         <netty.version>4.1.17.Final</netty.version>
         <rocksdb.version>6.15.2</rocksdb.version>
         <lucene.version>7.5.0</lucene.version>
+        <scala-logging.version>3.8.0</scala-logging.version>
+        <slf4j-log412.version>1.7.25</slf4j-log412.version>
         <junit.version>4.12</junit.version>
         <pandadb.version>${project.version}</pandadb.version>
     </properties>
@@ -46,6 +48,8 @@
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-reflect</artifactId>
         </dependency>
+
+        <!-- log -->
         <dependency>
             <groupId>com.typesafe.scala-logging</groupId>
             <artifactId>scala-logging_2.12</artifactId>
@@ -55,6 +59,7 @@
             <artifactId>slf4j-log4j12</artifactId>
         </dependency>
 
+        <!-- tests -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -109,27 +114,43 @@
                 <artifactId>lucene-queryparser</artifactId>
                 <version>${lucene.version}</version>
             </dependency>
-            <dependency>
-                <groupId>com.typesafe.scala-logging</groupId>
-                <artifactId>scala-logging_2.12</artifactId>
-                <version>3.8.0</version>
-            </dependency>
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-log4j12</artifactId>
-                <version>1.6.0</version>
-            </dependency>
 
             <dependency>
                 <groupId>org.grapheco</groupId>
                 <artifactId>lynx-framework</artifactId>
                 <version>0.2-SNAPSHOT</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.typesafe.scala-logging</groupId>
+                        <artifactId>scala-logging_2.12</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.grapheco</groupId>
                 <artifactId>hippo-rpc_2.12</artifactId>
                 <version>0.1.2-SNAPSHOT</version>
             </dependency>
+
+            <dependency>
+                <groupId>com.typesafe.scala-logging</groupId>
+                <artifactId>scala-logging_2.12</artifactId>
+                <version>${scala-logging.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-log4j12</artifactId>
+                <version>${slf4j-log412.version}</version>
+            </dependency>
+
 
             <dependency>
                 <groupId>junit</groupId>
@@ -139,7 +160,6 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
 
     <build>
         <pluginManagement>

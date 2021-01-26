@@ -1,6 +1,12 @@
 package cn.pandadb.server.rpc
 
 import java.nio.ByteBuffer
+import scala.collection.mutable
+import com.typesafe.scalalogging.LazyLogging
+import net.neoremind.kraps.RpcConf
+import net.neoremind.kraps.rpc.{RpcCallContext, RpcEndpoint, RpcEnvServerConfig}
+import net.neoremind.kraps.rpc.netty.{HippoRpcEnv, HippoRpcEnvFactory}
+import org.grapheco.hippo.{ChunkedStream, HippoRpcHandler, ReceiveContext}
 
 import cn.pandadb.VerifyConnectionMode
 import cn.pandadb.dbms.{GraphDatabaseManager, RsaSecurity}
@@ -9,20 +15,13 @@ import cn.pandadb.hipporpc.utils.DriverValue
 import cn.pandadb.hipporpc.values.Value
 import cn.pandadb.kernel.GraphService
 import cn.pandadb.kernel.kv.meta.Auth
-import cn.pandadb.server.common.Logging
 import cn.pandadb.server.common.configuration.Config
 import cn.pandadb.server.common.modules.LifecycleServerModule
 import cn.pandadb.utils.ValueConverter
-import net.neoremind.kraps.RpcConf
-import net.neoremind.kraps.rpc.{RpcCallContext, RpcEndpoint, RpcEnvServerConfig}
-import net.neoremind.kraps.rpc.netty.{HippoRpcEnv, HippoRpcEnvFactory}
-import org.grapheco.hippo.{ChunkedStream, HippoRpcHandler, ReceiveContext}
 
-
-import scala.collection.mutable
 
 class PandaRpcServer(config: Config, dbManager: GraphDatabaseManager)
-  extends LifecycleServerModule with Logging {
+  extends LifecycleServerModule with LazyLogging {
   var rpcConfig: RpcEnvServerConfig = _
   var rpcEnv: HippoRpcEnv = _
   var auth: Auth = _
