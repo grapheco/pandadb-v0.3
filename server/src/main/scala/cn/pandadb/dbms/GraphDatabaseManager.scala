@@ -1,16 +1,17 @@
 package cn.pandadb.dbms
 
+import scala.reflect.io.Path
+import com.typesafe.scalalogging.LazyLogging
+
 import cn.pandadb.kernel.GraphService
-import cn.pandadb.kernel.kv.GraphFacadeWithPPD
+import cn.pandadb.kernel.kv.GraphFacade
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
-import cn.pandadb.server.common.Logging
 import cn.pandadb.server.common.configuration.Config
-import cn.pandadb.server.common.lifecycle.{Lifecycle, LifecycleAdapter}
+import cn.pandadb.server.common.lifecycle.LifecycleAdapter
 
-import scala.reflect.io.Path
 
 trait GraphDatabaseManager extends LifecycleAdapter {
 
@@ -28,14 +29,14 @@ trait GraphDatabaseManager extends LifecycleAdapter {
 }
 
 
-class DefaultGraphDatabaseManager(config: Config, dataHome: String) extends GraphDatabaseManager with Logging {
+class DefaultGraphDatabaseManager(config: Config) extends GraphDatabaseManager with LazyLogging {
   var defaultDB: GraphService = null
   val defaultDBName = config.getLocalDBName()
   val dataPath = {
     if (config.getLocalDataStorePath() != "not setting") {
       config.getLocalDataStorePath()
     } else {
-      dataHome
+      config.getDefaultDBHome() + "/data"
     }
   }
 
@@ -71,15 +72,17 @@ class DefaultGraphDatabaseManager(config: Config, dataHome: String) extends Grap
   }
 
   override def init(): Unit = {
+    logger.info(s"data path: $dataPath")
+    logger.info(s"db name: $defaultDBName")
     defaultDB = createDatabase(defaultDBName)
   }
 
-  private def newGraphFacade(path: String): GraphFacadeWithPPD = {
+  private def newGraphFacade(path: String): GraphFacade = {
     val nodeStore = new NodeStoreAPI(path)
     val relationStore = new RelationStoreAPI(path)
     val indexStore = new IndexStoreAPI(path)
     val statistics = new Statistics(path)
-    new GraphFacadeWithPPD(
+    new GraphFacade(
       nodeStore,
       relationStore,
       indexStore,

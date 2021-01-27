@@ -1,8 +1,8 @@
 package cn.pandadb.kernel.util
 
-import org.apache.logging.log4j.scala.Logging
+import com.typesafe.scalalogging.LazyLogging
 
-object Profiler extends Logging {
+object Profiler extends LazyLogging {
   def timing[T](f: => T): T = {
     val t1 = System.currentTimeMillis()
     val t = f
