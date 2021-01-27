@@ -183,6 +183,8 @@ class IndexStoreAPI(dbPath: String) {
     findRange(indexId, IndexEncoder.FLOAT_CODE, IndexEncoder.encode(startValue), IndexEncoder.encode(endValue), startClosed, endClosed)
 
   def close(): Unit = {
+    indexIdGenerator.flush()
+    indexIdDB.close()
     indexDB.close()
     metaDB.close()
     fulltextIndexMap.foreach(p=>p._2._2.close())
