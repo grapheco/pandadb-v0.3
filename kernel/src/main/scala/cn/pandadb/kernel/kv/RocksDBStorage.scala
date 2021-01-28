@@ -30,28 +30,36 @@ object RocksDBStorage {
     // ssd or hdd
     if(isHDD) {
       tableConfig.setBlockSize(256 * 1024)
-//      tableConfig.setCacheIndexAndFilterBlocks(true)
+      //      tableConfig.setCacheIndexAndFilterBlocks(true)
       options.setOptimizeFiltersForHits(true)
-      .setSkipCheckingSstFileSizesOnDbOpen(true)
-      .setLevelCompactionDynamicLevelBytes(true)
-      .setWriteBufferSize(256 * 1024 * 1024)
-      .setTargetFileSizeBase(256 * 1024 * 1024)
-//      .setMaxFileOpeningThreads(1) // if multi hard disk, set this
+        .setSkipCheckingSstFileSizesOnDbOpen(true)
+        .setLevelCompactionDynamicLevelBytes(true)
+        .setWriteBufferSize(256 * 1024 * 1024)
+        .setTargetFileSizeBase(256 * 1024 * 1024)
+      //      .setMaxFileOpeningThreads(1) // if multi hard disk, set this
     }else {
       tableConfig.setBlockSize(4 * 1024)
       options.setWriteBufferSize(64 * 1024 * 1024)
         .setTargetFileSizeBase(64 * 1024 * 1024)
     }
 
-    options.setTableFormatConfig(tableConfig)
-      .setCreateIfMissing(createIfMissing)
-      .setCompressionType(CompressionType.LZ4_COMPRESSION)
-      .setMaxOpenFiles(-1)
-      .setCompactionStyle(CompactionStyle.LEVEL)
-      .setLevel0FileNumCompactionTrigger(10)
-      .setLevel0SlowdownWritesTrigger(20)
-      .setLevel0StopWritesTrigger(40)
-      .setMaxBytesForLevelBase(512 * 1024 * 1024)
+    //    options.setTableFormatConfig(tableConfig)
+    //      .setCreateIfMissing(createIfMissing)
+    //      .setCompressionType(CompressionType.LZ4_COMPRESSION)
+    //      .setMaxOpenFiles(-1)
+    //      .setCompactionStyle(CompactionStyle.LEVEL)
+    //      .setDisableAutoCompactions(true)
+    //      .setLevel0FileNumCompactionTrigger(10)
+    //      .setLevel0SlowdownWritesTrigger(20)
+    //      .setLevel0StopWritesTrigger(40)
+    //      .setMaxBytesForLevelBase(512 * 1024 * 1024)
+    options.setAllowConcurrentMemtableWrite(true)
+      .setWriteBufferSize(256*1024*1024)
+      .setMaxWriteBufferNumber(8)
+      .setMinWriteBufferNumberToMerge(4)
+      .setArenaBlockSize(512*1024)
+      .setLevel0FileNumCompactionTrigger(512)
+      .setDisableAutoCompactions(true)
 
     if (useForImporter){
       options.setAllowConcurrentMemtableWrite(true)
@@ -61,7 +69,7 @@ object RocksDBStorage {
         .setArenaBlockSize(512*1024)
         .setLevel0FileNumCompactionTrigger(512)
         .setDisableAutoCompactions(true)
-//        .setMaxBackgroundCompactions(8)
+      //        .setMaxBackgroundCompactions(8)
     }
 
     val dir = new File(path)
