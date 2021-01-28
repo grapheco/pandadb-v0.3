@@ -48,7 +48,7 @@
             </excludes>
         </fileSet>
         <fileSet>
-            <directory>${project.build.directory}/unix/lib</directory>
+            <directory>${project.build.directory}/lib</directory>
             <outputDirectory>lib</outputDirectory>
             <directoryMode>0755</directoryMode>
             <fileMode>0755</fileMode>
@@ -56,7 +56,7 @@
                 <exclude>**/.keep</exclude>
             </excludes>
             <includes>
-                <include>pandadb-server-all-in-one-0.3.jar</include>
+                <include>*.jar</include>
             </includes>
         </fileSet>
         <fileSet>
