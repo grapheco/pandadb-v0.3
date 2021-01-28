@@ -45,9 +45,6 @@ class GraphFacade(nodeStore: NodeStoreSPI,
   override def addNode(nodeProps: Map[String, Any], labels: String*): Id = {
     addNode(None, labels, nodeProps)
   }
-//  override def addNode(nodeProps: Map[String, Any], labels: String*): this.type = {
-//    addNode(None, labels, nodeProps)
-//  }
 
   private def addNode(id: Option[Long], labels: Seq[String], nodeProps: Map[String, Any]): Id = {
     val nodeId = id.getOrElse(nodeStore.newNodeId())
@@ -71,17 +68,6 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     })
     nodeId
   }
-
-//  def addNode2(nodeProps: Map[String, Any], labels: String*): Long = {
-//    val nodeId = nodeStore.newNodeId()
-//    val labelIds = nodeStore.getLabelIds(labels.toSet).toArray
-//    val props = nodeProps.map{
-//      v => ( nodePropNameMap(v._1),v._2)
-//    }
-//    nodeStore.addNode(new StoredNodeWithProperty(nodeId, labelIds, props))
-//    nodeId
-//  }
-
 
   override def addRelation(label: String, from: Id, to: Id, relProps: Map[String, Any]): Id = {
     addRelation(None, label, from, to, relProps)

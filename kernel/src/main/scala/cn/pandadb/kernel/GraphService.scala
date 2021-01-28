@@ -10,7 +10,6 @@ trait GraphService {
 
   def close(): Unit
 
-//  def addNode(nodeProps: Map[String, Any], labels: String*): this.type
   def addNode(nodeProps: Map[String, Any], labels: String*): Id
 
   def nodeSetProperty(id: Id, key: String, value: Any): Unit
@@ -21,10 +20,8 @@ trait GraphService {
 
   def nodeRemoveLabel(id: Id, label: String): Unit
 
-//  def deleteNode(id: Id): this.type
   def deleteNode(id: Id): Unit
 
-//  def addRelation(label: String, from: Long, to: Long, relProps: Map[String, Any]): this.type
   def addRelation(label: String, from: Long, to: Long, relProps: Map[String, Any]): Id
 
   def relationSetProperty(id: Id, key: String, value: Any): Unit
@@ -35,7 +32,6 @@ trait GraphService {
 
   def relationRemoveLabel(id: Id, label: String): Unit
 
-//  def deleteRelation(id: Id): this.type
   def deleteRelation(id: Id): Unit
 
   def createIndexOnNode(label: String, props: Set[String]): Unit
