@@ -60,6 +60,7 @@ object RocksDBStorage {
       .setArenaBlockSize(512*1024)
       .setLevel0FileNumCompactionTrigger(512)
       .setDisableAutoCompactions(true)
+      .setCreateIfMissing(true)
 
     if (useForImporter){
       options.setAllowConcurrentMemtableWrite(true)
