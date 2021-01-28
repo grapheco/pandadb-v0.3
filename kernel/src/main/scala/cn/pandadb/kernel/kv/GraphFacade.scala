@@ -1,20 +1,20 @@
 package cn.pandadb.kernel.kv
 
+import com.typesafe.scalalogging.LazyLogging
 import cn.pandadb.kernel.GraphService
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.{NameStore, Statistics}
 import cn.pandadb.kernel.store._
-import org.apache.logging.log4j.scala.Logging
 import org.grapheco.lynx.{CallableProcedure, ContextualNodeInputRef, CypherRunner, GraphModel, LynxId, LynxNode, LynxRelationship, LynxResult, LynxValue, NodeFilter, NodeInput, NodeInputRef, PathTriple, RelationshipFilter, RelationshipInput, StoredNodeInputRef}
 import org.opencypher.v9_0.expressions.SemanticDirection
 
 
-class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
-                          relationStore: RelationStoreSPI,
-                          indexStore: IndexStoreAPI,
-                          statistics: Statistics,
-                          onClose: => Unit
-                 ) extends Logging with GraphService with GraphModel{
+class GraphFacade(nodeStore: NodeStoreSPI,
+                  relationStore: RelationStoreSPI,
+                  indexStore: IndexStoreAPI,
+                  statistics: Statistics,
+                  onClose: => Unit
+                 ) extends LazyLogging with GraphService with GraphModel{
 
   val runner = new CypherRunner(this)
 
@@ -31,23 +31,25 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
     nodeStore.close()
     relationStore.close()
     indexStore.close()
-    statistics.close()
     onClose
   }
-  
-  def nodeLabelNameMap(name: String): Int = nodeStore.getLabelId(name)
-  
-  def nodePropNameMap(name: String): Int = nodeStore.getPropertyKeyId(name)
-  
-  def relTypeNameMap(name: String): Int = relationStore.getRelationTypeId(name)
-  
-  def relPropNameMap(name: String): Int = relationStore.getPropertyKeyId(name)
 
-  override def addNode(nodeProps: Map[String, Any], labels: String*): this.type = {
+  private def nodeLabelNameMap(name: String): Int = nodeStore.getLabelId(name)
+
+  private def nodePropNameMap(name: String): Int = nodeStore.getPropertyKeyId(name)
+
+  private def relTypeNameMap(name: String): Int = relationStore.getRelationTypeId(name)
+
+  private def relPropNameMap(name: String): Int = relationStore.getPropertyKeyId(name)
+
+  override def addNode(nodeProps: Map[String, Any], labels: String*): Id = {
     addNode(None, labels, nodeProps)
   }
+//  override def addNode(nodeProps: Map[String, Any], labels: String*): this.type = {
+//    addNode(None, labels, nodeProps)
+//  }
 
-  def addNode(id: Option[Long], labels: Seq[String], nodeProps: Map[String, Any]): this.type = {
+  private def addNode(id: Option[Long], labels: Seq[String], nodeProps: Map[String, Any]): Id = {
     val nodeId = id.getOrElse(nodeStore.newNodeId())
     val labelIds = nodeStore.getLabelIds(labels.toSet).toArray
     val props = nodeProps.map{
@@ -67,24 +69,25 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
           }
           statistics.increaseIndexPropertyCount(propsIndex.indexId, 1)
     })
-    this
-  }
-
-  def addNode2(nodeProps: Map[String, Any], labels: String*): Long = {
-    val nodeId = nodeStore.newNodeId()
-    val labelIds = nodeStore.getLabelIds(labels.toSet).toArray
-    val props = nodeProps.map{
-      v => ( nodePropNameMap(v._1),v._2)
-    }
-    nodeStore.addNode(new StoredNodeWithProperty(nodeId, labelIds, props))
     nodeId
   }
 
+//  def addNode2(nodeProps: Map[String, Any], labels: String*): Long = {
+//    val nodeId = nodeStore.newNodeId()
+//    val labelIds = nodeStore.getLabelIds(labels.toSet).toArray
+//    val props = nodeProps.map{
+//      v => ( nodePropNameMap(v._1),v._2)
+//    }
+//    nodeStore.addNode(new StoredNodeWithProperty(nodeId, labelIds, props))
+//    nodeId
+//  }
 
-  override def addRelation(label: String, from: Id, to: Id, relProps: Map[String, Any]): GraphFacadeWithPPD.this.type =
+
+  override def addRelation(label: String, from: Id, to: Id, relProps: Map[String, Any]): Id = {
     addRelation(None, label, from, to, relProps)
+  }
 
-  def addRelation(id: Option[Long], label: String, from: Long, to: Long, relProps: Map[String, Any]):this.type = {
+  private def addRelation(id: Option[Long], label: String, from: Long, to: Long, relProps: Map[String, Any]): Id = {
     val rid = id.getOrElse(relationStore.newRelationId())
     val labelId = relTypeNameMap(label)
     val props = relProps.map{
@@ -95,10 +98,10 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
     relationStore.addRelation(rel)
     statistics.increaseRelationCount(1) // TODO batch , index statistic
     statistics.increaseRelationTypeCount(labelId, 1)
-    this
+    rid
   }
 
-  override def deleteNode(id: Id): this.type = {
+  override def deleteNode(id: Id): Unit = {
     nodeStore.getNodeById(id).foreach{
       node =>
         nodeStore.deleteNode(node.id)
@@ -115,17 +118,15 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
               statistics.decreaseIndexPropertyCount(propsIndex.indexId, 1)
           })
     }
-    this
   }
 
-  override def deleteRelation(id: Id): this.type = {
+  override def deleteRelation(id: Id): Unit = {
     relationStore.getRelationById(id).foreach{
       rel =>
         relationStore.deleteRelation(rel.id)
         statistics.decreaseRelations(1)
         statistics.setRelationTypeCount(rel.typeId, 1)
     }
-    this
   }
 
   def allNodes(): Iterable[StoredNodeWithProperty] = {
@@ -208,25 +209,25 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
 
   def refresh():Unit = {
     statistics.nodeCount = nodeStore.nodesCount
-    println(s"node count: ${statistics.nodeCount}")
+    logger.info(s"node count: ${statistics.nodeCount}")
     statistics.relationCount = relationStore.relationCount
-    println(s"relation count: ${statistics.relationCount}")
+    logger.info(s"relation count: ${statistics.relationCount}")
     nodeStore.allLabelIds().foreach{
       l =>
         statistics.setNodeLabelCount(l, nodeStore.getNodeIdsByLabel(l).length)
-        println(s"label ${l} count: ${statistics.getNodeLabelCount(l)}")
+        logger.info(s"label ${l} count: ${statistics.getNodeLabelCount(l)}")
     }
     relationStore.allRelationTypeIds().foreach{
       t =>
         statistics.setRelationTypeCount(t,
           relationStore.getRelationIdsByRelationType(t).length)
-        println(s"type ${t} count: ${statistics.getRelationTypeCount(t)}")
+        logger.info(s"type ${t} count: ${statistics.getRelationTypeCount(t)}")
     }
     indexStore.allIndexId.foreach{
       meta =>
         statistics.setIndexPropertyCount(meta.indexId,
           indexStore.findByPrefix(ByteUtils.intToBytes(meta.indexId)).length)
-        println(s"index ${meta.indexId} count: ${statistics.getIndexPropertyCount(meta.indexId)}")
+        logger.info(s"index ${meta.indexId} count: ${statistics.getIndexPropertyCount(meta.indexId)}")
     }
     statistics.flush()
   }
@@ -442,13 +443,13 @@ class GraphFacadeWithPPD( nodeStore: NodeStoreSPI,
         hasIndex(nodeFilter.labels.toSet, nodeFilter.properties.keys.toSet)
           .map {
             indexInfo => // fixme ------------------------------------only get one prop ↓
-              println("seek index: " + indexInfo)
+              logger.info("seek index: " + indexInfo)
               findNodeByIndex(indexInfo._1, nodeFilter.properties.getOrElse(indexInfo._3.head, null).value)
                 .map(mapNode)
                 .filter(x => filterNodes(x, nodeFilter.properties))
           }
           .getOrElse {
-            println("scan label")
+            logger.info("scan label")
             getNodesByLabels(nodeFilter.labels, exact = false)
               .map(mapNode)
               .filter(filterNodes(_, nodeFilter.properties))

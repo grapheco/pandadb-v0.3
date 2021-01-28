@@ -1,6 +1,6 @@
 package cn.pandadb.kv.performance
 
-import cn.pandadb.kernel.kv.GraphFacadeWithPPD
+import cn.pandadb.kernel.kv.GraphFacade
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
@@ -27,7 +27,7 @@ class APITest {
   var relationStore: RelationStoreSPI = _
   var indexStore: IndexStoreAPI = _
   var statistics: Statistics = _
-  var graphFacade: GraphFacadeWithPPD = _
+  var graphFacade: GraphFacade = _
 
 
   @Before
@@ -39,7 +39,7 @@ class APITest {
     indexStore = new IndexStoreAPI(dbPath)
     statistics = new Statistics(dbPath)
 
-    graphFacade = new GraphFacadeWithPPD(
+    graphFacade = new GraphFacade(
       nodeStore,
       relationStore,
       indexStore,

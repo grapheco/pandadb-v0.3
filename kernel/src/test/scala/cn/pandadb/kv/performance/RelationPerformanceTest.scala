@@ -5,7 +5,7 @@ import java.io.File
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
-import cn.pandadb.kernel.kv.{ByteUtils, GraphFacadeWithPPD, KeyConverter, RocksDBStorage}
+import cn.pandadb.kernel.kv.{ByteUtils, GraphFacade, KeyConverter, RocksDBStorage}
 import cn.pandadb.kernel.store.{StoredNode, StoredRelation, StoredRelationWithProperty}
 import cn.pandadb.kernel.util.Profiler
 import cn.pandadb.kernel.util.serializer.RelationSerializer
@@ -26,13 +26,6 @@ class RelationPerformanceTest {
   val path = "F:\\PandaDB_rocksDB\\graph500"
   @Before
   def init(): Unit = {
-    //    FileUtils.deleteDirectory(new File("./testdata/output"))
-    //    new File("./testdata/output").mkdirs()
-    //    new File("./testdata/output/nodelabels").createNewFile()
-    //    new File("./testdata/output/rellabels").createNewFile()
-
-//        graphStore = new RocksDBGraphAPI("D:\\data\\rocksdb")
-//    graphStore = new RocksDBGraphAPI("D:\\data\\rocksdbGraph500")
 
     nodeStore = new NodeStoreAPI(path)
     relationStore = new RelationStoreAPI(path)

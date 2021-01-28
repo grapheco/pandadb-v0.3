@@ -1,9 +1,9 @@
 package cn.pandadb.kernel.optimizer.simulator
 
-import cn.pandadb.kernel.kv.GraphFacadeWithPPD
+import cn.pandadb.kernel.kv.GraphFacade
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 
-class ScanAllOrScanWitFilterSimulator(api: GraphFacadeWithPPD, indexApi: IndexStoreAPI, nodeLabelId:Int=1, nodeAttribution:(Int, Any)=(3, "1")){
+class ScanAllOrScanWitFilterSimulator(api: GraphFacade, indexApi: IndexStoreAPI, nodeLabelId:Int=1, nodeAttribution:(Int, Any)=(3, "1")){
   //cypher: String = "match (n) where n.flag=true return count(n)"
   //cypher: String = "match (n) where n.idStr=1 return count(n)"
   def ScanThenFilter(): Long ={

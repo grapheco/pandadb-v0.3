@@ -1,6 +1,6 @@
 package cn.pandadb.optimizer
 
-import cn.pandadb.kernel.kv.GraphFacadeWithPPD
+import cn.pandadb.kernel.kv.GraphFacade
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
@@ -22,7 +22,7 @@ object TestPerformance {
   val relationStore = new RelationStoreAPI(dbPath)
   val indexStore = new IndexStoreAPI(dbPath)
   val statistics = new Statistics(dbPath)
-  var graphFacade = new GraphFacadeWithPPD(
+  var graphFacade = new GraphFacade(
     nodeStore,
     relationStore,
     indexStore,

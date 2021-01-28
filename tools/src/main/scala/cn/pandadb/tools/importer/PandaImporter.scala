@@ -2,8 +2,7 @@ package cn.pandadb.tools.importer
 
 import cn.pandadb.kernel.PDBMetaData
 import cn.pandadb.kernel.kv.RocksDBStorage
-import cn.pandadb.kernel.kv.db.KeyValueDB
-import org.apache.logging.log4j.scala.Logging
+import com.typesafe.scalalogging.LazyLogging
 
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -16,7 +15,7 @@ import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
  * @Date: Created at 20:20 2020/12/9
  * @Modified By:
  */
-object PandaImporter extends Logging {
+object PandaImporter extends LazyLogging {
   val globalNodeCount = new AtomicLong(0)
   val globalNodePropCount = new AtomicLong(0)
   val globalRelCount = new AtomicLong(0)
@@ -28,15 +27,13 @@ object PandaImporter extends Logging {
 
   val nodeCountProgressLogger: Runnable = new Runnable {
     override def run(): Unit = {
-//      logger.info(s"$globalNodeCount nodes imported. $time")
-      println(s"$globalNodeCount nodes imported. $time")
+      logger.info(s"$globalNodeCount nodes imported. $time")
     }
   }
 
   val relCountProgressLogger: Runnable = new Runnable {
     override def run(): Unit = {
-//      logger.info(s"$globalRelCount relations imported. $time")
-      println(s"$globalRelCount relations imported. $time")
+      logger.info(s"$globalRelCount relations imported. $time")
     }
   }
 
@@ -54,8 +51,8 @@ object PandaImporter extends Logging {
       }).sum
     }
 
-    println(s"Estimated node count: $estNodeCount.")
-    println(s"Estimated relation count: $estRelCount.")
+    logger.info(s"Estimated node count: $estNodeCount.")
+    logger.info(s"Estimated relation count: $estRelCount.")
 
     val nodeDB = RocksDBStorage.getDB(path = s"${importCmd.database}/nodes", useForImporter = true, isHDD = true)
     val nodeLabelDB = RocksDBStorage.getDB(s"${importCmd.database}/nodeLabel", useForImporter = true, isHDD = true)
@@ -72,35 +69,34 @@ object PandaImporter extends Logging {
       relationDB = relationDB, inrelationDB = inRelationDB,
       outRelationDB = outRelationDB, relationTypeDB = relationTypeDB
     )
-
-    println(s"Import task started. $time")
+    logger.info(s"Import task started. $time")
     service.scheduleAtFixedRate(nodeCountProgressLogger, 0, 30, TimeUnit.SECONDS)
     service.scheduleAtFixedRate(relCountProgressLogger, 0, 30, TimeUnit.SECONDS)
 
-    importCmd.nodeFileList.map(file => new SingleNodeFileImporter(file, importCmd, globalArgs).importData())
+    importCmd.nodeFileList.foreach(file => new SingleNodeFileImporter(file, importCmd, globalArgs).importData())
     nodeDB.close()
     nodeLabelDB.close()
-    println(s"$globalNodeCount nodes imported. $time")
-    println(s"$globalNodePropCount props of node imported. $time")
+    logger.info(s"$globalNodeCount nodes imported. $time")
+    logger.info(s"$globalNodePropCount props of node imported. $time")
 
-    importCmd.relFileList.map(file => new SingleRelationFileImporter(file, importCmd, globalArgs).importData())
+    importCmd.relFileList.foreach(file => new SingleRelationFileImporter(file, importCmd, globalArgs).importData())
     relationDB.close()
     inRelationDB.close()
     outRelationDB.close()
     relationTypeDB.close()
-    println(s"$globalRelCount relations imported. $time")
-    println(s"$globalRealPropCount props of relation imported. $time")
+    logger.info(s"$globalRelCount relations imported. $time")
+    logger.info(s"$globalRealPropCount props of relation imported. $time")
 
     PDBMetaData.persist(importCmd.exportDBPath.getAbsolutePath)
     service.shutdown()
     val endTime: Long = new Date().getTime
     val timeUsed: String = TimeUtil.millsSecond2Time(endTime - startTime)
-//    logger.info("import task finished.")
-    println(s"$globalNodeCount nodes imported. $time")
-    println(s"$globalNodePropCount props of node imported. $time")
-    println(s"$globalRelCount relations imported. $time")
-    println(s"$globalRealPropCount props of relation imported. $time")
-    println(s"Import task finished in $timeUsed")
+
+    logger.info(s"$globalNodeCount nodes imported. $time")
+    logger.info(s"$globalNodePropCount props of node imported. $time")
+    logger.info(s"$globalRelCount relations imported. $time")
+    logger.info(s"$globalRealPropCount props of relation imported. $time")
+    logger.info(s"Import task finished in $timeUsed")
 
   }
 }

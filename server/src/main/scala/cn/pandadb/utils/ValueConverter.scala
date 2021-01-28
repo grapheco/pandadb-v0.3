@@ -4,7 +4,9 @@ import java.time.LocalDate
 
 import cn.pandadb.hipporpc.values._
 import cn.pandadb.kernel.store.{PandaNode, PandaRelationship}
-import org.grapheco.lynx.{LynxBoolean, LynxDouble, LynxInteger, LynxString}
+import org.grapheco.lynx.{LynxBoolean, LynxDouble, LynxInteger, LynxList, LynxString}
+
+import scala.collection.mutable.ArrayBuffer
 //import org.opencypher.okapi.api.value.CypherValue
 
 import scala.collection.mutable
@@ -18,6 +20,7 @@ class ValueConverter {
       case lynxString: LynxString => StringValue(lynxString.value)
       case lynxDouble: LynxDouble => FloatValue(lynxDouble.value)
       case lynxBoolean: LynxBoolean => BooleanValue(lynxBoolean.value)
+      case lynxList: LynxList => converterLynxList(lynxList)
 
 //      case node:CypherValue.Node[Long] => convertNode(node)
 //      case relationship: CypherValue.Relationship[Long] => convertRelationship(relationship)
@@ -67,6 +70,13 @@ class ValueConverter {
     RelationshipValue(rel)
   }
 
+  def converterLynxList(lynxList: LynxList): ListValue ={
+    var newList = new ArrayBuffer[Value]()
+    lynxList.value.foreach(lv => {
+        newList += converterValue(lv)
+    })
+    ListValue(newList)
+  }
 //  def convertNode(node: CypherValue.Node[Long]): NodeValue ={
 //    val id = node.id
 //    val labels = node.labels.toArray.map(l => Label(l))

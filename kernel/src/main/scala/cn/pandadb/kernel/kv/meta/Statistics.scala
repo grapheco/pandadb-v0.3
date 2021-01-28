@@ -3,7 +3,6 @@ package cn.pandadb.kernel.kv.meta
 import cn.pandadb.kernel.kv.db.KeyValueDB
 import cn.pandadb.kernel.kv.meta.Statistics.{INDEXPROPERTYCOUNT, NODELABELCOUNT, NODESCOUNT, RELATIONSCOUNT, RELATIONTYPECOUNT, emptyLong}
 import cn.pandadb.kernel.kv.{ByteUtils, RocksDBStorage}
-import org.rocksdb.{FlushOptions, RocksDB}
 
 import scala.collection.mutable
 

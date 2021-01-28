@@ -2,7 +2,7 @@ package cn.pandadb.kv
 
 import java.io.File
 
-import cn.pandadb.kernel.kv.GraphFacadeWithPPD
+import cn.pandadb.kernel.kv.GraphFacade
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
@@ -17,7 +17,7 @@ class GraphAllCypherTest {
   var relationStore: RelationStoreSPI = _
   var indexStore: IndexStoreAPI = _
   var statistics: Statistics = _
-  var graphFacade: GraphFacadeWithPPD = _
+  var graphFacade: GraphFacade = _
 
   @Before
   def setup(): Unit = {
@@ -31,7 +31,7 @@ class GraphAllCypherTest {
     statistics = new Statistics(dbPath+"/statistics")
 
 
-    graphFacade = new GraphFacadeWithPPD(
+    graphFacade = new GraphFacade(
       nodeStore,
       relationStore,
       indexStore,
