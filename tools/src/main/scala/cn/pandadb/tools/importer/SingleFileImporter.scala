@@ -4,7 +4,7 @@ import cn.pandadb.kernel.PDBMetaData
 
 import java.io.{File, FileInputStream}
 import java.util.concurrent.{Executors, ScheduledExecutorService}
-import org.apache.logging.log4j.scala.Logging
+import com.typesafe.scalalogging.LazyLogging
 
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -18,7 +18,7 @@ import scala.io.Source
  * @Date: Created at 9:35 2021/1/15
  * @Modified By:
  */
-trait SingleFileImporter extends Logging{
+trait SingleFileImporter extends LazyLogging{
   val csvFile: File
   val idIndex: Int
   val labelIndex: Int
