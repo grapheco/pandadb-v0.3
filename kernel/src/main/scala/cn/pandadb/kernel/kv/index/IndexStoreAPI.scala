@@ -1,6 +1,6 @@
 package cn.pandadb.kernel.kv.index
 
-import cn.pandadb.kernel.kv.meta.{IndexIdGenerator, RelationIdGenerator}
+import cn.pandadb.kernel.kv.meta.{IdGenerator}
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter, RocksDBStorage}
 
 import scala.collection.mutable
@@ -22,7 +22,7 @@ class IndexStoreAPI(dbPath: String) {
   private val indexDB = RocksDBStorage.getDB(s"${dbPath}/index")
   private val index = new IndexStore(indexDB)
   private val indexIdDB = RocksDBStorage.getDB(s"${dbPath}/indexId")
-  private val indexIdGenerator = new IndexIdGenerator(indexIdDB)
+  private val indexIdGenerator = new IdGenerator(indexIdDB, 200)
 
   //indexId->([name, address], Store)
   private val fulltextIndexMap = new mutable.HashMap[Int, (Array[Int], FulltextIndexStore)]()
@@ -183,7 +183,6 @@ class IndexStoreAPI(dbPath: String) {
     findRange(indexId, IndexEncoder.FLOAT_CODE, IndexEncoder.encode(startValue), IndexEncoder.encode(endValue), startClosed, endClosed)
 
   def close(): Unit = {
-    indexIdGenerator.flush()
     indexIdDB.close()
     indexDB.close()
     metaDB.close()

@@ -7,13 +7,15 @@ import cn.pandadb.kernel.kv.db.KeyValueDB
 import org.rocksdb.RocksDB
 
 
-trait IdGenerator {
-  val db: KeyValueDB
-  val keyBytes: Array[Byte]
-  val sequenceSize: Int
+class IdGenerator(val db: KeyValueDB, val sequenceSize: Int) {
+
+//  val keyBytes: Array[Byte]
+
 
   private val id: AtomicLong = {
-    val value: Array[Byte] = db.get(keyBytes)
+    val iter = db.newIterator()
+    iter.seekToLast()
+    val value: Array[Byte] = iter.key()
     if (value == null) {
       new AtomicLong(0)
     }
@@ -27,7 +29,7 @@ trait IdGenerator {
 
   private def slideDown(current: Long): Unit = {
     val end = current + sequenceSize - 1
-    writeId(end)
+//    writeId(end)
     bound.set(end)
   }
 
@@ -56,13 +58,13 @@ trait IdGenerator {
   }
 
   //save current id
-  def flush(): Unit = {
-    writeId(id.get())
-  }
-
-  private def writeId(num: Long): Unit = {
-    db.put(keyBytes, ByteUtils.longToBytes(num))
-  }
+//  def flush(): Unit = {
+//    writeId(id.get())
+//  }
+//
+//  private def writeId(num: Long): Unit = {
+//    db.put(keyBytes, ByteUtils.longToBytes(num))
+//  }
 }
 
 class LowerIdSetException(id: Long) extends RuntimeException(s"lower id set: $id") {

@@ -21,7 +21,7 @@ import scala.util.Random
 @Test
 class IndexAndNodePerformanceTest {
 
-  val path = "F:\\PandaDB_rocksDB\\graph500"
+  val path = "C:\\PandaDB_rocksDB\\graph500"
   val READONLE = false
 
   @Test
@@ -105,13 +105,13 @@ class IndexAndNodePerformanceTest {
       val t2 = System.currentTimeMillis()
       println(s"read 10000 nodes cost: ${t2 - t1} ms" )
       allRead += t2 - t1
-      values.foreach {
-        v =>
-        NodeSerializer.deserializeNodeValue(v)
-      }
-      val t3 = System.currentTimeMillis()
-      println(s"parse 10000 nodes cost: ${t3 - t2} ms" )
-      allParse += t3 - t2
+//      values.foreach {
+//        v =>
+//        NodeSerializer.deserializeNodeValue(v)
+//      }
+//      val t3 = System.currentTimeMillis()
+//      println(s"parse 10000 nodes cost: ${t3 - t2} ms" )
+//      allParse += t3 - t2
     }
     println(s"avg read: ${allRead/epoch} ms, avg parse: ${allParse/epoch} ms" )
   }

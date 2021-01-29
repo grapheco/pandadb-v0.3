@@ -1,7 +1,7 @@
 package cn.pandadb.kernel.kv.node
 
 import cn.pandadb.kernel.kv.RocksDBStorage
-import cn.pandadb.kernel.kv.meta.{NodeIdGenerator, NodeLabelNameStore, PropertyNameStore}
+import cn.pandadb.kernel.kv.meta.{IdGenerator, NodeLabelNameStore, PropertyNameStore}
 import cn.pandadb.kernel.store.{NodeStoreSPI, StoredNodeWithProperty}
 
 
@@ -14,7 +14,7 @@ class NodeStoreAPI(dbPath: String) extends NodeStoreSPI {
   private val metaDB = RocksDBStorage.getDB(s"${dbPath}/nodeMeta")
   private val nodeLabelName = new NodeLabelNameStore(metaDB)
   private val propertyName = new PropertyNameStore(metaDB)
-  private val idGenerator = new NodeIdGenerator(metaDB)
+  private val idGenerator = new IdGenerator(nodeLabelDB, 200)
 
   val NONE_LABEL_ID: Int = -1
 
@@ -124,7 +124,6 @@ class NodeStoreAPI(dbPath: String) extends NodeStoreSPI {
   }
 
   override def close(): Unit ={
-    idGenerator.flush()
     nodeDB.close()
     nodeLabelDB.close()
     metaDB.close()
