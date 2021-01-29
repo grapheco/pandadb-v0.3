@@ -177,7 +177,11 @@
                                 <goal>add-resource</goal>
                             </goals>
                             <configuration>
-                                <resources>${basedir}/src/main/resources</resources>
+                                <resources>
+                                    <resource>
+                                        <directory>${basedir}/src/main/resources</directory>
+                                    </resource>
+                                </resources>
                             </configuration>
                         </execution>
                         <execution>

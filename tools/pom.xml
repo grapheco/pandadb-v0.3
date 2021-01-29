@@ -22,6 +22,14 @@
         <!-- Define project structure -->
         <plugins>
             <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.2.1</version>
@@ -51,12 +59,12 @@
                         </goals>
                         <configuration>
                             <outputDirectory>${project.build.directory}</outputDirectory>
-                                <transformers>
-                                    <transformer
-                                            implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                        <mainClass>cn.pandadb.tools.importer.PandaImporter</mainClass>
-                                    </transformer>
-                                </transformers>
+                            <transformers>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>cn.pandadb.tools.importer.PandaImporter</mainClass>
+                                </transformer>
+                            </transformers>
                         </configuration>
                     </execution>
                 </executions>
