@@ -20,7 +20,7 @@ class IdGenerator(val db: KeyValueDB, val sequenceSize: Int) {
       new AtomicLong(0)
     }
     else {
-      val current: Long = ByteUtils.getLong(value, 0)
+      val current: Long = if (value.length<8) 0L else ByteUtils.getLong(value, 0)
       new AtomicLong(current)
     }
   }

@@ -21,8 +21,7 @@ class IndexStoreAPI(dbPath: String) {
   private val meta = new IndexMetaData(metaDB)
   private val indexDB = RocksDBStorage.getDB(s"${dbPath}/index")
   private val index = new IndexStore(indexDB)
-  private val indexIdDB = RocksDBStorage.getDB(s"${dbPath}/indexId")
-  private val indexIdGenerator = new IdGenerator(indexIdDB, 200)
+  private val indexIdGenerator = new IdGenerator(metaDB, 200)
 
   //indexId->([name, address], Store)
   private val fulltextIndexMap = new mutable.HashMap[Int, (Array[Int], FulltextIndexStore)]()
@@ -183,7 +182,6 @@ class IndexStoreAPI(dbPath: String) {
     findRange(indexId, IndexEncoder.FLOAT_CODE, IndexEncoder.encode(startValue), IndexEncoder.encode(endValue), startClosed, endClosed)
 
   def close(): Unit = {
-    indexIdDB.close()
     indexDB.close()
     metaDB.close()
     fulltextIndexMap.foreach(p=>p._2._2.close())
