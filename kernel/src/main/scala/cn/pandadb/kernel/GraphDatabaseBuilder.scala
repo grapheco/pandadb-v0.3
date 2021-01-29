@@ -27,7 +27,8 @@ object GraphDatabaseBuilder extends StrictLogging{
       if (file.isFile) {
         throw new Exception(s"The data path (${dataPath}) is invalid: not directory")
       }
-      file.list().foreach(f => if(subDirs.contains(f)){
+      file.list().foreach(f => if(!subDirs.contains(f)){
+        println(f)
         throw new Exception(s"The data path (${dataPath}) is invalid: contains invalid files")
       })
     }
