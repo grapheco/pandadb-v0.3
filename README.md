@@ -67,3 +67,23 @@ example:
 script location: `/usr/local/pandadb-server-<version>/bin/cypher-shell`  
 
 usage: `./cypher-shell -a panda://localhost:9989 -u pandadb -p pandadb`
+
+## 5. Driver
+visit https://github.com/grapheco/pandadb-v0.3/releases to get pandadb-driver-1.0-SNAPSHOT.jar.   
+then add the jar to your project, this driver only support `session.run()`.  
+usage example:
+```
+    val driver = GraphDatabase.driver("panda://localhost:9989", AuthTokens.basic("pandadb", "pandadb"))
+    val session = driver.session()
+    session.run("create (n:person{name:'google'})")
+    session.close()
+    driver.close()
+```
+
+## 6. Embedding mode
+usage:
+```
+val service = GraphDatabaseBuilder.newEmbeddedDatabase("/pandadb")
+val res = service.cypher("match (n) return n")
+res.show()
+```
