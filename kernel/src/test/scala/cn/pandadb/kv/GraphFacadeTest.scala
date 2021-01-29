@@ -22,7 +22,6 @@ class GraphFacadeTest {
   var statistics: Statistics = _
   var graphFacade: GraphFacade = _
 
-
   @Before
   def setup(): Unit = {
     FileUtils.deleteDirectory(new File("./testdata"))
@@ -134,26 +133,15 @@ class GraphFacadeTest {
     val n2: Long = graphFacade.addNode(Map("name" -> "alex", "age" -> 20), "person")
     val n3: Long = graphFacade.addNode(Map("name" -> "simba", "age" -> 10), "worker")
     graphFacade.addRelation("friend", 1L, 2L, Map())
-    //graphFacade.allRelations().foreach(println)
-    //val res = graphFacade.cypher("match (n:person)-[r]->(m:person) where n.age=40 and m.age = 20 return n,r")
     val res = graphFacade.cypher("match (n:person)  return n")
-    //val res = graphFacade.cypher("match (n)-[r]-(m) return r")
-   // rs.records.toSeq.apply(1).apply("y")
     res.records.toSeq.map(_.apply("n").asInstanceOf[LynxNode]).foreach(printNode)
-
-
   }
 
   @Test
   def testCreate(): Unit ={
     val res = graphFacade.cypher("create (n:person{name:'joejoe'}) ")
-    //nodeStore.allNodes().foreach(n=>println(n.properties))
     val res2 = graphFacade.cypher("match (n:person)  return n")
-    //res2.show()
     res.records.toSeq.map(_.apply("n").asInstanceOf[LynxNode]).foreach(printNode)
-//    val res3 = graphFacade.cypher("match (n) return n")
-//    res3.show
-
   }
 
   @Test
@@ -162,7 +150,6 @@ class GraphFacadeTest {
     val res2 = graphFacade.cypher("match (n:person)-[r:fans]->(m: test) where n.name='bluejoe' and m.age=30 return n,r,m")
     res2.show()
   }
-
 
   @Test
   def testIO(): Unit = {
@@ -174,8 +161,6 @@ class GraphFacadeTest {
     val as = Array("test"->1, "test"->2, "jkl" ->3, "jkl"->4)
     val sfg = Array("test")
     val a2 = as.groupBy(row => sfg.map(_.toString))
-    a2
-
   }
 
   @Test
@@ -200,9 +185,7 @@ class GraphFacadeTest {
         graphFacade.cypher(c)
     }
 
-//    graphFacade.createIndexOnNode("person", Set("name"))
     graphFacade.createIndexOnNode("person", Set("age"))
-
     println(nodeStore.allPropertyKeys().mkString(","))
     println(nodeStore.allLabels().mkString(","))
 
@@ -210,11 +193,8 @@ class GraphFacadeTest {
       "match (n:person) where n.name = 'bob' return n",
       "match (n:person) where n.name = 22 return n",
       "match (n:person) where n.name = 'alice' return n",
-//      "match (n:person) where n.name starts with 'alice' return n",
-//      "match (n:person) where n.name starts with 'b' return n",
       "match (n:person) where n.age = 31 return n",
       "match (n:person) where n.age < 31 return n",
-//      "match (n:worker) where n.age < 31 return n",
       "match (n:person) where n.age <= 31 return n",
       "match (n:person) where n.age <= 31.00 return n",
       "match (n:person) where n.age > -100 return n",
@@ -226,7 +206,6 @@ class GraphFacadeTest {
         println(c)
         graphFacade.cypher(c).show()
     }
-
 
     val indexId = indexStore.getIndexId(nodeStore.getLabelId("person"),
       Array(nodeStore.getPropertyKeyId("age"))).get
@@ -247,7 +226,6 @@ class GraphFacadeTest {
   @Test
   def showAll(): Unit ={
     val path = "./testdata/index"
-
   }
 
   @Test

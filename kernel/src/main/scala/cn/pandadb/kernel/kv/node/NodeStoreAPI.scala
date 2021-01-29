@@ -123,23 +123,6 @@ class NodeStoreAPI(dbPath: String) extends NodeStoreSPI {
     nodeStore.deleteByLabel(labelId)
   }
 
-  //  // Big cost!!!
-  //  def addLabelForNode(nodeId: Long, labelId: Int): Unit = {
-  //    val node = getNode(nodeId)
-  //    val labels = node.labelIds ++ Array(labelId)
-  //    nodeLabelStore.set(nodeId, labelId)
-  //    nodeStore.set(new StoredNodeWithProperty(node.id, labels, node.properties))
-  //  }
-  //
-  //  // Big big cost!!!
-  //  def removeLabelFromNode(nodeId: Long, labelId: Int): Unit = {
-  //    val node = getNode(nodeId)
-  //    val labels = node.labelIds.filter(_!=labelId)
-  //    nodeLabelStore.delete(nodeId, labelId)
-  //    nodeStore.set(new StoredNodeWithProperty(node.id, labels, node.properties))
-  //    nodeStore.delete(nodeId, labelId)
-  //  }
-
   override def close(): Unit ={
     idGenerator.flush()
     nodeDB.close()

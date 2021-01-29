@@ -56,7 +56,6 @@ class PandaRpcServer(config: Config, dbManager: GraphDatabaseManager)
   }
 
   override def stop(): Unit = {
-    //    logger.info(this.getClass + ": stop")
     rpcEnv.shutdown()
   }
 

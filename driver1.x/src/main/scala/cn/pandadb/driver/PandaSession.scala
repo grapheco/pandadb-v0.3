@@ -3,7 +3,7 @@ package cn.pandadb.driver
 import java.util
 import java.util.concurrent.CompletionStage
 
-import org.neo4j.driver.internal.{BoltServerAddress, Bookmarks, BookmarksHolder}
+import org.neo4j.driver.internal.{Bookmarks, BookmarksHolder}
 import org.neo4j.driver.v1.types.TypeSystem
 import org.neo4j.driver.v1.{Record, Session, Statement, StatementResult, StatementResultCursor, StatementRunner, Transaction, TransactionConfig, TransactionWork, Value}
 import java.util.Collections.emptyMap

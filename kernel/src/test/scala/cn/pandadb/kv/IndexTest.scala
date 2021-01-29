@@ -21,7 +21,6 @@ class IndexTest extends Assert {
 
   @Test
   def indexBaseTest(): Unit= {
-//    val db:RocksDB = RocksDBStorage.getDB(path+"/test2")
     val LABEL = 1
     val PROPS = Array[Int](1)
     val ni = new IndexStoreAPI(path+"/test1")
@@ -101,7 +100,6 @@ class IndexTest extends Assert {
     Assert.assertArrayEquals(Array[Long](4), ni.find(indexId, "张三丰").toArray)
     Assert.assertArrayEquals(Array[Long](8), ni.find(indexId, "PandaDB").toArray)
     Assert.assertArrayEquals(Array[Long](9), ni.find(indexId, "PandaDB is a Intelligent Graph Database.").toArray)
-
   }
 
   @Test
@@ -153,7 +151,6 @@ class IndexTest extends Assert {
         ni.insertIndexRecord(indexId, d._1, d._2)
     }
     Assert.assertArrayEquals(Array[Long](9,8,7,6,5,0,1,2,3,4), ni.findIntegerRange(indexId).toArray)
-//    ni.findIntRange(indexId, 3,20).toList.foreach(println(_))
     Assert.assertArrayEquals(Array[Long](2,3), ni.findIntegerRange(indexId, 3,100).toArray)
     Assert.assertArrayEquals(Array[Long](2,3,4), ni.findIntegerRange(indexId, 3,100, endClosed = true).toArray)
     Assert.assertArrayEquals(Array[Long](0,1,2,3), ni.findIntegerRange(indexId, 0,99).toArray)
@@ -187,12 +184,9 @@ class IndexTest extends Assert {
     val indexId = ni.createIndex(7,Array[Int](7))
     data.foreach(d => ni.insertIndexRecord(indexId,d._1, d._2))
 
-//    ni.findFloatRange(indexId, -99999.toFloat, Double.MaxValue.toFloat).foreach(println(_))
-//    ni.findFloatRange(indexId, -99999.toFloat, Double.MaxValue.toFloat).foreach(println(_))
     Assert.assertArrayEquals(Array[Long](0,1,2,3,4,5,6,7,8,9,10), ni.findFloatRange(indexId, -99999, Double.MaxValue).toArray)
     Assert.assertArrayEquals(Array[Long](3,4,5,6,7,8), ni.findFloatRange(indexId, -99, 100).toArray)
     Assert.assertArrayEquals(Array[Long](3,4,5,6), ni.findFloatRange(indexId, -4, 0.001).toArray)
-
   }
 
   def showAll(db: RocksDB): Unit = {

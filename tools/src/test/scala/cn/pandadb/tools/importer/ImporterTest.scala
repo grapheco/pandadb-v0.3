@@ -13,18 +13,13 @@ import org.junit.Test
   */
 class ImporterTest {
 
-
   @Test
   def test1(): Unit ={
-//    val args: Array[String] = Array
-    val dBPath = "D:\\GitSpace\\pandadb-v0.3\\tools\\src\\test\\output\\panda-0.003"
-//    val nodeDB = RocksDBStorage.getDB("D:\\GitSpace\\pandadb-v0.3\\tools\\src\\test\\output\\panda-0.003\\nodes")
+    val dBPath = ""
     val nodeAPI = new NodeStoreAPI(dBPath)
     val relationAPI = new RelationStoreAPI(dBPath)
     val node = nodeAPI.getNodeById(519791209300010L)
     val relation = relationAPI.getRelationById(15133L)
     val relation2 = relationAPI.getRelationById(5167L)
   }
-
-
 }

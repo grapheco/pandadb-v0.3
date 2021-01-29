@@ -59,8 +59,6 @@ class GraphAllCypherTest {
     val res = graphFacade.cypher(cy)
     Assert.assertEquals(List("Person"), res.records.toSeq.apply(0).apply("friend").asInstanceOf[LynxNode].labels)
     Assert.assertEquals(1, nodeStore.allNodes().size)
-    //Assert.assertEquals(1, nodeStore.allNodes().size)
-
   }
 
   @Test
@@ -119,7 +117,6 @@ class GraphAllCypherTest {
     val cy = "CREATE p =(andy { name:'Andy' })-[:WORKS_AT]->(neo)<-[:WORKS_AT]-(michael { name: 'Michael' }) RETURN p"
     graphFacade.cypher(cy).show()
 
-
     Assert.assertEquals(3, nodeStore.allNodes().size)
 
     Assert.assertEquals(2, relationStore.allRelations().size)
@@ -137,8 +134,6 @@ class GraphAllCypherTest {
 
     Assert.assertEquals(1, nodeStore.allNodes().size)
 
-    //Assert.assertEquals(2, relationStore.allRelations().size)
-
   }
 
 
@@ -151,7 +146,6 @@ class GraphAllCypherTest {
     graphFacade.cypher(cy1).show()
 
     Assert.assertEquals(1, nodeStore.allNodes().size)
-    //Assert.assertEquals(2, relationStore.allRelations().size)
   }
 
 
@@ -164,7 +158,6 @@ class GraphAllCypherTest {
     graphFacade.cypher(cy1).show()
 
     Assert.assertEquals(1, nodeStore.allNodes().size)
-    //Assert.assertEquals(2, relationStore.allRelations().size)
   }
 
 
@@ -194,26 +187,16 @@ class GraphAllCypherTest {
 
   @Test
   def test13(): Unit ={
-    //val cy = "CREATE (m)-[r:type]->(n) return m"
-   // graphFacade.cypher(cy).show()
-
     val cy1 = "return 1 as N"
     val rs = graphFacade.cypher(cy1)
     Assert.assertEquals(Seq("N"), rs.columns)
-    //Assert.assertEquals(2, nodeStore.allNodes().size)
-    //Assert.assertEquals(1, relationStore.allRelations().size)
   }
 
   @Test
   def test14(): Unit ={
-    //val cy = "CREATE (m)-[r:type]->(n) return m"
-    // graphFacade.cypher(cy).show()
-
     val cy1 = "return 1 "
     val rs = graphFacade.cypher(cy1)
     Assert.assertEquals(Seq("1"), rs.columns)
-    //Assert.assertEquals(2, nodeStore.allNodes().size)
-    //Assert.assertEquals(1, relationStore.allRelations().size)
   }
 
 
@@ -224,9 +207,7 @@ class GraphAllCypherTest {
 
     val cy1 = "MATCH (jenn:Person {name: 'Jennifer'}) RETURN jenn"
     val rs = graphFacade.cypher(cy1).show()
-    //Assert.assertEquals(Seq("1"), rs.columns)
     Assert.assertEquals(1, nodeStore.allNodes().size)
-    //Assert.assertEquals(1, relationStore.allRelations().size)
   }
 
   @Test
@@ -236,7 +217,6 @@ class GraphAllCypherTest {
 
     val cy1 = "MATCH (:Person {name: 'Jennifer'})-[:WORKS_FOR]->(company:Company) RETURN company.name"
     val rs = graphFacade.cypher(cy1).show()
-    //Assert.assertEquals(Seq("1"), rs.columns)
     Assert.assertEquals(2, nodeStore.allNodes().size)
     Assert.assertEquals(1, relationStore.allRelations().size)
   }
@@ -248,7 +228,6 @@ class GraphAllCypherTest {
 
     val cy1 = "MATCH (:Person {name: 'Jennifer'})-[:WORKS_FOR]->(company:Company) RETURN company.name"
     val rs = graphFacade.cypher(cy1).show()
-    //Assert.assertEquals(Seq("1"), rs.columns)
     Assert.assertEquals(2, nodeStore.allNodes().size)
     Assert.assertEquals(1, relationStore.allRelations().size)
   }
@@ -260,9 +239,7 @@ class GraphAllCypherTest {
 
     val cy1 = "MATCH (p:Person {name: 'Jennifer'}) SET p.birthdate = date('1980-01-01') RETURN p"
     val rs = graphFacade.cypher(cy1).show()
-    //Assert.assertEquals(Seq("1"), rs.columns)
     Assert.assertEquals(1, nodeStore.allNodes().size)
-   // Assert.assertEquals(1, relationStore.allRelations().size)
   }
 
 
@@ -273,9 +250,7 @@ class GraphAllCypherTest {
 
     val cy1 = "MATCH (p:Person {name: 'Jennifer'}) delete p"
     val rs = graphFacade.cypher(cy1).show()
-    //Assert.assertEquals(Seq("1"), rs.columns)
     Assert.assertEquals(0, nodeStore.allNodes().size)
-    // Assert.assertEquals(1, relationStore.allRelations().size)
   }
 
   @Test
@@ -285,20 +260,14 @@ class GraphAllCypherTest {
 
     val cy1 = "MATCH (n:Person {name: 'Jennifer'}) REMOVE n.name"
     val rs = graphFacade.cypher(cy1).show()
-    //Assert.assertEquals(Seq("1"), rs.columns)
     Assert.assertEquals(0, nodeStore.allNodes().size)
-    // Assert.assertEquals(1, relationStore.allRelations().size)
   }
 
 
   @Test
   def test21_merge(): Unit ={
-    //val cy = "create (p:Person {name: 'Jennifer'}) RETURN p"
-    // graphFacade.cypher(cy).show()
-
     val cy1 = "MATCH (j:Person {name: 'Jennifer'}),(m:Person {name: 'Mark'}) MERGE (j)-[r:IS_FRIENDS_WITH]->(m) RETURN j, r, m"
     val rs = graphFacade.cypher(cy1).show()
-    //Assert.assertEquals(Seq("1"), rs.columns)
     Assert.assertEquals(2, nodeStore.allNodes().size)
     Assert.assertEquals(1, relationStore.allRelations().size)
   }
@@ -316,9 +285,7 @@ class GraphAllCypherTest {
 
     val cy3 = "match (n) return sum(n.age)"
     val rs3 = graphFacade.cypher(cy3).show()
-    //Assert.assertEquals(Seq("1"), rs.columns)
     Assert.assertEquals(3, nodeStore.allNodes().size)
-    //Assert.assertEquals(1, relationStore.allRelations().size)
   }
 
 
@@ -327,10 +294,7 @@ class GraphAllCypherTest {
     val cy = "{'props' : [ {'name' : 'Andy','position' : 'Developer'}, {'name' : 'Michael','position' : 'Developer'} ]} UNWIND $props AS map CREATE (n) SET n = map"
     graphFacade.cypher(cy).show()
 
-
-    //Assert.assertEquals(Seq("1"), rs.columns)
     Assert.assertEquals(2, nodeStore.allNodes().size)
-    //Assert.assertEquals(1, relationStore.allRelations().size)
   }
 
 
@@ -343,10 +307,7 @@ class GraphAllCypherTest {
     val cy = "MATCH p =(begin:person) FOREACH (n IN nodes(p)| SET n.marked = TRUE )"
     graphFacade.cypher(cy).show()
 
-
-    //Assert.assertEquals(Seq("1"), rs.columns)
     Assert.assertEquals(3, nodeStore.allNodes().size)
-    //Assert.assertEquals(1, relationStore.allRelations().size)
   }
 
   @Test
@@ -354,14 +315,10 @@ class GraphAllCypherTest {
     val cy1 = "create (a:Person {name: 'Jennifer', age:20}),(b:Person {name: 'Jennifer', age:12}), (c:Person {name: 'Jennifer', age:23})  RETURN a"
     graphFacade.cypher(cy1).show()
 
-
     val cy = "MATCH (a:Person) return orderBy a.age"
     graphFacade.cypher(cy).show()
 
-
-    //Assert.assertEquals(Seq("1"), rs.columns)
     Assert.assertEquals(3, nodeStore.allNodes().size)
-    //Assert.assertEquals(1, relationStore.allRelations().size)
   }
 
 }

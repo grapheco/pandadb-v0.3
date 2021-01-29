@@ -75,13 +75,19 @@ class DefaultGraphDatabaseManager(config: Config) extends GraphDatabaseManager w
     logger.info(s"data path: $dataPath")
     logger.info(s"db name: $defaultDBName")
     defaultDB = createDatabase(defaultDBName)
+    logger.info(s"${this.getClass} inited.")
   }
 
   private def newGraphFacade(path: String): GraphFacade = {
+    logger.info(s"start to get NodeStoreAPI.")
     val nodeStore = new NodeStoreAPI(path)
+    logger.info(s"start to get RelStoreAPI")
     val relationStore = new RelationStoreAPI(path)
+    logger.info(s"node and rel db got.")
     val indexStore = new IndexStoreAPI(path)
+    logger.info(s"index db got.")
     val statistics = new Statistics(path)
+    logger.info(s"statistics db got.")
     new GraphFacade(
       nodeStore,
       relationStore,

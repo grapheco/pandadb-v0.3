@@ -67,9 +67,6 @@ class GraphFacadePerformanceTest {
 
   @Test
   def createStat(): Unit ={
-//    graphFacade.refresh()
-    statistics
-//    statistics = new Statistics(dbPath)
     indexStore.getIndexIdByLabel(nodeStore.getLabelId("label1")).foreach( s =>println(s.props.head))
   }
 
@@ -133,13 +130,6 @@ class GraphFacadePerformanceTest {
         res.show()
       }
     )
-//    var res = graphFacade.cypher("Match (n) return n limit 10")
-//    res.show()
-//    return
-//    res = graphFacade.cypher("match ()-[r]->() return r")
-//    res.show()
-//    res = graphFacade.cypher("match (n:person)-[r]->() return r")
-//    res.show()
   }
 
   @Test
