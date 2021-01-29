@@ -48,7 +48,7 @@ trait SingleFileImporter extends LazyLogging{
           case "date" => lineArr(index).replace("\"", "")
           case "long[]" => lineArr(index).split(cmd.arrayDelimeter).map(item => item.toLong)
           case "int[]" => lineArr(index).split(cmd.arrayDelimeter).map(item => item.toInt)
-          case "string[]" => lineArr(index).split(cmd.arrayDelimeter).map(item => item.replace("{","").replace("}",""))
+          case "string[]" => lineArr(index).split(cmd.arrayDelimeter).map(item => item)
           case "boolean[]" => lineArr(index).split(cmd.arrayDelimeter).map(item => item.toBoolean)
           case "double[]" => lineArr(index).split(cmd.arrayDelimeter).map(item => item.toDouble)
           case _ => lineArr(index).replace("\"", "")
