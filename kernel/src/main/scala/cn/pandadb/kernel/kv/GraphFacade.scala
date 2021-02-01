@@ -6,7 +6,7 @@ import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.{NameStore, Statistics}
 import cn.pandadb.kernel.store._
 import org.grapheco.lynx.{CallableProcedure, ContextualNodeInputRef, CypherRunner, GraphModel, LynxId, LynxNode, LynxRelationship, LynxResult, LynxValue, NodeFilter, NodeInput, NodeInputRef, PathTriple, RelationshipFilter, RelationshipInput, StoredNodeInputRef}
-import org.opencypher.v9_0.expressions.SemanticDirection
+import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, SemanticDirection}
 
 
 class GraphFacade(nodeStore: NodeStoreSPI,
@@ -191,6 +191,13 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     } else {
       // TODO combined index
     }
+  }
+
+  override def createIndex(labelName: LabelName, properties: List[PropertyKeyName]): Unit = {
+    val l=labelName.name
+    val ps = properties.map(p=>p.name).toSet
+    createIndexOnNode(l, ps)
+    createIndexOnRelation(l, ps)
   }
 
   def refresh():Unit = {

@@ -163,8 +163,7 @@ class GraphFacadeTest {
     val a2 = as.groupBy(row => sfg.map(_.toString))
   }
 
-  @Test
-  def index(): Unit ={
+  def indexDataPrepare(): Unit ={
     val createCypher = Array(
       "create (n:person{name: 'bob', age: 31})",
       "create (n:person{name: 'alice', age: 31.5})",
@@ -181,10 +180,13 @@ class GraphFacadeTest {
     )
     createCypher.foreach{
       c=>
-        println(c)
         graphFacade.cypher(c)
     }
+  }
 
+  @Test
+  def createIndexByAPI(): Unit ={
+    indexDataPrepare()
     graphFacade.createIndexOnNode("person", Set("age"))
     println(nodeStore.allPropertyKeys().mkString(","))
     println(nodeStore.allLabels().mkString(","))
@@ -210,6 +212,29 @@ class GraphFacadeTest {
     val indexId = indexStore.getIndexId(nodeStore.getLabelId("person"),
       Array(nodeStore.getPropertyKeyId("age"))).get
 
+    indexStore.findFloatRange(indexId, 0, 100).foreach(println)
+    graphFacade.close()
+  }
+
+  @Test
+  def createIndexByCypher(): Unit ={
+    indexDataPrepare()
+    graphFacade.cypher("CREATE INDEX ON :person(age)")
+    val matchCypher = Array(
+      "match (n:person) where n.name = 'bob' return n",
+      "match (n:person) where n.age < 31 return n"
+    )
+
+    matchCypher.foreach{
+      c=>
+        println(c)
+        graphFacade.cypher(c).show()
+    }
+
+    val indexId = indexStore.getIndexId(nodeStore.getLabelId("person"),
+      Array(nodeStore.getPropertyKeyId("age"))).get
+    println(indexId)
+    indexStore.findFloatRange(indexId, 0, 100).foreach(println)
     graphFacade.close()
   }
 
