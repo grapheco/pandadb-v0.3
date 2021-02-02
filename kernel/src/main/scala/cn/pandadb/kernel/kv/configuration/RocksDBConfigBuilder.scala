@@ -5,16 +5,16 @@ import java.util.Properties
 
 import org.rocksdb.{BlockBasedTableConfig, BloomFilter, CompactionStyle, CompressionType, IndexType, Options}
 
-class RocksDBConfigBuilder(dbPath: String, rocksdbConfigPath: String) {
+class RocksDBConfigBuilder(rocksdbFile: File) {
   val options: Options = new Options()
   val tableConfig = new BlockBasedTableConfig()
 
   val prop = new Properties()
-  val is = new BufferedInputStream(new FileInputStream(new File(rocksdbConfigPath)))
+  val is = new BufferedInputStream(new FileInputStream(rocksdbFile))
   prop.load(is)
 
-  def getOptionsAndTabelConfig(): (Options, BlockBasedTableConfig) ={
-
+  def getOptions(): Options ={
+    
     val isHDD = prop.getProperty("rocksdb.isHDD").toBoolean
     val isUseWithBloomFilter = prop.getProperty("rocksdb.withBloomFilter").toBoolean
     val createIfMissing = prop.getProperty("rocksdb.createIfMissing").toBoolean
@@ -92,6 +92,6 @@ class RocksDBConfigBuilder(dbPath: String, rocksdbConfigPath: String) {
       options.setLevel0FileNumCompactionTrigger(prop.getProperty("rocksdb.Options.importer.setLevel0FileNumCompactionTrigger").toInt)
       options.setDisableAutoCompactions(prop.getProperty("rocksdb.Options.importer.setDisableAutoCompactions").toBoolean)
     }
-    (options, tableConfig)
+    options
   }
 }
