@@ -3,10 +3,12 @@ package cn.pandadb.kernel.kv.configuration
 import java.io.{BufferedInputStream, File, FileInputStream}
 import java.util.Properties
 
+import com.typesafe.scalalogging.LazyLogging
+
 import scala.collection.JavaConverters._
 import org.rocksdb.{AccessHint, BlockBasedTableConfig, BloomFilter, Cache, ChecksumType, CompactionStyle, CompressionType, IndexType, LRUCache, Options, ReadOptions, Statistics}
 
-class RocksDBConfigBuilder(rocksdbConfigFilePath: String) {
+class RocksDBConfigBuilder(rocksdbConfigFilePath: String) extends LazyLogging{
   implicit def strToBoolean(str: String) = str.toBoolean
 
   def getOptions(): Options = {
@@ -19,7 +21,7 @@ class RocksDBConfigBuilder(rocksdbConfigFilePath: String) {
     val prop = new Properties()
     val is = new BufferedInputStream(new FileInputStream(file))
     prop.load(is)
-    println(s"settings nums: ${prop.keySet().size()}")
+    logger.info(s"settings nums: ${prop.keySet().size()}")
     val options: Options = new Options()
     val tableConfig = new BlockBasedTableConfig()
 

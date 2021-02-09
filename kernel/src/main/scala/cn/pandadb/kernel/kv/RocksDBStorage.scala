@@ -26,7 +26,7 @@ object RocksDBStorage extends LazyLogging{
       throw new IllegalStateException("Invalid db path, it's a regular file: " + path)
 
     if (rocksdbConfigPath == "default") {
-      logger.info("go importer~~~~~~~~~~")
+      logger.info("go default setting~~~~~~~~~~")
       val options: Options = new Options()
       val tableConfig = new BlockBasedTableConfig()
 
@@ -59,7 +59,7 @@ object RocksDBStorage extends LazyLogging{
       new RocksDBStorage(RocksDB.open(options, path))
 
     } else {
-      logger.info("go builder ~~~~~~~~~")
+      logger.info("go setting file ~~~~~~~~~")
       val builder = new RocksDBConfigBuilder(rocksdbConfigPath)
       val db = RocksDB.open(builder.getOptions(), path)
       new RocksDBStorage(db)

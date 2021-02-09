@@ -39,7 +39,7 @@ class PandaRpcServer(config: Config, dbManager: GraphDatabaseManager)
           config.getDefaultDBHome() + "/data/" + config.getLocalDBName()
         }
       }
-      new Auth(path)
+      new Auth(path, config.getRocksdbConfigFilePath)
     }
   }
 
