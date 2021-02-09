@@ -80,13 +80,13 @@ class DefaultGraphDatabaseManager(config: Config) extends GraphDatabaseManager w
 
   private def newGraphFacade(path: String): GraphFacade = {
     logger.info(s"start to get NodeStoreAPI.")
-    val nodeStore = new NodeStoreAPI(path)
+    val nodeStore = new NodeStoreAPI(path, config.getRocksdbConfigFilePath)
     logger.info(s"start to get RelStoreAPI")
-    val relationStore = new RelationStoreAPI(path)
+    val relationStore = new RelationStoreAPI(path, config.getRocksdbConfigFilePath)
     logger.info(s"node and rel db got.")
-    val indexStore = new IndexStoreAPI(path)
+    val indexStore = new IndexStoreAPI(path, config.getRocksdbConfigFilePath)
     logger.info(s"index db got.")
-    val statistics = new Statistics(path)
+    val statistics = new Statistics(path, config.getRocksdbConfigFilePath)
     logger.info(s"statistics db got.")
     new GraphFacade(
       nodeStore,

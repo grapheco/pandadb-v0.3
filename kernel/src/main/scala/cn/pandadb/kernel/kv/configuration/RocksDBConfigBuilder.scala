@@ -3,54 +3,59 @@ package cn.pandadb.kernel.kv.configuration
 import java.io.{BufferedInputStream, File, FileInputStream}
 import java.util.Properties
 
-import scala.collection.JavaConverters._
-import org.rocksdb.{AccessHint, BlockBasedTableConfig, BloomFilter, Cache, ChecksumType, CompactionStyle, CompressionType, IndexType, LRUCache, Options, Statistics}
+import com.typesafe.scalalogging.LazyLogging
 
-class RocksDBConfigBuilder(rocksdbConfigFilePath: String) {
+import scala.collection.JavaConverters._
+import org.rocksdb.{AccessHint, BlockBasedTableConfig, BloomFilter, Cache, ChecksumType, CompactionStyle, CompressionType, IndexType, LRUCache, Options, ReadOptions, Statistics}
+
+class RocksDBConfigBuilder(rocksdbConfigFilePath: String) extends LazyLogging{
   implicit def strToBoolean(str: String) = str.toBoolean
 
-  def getOptions(): Options ={
+  def getOptions(): Options = {
     val file = new File(rocksdbConfigFilePath)
 
-    if (!file.exists()){
+    if (!file.exists()) {
       return null
     }
 
     val prop = new Properties()
     val is = new BufferedInputStream(new FileInputStream(file))
     prop.load(is)
-    println(s"settings nums: ${prop.keySet().size()}")
+    logger.info(s"settings nums: ${prop.keySet().size()}")
     val options: Options = new Options()
     val tableConfig = new BlockBasedTableConfig()
 
     val keys = prop.keySet().asScala.map(x => x.toString)
     keys.foreach(k => {
       k match {
-        case "options.setCompressionType" => {
+        case "options.setCompressionType()" => {
           val compressiontype = {
-            val str = prop.getProperty("options.setCompressionType")
+            val str = prop.getProperty("options.setCompressionType()")
             str match {
               case "CompressionType.BZLIB2_COMPRESSION" => CompressionType.BZLIB2_COMPRESSION
               case "CompressionType.DISABLE_COMPRESSION_OPTION" => CompressionType.DISABLE_COMPRESSION_OPTION
-              case "CompressionType.LZ4_COMPRESSION" =>CompressionType.LZ4_COMPRESSION
-              case "CompressionType.LZ4HC_COMPRESSION" =>CompressionType.LZ4HC_COMPRESSION
-              case "CompressionType.NO_COMPRESSION" =>CompressionType.NO_COMPRESSION
-              case "CompressionType.SNAPPY_COMPRESSION" =>CompressionType.SNAPPY_COMPRESSION
-              case "CompressionType.XPRESS_COMPRESSION" =>CompressionType.XPRESS_COMPRESSION
-              case "CompressionType.ZLIB_COMPRESSION" =>CompressionType.ZLIB_COMPRESSION
-              case "CompressionType.ZSTD_COMPRESSION" =>CompressionType.ZSTD_COMPRESSION
+              case "CompressionType.LZ4_COMPRESSION" => CompressionType.LZ4_COMPRESSION
+              case "CompressionType.LZ4HC_COMPRESSION" => CompressionType.LZ4HC_COMPRESSION
+              case "CompressionType.NO_COMPRESSION" => CompressionType.NO_COMPRESSION
+              case "CompressionType.SNAPPY_COMPRESSION" => CompressionType.SNAPPY_COMPRESSION
+              case "CompressionType.XPRESS_COMPRESSION" => CompressionType.XPRESS_COMPRESSION
+              case "CompressionType.ZLIB_COMPRESSION" => CompressionType.ZLIB_COMPRESSION
+              case "CompressionType.ZSTD_COMPRESSION" => CompressionType.ZSTD_COMPRESSION
               case _ => throw new Exception("no such settings")
             }
           }
           options.setCompressionType(compressiontype)
         }
-        case "tableConfig.setChecksumType()" =>{
+        case "tableConfig.setChecksumType()" => {
+          val str = prop.getProperty("tableConfig.setChecksumType()")
           val checksumType = {
-            case "ChecksumType.kCRC32c" =>ChecksumType.kCRC32c
-            case "ChecksumType.kNoChecksum"=>ChecksumType.kNoChecksum
-            case "ChecksumType.kxxHash"=>ChecksumType.kxxHash
-            case "ChecksumType.kxxHash64"=>ChecksumType.kxxHash64
-            case _ => throw new Exception("no such settings")
+            str match {
+              case "ChecksumType.kCRC32c" => ChecksumType.kCRC32c
+              case "ChecksumType.kNoChecksum" => ChecksumType.kNoChecksum
+              case "ChecksumType.kxxHash" => ChecksumType.kxxHash
+              case "ChecksumType.kxxHash64" => ChecksumType.kxxHash64
+              case _ => throw new Exception("no such settings")
+            }
           }
           tableConfig.setChecksumType(checksumType)
         }
@@ -412,7 +417,6 @@ class RocksDBConfigBuilder(rocksdbConfigFilePath: String) {
         }
       }
     })
-
     tableConfig.setFilterPolicy(new BloomFilter(15, false))
     options.setTableFormatConfig(tableConfig)
     options.setCompactionStyle(CompactionStyle.LEVEL)

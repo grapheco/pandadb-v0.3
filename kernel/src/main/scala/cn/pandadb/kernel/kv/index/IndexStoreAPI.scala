@@ -12,14 +12,14 @@ import scala.collection.mutable
  * @Date 2020/12/23
  * @Version 0.1
  */
-class IndexStoreAPI(dbPath: String) {
+class IndexStoreAPI(dbPath: String, rocksdbCfgPath: String = "default") {
 
   type IndexId   = Int
 //  type Long    = Long
 
-  private val metaDB = RocksDBStorage.getDB(s"${dbPath}/indexMeta")
+  private val metaDB = RocksDBStorage.getDB(s"${dbPath}/indexMeta", rocksdbConfigPath = rocksdbCfgPath)
   private val meta = new IndexMetaData(metaDB)
-  private val indexDB = RocksDBStorage.getDB(s"${dbPath}/index")
+  private val indexDB = RocksDBStorage.getDB(s"${dbPath}/index", rocksdbConfigPath = rocksdbCfgPath)
   private val index = new IndexStore(indexDB)
   private val indexIdGenerator = new IdGenerator(metaDB, 200)
 
