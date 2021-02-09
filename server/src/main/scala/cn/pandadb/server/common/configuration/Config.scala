@@ -16,6 +16,8 @@ object SettingKeys {
   val localDBHomePath = "db.home.path"
   val localDBName = "db.name"
   val defaultLocalDBHome = "db.default.home.path"
+
+  val rocksdbConfigPath = "db.rocksdb.file.path"
 }
 
 class Config extends LazyLogging {
@@ -63,6 +65,9 @@ class Config extends LazyLogging {
 
   def getDefaultDBHome(): String ={
     settingsMap.get(SettingKeys.defaultLocalDBHome).get
+  }
+  def getRocksdbConfigFilePath: String = {
+    getValueAsString(SettingKeys.rocksdbConfigPath, defaultValue = "default")
   }
 
   private def getValueWithDefault[T](key: String, defaultValue: () => T, convert: (String) => T)(implicit m: Manifest[T]): T = {

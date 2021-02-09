@@ -37,7 +37,7 @@ class ServerTest {
       SettingKeys.defaultLocalDBHome -> "/pandadb_default"
     )
 
-    FileUtils.deleteDirectory(new File(map.get(SettingKeys.defaultLocalDBHome).get))
+//    FileUtils.deleteDirectory(new File(map.get(SettingKeys.defaultLocalDBHome).get))
     val serverBootstrapper = new PandaServerBootstrapper()
     serverBootstrapper.start(configFile, map)
   }

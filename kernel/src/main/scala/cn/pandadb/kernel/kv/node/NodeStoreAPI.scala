@@ -5,13 +5,13 @@ import cn.pandadb.kernel.kv.meta.{IdGenerator, NodeLabelNameStore, PropertyNameS
 import cn.pandadb.kernel.store.{NodeStoreSPI, StoredNodeWithProperty}
 
 
-class NodeStoreAPI(dbPath: String) extends NodeStoreSPI {
+class NodeStoreAPI(dbPath: String, rocksdbCfgPath: String = "default") extends NodeStoreSPI {
 
-  private val nodeDB = RocksDBStorage.getDB(s"${dbPath}/nodes")
+  private val nodeDB = RocksDBStorage.getDB(s"${dbPath}/nodes", rocksdbConfigPath = rocksdbCfgPath)
   private val nodeStore = new NodeStore(nodeDB)
-  private val nodeLabelDB = RocksDBStorage.getDB(s"${dbPath}/nodeLabel")
+  private val nodeLabelDB = RocksDBStorage.getDB(s"${dbPath}/nodeLabel", rocksdbConfigPath = rocksdbCfgPath)
   private val nodeLabelStore = new NodeLabelStore(nodeLabelDB)
-  private val metaDB = RocksDBStorage.getDB(s"${dbPath}/nodeMeta")
+  private val metaDB = RocksDBStorage.getDB(s"${dbPath}/nodeMeta", rocksdbConfigPath = rocksdbCfgPath)
   private val nodeLabelName = new NodeLabelNameStore(metaDB)
   private val propertyName = new PropertyNameStore(metaDB)
   private val idGenerator = new IdGenerator(nodeLabelDB, 200)
