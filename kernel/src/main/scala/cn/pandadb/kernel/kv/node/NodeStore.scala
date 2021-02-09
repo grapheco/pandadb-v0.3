@@ -72,6 +72,22 @@ class NodeStore(db: KeyValueDB) {
     }
   }
 
+  def getNodesByLabelWithoutDeserialize(labelId: LabelId): Iterator[NodeId] = {
+    val iter = db.newIterator()
+    val prefix = KeyConverter.toNodeKey(labelId)
+    iter.seek(prefix)
+
+    new Iterator[NodeId] (){
+      override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
+      override def next(): NodeId = {
+        val id = ByteUtils.getLong(iter.key(), prefix.length)
+        iter.value().length
+        iter.next()
+        id
+      }
+    }
+  }
+
   def deleteByLabel(labelId: LabelId): Unit =
     db.deleteRange(KeyConverter.toNodeKey(labelId, 0.toLong),
       KeyConverter.toNodeKey(labelId, -1.toLong))

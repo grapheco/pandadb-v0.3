@@ -116,6 +116,17 @@ class RelationStoreAPI(dbPath: String) extends RelationStoreSPI{
     edgeType.map(inRelationStore.getRelations(toNodeId, _))
       .getOrElse(inRelationStore.getRelations(toNodeId))
 
+  override def findInRelationsBetween(toNodeId: Long, fromNodeId: Long, edgeType: Option[Int] = None): Iterator[StoredRelation] = {
+    edgeType.map(inRelationStore.getRelation(toNodeId, _, fromNodeId).toIterator)
+      .getOrElse(inRelationStore.getRelations(toNodeId).filter(r => r.from == fromNodeId))
+  }
+
+  override def findOutRelationsBetween(fromNodeId: Long, toNodeId: Long, edgeType: Option[Int] = None): Iterator[StoredRelation] = {
+    edgeType.map(outRelationStore.getRelation(fromNodeId, _, toNodeId).toIterator)
+      .getOrElse(outRelationStore.getRelations(fromNodeId).filter(r => r.to == toNodeId))
+  }
+
+
   override def close(): Unit ={
 //    relationIdGenerator.flush()
     relationStore.close()

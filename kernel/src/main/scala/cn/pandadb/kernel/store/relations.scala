@@ -85,5 +85,9 @@ trait RelationStoreSPI {
 
   def findInRelations(fromNodeId: Long, edgeType: Option[Int] = None): Iterator[StoredRelation]
 
+  def findInRelationsBetween(toNodeId: Long, fromNodeId: Long, edgeType: Option[Int] = None): Iterator[StoredRelation]
+
+  def findOutRelationsBetween(fromNodeId: Long, toNodeId: Long, edgeType: Option[Int] = None): Iterator[StoredRelation]
+
   def close(): Unit
 }
