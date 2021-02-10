@@ -41,7 +41,7 @@ object RocksDBStorage extends LazyLogging{
         .setCompressionType(CompressionType.SNAPPY_COMPRESSION)
         .setCompactionStyle(CompactionStyle.LEVEL)
         .setDisableAutoCompactions(true) // true will invalid the compaction trigger, maybe
-        .setOptimizeFiltersForHits(true) // true will not generate BloomFilter for L0. dangerous
+        .setOptimizeFiltersForHits(false) // true will not generate BloomFilter for L0. dangerous
         .setSkipCheckingSstFileSizesOnDbOpen(true)
         .setLevelCompactionDynamicLevelBytes(true)
         .setAllowConcurrentMemtableWrite(true)
@@ -56,6 +56,7 @@ object RocksDBStorage extends LazyLogging{
         .setTargetFileSizeBase(1024 * 1024 * 1024 * 4) // maxBytesForLevelBase / 10
         .setArenaBlockSize(512 * 1024 * 1024)
 
+      logger.info(s"options.optimizeFiltersForHits(): ${options.optimizeFiltersForHits()}")
       new RocksDBStorage(RocksDB.open(options, path))
 
     } else {
