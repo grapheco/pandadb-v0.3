@@ -1,14 +1,13 @@
 package cn.pandadb.kv
 
 import java.io.File
-
 import cn.pandadb.kernel.kv.meta.Statistics
-import cn.pandadb.kernel.kv.GraphFacade
-import cn.pandadb.kernel.kv.index.IndexStoreAPI
+import cn.pandadb.kernel.kv.{GraphFacade, KeyConverter}
+import cn.pandadb.kernel.kv.index.{IndexEncoder, IndexStoreAPI}
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
 import cn.pandadb.kernel.optimizer.AnyValue
-import cn.pandadb.kernel.store.{NodeStoreSPI, RelationStoreSPI}
+import cn.pandadb.kernel.store.{NodeStoreSPI, RelationStoreSPI, StoredNodeWithProperty}
 import org.apache.commons.io.FileUtils
 import org.grapheco.lynx.{LynxNode, LynxResult}
 import org.junit.{After, Assert, Before, Test}
@@ -168,20 +167,21 @@ class GraphFacadeTest {
       "create (n:person{name: 'bob', age: 31})",
       "create (n:person{name: 'alice', age: 31.5})",
       "create (n:person{name: 'bobobobob', age: 3})",
-      "create (n:person{name: 22, age: '31'})",
+      "create (n:person{name: 22, age: 31})",
       "create (n:person{name: 'b', age: -100})",
       "create (n:person{name: 'ba', age: -100.000001})",
       "create (n:person{name: 'bob', age: 32})",
       "create (n:worker{name: 'alice', age: 31.5})",
       "create (n:worker{name: 'bobobobob', age: 3})",
-      "create (n:worker{name: 22, age: '31'})",
+      "create (n:worker{name: 22, age: 31})",
       "create (n:worker{name: 'b', age: -100})",
       "create (n:worker{name: 'ba', age: -100.000001})",
     )
     createCypher.foreach{
       c=>
-        graphFacade.cypher(c)
+        graphFacade.cypher(c).show()
     }
+
   }
 
   @Test
@@ -193,14 +193,14 @@ class GraphFacadeTest {
 
     val matchCypher = Array(
       "match (n:person) where n.name = 'bob' return n",
-      "match (n:person) where n.name = 22 return n",
-      "match (n:person) where n.name = 'alice' return n",
-      "match (n:person) where n.age = 31 return n",
+//      "match (n:person) where n.name = 22 return n",
+//      "match (n:person) where n.name = 'alice' return n",
+//      "match (n:person) where n.age = 31 return n",
       "match (n:person) where n.age < 31 return n",
-      "match (n:person) where n.age <= 31 return n",
-      "match (n:person) where n.age <= 31.00 return n",
-      "match (n:person) where n.age > -100 return n",
-      "match (n:person) where n.age > -100.0000001 return n",
+//      "match (n:person) where n.age <= 31 return n",
+//      "match (n:person) where n.age <= 31.00 return n",
+//      "match (n:person) where n.age > -100 return n",
+//      "match (n:person) where n.age > -100.0000001 return n",
     )
 
     matchCypher.foreach{
@@ -211,8 +211,6 @@ class GraphFacadeTest {
 
     val indexId = indexStore.getIndexId(nodeStore.getLabelId("person"),
       Array(nodeStore.getPropertyKeyId("age"))).get
-
-    indexStore.findFloatRange(indexId, 0, 100).foreach(println)
     graphFacade.close()
   }
 
@@ -231,11 +229,12 @@ class GraphFacadeTest {
         graphFacade.cypher(c).show()
     }
 
-    val indexId = indexStore.getIndexId(nodeStore.getLabelId("person"),
-      Array(nodeStore.getPropertyKeyId("age"))).get
-    println(indexId)
+    val labelId = nodeStore.getLabelId("person")
+    val propIds = Array(nodeStore.getPropertyKeyId("age"))
+    val indexId = indexStore.getIndexId(labelId, propIds).get
+    println(indexId, labelId, propIds.toSet)
     indexStore.findFloatRange(indexId, 0, 100).foreach(println)
-    graphFacade.close()
+//    graphFacade.close()
   }
 
   def showAll(db: RocksDB): Unit = {
