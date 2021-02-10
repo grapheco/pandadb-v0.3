@@ -5,3 +5,4 @@ target
 output
 *.iml
 **/testdata
+**/dependency-reduced-pom.xml
