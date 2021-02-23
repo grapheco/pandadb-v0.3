@@ -7,7 +7,7 @@
     </appenders>
     <loggers>
         <logger name="cn.pandadb" level="info"></logger>
-        <logger name="org.springframework" level="INFO"></logger>
+        <logger name="org.grapheco.lynx.CypherRunner" level="debug"></logger>
         <root level="all">
             <appender-ref ref="Console"/>
         </root>
