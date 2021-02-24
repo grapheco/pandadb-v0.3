@@ -31,32 +31,32 @@ object RocksDBStorage extends LazyLogging{
       val tableConfig = new BlockBasedTableConfig()
 
       tableConfig.setFilterPolicy(new BloomFilter(15, false))
-        .setBlockSize(16 * 1024)
-        .setBlockCache(new LRUCache(256 * 1024 * 1024))
-        .setFormatVersion(4)
-        .setWholeKeyFiltering(false)
+        .setBlockSize(32 * 1024)
+        .setBlockCache(new LRUCache(512 * 1024 * 1024))
 
       options.setTableFormatConfig(tableConfig)
         .setCreateIfMissing(createIfMissing)
-        .setCompressionType(CompressionType.SNAPPY_COMPRESSION)
+        .setCompressionType(CompressionType.LZ4_COMPRESSION)
         .setCompactionStyle(CompactionStyle.LEVEL)
-        .setDisableAutoCompactions(true) // true will invalid the compaction trigger, maybe
-        .setOptimizeFiltersForHits(false) // true will not generate BloomFilter for L0. dangerous
+        .setDisableAutoCompactions(false) // true will invalid the compaction trigger, maybe
+        //        .setOptimizeFiltersForHits(true) // true will not generate BloomFilter for L0.
         .setSkipCheckingSstFileSizesOnDbOpen(true)
-        .setLevelCompactionDynamicLevelBytes(true)
+        //        .setLevelCompactionDynamicLevelBytes(true)
         .setAllowConcurrentMemtableWrite(true)
         .setMaxOpenFiles(-1)
-        .setWriteBufferSize(256 * 1024 * 1024)
-        .setMinWriteBufferNumberToMerge(4)
-        .setLevel0FileNumCompactionTrigger(10) // level0 file num = 10, compression l0->l1 start.(invalid, why???);level0 size=1G * 4 * 10 = 40
-        .setMaxWriteBufferNumber(8)
+        .setWriteBufferSize(128 * 1024 * 1024)
+        .setMinWriteBufferNumberToMerge(3) // 2 or 3 better performance
+        .setLevel0FileNumCompactionTrigger(10) // level0 file num = 10, compression l0->l1 start.(invalid, why???);level0 size=256M * 3 * 10 = 7G
+        .setMaxWriteBufferNumber(2)
         .setLevel0SlowdownWritesTrigger(20)
         .setLevel0StopWritesTrigger(40)
-        .setMaxBytesForLevelBase(1024 * 1024 * 1024 * 40) // total size of level1(same as level0)
-        .setTargetFileSizeBase(1024 * 1024 * 1024 * 4) // maxBytesForLevelBase / 10
-        .setArenaBlockSize(512 * 1024 * 1024)
+        .setMaxBytesForLevelBase(256 * 1024 * 1024 * 15 ) // total size of level1(same as level0)
+        .setTargetFileSizeBase(256 * 1024 * 1024) // maxBytesForLevelBase / 10 or 15
 
-      logger.info(s"options.optimizeFiltersForHits(): ${options.optimizeFiltersForHits()}")
+      logger.info(s"setDisableAutoCompactions: ${options.disableAutoCompactions()}")
+      logger.info(s"setWriteBufferSize: ${options.writeBufferSize()}")
+      logger.info(s"setMaxBytesForLevelBase: ${options.maxBytesForLevelBase()}")
+
       new RocksDBStorage(RocksDB.open(options, path))
 
     } else {
