@@ -420,12 +420,34 @@ class GraphFacade(nodeStore: NodeStoreSPI,
       .getOrElse(Iterator.empty)
       .map(p => PathTriple(p._1, relationAt(p._2.id).orNull, nodeAt(p._3).orNull))
 
+//  override def paths(nodeId: LynxId,
+//                     relationshipFilter: RelationshipFilter,
+//                     endNodeFilter: NodeFilter,
+//                     direction: SemanticDirection): Iterator[PathTriple] =
+//    paths(nodeId, direction) // TODO 这里应把关系过滤作为查询条件而不是过滤条件
+//      .filter(trip => relationshipFilter.matches(trip.storedRelation) && endNodeFilter.matches(trip.endNode))
+
   override def paths(nodeId: LynxId,
                      relationshipFilter: RelationshipFilter,
                      endNodeFilter: NodeFilter,
-                     direction: SemanticDirection): Iterator[PathTriple] =
-    paths(nodeId, direction)
-      .filter(trip => relationshipFilter.matches(trip.storedRelation) && endNodeFilter.matches(trip.endNode))
+                     direction: SemanticDirection): Iterator[PathTriple] = {
+    nodeAt(nodeId).map(
+      node =>
+        relationshipFilter.types.map(relTypeNameMap).map(
+          relType =>
+            direction match {
+              case SemanticDirection.INCOMING => relationStore.findInRelations(node.longId, Some(relType)).map(r => (node, r, r.from))
+              case SemanticDirection.OUTGOING => relationStore.findOutRelations(node.longId, Some(relType)).map(r => (node, r, r.to))
+              case SemanticDirection.BOTH => relationStore.findInRelations(node.longId, Some(relType)).map(r => (node, r, r.from)) ++
+                relationStore.findOutRelations(node.longId, Some(relType)).map(r => (node, r, r.to))
+            }
+        )
+    )
+      .getOrElse(Iterator.empty)
+      .reduce(_ ++ _)
+      .map(p => PathTriple(p._1, relationAt(p._2.id).orNull, nodeAt(p._3).orNull))
+      .filter(trip => endNodeFilter.matches(trip.endNode))
+  }
 
   override def nodes(nodeFilter: NodeFilter): Iterator[PandaNode] = {
     (nodeFilter.labels.nonEmpty, nodeFilter.properties.nonEmpty) match {
