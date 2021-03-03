@@ -31,27 +31,30 @@ object RocksDBStorage extends LazyLogging{
       val tableConfig = new BlockBasedTableConfig()
 
       tableConfig.setFilterPolicy(new BloomFilter(15, false))
-        .setBlockSize(32 * 1024)
-        .setBlockCache(new LRUCache(512 * 1024 * 1024))
+        .setBlockSize(32L * 1024L)
+        .setBlockCache(new LRUCache(512L * 1024L * 1024L))
 
       options.setTableFormatConfig(tableConfig)
         .setCreateIfMissing(createIfMissing)
-        .setCompressionType(CompressionType.LZ4_COMPRESSION)
+        .setCompressionType(CompressionType.NO_COMPRESSION)
         .setCompactionStyle(CompactionStyle.LEVEL)
         .setDisableAutoCompactions(false) // true will invalid the compaction trigger, maybe
         //        .setOptimizeFiltersForHits(true) // true will not generate BloomFilter for L0.
+        .setMaxBackgroundJobs(5)
         .setSkipCheckingSstFileSizesOnDbOpen(true)
-        //        .setLevelCompactionDynamicLevelBytes(true)
+                .setLevelCompactionDynamicLevelBytes(true)
         .setAllowConcurrentMemtableWrite(true)
         .setMaxOpenFiles(-1)
-        .setWriteBufferSize(128 * 1024 * 1024)
+        .setWriteBufferSize(256L * 1024L * 1024L)
         .setMinWriteBufferNumberToMerge(3) // 2 or 3 better performance
         .setLevel0FileNumCompactionTrigger(10) // level0 file num = 10, compression l0->l1 start.(invalid, why???);level0 size=256M * 3 * 10 = 7G
-        .setMaxWriteBufferNumber(2)
+        .setMaxWriteBufferNumber(8)
         .setLevel0SlowdownWritesTrigger(20)
         .setLevel0StopWritesTrigger(40)
-        .setMaxBytesForLevelBase(256 * 1024 * 1024 * 15 ) // total size of level1(same as level0)
-        .setTargetFileSizeBase(256 * 1024 * 1024) // maxBytesForLevelBase / 10 or 15
+        .setMaxBytesForLevelBase(256L * 1024L * 1024L * 15L) // total size of level1(same as level0)
+        .setMaxBytesForLevelMultiplier(10)
+        .setTargetFileSizeBase(256L * 1024L * 1024L) // maxBytesForLevelBase / 10 or 15
+          .setTargetFileSizeMultiplier(4)
 
       logger.info(s"setDisableAutoCompactions: ${options.disableAutoCompactions()}")
       logger.info(s"setWriteBufferSize: ${options.writeBufferSize()}")

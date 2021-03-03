@@ -35,11 +35,11 @@
                 <version>3.2.1</version>
                 <configuration>
                     <finalName>pandadb-importer-v0.3</finalName>
-                    <artifactSet>
-                        <includes>
-                            <include>*:*</include>
-                        </includes>
-                    </artifactSet>
+<!--                    <artifactSet>-->
+<!--                        <includes>-->
+<!--                            <include>*:*</include>-->
+<!--                        </includes>-->
+<!--                    </artifactSet>-->
                     <filters>
                         <filter>
                             <artifact>*:*</artifact>

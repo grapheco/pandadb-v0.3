@@ -73,12 +73,6 @@ object PandaImporter extends LazyLogging {
     service.scheduleAtFixedRate(nodeCountProgressLogger, 0, 30, TimeUnit.SECONDS)
     service.scheduleAtFixedRate(relCountProgressLogger, 0, 30, TimeUnit.SECONDS)
 
-    importCmd.nodeFileList.foreach(file => new SingleNodeFileImporter(file, importCmd, globalArgs).importData())
-    nodeDB.close()
-    nodeLabelDB.close()
-    logger.info(s"$globalNodeCount nodes imported. $time")
-    logger.info(s"$globalNodePropCount props of node imported. $time")
-
     importCmd.relFileList.foreach(file => new SingleRelationFileImporter(file, importCmd, globalArgs).importData())
     relationDB.close()
     inRelationDB.close()
@@ -86,6 +80,15 @@ object PandaImporter extends LazyLogging {
     relationTypeDB.close()
     logger.info(s"$globalRelCount relations imported. $time")
     logger.info(s"$globalRealPropCount props of relation imported. $time")
+    PDBMetaData.persist(importCmd.exportDBPath.getAbsolutePath)
+
+
+    importCmd.nodeFileList.foreach(file => new SingleNodeFileImporter(file, importCmd, globalArgs).importData())
+    nodeDB.close()
+    nodeLabelDB.close()
+    logger.info(s"$globalNodeCount nodes imported. $time")
+    logger.info(s"$globalNodePropCount props of node imported. $time")
+
 
     PDBMetaData.persist(importCmd.exportDBPath.getAbsolutePath)
     service.shutdown()
