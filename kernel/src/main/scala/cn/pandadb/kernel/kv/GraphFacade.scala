@@ -262,6 +262,11 @@ class GraphFacade(nodeStore: NodeStoreSPI,
 
   def nodeAt(id: Long): Option[PandaNode] = nodeStore.getNodeById(id).map(mapNode)
 
+  def nodeAt(id: Long, label: String): Option[PandaNode] =
+    nodeStore.getNodeById(id, Option(nodeLabelNameMap(label))).map(mapNode)
+
+  def nodeHasLabel(id: Long, label: String): Boolean = nodeStore.hasLabel(id, nodeLabelNameMap(label))
+
   def relationAt(id: Long): Option[PandaRelationship] = relationStore.getRelationById(id).map(mapRelation)
 
   def relationAt(id: LynxId): Option[PandaRelationship] = relationAt(id.value.asInstanceOf[Long])
