@@ -20,6 +20,10 @@ class GraphFacade(nodeStore: NodeStoreSPI,
 
   init()
 
+  override def getIndexes(): Array[(LabelName, List[PropertyKeyName])] = {
+    ???
+  }
+
   override def cypher(query: String, parameters: Map[String, Any] = Map.empty): LynxResult = {
     runner.compile(query)
     runner.run(query, parameters)

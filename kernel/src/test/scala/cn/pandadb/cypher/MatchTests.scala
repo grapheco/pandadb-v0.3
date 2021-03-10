@@ -45,6 +45,14 @@ class MatchTests {
   }
 
   @Test
+  def tmp(): Unit ={
+    val res = db.cypher("match (n) return n").records()
+    while (res.hasNext){
+      println(res.next().get("n"))
+    }
+  }
+
+  @Test
   def matchTest(): Unit = {
     val cyphers = ArrayBuffer[(String, String, Any)]()  //(cypherName, cypher, expectedSize)
     // basic node finding

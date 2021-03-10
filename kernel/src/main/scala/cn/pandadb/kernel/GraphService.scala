@@ -1,7 +1,6 @@
 package cn.pandadb.kernel
 
 import org.grapheco.lynx.LynxResult
-import org.opencypher.okapi.api.graph.CypherResult
 
 trait GraphService {
   type Id = Long

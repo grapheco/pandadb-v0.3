@@ -9,7 +9,6 @@ import org.rocksdb.{ReadOptions, RocksDB}
 import org.apache.commons.lang3.RandomStringUtils
 
 import scala.io.Source
-import scala.tools.nsc.profile.Profiler
 import scala.util.Random
 
 @Test
