@@ -412,7 +412,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     nodes(startNodeFilter).flatMap(node => paths(node.id,relationshipFilter,endNodeFilter, direction))
 
 
-  override def paths(nodeId: LynxId, direction: SemanticDirection): Iterator[PathTriple] =
+   def paths(nodeId: LynxId, direction: SemanticDirection): Iterator[PathTriple] =
     nodeAt(nodeId).map(
         n=>
           direction match {
@@ -432,7 +432,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
 //    paths(nodeId, direction) // TODO 这里应把关系过滤作为查询条件而不是过滤条件
 //      .filter(trip => relationshipFilter.matches(trip.storedRelation) && endNodeFilter.matches(trip.endNode))
 
-  override def paths(nodeId: LynxId,
+   def paths(nodeId: LynxId,
                      relationshipFilter: RelationshipFilter,
                      endNodeFilter: NodeFilter,
                      direction: SemanticDirection): Iterator[PathTriple] = {
@@ -497,7 +497,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
 
     val relsMap: Seq[(String, PandaRelationship)] = relsInput.map(x => {
       val (varname, input) = x
-      varname -> PandaRelationship(relationStore.newRelationId(), nodeId(input.startNodeRef), nodeId(input.endNodeRef), input.types.headOption)
+      varname -> PandaRelationship(relationStore.newRelationId(), nodeId(input.startNodeRef), nodeId(input.endNodeRef), input.types.headOption, input.props:_*)
     }
     )
 
