@@ -9,7 +9,7 @@ import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
 import cn.pandadb.kernel.store.{NodeStoreSPI, RelationStoreSPI}
 import org.apache.commons.io.FileUtils
-import org.junit.{Before, Test}
+import org.junit.{After, Before, Test}
 
 class CypherCallTest {
   var nodeStore: NodeStoreSPI = _
@@ -44,5 +44,11 @@ class CypherCallTest {
   @Test
   def call(): Unit = {
     graphFacade.cypher("CALL `db`.`labels`")
+  }
+
+
+  @After
+  def close(): Unit ={
+    graphFacade.close()
   }
 }

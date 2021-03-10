@@ -9,7 +9,7 @@ import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
 import cn.pandadb.kernel.store.{NodeStoreSPI, RelationStoreSPI}
 import org.apache.commons.io.FileUtils
-import org.junit.{Before, Test}
+import org.junit.{After, Before, Test}
 
 // https://neo4j.com/docs/cypher-manual/3.5/clauses/set/
 
@@ -153,4 +153,8 @@ class CypherSetTest {
     println(res)
   }
 
+  @After
+  def close(): Unit ={
+    graphFacade.close()
+  }
 }
