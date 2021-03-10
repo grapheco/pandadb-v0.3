@@ -9,7 +9,7 @@ import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
 import cn.pandadb.kernel.store.{NodeStoreSPI, RelationStoreSPI}
 import org.apache.commons.io.FileUtils
-import org.junit.{Before, Test}
+import org.junit.{After, Before, Test}
 
 class CypherUnionTest {
   var nodeStore: NodeStoreSPI = _
@@ -73,5 +73,10 @@ class CypherUnionTest {
         |MATCH (n:Movie)
         |RETURN n.title AS name
         |""".stripMargin)
+  }
+
+  @After
+  def close(): Unit ={
+    graphFacade.close()
   }
 }

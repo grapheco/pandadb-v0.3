@@ -9,7 +9,7 @@ import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
 import cn.pandadb.kernel.store.{NodeStoreSPI, RelationStoreSPI}
 import org.apache.commons.io.FileUtils
-import org.junit.{Before, Test}
+import org.junit.{After, Before, Test}
 
 class CypherUniqueTest {
   var nodeStore: NodeStoreSPI = _
@@ -107,5 +107,10 @@ class CypherUniqueTest {
         |CREATE UNIQUE (root)-[:FOO]->(x),(root)-[:BAR]->(x)
         |RETURN x
         |""".stripMargin)
+  }
+
+  @After
+  def close(): Unit ={
+    graphFacade.close()
   }
 }

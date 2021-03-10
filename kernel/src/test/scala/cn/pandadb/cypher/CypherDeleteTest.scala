@@ -9,7 +9,7 @@ import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
 import cn.pandadb.kernel.store.{NodeStoreSPI, RelationStoreSPI}
 import org.apache.commons.io.FileUtils
-import org.junit.{Assert, Before, Test}
+import org.junit.{After, Assert, Before, Test}
 
 class CypherDeleteTest {
 
@@ -68,5 +68,11 @@ class CypherDeleteTest {
   def deleteRelationshipOnly(): Unit ={
     val size = graphFacade.cypher("MATCH (n { name: 'Andy' })-[r:KNOWS]->() DELETE r").records().size
     Assert.assertEquals(0, size)
+  }
+
+
+  @After
+  def close(): Unit ={
+    graphFacade.close()
   }
 }

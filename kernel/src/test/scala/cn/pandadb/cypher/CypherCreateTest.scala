@@ -10,7 +10,7 @@ import cn.pandadb.kernel.kv.relation.RelationStoreAPI
 import cn.pandadb.kernel.store.{NodeStoreSPI, PandaNode, PandaRelationship, RelationStoreSPI}
 import org.apache.commons.io.FileUtils
 import org.grapheco.lynx.LynxNode
-import org.junit.{Assert, Before, Test}
+import org.junit.{After, Assert, Before, Test}
 
 class CypherCreateTest {
   var nodeStore: NodeStoreSPI = _
@@ -51,7 +51,8 @@ class CypherCreateTest {
 
   @Test
   def node_String_Int_float_boolean(): Unit ={
-    val record = graphFacade.cypher("CREATE (Keanu:Person {name:'String_Int_float_boolean', born:1964, money:100.55, animal:false}) return Keanu").records().next()
+    val record = graphFacade.cypher("CREATE (Keanu:Person {name:'String_Int_float_boolean', born:1964, " +
+      "money:100.55, animal:false}) return Keanu").records().next()
     val property = record("Keanu").asInstanceOf[PandaNode].properties
 
     Assert.assertEquals("String_Int_float_boolean", property("name").value)
@@ -128,5 +129,10 @@ class CypherCreateTest {
         |CREATE (TheMatrix:Movie {title:'The Matrix', released:1999, tagline:'Welcome to the Real World'})
         |CREATE (Keanu:Person {name:'Keanu Reeves', born:1964})
         |CREATE (Keanu)-[:ACTED_IN {roles:[1, 2, 3, 4]}]->(TheMatrix)""".stripMargin).show()
+  }
+
+  @After
+  def close(): Unit ={
+    graphFacade.close()
   }
 }
