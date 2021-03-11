@@ -34,18 +34,13 @@ class CypherLdbcTest {
   }
 
   @Test
-  def tmp(): Unit ={
-    graphFacade.cypher("match (n:message) return n limit 5").show()
-
-  }
-
-  @Test
   def short1(): Unit ={
-    val personId = 600000000000016L
+    val personId = 600000000000014L
     graphFacade.cypher(
       s"""
-        |MATCH (n:person {id:$personId})-[:IS_LOCATED_IN]->(p:place)
+        |MATCH (n:person{id:'$personId'})-[:isLocatedIn]->(p:place)
         |RETURN
+        |n,
         |  n.firstName AS firstName,
         |  n.lastName AS lastName,
         |  n.birthday AS birthday,
@@ -58,12 +53,12 @@ class CypherLdbcTest {
   }
   @Test
   def short2(): Unit ={
-    val personId = 600000000000016L
-
-    graphFacade.cypher(
+    // TODO: optimize speed
+    val personId = 600000000000014L
+        graphFacade.cypher(
       s"""
-        |MATCH (:Person {id:$personId})<-[:HAS_CREATOR]-(m:Message)-[:REPLY_OF*0..]->(p:Post)
-        |MATCH (p)-[:HAS_CREATOR]->(c)
+        |MATCH (:person{id:'$personId'})<-[:hasCreator]-(m:comment)-[:replyOf*0..]->(p:post)
+        |MATCH (p)-[:hasCreator]->(c)
         |RETURN
         |  m.id AS messageId,
         |  CASE exists(m.content)
@@ -81,11 +76,10 @@ class CypherLdbcTest {
   }
   @Test
   def short3(): Unit ={
-    val personId = 600000000000016L
-
-    graphFacade.cypher(
+    val personId = 600000000000014L
+        graphFacade.cypher(
       s"""
-        |MATCH (n:Person {id:$personId})-[r:KNOWS]-(friend)
+        |MATCH (n:person {id:'$personId'})-[r:knows]-(friend)
         |RETURN
         |  friend.id AS personId,
         |  friend.firstName AS firstName,
@@ -96,10 +90,10 @@ class CypherLdbcTest {
   }
   @Test
   def short4(): Unit ={
-    val messageId = 600000000000016L
+    val commentId = 700000000032435L
     graphFacade.cypher(
       s"""
-        |MATCH (m:Message {id:$messageId})
+        |MATCH (m:comment {id:'$commentId'})
         |RETURN
         |  m.creationDate AS messageCreationDate,
         |  CASE exists(m.content)
@@ -110,11 +104,10 @@ class CypherLdbcTest {
   }
   @Test
   def short5(): Unit ={
-    val messageId = 600000000000016L
-
+    val commentId = 700000000032435L
     graphFacade.cypher(
       s"""
-        |MATCH (m:Message {id:$messageId})-[:HAS_CREATOR]->(p:Person)
+        |MATCH (m:comment {id:'$commentId'})-[:hasCreator]->(p:person)
         |RETURN
         |  p.id AS personId,
         |  p.firstName AS firstName,
@@ -123,11 +116,12 @@ class CypherLdbcTest {
   }
   @Test
   def short6(): Unit ={
-    val messageId = 600000000000016L
+    // TODO: optimize speed
 
+    val commentId = 700000000032435L
     graphFacade.cypher(
       s"""
-        |MATCH (m:Message {id:$messageId})-[:REPLY_OF*0..]->(p:Post)<-[:CONTAINER_OF]-(f:Forum)-[:HAS_MODERATOR]->(mod:Person)
+        |MATCH (m:comment {id:'$commentId'})-[:replyOf*0..]->(p:post)<-[:containerOf]-(f:forum)-[:hasModerator]->(mod:person)
         |RETURN
         |  f.id AS forumId,
         |  f.title AS forumTitle,
@@ -138,12 +132,14 @@ class CypherLdbcTest {
   }
   @Test
   def short7(): Unit ={
-    val messageId = 600000000000016L
+    // TODO: optimize speed
+
+    val commentId = 700000000032435L
 
     graphFacade.cypher(
       s"""
-        |MATCH (m:Message {id:$messageId})<-[:REPLY_OF]-(c:Comment)-[:HAS_CREATOR]->(p:Person)
-        |OPTIONAL MATCH (m)-[:HAS_CREATOR]->(a:Person)-[r:KNOWS]-(p)
+        |MATCH (m:comment {id:'$commentId'})<-[:replyOf]-(c:comment)-[:hasCreator]->(p:person)
+        |OPTIONAL MATCH (m)-[:hasCreator]->(a:person)-[r:knows]-(p)
         |RETURN
         |  c.id AS commentId,
         |  c.content AS commentContent,
