@@ -441,16 +441,26 @@ class GraphFacade(nodeStore: NodeStoreSPI,
                      endNodeFilter: NodeFilter,
                      direction: SemanticDirection): Iterator[PathTriple] = {
     nodeAt(nodeId).map(
-      node =>
-        relationshipFilter.types.map(relTypeNameMap).map(
-          relType =>
-            direction match {
-              case SemanticDirection.INCOMING => relationStore.findInRelations(node.longId, Some(relType)).map(r => (node, r, r.from))
-              case SemanticDirection.OUTGOING => relationStore.findOutRelations(node.longId, Some(relType)).map(r => (node, r, r.to))
-              case SemanticDirection.BOTH => relationStore.findInRelations(node.longId, Some(relType)).map(r => (node, r, r.from)) ++
-                relationStore.findOutRelations(node.longId, Some(relType)).map(r => (node, r, r.to))
-            }
-        )
+      node => {
+        if (!relationshipFilter.types.isEmpty) {
+          relationshipFilter.types.map(relTypeNameMap).map(
+            relType =>
+              direction match {
+                case SemanticDirection.INCOMING => relationStore.findInRelations(node.longId, Some(relType)).map(r => (node, r, r.from))
+                case SemanticDirection.OUTGOING => relationStore.findOutRelations(node.longId, Some(relType)).map(r => (node, r, r.to))
+                case SemanticDirection.BOTH => relationStore.findInRelations(node.longId, Some(relType)).map(r => (node, r, r.from)) ++
+                  relationStore.findOutRelations(node.longId, Some(relType)).map(r => (node, r, r.to))
+              }
+          )
+        } else {
+          Seq(direction match {
+            case SemanticDirection.INCOMING => relationStore.findInRelations(node.longId).map(r => (node, r, r.from))
+            case SemanticDirection.OUTGOING => relationStore.findOutRelations(node.longId).map(r => (node, r, r.to))
+            case SemanticDirection.BOTH => relationStore.findInRelations(node.longId).map(r => (node, r, r.from)) ++
+              relationStore.findOutRelations(node.longId).map(r => (node, r, r.to))
+          })
+        }
+      }
     )
       .getOrElse(Iterator.empty)
       .reduce(_ ++ _)
