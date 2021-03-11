@@ -1,4 +1,4 @@
-package cn.pandadb.cypher
+package cn.pandadb.cypher.clauses
 
 import java.io.File
 
@@ -8,7 +8,7 @@ import org.apache.commons.io.FileUtils
 import org.junit.{AfterClass, Assert, BeforeClass, Test}
 
 
-object OrderByTests {
+object OrderByTest {
   var db: GraphFacade = null
   val dbPath = "testdata/db1"
 
@@ -33,8 +33,8 @@ object OrderByTests {
   }
 }
 
-class OrderByTests {
-  val db = OrderByTests.db
+class OrderByTest {
+  val db = OrderByTest.db
 
   @Test
   def test1(): Unit = {

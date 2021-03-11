@@ -1,4 +1,4 @@
-package cn.pandadb.cypher
+package cn.pandadb.cypher.clauses
 
 import java.io.File
 

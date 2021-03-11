@@ -1,14 +1,14 @@
-package cn.pandadb.cypher
+package cn.pandadb.cypher.clauses
 
 import java.io.File
 
 import cn.pandadb.kernel.GraphDatabaseBuilder
 import cn.pandadb.kernel.kv.GraphFacade
 import org.apache.commons.io.FileUtils
-import org.junit.{AfterClass, BeforeClass, Test, Assert}
+import org.junit.{AfterClass, Assert, BeforeClass, Test}
 
 
-object UnwindTests {
+object UnwindTest {
   var db: GraphFacade = null
   val dbPath = "testdata/db1"
 
@@ -28,8 +28,8 @@ object UnwindTests {
   }
 }
 
-class UnwindTests {
-  val db = UnwindTests.db
+class UnwindTest {
+  val db = UnwindTest.db
 
   @Test
   def test1(): Unit = {

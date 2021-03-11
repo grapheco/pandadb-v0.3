@@ -1,15 +1,12 @@
-package cn.pandadb.cypher
+package cn.pandadb.cypher.clauses
 
 import java.io.File
-import java.nio.file.{Files, Paths}
 
 import cn.pandadb.kernel.{GraphDatabaseBuilder, GraphService}
 import org.apache.commons.io.FileUtils
-import org.junit.{After, AfterClass, Before, BeforeClass, Test}
+import org.junit.{After, Before, Test}
 
-import scala.reflect.io.Path
-
-class LoadCsvTests {
+class LoadCsvTest {
 
   var db: GraphService = null
   val csvDir = "loadcsv"

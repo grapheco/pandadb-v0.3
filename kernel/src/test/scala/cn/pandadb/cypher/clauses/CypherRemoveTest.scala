@@ -1,4 +1,4 @@
-package cn.pandadb.cypher
+package cn.pandadb.cypher.clauses
 
 import java.io.File
 
@@ -11,7 +11,7 @@ import cn.pandadb.kernel.store.{NodeStoreSPI, RelationStoreSPI}
 import org.apache.commons.io.FileUtils
 import org.junit.{After, Before, Test}
 
-class CypherCallTest {
+class CypherRemoveTest {
   var nodeStore: NodeStoreSPI = _
   var relationStore: RelationStoreSPI = _
   var indexStore: IndexStoreAPI = _
@@ -19,10 +19,10 @@ class CypherCallTest {
   var graphFacade: GraphFacade = _
 
   @Before
-  def init(): Unit = {
+  def init(): Unit ={
     val dbPath = "./cypherTest.db"
     val file = new File(dbPath)
-    if (file.exists()) {
+    if (file.exists()){
       FileUtils.deleteDirectory(file)
     }
 
@@ -38,14 +38,47 @@ class CypherCallTest {
       statistics,
       {}
     )
-  }
 
+    createSense()
+  }
+  def createSense(): Unit ={
+    graphFacade.cypher(
+      """create (t:Swedish{name:'Timothy', age:25})
+        |create (p:Swedish:German{name:'Peter', age:34})
+        |create (a:Swedish{name:'Andy', age:36})
+        |create (a)-[r:KNOWS]->(t)
+        |create (a)-[qr:KNOWS]->(p)
+        |""".stripMargin).show()
+  }
 
   @Test
-  def call(): Unit = {
-    graphFacade.cypher("CALL `db`.`labels`")
+  def removeProperty(): Unit ={
+    graphFacade.cypher(
+      """
+        |MATCH (a { name: 'Andy' })
+        |REMOVE a.age
+        |RETURN a.name, a.age
+        |""".stripMargin)
   }
 
+  @Test
+  def removeAllProperty(): Unit ={
+    graphFacade.cypher(
+      """
+        |MATCH (n { name: 'Peter' })
+        |REMOVE n:German
+        |RETURN n.name, labels(n)
+        |""".stripMargin)
+  }
+  @Test
+  def removeMutipleLabels(): Unit ={
+    graphFacade.cypher(
+      """
+        |MATCH (n { name: 'Peter' })
+        |REMOVE n:German:Swedish
+        |RETURN n.name, labels(n)
+        |""".stripMargin)
+  }
 
   @After
   def close(): Unit ={

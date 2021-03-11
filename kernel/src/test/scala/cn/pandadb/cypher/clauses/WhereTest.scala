@@ -1,4 +1,4 @@
-package cn.pandadb.cypher
+package cn.pandadb.cypher.clauses
 
 import java.io.File
 
@@ -7,7 +7,7 @@ import cn.pandadb.kernel.kv.GraphFacade
 import org.apache.commons.io.FileUtils
 import org.junit.{AfterClass, Assert, BeforeClass, Test}
 
-object WhereTests {
+object WhereTest {
   var db: GraphFacade = null
   val dbPath = "testdata/db1"
 
@@ -34,8 +34,8 @@ object WhereTests {
 }
 
 
-class WhereTests {
-  val db = WhereTests.db
+class WhereTest {
+  val db = WhereTest.db
 
   @Test
   def basicUsageTest1(): Unit = {

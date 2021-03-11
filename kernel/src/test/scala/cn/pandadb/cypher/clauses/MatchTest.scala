@@ -1,15 +1,15 @@
-package cn.pandadb.cypher
+package cn.pandadb.cypher.clauses
 
 import java.io.File
 
+import cn.pandadb.kernel.GraphDatabaseBuilder
 import cn.pandadb.kernel.kv.GraphFacade
-import cn.pandadb.kernel.{GraphDatabaseBuilder, GraphService}
 import org.apache.commons.io.FileUtils
-import org.junit.{After, AfterClass, Assert, Before, BeforeClass, Test}
+import org.junit.{After, Assert, Before, Test}
 
 import scala.collection.mutable.ArrayBuffer
 
-class MatchTests {
+class MatchTest {
 
   var db: GraphFacade = null
   val dbPath = "testdata/db1"

@@ -1,4 +1,4 @@
-package cn.pandadb.cypher
+package cn.pandadb.cypher.clauses
 
 import java.io.File
 
@@ -8,7 +8,7 @@ import org.apache.commons.io.FileUtils
 import org.junit.{AfterClass, Assert, BeforeClass, Test}
 
 
-object WithTests{
+object WithTest{
   var db: GraphFacade = null
   val dbPath = "testdata/db1"
 
@@ -41,8 +41,8 @@ object WithTests{
 }
 
 
-class WithTests {
-  val db = WithTests.db
+class WithTest {
+  val db = WithTest.db
 
   @Test
   def test1(): Unit = {

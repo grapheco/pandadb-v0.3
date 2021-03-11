@@ -1,6 +1,4 @@
-package cn.pandadb.cypher
-
-import java.io.File
+package cn.pandadb.cypher.clauses
 
 import cn.pandadb.kernel.kv.GraphFacade
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
@@ -8,7 +6,6 @@ import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
 import cn.pandadb.kernel.store.{NodeStoreSPI, RelationStoreSPI}
-import org.apache.commons.io.FileUtils
 import org.junit.{Before, Test}
 
 class CypherLdbcTest {

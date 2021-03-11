@@ -1,4 +1,4 @@
-package cn.pandadb.cypher
+package cn.pandadb.cypher.clauses
 
 import java.io.File
 
@@ -9,7 +9,6 @@ import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
 import cn.pandadb.kernel.store.{NodeStoreSPI, PandaNode, PandaRelationship, RelationStoreSPI}
 import org.apache.commons.io.FileUtils
-import org.grapheco.lynx.LynxNode
 import org.junit.{After, Assert, Before, Test}
 
 class CypherCreateTest {

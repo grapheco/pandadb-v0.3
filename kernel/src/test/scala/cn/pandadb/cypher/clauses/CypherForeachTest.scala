@@ -1,4 +1,4 @@
-package cn.pandadb.cypher
+package cn.pandadb.cypher.clauses
 
 import java.io.File
 
@@ -11,7 +11,7 @@ import cn.pandadb.kernel.store.{NodeStoreSPI, RelationStoreSPI}
 import org.apache.commons.io.FileUtils
 import org.junit.{After, Before, Test}
 
-class CypherUnionTest {
+class CypherForeachTest {
   var nodeStore: NodeStoreSPI = _
   var relationStore: RelationStoreSPI = _
   var indexStore: IndexStoreAPI = _
@@ -38,40 +38,27 @@ class CypherUnionTest {
       statistics,
       {}
     )
-
     createSense()
   }
   def createSense(): Unit ={
     graphFacade.cypher(
-      """create (a:Actor{name:'Anthony Hopkins'})
-        |create (b:Actor{name:'Hitchcock'})
-        |create (c:Actor{name:'Helen Mirren'})
-        |create (m:Movie{title:'Hitchcock'})
-        |create (a)-[:KNOWS]->(c)
-        |create (a)-[:ACTS_IN]->(m)
-        |create (c)-[:ACTS_IN]->(m)
+      """create (a:Person{name:'A'})
+        |create (b:Person{name:'B'})
+        |create (c:Person{name:'C'})
+        |create (d:Person{name:'D'})
+        |create (a)-[r:KNOWS]->(b)
+        |create (b)-[qr:KNOWS]->(c)
+        |create (c)-[qr:KNOWS]->(d)
         |""".stripMargin).show()
   }
 
   @Test
-  def combine2QueriesAndRetainDuplicates(): Unit ={
+  def markAllNodesAlongAPath(): Unit ={
     graphFacade.cypher(
       """
-        |MATCH (n:Actor)
-        |RETURN n.name AS name
-        |UNION ALL MATCH (n:Movie)
-        |RETURN n.title AS name
-        |""".stripMargin)
-  }
-  @Test
-  def combine2QueriesAndRemoveDuplicates(): Unit ={
-    graphFacade.cypher(
-      """
-        |MATCH (n:Actor)
-        |RETURN n.name AS name
-        |UNION
-        |MATCH (n:Movie)
-        |RETURN n.title AS name
+        |MATCH p =(begin)-[*]->(END )
+        |WHERE begin.name = 'A' AND END .name = 'D'
+        |FOREACH (n IN nodes(p)| SET n.marked = TRUE )
         |""".stripMargin)
   }
 

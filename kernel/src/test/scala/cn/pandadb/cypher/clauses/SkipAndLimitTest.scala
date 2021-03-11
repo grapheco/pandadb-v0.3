@@ -1,4 +1,4 @@
-package cn.pandadb.cypher
+package cn.pandadb.cypher.clauses
 
 import java.io.File
 
@@ -8,7 +8,7 @@ import org.apache.commons.io.FileUtils
 import org.junit.{AfterClass, Assert, BeforeClass, Test}
 
 
-object SkipAndLimitTests {
+object SkipAndLimitTest {
   var db: GraphFacade = null
   val dbPath = "testdata/db1"
 
@@ -37,8 +37,8 @@ object SkipAndLimitTests {
   }
 }
 
-class SkipAndLimitTests {
-  val db = SkipAndLimitTests.db
+class SkipAndLimitTest {
+  val db = SkipAndLimitTest.db
 
   @Test
   def skipTest1(): Unit = {

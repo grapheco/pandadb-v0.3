@@ -1,15 +1,13 @@
-package cn.pandadb.cypher
+package cn.pandadb.cypher.clauses
 
 import java.io.File
 
 import cn.pandadb.kernel.GraphDatabaseBuilder
 import cn.pandadb.kernel.kv.GraphFacade
 import org.apache.commons.io.FileUtils
-import org.junit.{After, AfterClass, Assert, Before, BeforeClass, Test}
+import org.junit.{AfterClass, Assert, BeforeClass, Test}
 
-import scala.collection.mutable.ArrayBuffer
-
-object OptionalMatchTests{
+object OptionalMatchTest{
   var db: GraphFacade = null
   val dbPath = "testdata/db1"
 
@@ -46,8 +44,8 @@ object OptionalMatchTests{
 }
 
 
-class OptionalMatchTests {
-  val db = OptionalMatchTests.db
+class OptionalMatchTest {
+  val db = OptionalMatchTest.db
 
   @Test
   def test1(): Unit = {
