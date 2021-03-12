@@ -123,6 +123,7 @@ class MatchTest {
     cyphers.append(("Relationship by id", "MATCH ()-[r]->() WHERE id(r) = 1 RETURN r", 1))
     cyphers.append(("Multiple nodes by id", "MATCH (n) WHERE id(n) IN [1, 3, 5] RETURN n", 3))
 
+    var pass = true
     cyphers.foreach(item => {
       try{
         Assert.assertEquals(item._3, db.cypher(item._2).records().size)
@@ -131,9 +132,12 @@ class MatchTest {
         case e: Any => {
           println("fail", item._2)
           e.printStackTrace()
+          pass = false
         }
       }
     })
+
+    Assert.assertTrue("not all passed", pass)
   }
 
 
