@@ -4,10 +4,9 @@ import com.typesafe.scalalogging.LazyLogging
 import cn.pandadb.kernel.GraphService
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.lynx.procedure.PandaFunction
-import cn.pandadb.kernel.kv.meta.{NameStore, Statistics}
+import cn.pandadb.kernel.kv.meta.{Statistics}
 import cn.pandadb.kernel.store._
 import org.grapheco.lynx.{CallableProcedure, ContextualNodeInputRef, CypherRunner, GraphModel, LynxId, LynxNode, LynxRelationship, LynxResult, LynxValue, NodeFilter, NodeInput, NodeInputRef, PathTriple, RelationshipFilter, RelationshipInput, StoredNodeInputRef}
-import org.opencypher.v9_0.expressions.SemanticDirection.BOTH
 import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, SemanticDirection}
 
 

@@ -1,4 +1,4 @@
-package cn.pandadb.cypher.clauses
+package cn.pandadb.cypher.ldbc
 
 import cn.pandadb.kernel.kv.GraphFacade
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
@@ -53,11 +53,12 @@ class CypherLdbcTest {
   }
   @Test
   def short2(): Unit ={
-    // TODO: optimize speed
+    //change 【replyOf*0..】-->【replyOf】
+    // TODO: Join slow down
     val personId = 600000000000014L
-        graphFacade.cypher(
+    graphFacade.cypher(
       s"""
-        |MATCH (:person{id:'$personId'})<-[:hasCreator]-(m:comment)-[:replyOf*0..]->(p:post)
+        |MATCH (:person{id:'$personId'})<-[:hasCreator]-(m:comment)-[:replyOf]->(p:post)
         |MATCH (p)-[:hasCreator]->(c)
         |RETURN
         |  m.id AS messageId,
@@ -116,12 +117,12 @@ class CypherLdbcTest {
   }
   @Test
   def short6(): Unit ={
-    // TODO: optimize speed
+    //change 【replyOf*0..】-->【replyOf】
 
     val commentId = 700000000032435L
     graphFacade.cypher(
       s"""
-        |MATCH (m:comment {id:'$commentId'})-[:replyOf*0..]->(p:post)<-[:containerOf]-(f:forum)-[:hasModerator]->(mod:person)
+        |MATCH (m:comment {id:'$commentId'})-[:replyOf]->(p:post)<-[:containerOf]-(f:forum)-[:hasModerator]->(mod:person)
         |RETURN
         |  f.id AS forumId,
         |  f.title AS forumTitle,
@@ -133,9 +134,7 @@ class CypherLdbcTest {
   @Test
   def short7(): Unit ={
     // TODO: optimize speed
-
     val commentId = 700000000032435L
-
     graphFacade.cypher(
       s"""
         |MATCH (m:comment {id:'$commentId'})<-[:replyOf]-(c:comment)-[:hasCreator]->(p:person)
