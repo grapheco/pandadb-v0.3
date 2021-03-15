@@ -3,9 +3,11 @@ package cn.pandadb.kernel.kv
 import com.typesafe.scalalogging.LazyLogging
 import cn.pandadb.kernel.GraphService
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
+import cn.pandadb.kernel.kv.lynx.procedure.PandaFunction
 import cn.pandadb.kernel.kv.meta.{NameStore, Statistics}
 import cn.pandadb.kernel.store._
 import org.grapheco.lynx.{CallableProcedure, ContextualNodeInputRef, CypherRunner, GraphModel, LynxId, LynxNode, LynxRelationship, LynxResult, LynxValue, NodeFilter, NodeInput, NodeInputRef, PathTriple, RelationshipFilter, RelationshipInput, StoredNodeInputRef}
+import org.opencypher.v9_0.expressions.SemanticDirection.BOTH
 import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, SemanticDirection}
 
 
@@ -407,7 +409,11 @@ class GraphFacade(nodeStore: NodeStoreSPI,
   def findNodeByIndex(indexId: Int, value: Any): Iterator[StoredNodeWithProperty] =
     indexStore.find(indexId, value).flatMap(nodeStore.getNodeById(_))
 
-  override def getProcedure(prefix: List[String], name: String): Option[CallableProcedure] = super.getProcedure(prefix, name) //todo when procedure is need
+  override def getProcedure(prefix: List[String], name: String): Option[CallableProcedure] = {
+    val functionName = s"${prefix.mkString(".")}.${name}"
+    PandaFunction.lookup(functionName).callableProcedure
+
+  } //todo when procedure is need
 
   override def paths(startNodeFilter: NodeFilter,
                      relationshipFilter: RelationshipFilter,
@@ -466,6 +472,36 @@ class GraphFacade(nodeStore: NodeStoreSPI,
       .reduce(_ ++ _)
       .map(p => PathTriple(p._1, relationAt(p._2.id).orNull, nodeAt(p._3).orNull))
       .filter(trip => endNodeFilter.matches(trip.endNode))
+  }
+
+  override def expand(nodeId: LynxId, direction: SemanticDirection): Iterator[PathTriple] = {
+    val rels = direction match {
+      case SemanticDirection.INCOMING => relationStore.findInRelations(nodeId.value.asInstanceOf[Long]).map(r => {
+        val toNode = mapNode(nodeStore.getNodeById(r.to).get)
+        val rel = mapRelation(r)
+        val fromNode = mapNode(nodeStore.getNodeById(r.from).get)
+        PathTriple(toNode, rel, fromNode)
+      })
+      case SemanticDirection.OUTGOING => relationStore.findOutRelations(nodeId.value.asInstanceOf[Long]).map(r => {
+        val toNode = mapNode(nodeStore.getNodeById(r.to).get)
+        val rel = mapRelation(r)
+        val fromNode = mapNode(nodeStore.getNodeById(r.from).get)
+        PathTriple(fromNode, rel, toNode)
+      })
+      case SemanticDirection.BOTH => relationStore.findInRelations(nodeId.value.asInstanceOf[Long]).map(r => {
+        val toNode = mapNode(nodeStore.getNodeById(r.to).get)
+        val rel = mapRelation(r)
+        val fromNode = mapNode(nodeStore.getNodeById(r.from).get)
+        PathTriple(toNode, rel, fromNode)
+      }) ++
+        relationStore.findOutRelations(nodeId.value.asInstanceOf[Long]).map(r => {
+          val toNode = mapNode(nodeStore.getNodeById(r.to).get)
+          val rel = mapRelation(r)
+          val fromNode = mapNode(nodeStore.getNodeById(r.from).get)
+          PathTriple(fromNode, rel, toNode)
+        })
+    }
+    rels
   }
 
   override def nodes(nodeFilter: NodeFilter): Iterator[PandaNode] = {
