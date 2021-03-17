@@ -4,10 +4,9 @@ import cn.pandadb.kernel.kv.lynx.procedure.PandaFunction
 import org.grapheco.lynx.{CallableProcedure, LynxInteger, LynxType, LynxValue}
 import org.opencypher.v9_0.util.symbols.CTInteger
 
-case object ToInteger extends PandaFunction{
+case object ToIntegerFunction extends PandaFunction{
   override def name: String = ".toInteger"
-
-  override def callableProcedure: Some[CallableProcedure] = {
+  val procedure = {
     Some(
       new CallableProcedure {
         override val inputs: Seq[(String, LynxType)] = Seq()
@@ -18,5 +17,8 @@ case object ToInteger extends PandaFunction{
         }
       }
     )
+  }
+  override def callableProcedure: Some[CallableProcedure] = {
+   procedure
   }
 }

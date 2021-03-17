@@ -63,14 +63,26 @@ class PandaFunctionTest {
         |create (n)-[r:known]->(m) return type(r)
         |""".stripMargin).show()
   }
+
   @Test
-  def countTest(): Unit ={
+  def existsTest(): Unit ={
     graphFacade.cypher(
       """
-        |create (n:person{name:'a'})
+        |create (n:person{name:'a', age:10})
         |create (m:person{name:'b'})
         |""".stripMargin)
-    graphFacade.cypher("match (n) return count(n)").show()
+    graphFacade.cypher("match (n) return exists(n.age)").show()
+  }
+
+  @Test
+  def orderByTest(): Unit ={
+    graphFacade.cypher(
+      """
+        |create (n1:person{name:'a', age:13})
+        |create (n2:person{name:'b', age:11})
+        |create (n3:person{name:'c', age:12})
+        |""".stripMargin)
+    graphFacade.cypher("match (n) return n order by n.age desc").show()
   }
 
   @After
