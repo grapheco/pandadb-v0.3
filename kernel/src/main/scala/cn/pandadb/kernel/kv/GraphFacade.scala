@@ -78,6 +78,10 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     addRelation(None, label, from, to, relProps)
   }
 
+  def addRelationFromPhysical(id: Long, label: String, from: Id, to: Id, relProps: Map[String, Any]): Id ={
+    addRelation(Some(id), label: String, from: Id, to: Id, relProps: Map[String, Any])
+  }
+
   private def addRelation(id: Option[Long], label: String, from: Long, to: Long, relProps: Map[String, Any]): Id = {
     val rid = id.getOrElse(relationStore.newRelationId())
     val labelId = relTypeNameMap(label)
@@ -409,7 +413,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     indexStore.find(indexId, value).flatMap(nodeStore.getNodeById(_))
 
   override def getProcedure(prefix: List[String], name: String): Option[CallableProcedure] = {
-    val functionName = s"${prefix.mkString(".")}.${name}"
+    val functionName = s"${prefix.mkString(".")}.${name}".toLowerCase()
     PandaFunction.lookup(functionName).callableProcedure
 
   } //todo when procedure is need
@@ -555,7 +559,10 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     }
 
     relsMap.foreach{
-      rel => addRelation(rel._2.relationType.get, rel._2.startId, rel._2.endId, rel._2.properties.mapValues(_.value))
+      rel => {
+//        addRelation(rel._2.relationType.get, rel._2.startId, rel._2.endId, rel._2.properties.mapValues(_.value))
+        addRelationFromPhysical(rel._2._id, rel._2.relationType.get, rel._2.startId, rel._2.endId, rel._2.properties.mapValues(_.value))
+      }
     }
 
     onCreated(nodesMap, relsMap)
