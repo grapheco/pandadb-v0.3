@@ -4,11 +4,10 @@ import com.typesafe.scalalogging.LazyLogging
 import cn.pandadb.kernel.GraphService
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.lynx.procedure.PandaFunction
-import cn.pandadb.kernel.kv.meta.{Statistics}
+import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.store._
 import org.grapheco.lynx.{CallableProcedure, ContextualNodeInputRef, CypherRunner, GraphModel, LynxId, LynxNode, LynxRelationship, LynxResult, LynxValue, NodeFilter, NodeInput, NodeInputRef, PathTriple, RelationshipFilter, RelationshipInput, StoredNodeInputRef}
 import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, SemanticDirection}
-
 
 class GraphFacade(nodeStore: NodeStoreSPI,
                   relationStore: RelationStoreSPI,
@@ -507,16 +506,15 @@ class GraphFacade(nodeStore: NodeStoreSPI,
   }
 
   override def expand(nodeId: LynxId, relationshipFilter: RelationshipFilter, endNodeFilter: NodeFilter, direction: SemanticDirection): Iterator[PathTriple] = {
-    if (endNodeFilter.properties.isEmpty){
-      expandWithRelType(nodeId, direction, relationshipFilter).filter(
+    // has properties?
+    endNodeFilter.properties.toSeq match {
+      case Seq() => expand(nodeId, direction, relationshipFilter).filter(
         item => {
           val PathTriple(_, rel, endNode, _) = item
           relationshipFilter.matches(rel) && endNodeFilter.labels.forall(endNode.labels.contains(_))
         }
       )
-    }
-    else{
-      expandWithRelType(nodeId, direction, relationshipFilter).filter(
+      case _ => expand(nodeId, direction, relationshipFilter).filter(
         item => {
           val PathTriple(_, rel, endNode, _) = item
           relationshipFilter.matches(rel) && endNodeFilter.matches(endNode)
@@ -524,31 +522,37 @@ class GraphFacade(nodeStore: NodeStoreSPI,
       )
     }
   }
-
-  def expandWithRelType(nodeId: LynxId, direction: SemanticDirection, relationshipFilter: RelationshipFilter): Iterator[PathTriple] = {
-    val typeId = relationStore.getRelationTypeId(relationshipFilter.types.head)
+  // has relationship types?
+  def expand(nodeId: LynxId, direction: SemanticDirection, relationshipFilter: RelationshipFilter): Iterator[PathTriple] = {
+    val typeId = {
+      relationshipFilter.types match {
+        case Seq() => Option.empty
+        // TODO: multiple relation types: use statistic to get least num of type
+        case _ => Option(relationStore.getRelationTypeId(relationshipFilter.types.head))
+      }
+    }
 
     val rels = direction match {
-      case SemanticDirection.INCOMING => relationStore.findInRelations(nodeId.value.asInstanceOf[Long], Option(typeId)).map(r => {
-          val toNode = LazyPandaNode(r.to, nodeStore)
-          val rel = mapRelation(r)
-          val fromNode = LazyPandaNode(r.from, nodeStore)
-          PathTriple(toNode, rel, fromNode)
-        })
+      case SemanticDirection.INCOMING => relationStore.findInRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
+        val toNode = LazyPandaNode(r.to, nodeStore)
+        val rel = mapRelation(r)
+        val fromNode = LazyPandaNode(r.from, nodeStore)
+        PathTriple(toNode, rel, fromNode)
+      })
 
-      case SemanticDirection.OUTGOING => relationStore.findOutRelations(nodeId.value.asInstanceOf[Long], Option(typeId)).map(r => {
+      case SemanticDirection.OUTGOING => relationStore.findOutRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
         val toNode = LazyPandaNode(r.to, nodeStore)
         val rel = mapRelation(r)
         val fromNode = LazyPandaNode(r.from, nodeStore)
         PathTriple(fromNode, rel, toNode)
       })
-      case SemanticDirection.BOTH => relationStore.findInRelations(nodeId.value.asInstanceOf[Long], Option(typeId)).map(r => {
+      case SemanticDirection.BOTH => relationStore.findInRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
         val toNode = LazyPandaNode(r.to, nodeStore)
         val rel = mapRelation(r)
         val fromNode = LazyPandaNode(r.from, nodeStore)
         PathTriple(toNode, rel, fromNode)
       }) ++
-        relationStore.findOutRelations(nodeId.value.asInstanceOf[Long], Option(typeId)).map(r => {
+        relationStore.findOutRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
           val toNode = LazyPandaNode(r.to, nodeStore)
           val rel = mapRelation(r)
           val fromNode = LazyPandaNode(r.from, nodeStore)

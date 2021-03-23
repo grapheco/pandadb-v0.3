@@ -36,7 +36,6 @@ case class LazyPandaNode(longId: Long, nodeStoreSPI: NodeStoreSPI) extends LynxN
 
   override def labels: Seq[String] = nodeStoreSPI.getNodeLabelsById(longId).map(f=>nodeStoreSPI.getLabelName(f).get).toSeq
 
-
   override def property(name: String): Option[LynxValue] = nodeValue.properties.get(name)
 
   def transfer(nodeStore: NodeStoreSPI): PandaNode = {
