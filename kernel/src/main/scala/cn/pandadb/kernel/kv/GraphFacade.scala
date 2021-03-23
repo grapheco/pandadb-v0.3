@@ -15,7 +15,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
                   indexStore: IndexStoreAPI,
                   statistics: Statistics,
                   onClose: => Unit
-                 ) extends LazyLogging with GraphService with GraphModel{
+                 ) extends LazyLogging with GraphService with GraphModel {
 
   val runner = new CypherRunner(this)
 
@@ -54,23 +54,23 @@ class GraphFacade(nodeStore: NodeStoreSPI,
   private def addNode(id: Option[Long], labels: Seq[String], nodeProps: Map[String, Any]): Id = {
     val nodeId = id.getOrElse(nodeStore.newNodeId())
     val labelIds = nodeStore.getLabelIds(labels.toSet).toArray
-    val props = nodeProps.map{
-      v => ( nodePropNameMap(v._1),v._2)
+    val props = nodeProps.map {
+      v => (nodePropNameMap(v._1), v._2)
     }
     nodeStore.addNode(new StoredNodeWithProperty(nodeId, labelIds, props))
     statistics.increaseNodeCount(1) // TODO batch
     labelIds.foreach(statistics.increaseNodeLabelCount(_, 1))
     // index
     labelIds.map(indexStore.getIndexIdByLabel).foreach(
-      _.foreach{
+      _.foreach {
         propsIndex =>
-          if (propsIndex.props.length<=1){
+          if (propsIndex.props.length <= 1) {
             indexStore.insertIndexRecord(propsIndex.indexId, props.getOrElse(propsIndex.props.head, null), nodeId)
-          }else {
+          } else {
             // TODO combined index
           }
           statistics.increaseIndexPropertyCount(propsIndex.indexId, 1)
-    })
+      })
     nodeId
   }
 
@@ -78,15 +78,15 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     addRelation(None, label, from, to, relProps)
   }
 
-  def addRelationFromPhysical(id: Long, label: String, from: Id, to: Id, relProps: Map[String, Any]): Id ={
+  def addRelationFromPhysical(id: Long, label: String, from: Id, to: Id, relProps: Map[String, Any]): Id = {
     addRelation(Some(id), label: String, from: Id, to: Id, relProps: Map[String, Any])
   }
 
   private def addRelation(id: Option[Long], label: String, from: Long, to: Long, relProps: Map[String, Any]): Id = {
     val rid = id.getOrElse(relationStore.newRelationId())
     val labelId = relTypeNameMap(label)
-    val props = relProps.map{
-      v => ( relPropNameMap(v._1),v._2)
+    val props = relProps.map {
+      v => (relPropNameMap(v._1), v._2)
     }
     val rel = new StoredRelationWithProperty(rid, from, to, labelId, props)
     //TODO: transaction safe
@@ -97,17 +97,17 @@ class GraphFacade(nodeStore: NodeStoreSPI,
   }
 
   override def deleteNode(id: Id): Unit = {
-    nodeStore.getNodeById(id).foreach{
+    nodeStore.getNodeById(id).foreach {
       node =>
         nodeStore.deleteNode(node.id)
         statistics.decreaseNodes(1)
         node.labelIds.foreach(statistics.decreaseNodeLabelCount(_, 1))
         node.labelIds.map(indexStore.getIndexIdByLabel).foreach(
-          _.foreach{
+          _.foreach {
             propsIndex =>
-              if (propsIndex.props.length<=1){
+              if (propsIndex.props.length <= 1) {
                 indexStore.deleteIndexRecord(propsIndex.indexId, node.properties.getOrElse(propsIndex.props.head, null), node.id)
-              }else {
+              } else {
                 // TODO combined index
               }
               statistics.decreaseIndexPropertyCount(propsIndex.indexId, 1)
@@ -116,7 +116,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
   }
 
   override def deleteRelation(id: Id): Unit = {
-    relationStore.getRelationById(id).foreach{
+    relationStore.getRelationById(id).foreach {
       rel =>
         relationStore.deleteRelation(rel.id)
         statistics.decreaseRelations(1)
@@ -163,17 +163,17 @@ class GraphFacade(nodeStore: NodeStoreSPI,
   override def relationAddLabel(id: Id, label: String): Unit = ???
 
   override def relationRemoveLabel(id: Id, label: String): Unit = ???
-  
+
   override def createIndexOnNode(label: String, props: Set[String]): Unit = {
     val labelId = nodeLabelNameMap(label)
     val propsId = props.map(nodePropNameMap).toArray.sorted
     val indexId = indexStore.createIndex(labelId, propsId)
-    if(propsId.length == 1) {
+    if (propsId.length == 1) {
       indexStore.insertIndexRecordBatch(
         indexId,
-        nodeStore.getNodesByLabel(labelId).map{
+        nodeStore.getNodesByLabel(labelId).map {
           node =>
-            (node.properties.getOrElse(propsId(0),null), node.id)
+            (node.properties.getOrElse(propsId(0), null), node.id)
         }
       )
       statistics.setIndexPropertyCount(indexId, nodeStore.getNodesByLabel(labelId).length)
@@ -186,15 +186,15 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     val typeId = relTypeNameMap(typeName)
     val propsId = props.map(relPropNameMap).toArray.sorted
     val indexId = indexStore.createIndex(typeId, propsId)
-    if(propsId.length == 1) {
+    if (propsId.length == 1) {
       indexStore.insertIndexRecordBatch(
         indexId,
         relationStore.getRelationIdsByRelationType(typeId)
           .map(relationStore.getRelationById(_).get)
-          .map{
-          rel =>
-            (rel.properties.getOrElse(propsId(0),null), rel.id)
-        }
+          .map {
+            rel =>
+              (rel.properties.getOrElse(propsId(0), null), rel.id)
+          }
       )
       statistics.setIndexPropertyCount(indexId, relationStore.getRelationIdsByRelationType(typeId).length)
     } else {
@@ -203,29 +203,29 @@ class GraphFacade(nodeStore: NodeStoreSPI,
   }
 
   override def createIndex(labelName: LabelName, properties: List[PropertyKeyName]): Unit = {
-    val l=labelName.name
-    val ps = properties.map(p=>p.name).toSet
+    val l = labelName.name
+    val ps = properties.map(p => p.name).toSet
     createIndexOnNode(l, ps)
     createIndexOnRelation(l, ps)
   }
 
-  def refresh():Unit = {
+  def refresh(): Unit = {
     statistics.nodeCount = nodeStore.nodesCount
     logger.info(s"node count: ${statistics.nodeCount}")
     statistics.relationCount = relationStore.relationCount
     logger.info(s"relation count: ${statistics.relationCount}")
-    nodeStore.allLabelIds().foreach{
+    nodeStore.allLabelIds().foreach {
       l =>
         statistics.setNodeLabelCount(l, nodeStore.getNodeIdsByLabel(l).length)
         logger.info(s"label ${l} count: ${statistics.getNodeLabelCount(l)}")
     }
-    relationStore.allRelationTypeIds().foreach{
+    relationStore.allRelationTypeIds().foreach {
       t =>
         statistics.setRelationTypeCount(t,
           relationStore.getRelationIdsByRelationType(t).length)
         logger.info(s"type ${t} count: ${statistics.getRelationTypeCount(t)}")
     }
-    indexStore.allIndexId.foreach{
+    indexStore.allIndexId.foreach {
       meta =>
         statistics.setIndexPropertyCount(meta.indexId,
           indexStore.findByPrefix(ByteUtils.intToBytes(meta.indexId)).length)
@@ -246,19 +246,19 @@ class GraphFacade(nodeStore: NodeStoreSPI,
   protected def mapNode(node: StoredNode): PandaNode = {
     PandaNode(node.id,
       node.labelIds.map((id: Int) => nodeStore.getLabelName(id).get).toSeq,
-      node.properties.map(kv=>(nodeStore.getPropertyKeyName(kv._1).getOrElse("unknown"), LynxValue(kv._2))).toSeq:_*)
+      node.properties.map(kv => (nodeStore.getPropertyKeyName(kv._1).getOrElse("unknown"), LynxValue(kv._2))).toSeq: _*)
   }
 
   protected def mapRelation(rel: StoredRelation): PandaRelationship = {
     PandaRelationship(rel.id,
       rel.from, rel.to,
       relationStore.getRelationTypeName(rel.typeId),
-      rel.properties.map(kv=>(relationStore.getPropertyKeyName(kv._1).getOrElse("unknown"), LynxValue(kv._2))).toSeq:_*)
+      rel.properties.map(kv => (relationStore.getPropertyKeyName(kv._1).getOrElse("unknown"), LynxValue(kv._2))).toSeq: _*)
   }
 
   //TODO need props?
   def rels(includeStartNodes: Boolean, includeEndNodes: Boolean): Iterator[(PandaRelationship, Option[PandaNode], Option[PandaNode])] = {
-    relationStore.allRelations(withProperty = true).map(mapRelation).map{ rel =>
+    relationStore.allRelations(withProperty = true).map(mapRelation).map { rel =>
       (rel,
         if (includeStartNodes) nodeAt(rel.startNodeId) else None,
         if (includeEndNodes) nodeAt(rel.endNodeId) else None)
@@ -281,47 +281,46 @@ class GraphFacade(nodeStore: NodeStoreSPI,
   def relationAt(id: LynxId): Option[PandaRelationship] = relationAt(id.value.asInstanceOf[Long])
 
 
-
   def rels(types: Seq[String],
-                    labels1: Seq[String],
-                    labels2: Seq[String],
-                    includeStartNodes: Boolean,
-                    includeEndNodes: Boolean): Iterator[(LynxRelationship, Option[LynxNode], Option[LynxNode])] ={
+           labels1: Seq[String],
+           labels2: Seq[String],
+           includeStartNodes: Boolean,
+           includeEndNodes: Boolean): Iterator[(LynxRelationship, Option[LynxNode], Option[LynxNode])] = {
     val includeProperty = false
     rels(types, labels1, labels2, includeProperty, includeStartNodes, includeEndNodes)
   }
 
   def rels(types: Seq[String],
-                    labels1: Seq[String],
-                    labels2: Seq[String],
-                    includeProperty: Boolean,
-                    includeStartNodes: Boolean,
-                    includeEndNodes: Boolean): Iterator[(LynxRelationship, Option[LynxNode], Option[LynxNode])] = {
+           labels1: Seq[String],
+           labels2: Seq[String],
+           includeProperty: Boolean,
+           includeStartNodes: Boolean,
+           includeEndNodes: Boolean): Iterator[(LynxRelationship, Option[LynxNode], Option[LynxNode])] = {
 
     val label1Id = labels1.map(nodeLabelNameMap).sorted
     val label2Id = labels2.map(nodeLabelNameMap).sorted
-    val typeIds  = types.map(relTypeNameMap).sorted
+    val typeIds = types.map(relTypeNameMap).sorted
 
     (label1Id.nonEmpty, typeIds.nonEmpty, label2Id.nonEmpty) match {
-      case (_, true, true)    =>  // [nodesWithLabel1]-[relWithTypes]-[nodesWithLabel2]
+      case (_, true, true) => // [nodesWithLabel1]-[relWithTypes]-[nodesWithLabel2]
         // TODO if types is small
         typeIds.map(
           typeId =>
-            getNodesByLabels(labels1, exact = false).flatMap{
-            startNode =>
-              relationStore
-                .findOutRelations(startNode.id, Some(typeId))
-                .map(rel => (rel, nodeStore.getNodeLabelsById(rel.to)))
-                .withFilter(_._2.toSeq.containsSlice(label2Id))
-                .map(relEnd => (
-                  if (includeProperty) relationAt(relEnd._1.id).orNull else mapRelation(relEnd._1),
-                  if (includeStartNodes) Some(mapNode(startNode)) else None,
-                  if (includeEndNodes) nodeStore.getNodeById(relEnd._1.to, relEnd._2.headOption).map(mapNode) else None
-                ))
-          }
-        ).reduce(_++_)
-      case (_, false, true)   => // [nodesWithLabel1]-[rels]-[nodesWithLabel2]
-        getNodesByLabels(labels1, exact = false).flatMap{
+            getNodesByLabels(labels1, exact = false).flatMap {
+              startNode =>
+                relationStore
+                  .findOutRelations(startNode.id, Some(typeId))
+                  .map(rel => (rel, nodeStore.getNodeLabelsById(rel.to)))
+                  .withFilter(_._2.toSeq.containsSlice(label2Id))
+                  .map(relEnd => (
+                    if (includeProperty) relationAt(relEnd._1.id).orNull else mapRelation(relEnd._1),
+                    if (includeStartNodes) Some(mapNode(startNode)) else None,
+                    if (includeEndNodes) nodeStore.getNodeById(relEnd._1.to, relEnd._2.headOption).map(mapNode) else None
+                  ))
+            }
+        ).reduce(_ ++ _)
+      case (_, false, true) => // [nodesWithLabel1]-[rels]-[nodesWithLabel2]
+        getNodesByLabels(labels1, exact = false).flatMap {
           startNode =>
             relationStore
               .findOutRelations(startNode.id)
@@ -333,10 +332,10 @@ class GraphFacade(nodeStore: NodeStoreSPI,
                 if (includeEndNodes) nodeStore.getNodeById(relEnd._1.to, relEnd._2.headOption).map(mapNode) else None
               ))
         }
-      case (_, true, false)   => // [nodesWithLabel1]-[relsWithTypes]-[nodes]
+      case (_, true, false) => // [nodesWithLabel1]-[relsWithTypes]-[nodes]
         typeIds.map(
           typeId =>
-            getNodesByLabels(labels1, exact = false).flatMap{
+            getNodesByLabels(labels1, exact = false).flatMap {
               startNode =>
                 relationStore
                   .findOutRelations(startNode.id, Some(typeId))
@@ -346,9 +345,9 @@ class GraphFacade(nodeStore: NodeStoreSPI,
                     if (includeEndNodes) nodeAt(rel.to) else None
                   ))
             }
-        ).reduce(_++_)
-      case (true, false, false)  =>  // [nodesWithLabel1]-[allRel]-[allNodes]
-        getNodesByLabels(labels1, exact = false).flatMap{
+        ).reduce(_ ++ _)
+      case (true, false, false) => // [nodesWithLabel1]-[allRel]-[allNodes]
+        getNodesByLabels(labels1, exact = false).flatMap {
           startNode =>
             relationStore
               .findOutRelations(startNode.id)
@@ -361,7 +360,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
       case (false, false, false) => // [allRelations]
         relationStore
           .allRelations(withProperty = includeProperty)
-          .map(rel=>(
+          .map(rel => (
             mapRelation(rel),
             if (includeStartNodes) nodeAt(rel.from) else None,
             if (includeEndNodes) nodeAt(rel.to) else None
@@ -374,7 +373,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
   def getNodesByLabels(labels: Seq[String], exact: Boolean): Iterator[StoredNode] = {
     if (labels.isEmpty) {
       nodeStore.allNodes()
-    } else if(labels.size == 1){
+    } else if (labels.size == 1) {
       val labelId = labels.map(nodeLabelNameMap).head
       nodeStore.getNodesByLabel(labelId)
     } else {
@@ -398,11 +397,11 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     val labelIds = labels.map(nodeLabelNameMap)
     val combinations = propertyIds.toSet.subsets().drop(1)
     val indexes = labelIds.flatMap(
-      label => combinations.flatMap (
+      label => combinations.flatMap(
         props => indexStore.getIndexId(label, props.toArray).map((_, label, props, 0L))
       )
     )
-    val res = indexes.flatMap(p => statistics.getIndexPropertyCount(p._1).map((p._1, p._2, p._3 ,_)))
+    val res = indexes.flatMap(p => statistics.getIndexPropertyCount(p._1).map((p._1, p._2, p._3, _)))
     res.headOption
       .map(h => res.minBy(_._4))
       .orElse(indexes.headOption)
@@ -422,33 +421,33 @@ class GraphFacade(nodeStore: NodeStoreSPI,
                      relationshipFilter: RelationshipFilter,
                      endNodeFilter: NodeFilter,
                      direction: SemanticDirection): Iterator[PathTriple] =
-    nodes(startNodeFilter).flatMap(node => paths(node.id,relationshipFilter,endNodeFilter, direction))
+    nodes(startNodeFilter).flatMap(node => paths(node.id, relationshipFilter, endNodeFilter, direction))
 
 
-   def paths(nodeId: LynxId, direction: SemanticDirection): Iterator[PathTriple] =
+  def paths(nodeId: LynxId, direction: SemanticDirection): Iterator[PathTriple] =
     nodeAt(nodeId).map(
-        n=>
-          direction match {
-            case SemanticDirection.INCOMING => relationStore.findInRelations(n.longId).map(r => (n, r, r.from))
-            case SemanticDirection.OUTGOING => relationStore.findOutRelations(n.longId).map(r => (n, r, r.to))
-            case SemanticDirection.BOTH     => relationStore.findInRelations(n.longId).map(r => (n, r, r.from)) ++
-              relationStore.findOutRelations(n.longId).map(r => (n, r, r.to))
-          }
-      )
+      n =>
+        direction match {
+          case SemanticDirection.INCOMING => relationStore.findInRelations(n.longId).map(r => (n, r, r.from))
+          case SemanticDirection.OUTGOING => relationStore.findOutRelations(n.longId).map(r => (n, r, r.to))
+          case SemanticDirection.BOTH => relationStore.findInRelations(n.longId).map(r => (n, r, r.from)) ++
+            relationStore.findOutRelations(n.longId).map(r => (n, r, r.to))
+        }
+    )
       .getOrElse(Iterator.empty)
       .map(p => PathTriple(p._1, relationAt(p._2.id).orNull, nodeAt(p._3).orNull))
 
-//  override def paths(nodeId: LynxId,
-//                     relationshipFilter: RelationshipFilter,
-//                     endNodeFilter: NodeFilter,
-//                     direction: SemanticDirection): Iterator[PathTriple] =
-//    paths(nodeId, direction) // TODO 这里应把关系过滤作为查询条件而不是过滤条件
-//      .filter(trip => relationshipFilter.matches(trip.storedRelation) && endNodeFilter.matches(trip.endNode))
+  //  override def paths(nodeId: LynxId,
+  //                     relationshipFilter: RelationshipFilter,
+  //                     endNodeFilter: NodeFilter,
+  //                     direction: SemanticDirection): Iterator[PathTriple] =
+  //    paths(nodeId, direction) // TODO 这里应把关系过滤作为查询条件而不是过滤条件
+  //      .filter(trip => relationshipFilter.matches(trip.storedRelation) && endNodeFilter.matches(trip.endNode))
 
-   def paths(nodeId: LynxId,
-                     relationshipFilter: RelationshipFilter,
-                     endNodeFilter: NodeFilter,
-                     direction: SemanticDirection): Iterator[PathTriple] = {
+  def paths(nodeId: LynxId,
+            relationshipFilter: RelationshipFilter,
+            endNodeFilter: NodeFilter,
+            direction: SemanticDirection): Iterator[PathTriple] = {
     nodeAt(nodeId).map(
       node => {
         if (!relationshipFilter.types.isEmpty) {
@@ -507,12 +506,64 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     rels
   }
 
+  override def expand(nodeId: LynxId, relationshipFilter: RelationshipFilter, endNodeFilter: NodeFilter, direction: SemanticDirection): Iterator[PathTriple] = {
+    if (endNodeFilter.properties.isEmpty){
+      expandWithRelType(nodeId, direction, relationshipFilter).filter(
+        item => {
+          val PathTriple(_, rel, endNode, _) = item
+          relationshipFilter.matches(rel) && endNodeFilter.labels.forall(endNode.labels.contains(_))
+        }
+      )
+    }
+    else{
+      expandWithRelType(nodeId, direction, relationshipFilter).filter(
+        item => {
+          val PathTriple(_, rel, endNode, _) = item
+          relationshipFilter.matches(rel) && endNodeFilter.matches(endNode)
+        }
+      )
+    }
+  }
+
+  def expandWithRelType(nodeId: LynxId, direction: SemanticDirection, relationshipFilter: RelationshipFilter): Iterator[PathTriple] = {
+    val typeId = relationStore.getRelationTypeId(relationshipFilter.types.head)
+
+    val rels = direction match {
+      case SemanticDirection.INCOMING => relationStore.findInRelations(nodeId.value.asInstanceOf[Long], Option(typeId)).map(r => {
+          val toNode = LazyPandaNode(r.to, nodeStore)
+          val rel = mapRelation(r)
+          val fromNode = LazyPandaNode(r.from, nodeStore)
+          PathTriple(toNode, rel, fromNode)
+        })
+
+      case SemanticDirection.OUTGOING => relationStore.findOutRelations(nodeId.value.asInstanceOf[Long], Option(typeId)).map(r => {
+        val toNode = LazyPandaNode(r.to, nodeStore)
+        val rel = mapRelation(r)
+        val fromNode = LazyPandaNode(r.from, nodeStore)
+        PathTriple(fromNode, rel, toNode)
+      })
+      case SemanticDirection.BOTH => relationStore.findInRelations(nodeId.value.asInstanceOf[Long], Option(typeId)).map(r => {
+        val toNode = LazyPandaNode(r.to, nodeStore)
+        val rel = mapRelation(r)
+        val fromNode = LazyPandaNode(r.from, nodeStore)
+        PathTriple(toNode, rel, fromNode)
+      }) ++
+        relationStore.findOutRelations(nodeId.value.asInstanceOf[Long], Option(typeId)).map(r => {
+          val toNode = LazyPandaNode(r.to, nodeStore)
+          val rel = mapRelation(r)
+          val fromNode = LazyPandaNode(r.from, nodeStore)
+          PathTriple(fromNode, rel, toNode)
+        })
+    }
+    rels
+  }
+
   override def nodes(nodeFilter: NodeFilter): Iterator[PandaNode] = {
     (nodeFilter.labels.nonEmpty, nodeFilter.properties.nonEmpty) match {
       case (false, false) => allNodes().iterator.map(mapNode)
-      case (true, false)  => nodes(nodeFilter.labels, exact = false)
-      case (false, true)  => allNodes().iterator.map(mapNode).filter(filterNodes(_, nodeFilter.properties))
-      case (true, true)   =>
+      case (true, false) => nodes(nodeFilter.labels, exact = false)
+      case (false, true) => allNodes().iterator.map(mapNode).filter(filterNodes(_, nodeFilter.properties))
+      case (true, true) =>
         hasIndex(nodeFilter.labels.toSet, nodeFilter.properties.keys.toSet)
           .map {
             indexInfo => // fixme ------------------------------------only get one prop ↓
@@ -537,7 +588,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     val nodesMap: Seq[(String, PandaNode)] = nodesInput.map(x => {
       val (varname, input) = x
       val id = nodeStore.newNodeId()
-      varname-> PandaNode(id, input.labels, input.props:_*)
+      varname -> PandaNode(id, input.labels, input.props: _*)
     })
 
     def nodeId(ref: NodeInputRef): Long = {
@@ -550,17 +601,17 @@ class GraphFacade(nodeStore: NodeStoreSPI,
 
     val relsMap: Seq[(String, PandaRelationship)] = relsInput.map(x => {
       val (varname, input) = x
-      varname -> PandaRelationship(relationStore.newRelationId(), nodeId(input.startNodeRef), nodeId(input.endNodeRef), input.types.headOption, input.props:_*)
+      varname -> PandaRelationship(relationStore.newRelationId(), nodeId(input.startNodeRef), nodeId(input.endNodeRef), input.types.headOption, input.props: _*)
     }
     )
 
-    nodesMap.foreach{
-      node => addNode(Some(node._2.longId), node._2.labels,  node._2.props.toMap.mapValues(_.value))
+    nodesMap.foreach {
+      node => addNode(Some(node._2.longId), node._2.labels, node._2.props.toMap.mapValues(_.value))
     }
 
-    relsMap.foreach{
+    relsMap.foreach {
       rel => {
-//        addRelation(rel._2.relationType.get, rel._2.startId, rel._2.endId, rel._2.properties.mapValues(_.value))
+        //        addRelation(rel._2.relationType.get, rel._2.startId, rel._2.endId, rel._2.properties.mapValues(_.value))
         addRelationFromPhysical(rel._2._id, rel._2.relationType.get, rel._2.startId, rel._2.endId, rel._2.properties.mapValues(_.value))
       }
     }

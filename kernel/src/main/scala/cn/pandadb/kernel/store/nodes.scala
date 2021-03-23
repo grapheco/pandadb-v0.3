@@ -1,7 +1,8 @@
 package cn.pandadb.kernel.store
 
+import cn.pandadb.kernel.kv.node.NodeLabelStore
 import cn.pandadb.kernel.util.serializer.BaseSerializer
-import org.grapheco.lynx.{LynxId, LynxNode, LynxValue}
+import org.grapheco.lynx.{LynxId, LynxNode, LynxNull, LynxValue}
 
 
 trait StoredValue{
@@ -27,6 +28,23 @@ case class PandaNode(longId: Long, labels: Seq[String], props: (String, LynxValu
   override def property(name: String): Option[LynxValue] = properties.get(name)
 
   override def toString: String = s"{<id>:${id.value}, labels:[${labels.mkString(",")}], properties:{${properties.map(kv=>kv._1+": "+kv._2.value.toString).mkString(",")}}"
+}
+
+case class LazyPandaNode(longId: Long, nodeStoreSPI: NodeStoreSPI) extends LynxNode {
+  lazy val nodeValue: PandaNode = transfer(nodeStoreSPI)
+  override val id: LynxId = NodeId(longId)
+
+  override def labels: Seq[String] = nodeStoreSPI.getNodeLabelsById(longId).map(f=>nodeStoreSPI.getLabelName(f).get).toSeq
+
+
+  override def property(name: String): Option[LynxValue] = nodeValue.properties.get(name)
+
+  def transfer(nodeStore: NodeStoreSPI): PandaNode = {
+    val node = nodeStore.getNodeById(longId).get
+    PandaNode(node.id,
+      node.labelIds.map((id: Int) => nodeStore.getLabelName(id).get).toSeq,
+      node.properties.map(kv=>(nodeStore.getPropertyKeyName(kv._1).getOrElse("unknown"), LynxValue(kv._2))).toSeq:_*)
+  }
 }
 
 trait NodeStoreSPI {

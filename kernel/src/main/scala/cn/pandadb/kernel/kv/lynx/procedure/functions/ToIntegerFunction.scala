@@ -13,7 +13,7 @@ case object ToIntegerFunction extends PandaFunction{
         override val outputs: Seq[(String, LynxType)] = Seq("toInteger"->CTInteger)
 
         override def call(args: Seq[LynxValue]): Iterable[Seq[LynxValue]] = {
-          Iterable(Seq(LynxInteger(args.head.value.toString.toInt)))
+          Iterable(Seq(LynxInteger(args.head.value.toString.toDouble.toInt)))
         }
       }
     )
