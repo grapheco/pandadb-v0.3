@@ -43,10 +43,7 @@ object BaseSerializer extends BaseSerializer {
   }
 
   def bytes2IntArray(bytesArr: Array[Byte]): Array[Int] = {
-//    val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytesArr)
-//    val array = _readIntArray(byteBuf)
-//    byteBuf.release()
-    (0 until (bytesArr.length / 4)).map(i => ByteUtils.getInt(bytesArr.slice(i * 4, (i + 1) * 4), 0)).toArray
+    (0 until bytesArr.length / 4).map(i => ByteUtils.getInt(bytesArr, i * 4)).toArray
   }
 
   // [size][key1][type1][len(if needed)][value1]
@@ -98,18 +95,18 @@ object BaseSerializer extends BaseSerializer {
   }
 
   def bytes2Int(bytes: Array[Byte]): Int = {
-//    val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytes)
-//    val result: Int = byteBuf.readInt()
-//    byteBuf.release()
-//    result
+    //    val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytes)
+    //    val result: Int = byteBuf.readInt()
+    //    byteBuf.release()
+    //    result
     ByteUtils.getInt(bytes, 0)
   }
 
   def bytes2Long(bytes: Array[Byte]): Long = {
-//    val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytes)
-//    val result: Long = byteBuf.readLong()
-//    byteBuf.release()
-//    result
+    //    val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytes)
+    //    val result: Long = byteBuf.readLong()
+    //    byteBuf.release()
+    //    result
     ByteUtils.getLong(bytes, 0)
   }
 
@@ -238,6 +235,7 @@ trait BaseSerializer {
     byteBuf.readBytes(bos, len)
     bos.toString
   }
+
   protected def _readIntArray(byteBuf: ByteBuf): Array[Int] = {
     val len = byteBuf.readByte().toInt
     new Array[Int](len).map(item => byteBuf.readInt())
@@ -266,7 +264,7 @@ trait BaseSerializer {
   def readIntQueue(byteBuf: ByteBuf): mutable.Queue[Int] = {
     val length = byteBuf.readInt()
     val queue: mutable.Queue[Int] = new mutable.Queue[Int]()
-    for(i<-1 to length) queue.enqueue(byteBuf.readInt())
+    for (i <- 1 to length) queue.enqueue(byteBuf.readInt())
     queue
   }
 
