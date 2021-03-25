@@ -1,5 +1,6 @@
 package cn.pandadb.kernel.util.serializer
 
+import cn.pandadb.kernel.kv.ByteUtils
 import cn.pandadb.kernel.store.StoredNodeWithProperty
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
 
@@ -49,8 +50,9 @@ object NodeSerializer extends BaseSerializer {
   }
 
   def deserializeNodeKey(byteArr: Array[Byte]): Long = {
-    val byteBuf = Unpooled.wrappedBuffer(byteArr)
-    byteBuf.readLong()
+//    val byteBuf = Unpooled.wrappedBuffer(byteArr)
+//    byteBuf.readLong()
+    ByteUtils.getLong(byteArr, 0)
   }
 
   private def _writeLabels(labels: Array[Int], byteBuf: ByteBuf): Unit = {

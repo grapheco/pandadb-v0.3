@@ -2,6 +2,7 @@ package cn.pandadb.kernel.util.serializer
 
 import java.io.ByteArrayOutputStream
 
+import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import cn.pandadb.kernel.util.serializer.BaseSerializer.{_readAnyArray, _writeAnyArray}
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
 
@@ -42,10 +43,10 @@ object BaseSerializer extends BaseSerializer {
   }
 
   def bytes2IntArray(bytesArr: Array[Byte]): Array[Int] = {
-    val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytesArr)
-    val array = _readIntArray(byteBuf)
-    byteBuf.release()
-    array
+//    val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytesArr)
+//    val array = _readIntArray(byteBuf)
+//    byteBuf.release()
+    (0 until (bytesArr.length / 4)).map(i => ByteUtils.getInt(bytesArr.slice(i * 4, (i + 1) * 4), 0)).toArray
   }
 
   // [size][key1][type1][len(if needed)][value1]
@@ -90,23 +91,26 @@ object BaseSerializer extends BaseSerializer {
     bytes
   }
 
+  // no use?
   def bytes2IntQueue(bytes: Array[Byte]): mutable.Queue[Int] = {
     val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytes)
     readIntQueue(byteBuf)
   }
 
   def bytes2Int(bytes: Array[Byte]): Int = {
-    val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytes)
-    val result: Int = byteBuf.readInt()
-    byteBuf.release()
-    result
+//    val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytes)
+//    val result: Int = byteBuf.readInt()
+//    byteBuf.release()
+//    result
+    ByteUtils.getInt(bytes, 0)
   }
 
   def bytes2Long(bytes: Array[Byte]): Long = {
-    val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytes)
-    val result: Long = byteBuf.readLong()
-    byteBuf.release()
-    result
+//    val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytes)
+//    val result: Long = byteBuf.readLong()
+//    byteBuf.release()
+//    result
+    ByteUtils.getLong(bytes, 0)
   }
 
 }
