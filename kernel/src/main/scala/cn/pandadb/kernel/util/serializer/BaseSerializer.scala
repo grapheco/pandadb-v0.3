@@ -1,7 +1,9 @@
 package cn.pandadb.kernel.util.serializer
 
-import java.io.ByteArrayOutputStream
+import cn.pandadb.kernel.blob.api.Blob
+import cn.pandadb.kernel.blob.impl.BlobFactory
 
+import java.io.ByteArrayOutputStream
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import cn.pandadb.kernel.util.serializer.BaseSerializer.{_readAnyArray, _writeAnyArray}
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
@@ -114,7 +116,7 @@ object BaseSerializer extends BaseSerializer {
 
 trait BaseSerializer {
 
-  // data type:  Map("String"->1, "Int" -> 2, "Long" -> 3, "Double" -> 4, "Float" -> 5, "Boolean" -> 6, "Array[String] -> 7")
+  // data type:  Map("String"->1, "Int" -> 2, "Long" -> 3, "Double" -> 4, "Float" -> 5, "Boolean" -> 6, "Array[String]" -> 7", "blob" -> 8)
   val allocator: ByteBufAllocator
 
   def serialize(longNum: Long): Array[Byte] = {
@@ -167,6 +169,13 @@ trait BaseSerializer {
     byteBuf.writeBoolean(value)
   }
 
+  protected def _writeBlob(value: Blob, byteBuf: ByteBuf): ByteBuf = {
+    byteBuf.writeByte(8)
+    val blobInBytes = value.toBytes()
+    byteBuf.writeInt(blobInBytes.length)
+    byteBuf.writeBytes(blobInBytes)
+  }
+
   protected def _writeKV(keyId: Int, value: Any, byteBuf: ByteBuf): Any = {
     byteBuf.writeByte(keyId)
     value match {
@@ -176,6 +185,7 @@ trait BaseSerializer {
       case s: Int => _writeInt(value.asInstanceOf[Int], byteBuf)
       case s: Long => _writeLong(value.asInstanceOf[Long], byteBuf)
       case s: Array[Any] => _writeAnyArray(value.asInstanceOf[Array[Any]], byteBuf)
+      case s: Blob => _writeBlob(value.asInstanceOf[Blob], byteBuf)
       case _ => _writeString(value.asInstanceOf[String], byteBuf)
     }
   }
@@ -236,6 +246,13 @@ trait BaseSerializer {
     bos.toString
   }
 
+  protected def _readBlob(byteBuf: ByteBuf): Blob = {
+    val len: Int = byteBuf.readInt()
+    val bytesArray : Array[Byte] = new Array[Byte](len)
+    byteBuf.readBytes(bytesArray)
+    BlobFactory.fromBytes(bytesArray)
+  }
+
   protected def _readIntArray(byteBuf: ByteBuf): Array[Int] = {
     val len = byteBuf.readByte().toInt
     new Array[Int](len).map(item => byteBuf.readInt())
@@ -254,6 +271,7 @@ trait BaseSerializer {
         case 5 => byteBuf.readFloat()
         case 6 => byteBuf.readBoolean()
         case 7 => _readAnyArray(byteBuf)
+        case 8 => _readBlob(byteBuf)
         case _ => _readString(byteBuf)
       }
       propId -> propValue

@@ -118,5 +118,4 @@ trait NodeStoreSPI {
 
   def close(): Unit
 
-
 }
