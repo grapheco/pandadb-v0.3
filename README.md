@@ -83,7 +83,7 @@ usage example:
 ## 6. Embedding mode
 usage:
 ```
-val service = GraphDatabaseBuilder.newEmbeddedDatabase("/pandadb")
+val service = GraphDatabaseBuilder.newEmbeddedDatabase("/home/pandadb")
 val res = service.cypher("match (n) return n")
 res.show()
 ```
