@@ -50,9 +50,8 @@ object NodeSerializer extends BaseSerializer {
   }
 
   def deserializeNodeKey(byteArr: Array[Byte]): Long = {
-//    val byteBuf = Unpooled.wrappedBuffer(byteArr)
-//    byteBuf.readLong()
-    ByteUtils.getLong(byteArr, 0)
+    val byteBuf = Unpooled.wrappedBuffer(byteArr)
+    byteBuf.readLong()
   }
 
   private def _writeLabels(labels: Array[Int], byteBuf: ByteBuf): Unit = {
@@ -66,13 +65,13 @@ object NodeSerializer extends BaseSerializer {
     _writeKV(keyId, value, byteBuf)
   }
 
-  private def _readLabels(byteBuf: ByteBuf): Array[Int] = {
+   def _readLabels(byteBuf: ByteBuf): Array[Int] = {
     val len = byteBuf.readByte().toInt
     val labels: Array[Int] = new Array[Int](len).map(_ => byteBuf.readInt())
     labels
   }
 
-  private def _readProps(byteBuf: ByteBuf): Map[Int, Any] = {
+   def _readProps(byteBuf: ByteBuf): Map[Int, Any] = {
     readMap(byteBuf)
   }
 }

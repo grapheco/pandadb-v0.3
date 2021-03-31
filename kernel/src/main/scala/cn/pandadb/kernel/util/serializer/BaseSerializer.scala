@@ -5,7 +5,6 @@ import cn.pandadb.kernel.blob.impl.BlobFactory
 
 import java.io.ByteArrayOutputStream
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
-import cn.pandadb.kernel.util.serializer.BaseSerializer.{_readAnyArray, _writeAnyArray}
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
 
 import scala.collection.mutable
@@ -45,7 +44,10 @@ object BaseSerializer extends BaseSerializer {
   }
 
   def bytes2IntArray(bytesArr: Array[Byte]): Array[Int] = {
-    (0 until bytesArr.length / 4).map(i => ByteUtils.getInt(bytesArr, i * 4)).toArray
+    val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytesArr)
+    val array = _readIntArray(byteBuf)
+    byteBuf.release()
+    array
   }
 
   // [size][key1][type1][len(if needed)][value1]
@@ -97,19 +99,17 @@ object BaseSerializer extends BaseSerializer {
   }
 
   def bytes2Int(bytes: Array[Byte]): Int = {
-    //    val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytes)
-    //    val result: Int = byteBuf.readInt()
-    //    byteBuf.release()
-    //    result
-    ByteUtils.getInt(bytes, 0)
+    val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytes)
+    val result: Int = byteBuf.readInt()
+    byteBuf.release()
+    result
   }
 
   def bytes2Long(bytes: Array[Byte]): Long = {
-    //    val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytes)
-    //    val result: Long = byteBuf.readLong()
-    //    byteBuf.release()
-    //    result
-    ByteUtils.getLong(bytes, 0)
+    val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytes)
+    val result: Long = byteBuf.readLong()
+    byteBuf.release()
+    result
   }
 
 }
