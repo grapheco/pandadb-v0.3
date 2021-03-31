@@ -6,9 +6,9 @@
         </console>
     </appenders>
     <loggers>
-        <logger name="cn.pandadb" level="info"></logger>
+        <logger name="cn.pandadb" level="debug"></logger>
         <logger name="org.grapheco.lynx.CypherRunner" level="debug"></logger>
-        <root level="all">
+        <root level="debug">
             <appender-ref ref="Console"/>
         </root>
     </loggers>
