@@ -2,9 +2,9 @@ package cn.pandadb.kernel.blob.api
 
 import org.apache.commons.codec.binary.Hex
 import org.apache.commons.io.IOUtils
-import org.neo4j.blob.util.StreamUtils
-
 import java.io._
+
+import cn.pandadb.kernel.blob.api.util.StreamUtils
 
 trait InputStreamSource {
   /**
