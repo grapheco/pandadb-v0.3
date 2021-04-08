@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration status="WARN" monitorInterval="30">
+<configuration status="INFO" monitorInterval="30">
     <appenders>
         <console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="[%d{HH:mm:ss:SSS}] [%p] - %l - %m%n"/>
         </console>
     </appenders>
     <loggers>
-        <logger name="cn.pandadb" level="debug"></logger>
-        <logger name="org.grapheco.lynx.CypherRunner" level="debug"></logger>
-        <root level="debug">
+        <logger name="cn.pandadb" level="info"/>
+        <logger name="org.grapheco.lynx.CypherRunner" level="info"/>
+        <root level="info">
             <appender-ref ref="Console"/>
         </root>
     </loggers>
