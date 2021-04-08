@@ -15,8 +15,8 @@ case object IdFunction extends PandaFunction{
 
         override def call(args: Seq[LynxValue]): Iterable[Seq[LynxValue]] = {
           Iterable(Seq(LynxInteger(args.head match {
-            case sNode: LynxNode => sNode.id.value.asInstanceOf[Long]
-            case sRel: LynxRelationship => sRel.id.value.asInstanceOf[Long]
+            case sNode: LynxNode => sNode.id.value.asInstanceOf[Int]
+            case sRel: LynxRelationship => sRel.id.value.asInstanceOf[Int]
           })))
         }
       }
