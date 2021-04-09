@@ -126,6 +126,20 @@
                 <groupId>org.grapheco</groupId>
                 <artifactId>hippo-rpc_2.12</artifactId>
                 <version>0.1.2-SNAPSHOT</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.typesafe.scala-logging</groupId>
+                        <artifactId>scala-logging_2.12</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <dependency>

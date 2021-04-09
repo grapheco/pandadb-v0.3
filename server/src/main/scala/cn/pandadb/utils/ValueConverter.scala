@@ -58,10 +58,6 @@ class ValueConverter {
   }
 
   def converterLynxList(lynxList: LynxList): ListValue ={
-    var newList = new ArrayBuffer[Value]()
-    lynxList.value.foreach(lv => {
-        newList += converterValue(lv)
-    })
-    ListValue(newList)
+    ListValue(lynxList.value.map(f => converterValue(f)).toBuffer.asInstanceOf[ArrayBuffer[Value]])
   }
 }

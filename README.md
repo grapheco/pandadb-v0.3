@@ -63,8 +63,11 @@ example:
 ./importer-panda.sh --db-path=/pandadb --nodes=node1.csv --nodes=node2.csv --relationships=rels1.csv --delimeter="," --array-delimeter="|"
 ```
 *NOTICE:*
-1. *MUST* specify ':ID' in your csv file, for example: if `userId` is your major key, then in csv file, you should rename it as `userId:ID`
-2. *OPTION* specify `:LABEL` in your csv file, default is `default`
+1. *MUST* specify append `:ID` in your major column of csv file and this column must be *NUMBER* type.
+2. *OPTION* specify append `:LABEL` in your label column of csv file, default is `default`.  
+
+For example: if `userId` is your major column, `type` is your node label, then in csv file, you should rename the header as `userId:ID`,`type:LABEL`
+
 ## 4. Cypher shell
 script location: `/usr/local/pandadb-server-<version>/bin/cypher-shell`  
 
