@@ -71,17 +71,19 @@ object PandaImporter extends LazyLogging {
     )
     logger.info(s"Import task started. $time")
     service.scheduleAtFixedRate(nodeCountProgressLogger, 0, 30, TimeUnit.SECONDS)
-    service.scheduleAtFixedRate(relCountProgressLogger, 0, 30, TimeUnit.SECONDS)
 
-    importCmd.relFileList.foreach(file => new SingleRelationFileImporter(file, importCmd, globalArgs).importData())
-    relationDB.close()
-    inRelationDB.close()
-    outRelationDB.close()
-    relationTypeDB.close()
-    logger.info(s"$globalRelCount relations imported. $time")
-    logger.info(s"$globalRealPropCount props of relation imported. $time")
-    PDBMetaData.persist(importCmd.exportDBPath.getAbsolutePath)
+    if (importCmd.relFileList.head.isFile){
+      service.scheduleAtFixedRate(relCountProgressLogger, 0, 30, TimeUnit.SECONDS)
 
+      importCmd.relFileList.foreach(file => new SingleRelationFileImporter(file, importCmd, globalArgs).importData())
+      relationDB.close()
+      inRelationDB.close()
+      outRelationDB.close()
+      relationTypeDB.close()
+      logger.info(s"$globalRelCount relations imported. $time")
+      logger.info(s"$globalRealPropCount props of relation imported. $time")
+      PDBMetaData.persist(importCmd.exportDBPath.getAbsolutePath)
+    }
 
     importCmd.nodeFileList.foreach(file => new SingleNodeFileImporter(file, importCmd, globalArgs).importData())
     nodeDB.close()
