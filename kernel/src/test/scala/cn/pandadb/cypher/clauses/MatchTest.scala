@@ -44,13 +44,6 @@ class MatchTest {
     db.close()
   }
 
-  @Test
-  def tmp(): Unit ={
-    val res = db.cypher("match (n) return n").records()
-    while (res.hasNext){
-      println(res.next().get("n"))
-    }
-  }
 
   @Test
   def matchTest(): Unit = {
@@ -140,6 +133,12 @@ class MatchTest {
     Assert.assertTrue("not all passed", pass)
   }
 
+  @Test
+  def testForArray(): Unit = {
+    db.cypher("create(n:person:worker{name:'xx',arr1:[],arr2:[1,2,3],arr3:[1.1,3.5], arr4:['abc','dd','g'],arr5:[true]}) return n").show()
+    val res = db.cypher("match(n:person{name:'xx'}) return n").records()
+    Assert.assertEquals(1, res.size)
+  }
 
 
 }

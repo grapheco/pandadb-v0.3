@@ -5,6 +5,7 @@ import cn.pandadb.kernel.GraphService
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.lynx.procedure.PandaFunction
 import cn.pandadb.kernel.kv.meta.Statistics
+import cn.pandadb.kernel.kv.value.ValueMappings
 import cn.pandadb.kernel.store._
 import org.grapheco.lynx.{CallableProcedure, ContextualNodeInputRef, CypherRunner, GraphModel, LynxId, LynxNode, LynxRelationship, LynxResult, LynxValue, NodeFilter, NodeInput, NodeInputRef, PathTriple, RelationshipFilter, RelationshipInput, StoredNodeInputRef}
 import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, SemanticDirection}
@@ -610,7 +611,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     )
 
     nodesMap.foreach {
-      node => addNode(Some(node._2.longId), node._2.labels, node._2.props.toMap.mapValues(_.value))
+      node => addNode(Some(node._2.longId), node._2.labels, node._2.props.toMap.mapValues(ValueMappings.lynxValueMappingToScala(_)))
     }
 
     relsMap.foreach {
