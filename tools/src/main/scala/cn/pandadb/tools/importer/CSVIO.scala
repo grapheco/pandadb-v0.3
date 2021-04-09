@@ -57,6 +57,9 @@ class CSVLine(arr: Array[String]) {
 object CSVIOTools {
   def estLineCount(file: File): Long = {
     val fileSize: Long = file.length() // count by Byte
+    if (fileSize == 0) {
+      return 0
+    }
     if(fileSize < 1024*1024) {
       Source.fromFile(file).getLines().size
     } else {
