@@ -49,7 +49,7 @@ cd /usr/local/pandadb-server-<version>
 ./bin/pandadb.sh start
 
 ```
-notice: ./bin/pandadb.sh will show help.
+notice: `./bin/pandadb.sh` will show help.
 
 ## 3. Data import
 use the shell script: `/usr/local/pandadb-server-<version>/bin/importer-panda.sh`  
@@ -79,6 +79,7 @@ example:
 3. supported data types
     - int, long, boolean, double, string, date
     - string[], int[], long[], boolean[], double[]
+    - BLOB
     - default: string
 
 node csv example:  

@@ -43,7 +43,7 @@ do
   elif [[ $arg == "--delimeter"* ]]
   then
     DELIMETER=$arg
-  elif [[ $arg == "--array-delimeter" ]]
+  elif [[ $arg == "--array-delimeter"* ]]
   then
     ARRAY_DELIMETER=$arg
   fi
