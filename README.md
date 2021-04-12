@@ -38,6 +38,7 @@ unpack `pandadb-server-<version>-unix.tar.gz` in your local directory, e.g. `/us
 ```
 cd /usr/local/pandadb-server-<version>
 vim conf/pandadb.conf
+vim conf/rocksdb.conf
 ```
 start pandadb with the default configuration will create database in the `usr/local/panda-server-<version>/data` directory.
 
@@ -45,8 +46,10 @@ start pandadb with the default configuration will create database in the `usr/lo
 ```
 cd /usr/local/pandadb-server-<version>
 
-./bin/pandadb.sh [start || console]
+./bin/pandadb.sh start
+
 ```
+notice: ./bin/pandadb.sh will show help.
 
 ## 3. Data import
 use the shell script: `/usr/local/pandadb-server-<version>/bin/importer-panda.sh`  
@@ -60,18 +63,33 @@ use the shell script: `/usr/local/pandadb-server-<version>/bin/importer-panda.sh
 
 example: 
 ```
-./importer-panda.sh --db-path=/pandadb --nodes=node1.csv --nodes=node2.csv --relationships=rels1.csv --delimeter="," --array-delimeter="|"
+./importer-panda.sh --db-path=/pandadb 
+--nodes=/testdata/node1.csv --nodes=testdata/node2.csv
+--relationships=testdata/rels1.csv --relationships=testdata/rels2.csv
+--delimeter="," --array-delimeter="|"
 ```
 *NOTICE:*
-1. *MUST* specify append `:ID` in your major column of csv file and this column must be *NUMBER* type.
-2. *OPTION* specify append `:LABEL` in your label column of csv file, default is `default`.  
+1. node csv file
+    - *MUST* specify append `:ID` in your major column of csv file and this column must be *NUMBER* type.
+    - *OPTION* specify append `:LABEL` in your label column of csv file, default is `default`.  
+2. relationship csv file
+    - *MUST* contain `REL_ID` column in your relationship csv, if append `:IGNORE`, will not add this REL_ID as property.
+    - *MUST* specify append `:TYPE` in your relation type column of csv file.
+    - *MUST* specify append `:START_ID` and `:END_ID` for your columns of start node id and end node id
+3. supported data types
+    - int, long, boolean, double, string, date
+    - string[], int[], long[], boolean[], double[]
+    - default: string
 
-For example: if `userId` is your major column, `type` is your node label, then in csv file, you should rename the header as `userId:ID`,`type:LABEL`
+example:  
+| nodeId:ID | label:LABEL | name | jobs:string[] |  
+| :----: | :----: | :----: | :----: |  
+| 1 | person | alex | {teacher|coder|singer} |
 
 ## 4. Cypher shell
 script location: `/usr/local/pandadb-server-<version>/bin/cypher-shell`  
 
-usage: `./cypher-shell -a panda://localhost:9989 -u pandadb -p pandadb`
+usage: `./cypher-shell -a panda://localhost:9989 -u "" -p ""`
 
 ## 5. Driver
 visit https://github.com/grapheco/pandadb-v0.3/releases to get pandadb-driver-1.0-SNAPSHOT.jar.   
