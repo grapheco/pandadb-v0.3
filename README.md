@@ -78,17 +78,39 @@ visit https://github.com/grapheco/pandadb-v0.3/releases to get pandadb-driver-1.
 then add the jar to your project, this driver only support `session.run()`.  
 usage example:
 ```
-    val driver = GraphDatabase.driver("panda://localhost:9989", AuthTokens.basic("pandadb", "pandadb"))
-    val session = driver.session()
-    session.run("create (n:person{name:'google'})")
-    session.close()
-    driver.close()
+  val driver = GraphDatabase.driver("panda://localhost:9989", AuthTokens.basic("", ""))
+  val session = driver.session()
+  
+  val res1 = session.run("create (n:people{name:'alex', company:'google'}) return n")
+  println(res1.next().get("n").asMap())
+  
+  val res2 = session.run(“match (n:people) return n”)
+  while (res2.hasNext){
+    println(res.next().get("n").asNode().get("name"))
+  }
+  
+  val res3 = session.run(“match (n)-[r]->(m) return r”)
+  while (res3.hasNext){
+    println(res.next().get("r").asRelationship())
+  }
+  
+  session.close()
+  driver.close()
+
 ```
 
 ## 6. Embedding mode
 usage:
 ```
+// use default settings.
 val service = GraphDatabaseBuilder.newEmbeddedDatabase("/home/pandadb")
-val res = service.cypher("match (n) return n")
-res.show()
+// use setting file.
+val service = GraphDatabaseBuilder.newEmbeddedDatabase("/home/pandadb", "/home/conf/rocksdb.conf")
+	
+service.addNode(Map("name"->"alex"), "person", "coder")
+service.addNode(Map("name"->"joy","age"->22), "worker")
+service.addRelation("friend", 1, 2, Map())
+
+service.cypher(“match (n) return n”).show()
+service.cypher("match (n)-[r]->(m) return r").show()
 ```

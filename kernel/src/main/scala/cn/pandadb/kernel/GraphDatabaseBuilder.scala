@@ -17,7 +17,7 @@ object GraphDatabaseBuilder extends StrictLogging{
   val subDirs = Set("auth", "index", "indexId", "indexMeta", "nodeLabel", "nodeMeta", "nodes",
     "inEdge", "outEdge", "relationMeta", "relLabelIndex", "rels", "statistics", "metadata")
 
-  def newEmbeddedDatabase(dataPath: String): GraphService = {
+  def newEmbeddedDatabase(dataPath: String, rocksdbConfPath: String = "default"): GraphService = {
     val file = new File(dataPath)
     if (!file.exists()) {
       file.mkdirs()
@@ -33,10 +33,10 @@ object GraphDatabaseBuilder extends StrictLogging{
 //      })
     }
 
-    val nodeStore = new NodeStoreAPI(dataPath)
-    val relationStore = new RelationStoreAPI(dataPath)
-    val indexStore = new IndexStoreAPI(dataPath)
-    val statistics = new Statistics(dataPath)
+    val nodeStore = new NodeStoreAPI(dataPath, rocksdbConfPath)
+    val relationStore = new RelationStoreAPI(dataPath, rocksdbConfPath)
+    val indexStore = new IndexStoreAPI(dataPath, rocksdbConfPath)
+    val statistics = new Statistics(dataPath, rocksdbConfPath)
     new GraphFacade(
       nodeStore,
       relationStore,
