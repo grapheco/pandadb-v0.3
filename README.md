@@ -81,10 +81,15 @@ example:
     - string[], int[], long[], boolean[], double[]
     - default: string
 
-example:  
+node csv example:  
 | nodeId:ID | label:LABEL | name | jobs:string[] |  
 | :----: | :----: | :----: | :----: |  
-| 1 | person | alex | {teacher|coder|singer} |
+| 1 | person | alex | {teacher\|coder\|singer} |
+  
+relationship csv example:
+| REL_ID:IGNORE | relation:TYPE | boss:START_ID | worker:END_ID |  
+| :----: | :----: | :----: | :----: |  
+| 1 | friend | 1 | 2 |
 
 ## 4. Cypher shell
 script location: `/usr/local/pandadb-server-<version>/bin/cypher-shell`  
