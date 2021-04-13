@@ -41,7 +41,7 @@
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.2.1</version>
                 <configuration>
-                    <finalName>pandadb-driver-${pandadb.version}</finalName>
+                    <finalName>pandadb-driver-v0.3</finalName>
                     <artifactSet>
                         <includes>
                             <include>*:*</include>

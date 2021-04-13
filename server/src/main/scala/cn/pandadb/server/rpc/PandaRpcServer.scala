@@ -27,7 +27,7 @@ class PandaRpcServer(config: Config, dbManager: GraphDatabaseManager)
   var auth: Auth = _
 
   override def init(): Unit = {
-    logger.info(this.getClass + ": init")
+    logger.debug(this.getClass + ": init")
     rpcConfig = RpcEnvServerConfig(new RpcConf(), config.getRpcServerName(),
       config.getListenHost(), config.getRpcPort())
     rpcEnv = HippoRpcEnvFactory.create(rpcConfig)
@@ -44,14 +44,14 @@ class PandaRpcServer(config: Config, dbManager: GraphDatabaseManager)
   }
 
   override def start(): Unit = {
-    logger.info(this.getClass + ": start")
+    logger.debug(this.getClass + ": start")
 
     val graphService = dbManager.getDatabase("default")
     val endpoint = new PandaEndpoint(rpcEnv)
     val handler = new PandaStreamHandler(graphService, auth)
     rpcEnv.setupEndpoint(config.getRpcServerName(), endpoint)
     rpcEnv.setRpcHandler(handler)
-    logger.info("database: " + graphService.toString)
+    logger.debug("database: " + graphService.toString)
     rpcEnv.awaitTermination()
   }
 
@@ -64,10 +64,10 @@ class PandaRpcServer(config: Config, dbManager: GraphDatabaseManager)
   }
 }
 
-class PandaEndpoint(override val rpcEnv: HippoRpcEnv) extends RpcEndpoint {
+class PandaEndpoint(override val rpcEnv: HippoRpcEnv) extends RpcEndpoint with LazyLogging {
 
   override def onStart(): Unit = {
-    println("server started...")
+    logger.info("==== PandaDB Server started ====")
   }
 
   override def receiveAndReply(context: RpcCallContext): PartialFunction[Any, Unit] = {

@@ -76,7 +76,8 @@ example:
     - *MUST* contain `REL_ID` column in your relationship csv, if append `:IGNORE`, will not add this REL_ID as property.
     - *MUST* specify append `:TYPE` in your relation type column of csv file.
     - *MUST* specify append `:START_ID` and `:END_ID` for your columns of start node id and end node id
-3. supported data types
+3. delimeter and array-delimeter cannot be the same
+4. supported data types
     - int, long, boolean, double, string, date
     - string[], int[], long[], boolean[], double[]
     - BLOB

@@ -26,7 +26,7 @@ object RocksDBStorage extends LazyLogging{
       throw new IllegalStateException("Invalid db path, it's a regular file: " + path)
 
     if (rocksdbConfigPath == "default") {
-      logger.info("use default setting~~~~~~~~~~")
+      logger.debug("use default setting")
       val options: Options = new Options()
       val tableConfig = new BlockBasedTableConfig()
 
@@ -56,14 +56,14 @@ object RocksDBStorage extends LazyLogging{
         .setTargetFileSizeBase(256L * 1024L * 1024L) // maxBytesForLevelBase / 10 or 15
           .setTargetFileSizeMultiplier(4)
 
-      logger.info(s"setDisableAutoCompactions: ${options.disableAutoCompactions()}")
-      logger.info(s"setWriteBufferSize: ${options.writeBufferSize()}")
-      logger.info(s"setMaxBytesForLevelBase: ${options.maxBytesForLevelBase()}")
+      logger.debug(s"setDisableAutoCompactions: ${options.disableAutoCompactions()}")
+      logger.debug(s"setWriteBufferSize: ${options.writeBufferSize()}")
+      logger.debug(s"setMaxBytesForLevelBase: ${options.maxBytesForLevelBase()}")
 
       new RocksDBStorage(RocksDB.open(options, path))
 
     } else {
-      logger.info("read setting file ~~~~~~~~~")
+      logger.debug("read setting file")
       val builder = new RocksDBConfigBuilder(rocksdbConfigPath)
       val db = RocksDB.open(builder.getOptions(), path)
       new RocksDBStorage(db)

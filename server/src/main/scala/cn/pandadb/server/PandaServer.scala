@@ -21,7 +21,6 @@ class PandaServer(config: Config) extends LazyLogging {
   life.add(pandaRpcServer)
 
   def start(): Unit = {
-    logger.info("==== PandaDB Server Starting... ====")
     life.start()
   }
 
