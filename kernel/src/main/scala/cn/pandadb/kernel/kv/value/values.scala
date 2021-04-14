@@ -13,7 +13,7 @@ object ValueMappings {
       case v: LynxInteger => v.value
       case v: LynxString => v.value
       case v: LynxDouble => v.value
-      case v: LynxDate => v.value
+      case v: LynxDate => new Date(v.value)
       case v: LynxList => v.value.map(lynxValueMappingToScala(_)).toArray
       case _ => throw InvalidValueException(value)
     }

@@ -9,6 +9,7 @@ import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
 import cn.pandadb.kernel.store.{NodeStoreSPI, PandaNode, PandaRelationship, RelationStoreSPI}
 import org.apache.commons.io.FileUtils
+import org.grapheco.lynx.LynxDate
 import org.junit.{After, Assert, Before, Test}
 
 class CypherCreateTest {
@@ -80,6 +81,8 @@ class CypherCreateTest {
   @Test
   def node_Date1(): Unit ={
     graphFacade.cypher("CREATE (Keanu:Person {name:'node_Date1',born:date('2018-04-05')})").show()
+    val res = graphFacade.cypher("MATCH (Keanu:Person {name:'node_Date1'}) RETURN Keanu.born").records()
+    Assert.assertEquals(1522857600000L, res.next().get("Keanu.born").get.asInstanceOf[LynxDate].value)
   }
   @Test
   def node_Date2(): Unit ={
@@ -113,6 +116,16 @@ class CypherCreateTest {
     Assert.assertEquals(15.5, property("money").value)
     Assert.assertEquals(false, property("star").value)
   }
+
+  @Test
+  def relation_List0(): Unit ={
+    graphFacade.cypher(
+      """
+        |CREATE (TheMatrix:Movie {title:'The Matrix', released:1999, tagline:'Welcome to the Real World'})
+        |CREATE (Keanu:Person {name:'Keanu Reeves', born:1964})
+        |CREATE (Keanu)-[r]->(TheMatrix) return r""".stripMargin).show()
+  }
+
   @Test
   def relation_List1(): Unit ={
     graphFacade.cypher(
