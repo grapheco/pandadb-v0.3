@@ -40,18 +40,18 @@ trait SingleFileImporter extends LazyLogging{
       val propId = kv._2._1
       val propValue: Any = {
         kv._2._2 match {
-          case "long" => lineArr(index).toLong
-          case "int" => lineArr(index).toInt
-          case "boolean" => lineArr(index).toBoolean
-          case "double" => lineArr(index).toBoolean
+          case "long" => lineArr(index).trim.toLong
+          case "int" => lineArr(index).trim.toInt
+          case "boolean" => lineArr(index).trim.toBoolean
+          case "double" => lineArr(index).trim.toBoolean
           case "string" => lineArr(index).replace("\"", "")
-          case "date" => lineArr(index).replace("\"", "")
-          case "long[]" => lineArr(index).split(cmd.arrayDelimeter).map(item => item.toLong)
-          case "int[]" => lineArr(index).split(cmd.arrayDelimeter).map(item => item.toInt)
-          case "string[]" => lineArr(index).split(cmd.arrayDelimeter).map(item => item.replace("{","").replace("}",""))
-          case "boolean[]" => lineArr(index).split(cmd.arrayDelimeter).map(item => item.toBoolean)
-          case "double[]" => lineArr(index).split(cmd.arrayDelimeter).map(item => item.toDouble)
-          case _ => lineArr(index).replace("\"", "")
+          case "date" => lineArr(index).trim.replace("\"", "")
+          case "long[]" => lineArr(index).trim.replace("{","").replace("}","").split(cmd.arrayDelimeter).map(item => item.toLong)
+          case "int[]" => lineArr(index).trim.replace("{","").replace("}","").split(cmd.arrayDelimeter).map(item => item.toInt)
+          case "string[]" => lineArr(index).replace("{","").replace("}","").split(cmd.arrayDelimeter)
+          case "boolean[]" => lineArr(index).trim.replace("{","").replace("}","").split(cmd.arrayDelimeter).map(item => item.toBoolean)
+          case "double[]" => lineArr(index).trim.replace("{","").replace("}","").split(cmd.arrayDelimeter).map(item => item.toDouble)
+          case _ => lineArr(index).trim.replace("\"", "")
         }
       }
       propMap += (propId -> propValue)
