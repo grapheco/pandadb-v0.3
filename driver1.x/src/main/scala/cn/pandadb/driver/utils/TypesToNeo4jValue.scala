@@ -2,7 +2,7 @@ package cn.pandadb.driver.utils
 
 import cn.pandadb.hipporpc.values.{Value => HippoValue}
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
-import org.neo4j.driver.internal.value.{BooleanValue, DateTimeValue, FloatValue, IntegerValue, ListValue, LocalDateTimeValue, NodeValue, RelationshipValue, StringValue}
+import org.neo4j.driver.internal.value.{BooleanValue, DateTimeValue, FloatValue, IntegerValue, ListValue, LocalDateTimeValue, NodeValue, NullValue, RelationshipValue, StringValue}
 import org.neo4j.driver.v1.{Record, Value => Neo4jValue}
 
 import scala.collection.JavaConverters._
@@ -44,7 +44,14 @@ object TypesToNeo4jValue {
         })
         new ListValue(neo4jList.seq: _*)
       }
+      case Types.NULL =>{
+        NullValue.NULL
+      }
+      case any => throw new NotSupportValueTypeException(s"not support ${any.toString} type")
     }
   }
+}
 
+class NotSupportValueTypeException(s: String) extends Exception{
+  override def getMessage: String = s
 }
