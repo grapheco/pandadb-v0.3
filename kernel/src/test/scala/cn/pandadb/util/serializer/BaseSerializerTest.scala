@@ -4,6 +4,9 @@ import cn.pandadb.kernel.util.Profiler.timing
 import cn.pandadb.kernel.util.serializer.BaseSerializer
 import org.junit.{Assert, Test}
 
+import java.io.File
+import scala.io.Source
+
 /**
  * @Author: Airzihao
  * @Description:
@@ -50,11 +53,13 @@ class BaseSerializerTest {
   }
 
   @Test
-  def testAnyArray(): Unit = {
-    val arr: Array[Any] = Array[Any](123, "abc", true, 0.5, 0.5.toFloat, 12345679.toLong)
-    val bytesArr = serializer.anyArray2Bytes(arr)
-    val deserializedArr = serializer.bytes2AnyArray(bytesArr)
-    arr.zip(deserializedArr).map(pair => Assert.assertEquals(pair._1, pair._2))
+  def testLongString(): Unit = {
+    println(Short.MaxValue)
+    val testString = Source.fromFile("./testinput/longString").mkString
+    val map = Map(1 -> testString)
+    val bytesArr = serializer.map2Bytes(map)
+    val deserializedMap = serializer.bytes2Map(bytesArr)
+    Assert.assertEquals(testString, deserializedMap(1))
   }
 
 }

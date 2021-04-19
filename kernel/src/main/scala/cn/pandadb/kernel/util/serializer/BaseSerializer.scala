@@ -137,10 +137,22 @@ trait BaseSerializer {
   protected def _writeString(value: String, byteBuf: ByteBuf): Unit = {
     val strInBytes: Array[Byte] = value.getBytes
     val length: Int = strInBytes.length
-    // write type
-    byteBuf.writeByte(1)
-    byteBuf.writeShort(length)
-    byteBuf.writeBytes(strInBytes)
+
+    def _writeShortString(): Unit = {
+      byteBuf.writeByte(1)
+      byteBuf.writeShort(length)
+      byteBuf.writeBytes(strInBytes)
+    }
+
+    def _writeLongString(): Unit = {
+      byteBuf.writeByte(1)
+      byteBuf.writeShort(-1)
+      byteBuf.writeInt(length)
+      byteBuf.writeBytes(strInBytes)
+    }
+    // pow(2,15) = 32768
+    if (length < 32767) _writeShortString()
+    else _writeLongString()
   }
 
   protected def _writeInt(value: Int, byteBuf: ByteBuf): Unit = {
@@ -248,9 +260,19 @@ trait BaseSerializer {
   protected def _readString(byteBuf: ByteBuf): String = {
     val len: Int = byteBuf.readShort().toInt
     val bos: ByteArrayOutputStream = new ByteArrayOutputStream()
-    byteBuf.readBytes(bos, len)
-    bos.toString
+    if (len < 32768 && len > 0) {
+      byteBuf.readBytes(bos, len)
+      bos.toString
+    }
+    else {
+      val trueLen: Int = byteBuf.readInt()
+      byteBuf.readBytes(bos, trueLen)
+      bos.toString
+    }
+
   }
+
+
 
   protected def _readBlob(byteBuf: ByteBuf): Blob = {
     val len: Int = byteBuf.readInt()
