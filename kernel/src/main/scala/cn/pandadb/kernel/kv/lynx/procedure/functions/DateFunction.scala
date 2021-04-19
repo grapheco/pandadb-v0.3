@@ -1,6 +1,7 @@
 package cn.pandadb.kernel.kv.lynx.procedure.functions
 
 import java.text.SimpleDateFormat
+import java.util.Date
 
 import cn.pandadb.kernel.kv.lynx.procedure.PandaFunction
 import org.grapheco.lynx.{CallableProcedure, LynxDate, LynxInteger, LynxString, LynxType, LynxValue}
@@ -16,12 +17,17 @@ case object DateFunction extends PandaFunction{
 
         override def call(args: Seq[LynxValue]): Iterable[Seq[LynxValue]] = {
           //TODO: support like yyyy/MM/dd HH:mm:ss
-          Iterable(Seq(LynxDate(new SimpleDateFormat("yyyy-MM-dd").parse(args.head.value.toString).getTime)))
+          if(args.size == 0) Iterable(Seq(LynxDate(System.currentTimeMillis)))
+          else Iterable(Seq(LynxDate(new SimpleDateFormat("yyyy-MM-dd").parse(args.head.value.toString).getTime)))
+
         }
       }
     )
   }
+
   override def callableProcedure: Some[CallableProcedure] = {
     procedure
   }
 }
+
+

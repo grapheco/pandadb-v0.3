@@ -15,7 +15,8 @@ case object DateTimeFunction extends PandaFunction{
         override val outputs: Seq[(String, LynxType)] = Seq("datetime"->CTDate)
 
         override def call(args: Seq[LynxValue]): Iterable[Seq[LynxValue]] = {
-          Iterable(Seq(LynxDateTime(new SimpleDateFormat("yyyy-MM-dd").parse(args.head.value.toString).getTime)))
+          if(args.size == 0) Iterable(Seq(LynxDateTime(System.currentTimeMillis())))
+          else Iterable(Seq(LynxDateTime(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(args.head.value.toString).getTime)))
         }
       }
     )

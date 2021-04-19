@@ -1,6 +1,8 @@
 package cn.pandadb.cypher.clauses
 
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
 
 import cn.pandadb.kernel.kv.GraphFacade
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
@@ -9,7 +11,7 @@ import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
 import cn.pandadb.kernel.store.{NodeStoreSPI, PandaNode, PandaRelationship, RelationStoreSPI}
 import org.apache.commons.io.FileUtils
-import org.grapheco.lynx.LynxDate
+import org.grapheco.lynx.{LynxDate, LynxDateTime}
 import org.junit.{After, Assert, Before, Test}
 
 class CypherCreateTest {
@@ -88,6 +90,25 @@ class CypherCreateTest {
   def node_Date2(): Unit ={
     graphFacade.cypher("CREATE (Keanu:Person {name:'node_Date2',born:date({year: 2020, month: 6, day: 6})})").show()
   }
+
+  @Test
+  def node_Date3(): Unit ={
+    graphFacade.cypher("CREATE (Keanu:Person {name:'node_Date2',born:date()})").show()
+  }
+
+  @Test
+  def node_DateTime1(): Unit = {
+    graphFacade.cypher("CREATE (Keanu:Person {name:'node_Date2',born:datetime()})").show()
+  }
+
+  @Test
+  def node_DateTime2(): Unit = {
+    graphFacade.cypher("CREATE (Keanu:Person {name:'node_Date2',born:datetime('2018-02-03 12:09:11')})").show()
+    val res = graphFacade.cypher("MATCH (Keanu:Person {name:'node_Date2'}) RETURN Keanu.born").records()
+    Assert.assertEquals(1517630951000L, res.next().get("Keanu.born").get.asInstanceOf[LynxDateTime].value)
+  }
+
+
   @Test
   def node_Localtime(): Unit ={
     graphFacade.cypher("CREATE (Keanu:Person {name:'node_Localtime',born:localtime('12:45:30.25')})").show()
