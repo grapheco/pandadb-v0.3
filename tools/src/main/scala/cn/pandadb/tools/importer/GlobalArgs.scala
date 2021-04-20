@@ -1,6 +1,7 @@
 package cn.pandadb.tools.importer
 
 import cn.pandadb.kernel.kv.db.KeyValueDB
+import cn.pandadb.kernel.kv.meta.Statistics
 
 import java.util.concurrent.atomic.AtomicLong
 
@@ -15,4 +16,4 @@ case class GlobalArgs(coreNum: Int = Runtime.getRuntime().availableProcessors(),
                       globalRelCount: AtomicLong, globalRelPropCount: AtomicLong,
                       estNodeCount: Long, estRelCount: Long,
                       nodeDB: KeyValueDB, nodeLabelDB: KeyValueDB,
-                      relationDB: KeyValueDB, inrelationDB: KeyValueDB, outRelationDB: KeyValueDB, relationTypeDB: KeyValueDB)
+                      relationDB: KeyValueDB, inrelationDB: KeyValueDB, outRelationDB: KeyValueDB, relationTypeDB: KeyValueDB, statistics: Statistics)

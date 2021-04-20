@@ -100,6 +100,7 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
         outBatch.clear()
         labelBatch.clear()
         globalCount.addAndGet(batchData.length)
+        globalArgs.statistics.increaseRelationCount(batchData.length)
         globalPropCount.addAndGet(batchData.length*propHeadMap.size)
       }
     }
@@ -116,6 +117,7 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
     val fromId: Long = lineArr(fromIdIndex).toLong
     val toId: Long = lineArr(toIdIndex).toLong
     val edgeType: Int = PDBMetaData.getTypeId(lineArr(labelIndex))
+    globalArgs.statistics.increaseRelationTypeCount(edgeType, 1)
     val propMap: Map[Int, Any] = _getPropMap(lineArr, propHeadMap)
 
     new StoredRelationWithProperty(relId, fromId, toId, edgeType, propMap)

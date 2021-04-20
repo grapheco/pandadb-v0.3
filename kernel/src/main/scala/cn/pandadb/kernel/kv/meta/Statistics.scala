@@ -1,7 +1,7 @@
 package cn.pandadb.kernel.kv.meta
 
 import cn.pandadb.kernel.kv.db.KeyValueDB
-import cn.pandadb.kernel.kv.meta.Statistics.{INDEXPROPERTYCOUNT, NODELABELCOUNT, NODESCOUNT, RELATIONSCOUNT, RELATIONTYPECOUNT, emptyLong}
+import cn.pandadb.kernel.kv.meta.Statistics.{PROPERTYCOUNTBYINDEX, NODECOUNTBYLABEL, NODESCOUNT, RELATIONSCOUNT, RELATIONCOUNTBYTYPE, emptyLong}
 import cn.pandadb.kernel.kv.{ByteUtils, RocksDBStorage}
 
 import scala.collection.mutable
@@ -10,9 +10,9 @@ import scala.collection.mutable
 object Statistics {
   val NODESCOUNT: Byte = 1
   val RELATIONSCOUNT: Byte = 2
-  val NODELABELCOUNT: Byte = 3
-  val RELATIONTYPECOUNT: Byte =  4
-  val INDEXPROPERTYCOUNT: Byte = 5
+  val NODECOUNTBYLABEL: Byte = 3
+  val RELATIONCOUNTBYTYPE: Byte =  4
+  val PROPERTYCOUNTBYINDEX: Byte = 5
 
   val emptyLong: Array[Byte] = ByteUtils.longToBytes(0)
 }
@@ -21,11 +21,11 @@ class Statistics(path: String) {
 
   val db: KeyValueDB = RocksDBStorage.getDB(s"${path}/statistics")
 
-  var allNodesCount: Long = -1
-  var allRelationCount: Long = -1
-  var nodeLabelCount: mutable.Map[Int, Long] = mutable.Map[Int, Long]()
-  var relationTypeCount: mutable.Map[Int, Long] = mutable.Map[Int, Long]()
-  var indexPropertyCount: mutable.Map[Int, Long] = mutable.Map[Int, Long]()
+  private var _allNodesCount: Long = -1
+  private var _allRelationCount: Long = -1
+  private var _nodeCountByLabel: mutable.Map[Int, Long] = mutable.Map[Int, Long]()
+  private var _relationCountByType: mutable.Map[Int, Long] = mutable.Map[Int, Long]()
+  private var _propertyCountByIndex: mutable.Map[Int, Long] = mutable.Map[Int, Long]()
 
   private def getKey(prefix: Byte, key: Int): Array[Byte] = {
     val res = new Array[Byte](5)
@@ -50,82 +50,91 @@ class Statistics(path: String) {
   }
 
   def init(): Unit = {
-    allNodesCount = ByteUtils.getLong(getValue(Array(NODESCOUNT)).getOrElse(emptyLong), 0)
-    allRelationCount = ByteUtils.getLong(getValue(Array(RELATIONSCOUNT)).getOrElse(emptyLong), 0)
-    nodeLabelCount.clear()
-    relationTypeCount.clear()
-    indexPropertyCount.clear()
-    nodeLabelCount = getMap(Array(NODELABELCOUNT))
-    relationTypeCount = getMap(Array(NODELABELCOUNT))
-    indexPropertyCount = getMap(Array(NODELABELCOUNT))
+    _allNodesCount = ByteUtils.getLong(getValue(Array(NODESCOUNT)).getOrElse(emptyLong), 0)
+    _allRelationCount = ByteUtils.getLong(getValue(Array(RELATIONSCOUNT)).getOrElse(emptyLong), 0)
+    _nodeCountByLabel.clear()
+    _relationCountByType.clear()
+    _propertyCountByIndex.clear()
+    _nodeCountByLabel = getMap(Array(NODECOUNTBYLABEL))
+    _relationCountByType = getMap(Array(NODECOUNTBYLABEL))
+    _propertyCountByIndex = getMap(Array(NODECOUNTBYLABEL))
   }
 
+//  def initFromImporter(allNodeCount: Long, allRelationCount: Long, nodeCountByLabel: mutable.Map[Int, Long],
+//                        relationCoutByType: mutable.Map[Int, Long], propertyCountByIndex: mutable.Map[Int, Long]): Unit = {
+//    nodeCount = allNodeCount
+//    _allRelationCount = allRelationCount
+//    _nodeCountByLabel = nodeCountByLabel
+//    _relationCountByType = relationCoutByType
+//    _propertyCountByIndex = propertyCountByIndex
+//  }
+
   def flush(): Unit = {
-    db.put(Array(NODESCOUNT), ByteUtils.longToBytes(allNodesCount))
-    db.put(Array(RELATIONSCOUNT), ByteUtils.longToBytes(allRelationCount))
-    nodeLabelCount.foreach{
+    db.put(Array(NODESCOUNT), ByteUtils.longToBytes(_allNodesCount))
+    db.put(Array(RELATIONSCOUNT), ByteUtils.longToBytes(_allRelationCount))
+    _nodeCountByLabel.foreach{
       kv=>
-      db.put(getKey(NODELABELCOUNT, kv._1), ByteUtils.longToBytes(kv._2))
+      db.put(getKey(NODECOUNTBYLABEL, kv._1), ByteUtils.longToBytes(kv._2))
     }
-    relationTypeCount.foreach{
+    _relationCountByType.foreach{
       kv=>
-      db.put(getKey(RELATIONTYPECOUNT, kv._1), ByteUtils.longToBytes(kv._2))
+      db.put(getKey(RELATIONCOUNTBYTYPE, kv._1), ByteUtils.longToBytes(kv._2))
     }
-    indexPropertyCount.foreach{
+    _propertyCountByIndex.foreach{
       kv=>
-      db.put(getKey(INDEXPROPERTYCOUNT, kv._1), ByteUtils.longToBytes(kv._2))
+      db.put(getKey(PROPERTYCOUNTBYINDEX, kv._1), ByteUtils.longToBytes(kv._2))
     }
     db.flush()
   }
 
-  def nodeCount: Long = allNodesCount
+  def nodeCount: Long = _allNodesCount
 
-  def nodeCount_=(count: Long): Unit = allNodesCount = count
+  def nodeCount_=(count: Long): Unit = _allNodesCount = count
 
-  def increaseNodeCount(count: Long): Unit = allNodesCount += count
+  def increaseNodeCount(count: Long): Unit = _allNodesCount += count
 
-  def decreaseNodes(count: Long): Unit = allNodesCount -= count
+  def decreaseNodes(count: Long): Unit = _allNodesCount -= count
 
-  def relationCount: Long = allRelationCount
+  def relationCount: Long = _allRelationCount
 
-  def relationCount_=(count: Long): Unit = allRelationCount = count
+  def relationCount_=(count: Long): Unit = _allRelationCount = count
 
-  def increaseRelationCount(count: Long): Unit = allRelationCount += count
+  def increaseRelationCount(count: Long): Unit = _allRelationCount += count
 
-  def decreaseRelations(count: Long): Unit = allRelationCount -= count
+  def decreaseRelations(count: Long): Unit = _allRelationCount -= count
 
-  def getNodeLabelCount(labelId: Int): Option[Long] = nodeLabelCount.get(labelId)
+  def getNodeLabelCount(labelId: Int): Option[Long] = _nodeCountByLabel.get(labelId)
 
   def setNodeLabelCount(labelId: Int, count: Long): Unit =
-    nodeLabelCount += labelId -> count
+    _nodeCountByLabel += labelId -> count
 
   def increaseNodeLabelCount(labelId: Int, count: Long): Unit =
-    nodeLabelCount += labelId -> (nodeLabelCount.getOrElse(labelId, 0L) + count)
+    _nodeCountByLabel += labelId -> (_nodeCountByLabel.getOrElse(labelId, 0L) + count)
 
   def decreaseNodeLabelCount(labelId: Int, count: Long): Unit =
-    nodeLabelCount += labelId -> (nodeLabelCount.getOrElse(labelId, 0L) - count)
+    _nodeCountByLabel += labelId -> (_nodeCountByLabel.getOrElse(labelId, 0L) - count)
 
-  def getRelationTypeCount(typeId: Int): Option[Long] = relationTypeCount.get(typeId)
+  def getRelationTypeCount(typeId: Int): Option[Long] = _relationCountByType.get(typeId)
 
   def setRelationTypeCount(typeId: Int, count: Long): Unit =
-    relationTypeCount += typeId -> count
+    _relationCountByType += typeId -> count
 
   def increaseRelationTypeCount(typeId: Int, count: Long): Unit =
-    relationTypeCount += typeId -> (relationTypeCount.getOrElse(typeId, 0L) + count)
+    _relationCountByType += typeId -> (_relationCountByType.getOrElse(typeId, 0L) + count)
 
   def decreaseRelationLabelCount(typeId: Int, count: Long): Unit =
-    relationTypeCount += typeId -> (relationTypeCount.getOrElse(typeId, 0L) - count)
+    _relationCountByType += typeId -> (_relationCountByType.getOrElse(typeId, 0L) - count)
 
-  def getIndexPropertyCount(indexId: Int): Option[Long] = indexPropertyCount.get(indexId)
+  def getIndexPropertyCount(indexId: Int): Option[Long] = _propertyCountByIndex.get(indexId)
 
   def setIndexPropertyCount(indexId: Int, count: Long): Unit =
-    indexPropertyCount += indexId -> count
+    _propertyCountByIndex += indexId -> count
 
   def increaseIndexPropertyCount(indexId: Int, count: Long): Unit =
-    indexPropertyCount += indexId -> (indexPropertyCount.getOrElse(indexId, 0L) + count)
+    _propertyCountByIndex += indexId -> (_propertyCountByIndex.getOrElse(indexId, 0L) + count)
 
   def decreaseIndexPropertyCount(indexId: Int, count: Long): Unit =
-    indexPropertyCount += indexId -> (indexPropertyCount.getOrElse(indexId, 0L) - count)
+    _propertyCountByIndex += indexId -> (_propertyCountByIndex.getOrElse(indexId, 0L) - count)
 
   def close(): Unit = db.close()
 }

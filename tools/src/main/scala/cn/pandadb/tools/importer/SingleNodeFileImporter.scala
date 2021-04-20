@@ -84,6 +84,7 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
       nodeBatch.clear()
       labelBatch.clear()
       globalCount.addAndGet(batchData.length)
+      globalArgs.statistics.increaseNodeCount(batchData.length)
       globalPropCount.addAndGet(batchData.length*propHeadMap.size)
     }
 
@@ -96,6 +97,7 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
     val id = lineArr(idIndex).toLong
     val labels: Array[String] = lineArr(labelIndex).split(importCmd.arrayDelimeter)
     val labelIds: Array[Int] = labels.map(label => PDBMetaData.getLabelId(label))
+    labelIds.foreach(id => globalArgs.statistics.increaseNodeLabelCount(id, 1))
     val propMap: Map[Int, Any] = _getPropMap(lineArr, propHeadMap)
     (id, labelIds, propMap)
   }

@@ -2,6 +2,7 @@ package cn.pandadb.tools.importer
 
 import cn.pandadb.kernel.PDBMetaData
 import cn.pandadb.kernel.kv.RocksDBStorage
+import cn.pandadb.kernel.kv.meta.Statistics
 import com.typesafe.scalalogging.LazyLogging
 
 import java.text.SimpleDateFormat
@@ -19,7 +20,7 @@ object PandaImporter extends LazyLogging {
   val globalNodeCount = new AtomicLong(0)
   val globalNodePropCount = new AtomicLong(0)
   val globalRelCount = new AtomicLong(0)
-  val globalRealPropCount = new AtomicLong(0)
+  val globalRelPropCount = new AtomicLong(0)
 
   def time: String = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
 
@@ -40,6 +41,8 @@ object PandaImporter extends LazyLogging {
   def main(args: Array[String]): Unit = {
     val startTime: Long = new Date().getTime
     val importCmd: ImportCmd = ImportCmd(args)
+    val statistics: Statistics = new Statistics(importCmd.exportDBPath.getAbsolutePath)
+
     val estNodeCount: Long = {
       importCmd.nodeFileList.map(file => {
         CSVIOTools.estLineCount(file)
@@ -54,20 +57,28 @@ object PandaImporter extends LazyLogging {
     logger.info(s"Estimated node count: $estNodeCount.")
     logger.info(s"Estimated relation count: $estRelCount.")
 
-    val nodeDB = RocksDBStorage.getDB(path = s"${importCmd.database}/nodes", useForImporter = true, isHDD = true)
-    val nodeLabelDB = RocksDBStorage.getDB(s"${importCmd.database}/nodeLabel", useForImporter = true, isHDD = true)
-    val relationDB = RocksDBStorage.getDB(s"${importCmd.database}/rels", useForImporter = true, isHDD = true)
-    val inRelationDB = RocksDBStorage.getDB(s"${importCmd.database}/inEdge", useForImporter = true, isHDD = true)
-    val outRelationDB = RocksDBStorage.getDB(s"${importCmd.database}/outEdge", useForImporter = true, isHDD = true)
-    val relationTypeDB = RocksDBStorage.getDB(s"${importCmd.database}/relLabelIndex", useForImporter = true, isHDD = true)
+//    val nodeDB = RocksDBStorage.getDB(path = s"${importCmd.database}/nodes", useForImporter = true, isHDD = true)
+//    val nodeLabelDB = RocksDBStorage.getDB(s"${importCmd.database}/nodeLabel", useForImporter = true, isHDD = true)
+//    val relationDB = RocksDBStorage.getDB(s"${importCmd.database}/rels", useForImporter = true, isHDD = true)
+//    val inRelationDB = RocksDBStorage.getDB(s"${importCmd.database}/inEdge", useForImporter = true, isHDD = true)
+//    val outRelationDB = RocksDBStorage.getDB(s"${importCmd.database}/outEdge", useForImporter = true, isHDD = true)
+//    val relationTypeDB = RocksDBStorage.getDB(s"${importCmd.database}/relLabelIndex", useForImporter = true, isHDD = true)
+
+    val nodeDB = RocksDBStorage.getDB(path = s"${importCmd.database}/nodes", isHDD = true)
+    val nodeLabelDB = RocksDBStorage.getDB(s"${importCmd.database}/nodeLabel", isHDD = true)
+    val relationDB = RocksDBStorage.getDB(s"${importCmd.database}/rels", isHDD = true)
+    val inRelationDB = RocksDBStorage.getDB(s"${importCmd.database}/inEdge", isHDD = true)
+    val outRelationDB = RocksDBStorage.getDB(s"${importCmd.database}/outEdge", isHDD = true)
+    val relationTypeDB = RocksDBStorage.getDB(s"${importCmd.database}/relLabelIndex", isHDD = true)
+
 
     val globalArgs = GlobalArgs(Runtime.getRuntime().availableProcessors(),
       globalNodeCount, globalNodePropCount,
-      globalRelCount, globalRealPropCount,
+      globalRelCount, globalRelPropCount,
       estNodeCount, estRelCount,
       nodeDB, nodeLabelDB = nodeLabelDB,
       relationDB = relationDB, inrelationDB = inRelationDB,
-      outRelationDB = outRelationDB, relationTypeDB = relationTypeDB
+      outRelationDB = outRelationDB, relationTypeDB = relationTypeDB, statistics
     )
     logger.info(s"Import task started. $time")
     service.scheduleAtFixedRate(nodeCountProgressLogger, 0, 30, TimeUnit.SECONDS)
@@ -85,7 +96,7 @@ object PandaImporter extends LazyLogging {
     outRelationDB.close()
     relationTypeDB.close()
     logger.info(s"$globalRelCount relations imported. $time")
-    logger.info(s"$globalRealPropCount props of relation imported. $time")
+    logger.info(s"$globalRelPropCount props of relation imported. $time")
 
     PDBMetaData.persist(importCmd.exportDBPath.getAbsolutePath)
     service.shutdown()
@@ -95,7 +106,7 @@ object PandaImporter extends LazyLogging {
     logger.info(s"$globalNodeCount nodes imported. $time")
     logger.info(s"$globalNodePropCount props of node imported. $time")
     logger.info(s"$globalRelCount relations imported. $time")
-    logger.info(s"$globalRealPropCount props of relation imported. $time")
+    logger.info(s"$globalRelPropCount props of relation imported. $time")
     logger.info(s"Import task finished in $timeUsed")
 
   }
