@@ -193,7 +193,7 @@ trait BaseSerializer {
   }
 
   protected def _writeKV(keyId: Int, value: Any, byteBuf: ByteBuf): Any = {
-    byteBuf.writeByte(keyId)
+    byteBuf.writeShort(keyId)
     value match {
       case s: Boolean => _writeBoolean(value.asInstanceOf[Boolean], byteBuf)
       case s: Double => _writeDouble(value.asInstanceOf[Double], byteBuf)
@@ -291,10 +291,10 @@ trait BaseSerializer {
     new Array[Int](len).map(item => byteBuf.readInt())
   }
 
-  def readMap(byteBuf: ByteBuf): Map[Int, Any] = {
+  def  readMap(byteBuf: ByteBuf): Map[Int, Any] = {
     val propNum: Int = byteBuf.readByte().toInt
     val propsMap: Map[Int, Any] = new Array[Int](propNum).map(item => {
-      val propId: Int = byteBuf.readByte().toInt
+      val propId: Int = byteBuf.readShort().toInt
       val propType: Int = byteBuf.readByte().toInt
       val propValue = propType match {
         case 1 => _readString(byteBuf)
