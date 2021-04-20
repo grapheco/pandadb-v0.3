@@ -118,6 +118,17 @@ class RelationDirectionStore(db: KeyValueDB, DIRECTION: Direction) {
     new RelationIterator(db, prefix)
   }
 
+  def getRelation(firstNodeId: Long, edgeType: Int, secondNodeId: Long): Option[StoredRelation] = {
+    val key = KeyConverter.edgeKeyToBytes(firstNodeId, edgeType, secondNodeId)
+    val values = db.get(key)
+    if (values == null) None
+    else {
+      val id = ByteUtils.getLong(values, 0)
+      if(DIRECTION==IN) Option(StoredRelation(id, secondNodeId, firstNodeId, edgeType))
+      else              Option(StoredRelation(id, firstNodeId, secondNodeId, edgeType))
+    }
+  }
+
   class RelationIterator(db: KeyValueDB, prefix: Array[Byte]) extends Iterator[StoredRelation]{
     val iter = db.newIterator()
     iter.seek(prefix)

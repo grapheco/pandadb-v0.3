@@ -18,8 +18,8 @@ help_func(){
   echo "[--db-path]:           db path, need an empty folder"
   echo "[--nodes]:            your nodes csv files"
   echo "[--relationships]:    your relationship files"
-  echo "[--delimeter]:        your seperator of csv file, default is ',' "
-  echo "[--array-delimeter]:  array's seperator in your csv file, default is '|' "
+  echo "[--delimeter]:        your separator of csv file, default is ',' "
+  echo "[--array-delimeter]:  array's separator in your csv file, default is '|' "
   echo ""
   echo "example: [./importer-panda.sh --db-path=/pandadb/db --nodes=n1.csv --nodes=n2.csv --delimeter=\"|\" --array-delimeter=\",\"]  "
   echo "================================================================================"
@@ -43,7 +43,7 @@ do
   elif [[ $arg == "--delimeter"* ]]
   then
     DELIMETER=$arg
-  elif [[ $arg == "--array-delimeter" ]]
+  elif [[ $arg == "--array-delimeter"* ]]
   then
     ARRAY_DELIMETER=$arg
   fi

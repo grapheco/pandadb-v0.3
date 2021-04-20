@@ -3,10 +3,10 @@ package cn.pandadb.kernel.kv.node
 import cn.pandadb.kernel.kv.KeyConverter.{LabelId, NodeId}
 import cn.pandadb.kernel.kv.db.KeyValueDB
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
-import org.rocksdb.RocksDB
 
 
 class NodeLabelStore(db: KeyValueDB)  {
+  // [nodeId,labelId]->[null]
 
   def set(nodeId: NodeId, labelId: LabelId): Unit =
     db.put(KeyConverter.toNodeLabelKey(nodeId, labelId), Array.emptyByteArray)

@@ -19,6 +19,7 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
   override val importerFileReader: ImporterFileReader = new ImporterFileReader(file, importCmd.delimeter)
   override val headLine: Array[String] = importerFileReader.getHead.getAsArray
   override val idIndex: Int = headLine.indexWhere(item => item.contains(":ID"))
+  if (idIndex == -1) throw new Exception(s"no `:ID` specify in ${csvFile.getName} file")
   override val labelIndex: Int = headLine.indexWhere(item => item.contains(":LABEL"))
   override val estLineCount: Long = estLineCount(csvFile)
   override val taskCount: Int = globalArgs.coreNum/4
@@ -95,7 +96,14 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
 
   private def _wrapNode(lineArr: Array[String]): (Long, Array[Int], Map[Int, Any]) = {
     val id = lineArr(idIndex).toLong
-    val labels: Array[String] = lineArr(labelIndex).split(importCmd.arrayDelimeter)
+    val labels: Array[String] = {
+      if (labelIndex == -1){
+        Array[String]("default")
+      }
+      else{
+        lineArr(labelIndex).split(importCmd.arrayDelimeter)
+      }
+    }
     val labelIds: Array[Int] = labels.map(label => PDBMetaData.getLabelId(label))
     labelIds.foreach(id => globalArgs.statistics.increaseNodeLabelCount(id, 1))
     val propMap: Map[Int, Any] = _getPropMap(lineArr, propHeadMap)

@@ -3,7 +3,7 @@ import org.junit.runners.MethodSorters
 import org.junit.{Assert, FixMethodOrder, Test}
 import org.neo4j.driver.v1.{AuthTokens, GraphDatabase, Values}
 
-// run cn.pandadb.itest.ServerEntryPointTest first.
+// run cn.pandadb.itest.ServerTest.testConfNoDBDescribe first.
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 class TestDriver1x {
 

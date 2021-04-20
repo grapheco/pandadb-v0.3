@@ -1,7 +1,7 @@
 package cn.pandadb.kernel.kv.relation
 
 import cn.pandadb.kernel.kv.RocksDBStorage
-import cn.pandadb.kernel.kv.meta.{NodeLabelNameStore, PropertyNameStore, RelationIdGenerator, RelationTypeNameStore}
+import cn.pandadb.kernel.kv.meta.{IdGenerator, NodeLabelNameStore, PropertyNameStore, RelationTypeNameStore}
 import cn.pandadb.kernel.store.{RelationStoreSPI, StoredRelation, StoredRelationWithProperty}
 
 /**
@@ -11,20 +11,20 @@ import cn.pandadb.kernel.store.{RelationStoreSPI, StoredRelation, StoredRelation
  * @Date 2020/12/22
  * @Version 0.1
  */
-class RelationStoreAPI(dbPath: String) extends RelationStoreSPI{
+class RelationStoreAPI(dbPath: String, rocksdbCfgPath: String = "default") extends RelationStoreSPI{
 
-  private val relationDB = RocksDBStorage.getDB(s"${dbPath}/rels")
+  private val relationDB = RocksDBStorage.getDB(s"${dbPath}/rels", rocksdbConfigPath = rocksdbCfgPath)
   private val relationStore = new RelationPropertyStore(relationDB)
-  private val inRelationDB = RocksDBStorage.getDB(s"${dbPath}/inEdge")
+  private val inRelationDB = RocksDBStorage.getDB(s"${dbPath}/inEdge", rocksdbConfigPath = rocksdbCfgPath)
   private val inRelationStore = new RelationDirectionStore(inRelationDB, RelationDirection.IN)
-  private val outRelationDB = RocksDBStorage.getDB(s"${dbPath}/outEdge")
+  private val outRelationDB = RocksDBStorage.getDB(s"${dbPath}/outEdge", rocksdbConfigPath = rocksdbCfgPath)
   private val outRelationStore = new RelationDirectionStore(outRelationDB, RelationDirection.OUT)
-  private val relationLabelDB = RocksDBStorage.getDB(s"${dbPath}/relLabelIndex")
+  private val relationLabelDB = RocksDBStorage.getDB(s"${dbPath}/relLabelIndex", rocksdbConfigPath = rocksdbCfgPath)
   private val relationLabelStore = new RelationLabelIndex(relationLabelDB)
-  private val metaDB = RocksDBStorage.getDB(s"${dbPath}/relationMeta")
+  private val metaDB = RocksDBStorage.getDB(s"${dbPath}/relationMeta", rocksdbConfigPath = rocksdbCfgPath)
   private val relationTypeNameStore = new RelationTypeNameStore(metaDB)
   private val propertyName = new PropertyNameStore(metaDB)
-  private val relationIdGenerator = new RelationIdGenerator(metaDB)
+  private val relationIdGenerator = new IdGenerator(relationDB, 200)
 
   override def allRelationTypes(): Array[String] = relationTypeNameStore.mapString2Int.keys.toArray
 
@@ -116,8 +116,19 @@ class RelationStoreAPI(dbPath: String) extends RelationStoreSPI{
     edgeType.map(inRelationStore.getRelations(toNodeId, _))
       .getOrElse(inRelationStore.getRelations(toNodeId))
 
+  override def findInRelationsBetween(toNodeId: Long, fromNodeId: Long, edgeType: Option[Int] = None): Iterator[StoredRelation] = {
+    edgeType.map(inRelationStore.getRelation(toNodeId, _, fromNodeId).toIterator)
+      .getOrElse(inRelationStore.getRelations(toNodeId).filter(r => r.from == fromNodeId))
+  }
+
+  override def findOutRelationsBetween(fromNodeId: Long, toNodeId: Long, edgeType: Option[Int] = None): Iterator[StoredRelation] = {
+    edgeType.map(outRelationStore.getRelation(fromNodeId, _, toNodeId).toIterator)
+      .getOrElse(outRelationStore.getRelations(fromNodeId).filter(r => r.to == toNodeId))
+  }
+
+
   override def close(): Unit ={
-    relationIdGenerator.flush()
+//    relationIdGenerator.flush()
     relationStore.close()
     inRelationStore.close()
     outRelationDB.close()

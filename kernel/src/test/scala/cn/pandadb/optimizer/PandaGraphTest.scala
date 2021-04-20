@@ -34,17 +34,9 @@ class PandaGraphTest {
       }).toSet
     })
 
-    val sd5 = labels.map(x => {
-      sd4.map(g => x->g)
-    }).flatten
-
-    sd1
-    sd2
-    sd3
-    sd4
-
-
-
+    val sd5 = labels.flatMap(x => {
+      sd4.map(g => x -> g)
+    })
   }
 
   @Test
@@ -53,7 +45,5 @@ class PandaGraphTest {
     val s2 = Set(2,"hjk")
     val s3 = Set(2,"test")
     val s4 = Set(s1,s2,s3)
-    s4
   }
-
 }

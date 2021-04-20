@@ -5,10 +5,9 @@ import cn.pandadb.kernel.kv.db.KeyValueDB
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import cn.pandadb.kernel.store.StoredNodeWithProperty
 import cn.pandadb.kernel.util.serializer.{BaseSerializer, NodeSerializer}
-import org.rocksdb.{ReadOptions, RocksDB}
 
 class NodeStore(db: KeyValueDB) {
-  // [type,labelId,nodeId]->[Node]
+  // [labelId,nodeId]->[Node]
 
   def set(nodeId: NodeId, labelIds: Array[LabelId], value: Array[Byte]): Unit =
     labelIds.foreach(labelId =>
@@ -66,6 +65,22 @@ class NodeStore(db: KeyValueDB) {
       override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
       override def next(): NodeId = {
         val id = ByteUtils.getLong(iter.key(), prefix.length)
+        iter.next()
+        id
+      }
+    }
+  }
+
+  def getNodesByLabelWithoutDeserialize(labelId: LabelId): Iterator[NodeId] = {
+    val iter = db.newIterator()
+    val prefix = KeyConverter.toNodeKey(labelId)
+    iter.seek(prefix)
+
+    new Iterator[NodeId] (){
+      override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
+      override def next(): NodeId = {
+        val id = ByteUtils.getLong(iter.key(), prefix.length)
+        iter.value().length
         iter.next()
         id
       }

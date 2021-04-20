@@ -17,9 +17,9 @@ object Statistics {
   val emptyLong: Array[Byte] = ByteUtils.longToBytes(0)
 }
 
-class Statistics(path: String) {
+class Statistics(path: String, rocksdbCfgPath: String = "default") {
 
-  val db: KeyValueDB = RocksDBStorage.getDB(s"${path}/statistics")
+  val db: KeyValueDB = RocksDBStorage.getDB(s"${path}/statistics", rocksdbConfigPath = rocksdbCfgPath)
 
   private var _allNodesCount: Long = -1
   private var _allRelationCount: Long = -1

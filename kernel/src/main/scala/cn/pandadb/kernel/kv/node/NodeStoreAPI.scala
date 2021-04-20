@@ -1,20 +1,20 @@
 package cn.pandadb.kernel.kv.node
 
 import cn.pandadb.kernel.kv.RocksDBStorage
-import cn.pandadb.kernel.kv.meta.{NodeIdGenerator, NodeLabelNameStore, PropertyNameStore}
+import cn.pandadb.kernel.kv.meta.{IdGenerator, NodeLabelNameStore, PropertyNameStore}
 import cn.pandadb.kernel.store.{NodeStoreSPI, StoredNodeWithProperty}
 
 
-class NodeStoreAPI(dbPath: String) extends NodeStoreSPI {
+class NodeStoreAPI(dbPath: String, rocksdbCfgPath: String = "default") extends NodeStoreSPI {
 
-  private val nodeDB = RocksDBStorage.getDB(s"${dbPath}/nodes")
+  private val nodeDB = RocksDBStorage.getDB(s"${dbPath}/nodes", rocksdbConfigPath = rocksdbCfgPath)
   private val nodeStore = new NodeStore(nodeDB)
-  private val nodeLabelDB = RocksDBStorage.getDB(s"${dbPath}/nodeLabel")
+  private val nodeLabelDB = RocksDBStorage.getDB(s"${dbPath}/nodeLabel", rocksdbConfigPath = rocksdbCfgPath)
   private val nodeLabelStore = new NodeLabelStore(nodeLabelDB)
-  private val metaDB = RocksDBStorage.getDB(s"${dbPath}/nodeMeta")
+  private val metaDB = RocksDBStorage.getDB(s"${dbPath}/nodeMeta", rocksdbConfigPath = rocksdbCfgPath)
   private val nodeLabelName = new NodeLabelNameStore(metaDB)
   private val propertyName = new PropertyNameStore(metaDB)
-  private val idGenerator = new NodeIdGenerator(metaDB)
+  private val idGenerator = new IdGenerator(nodeLabelDB, 200)
 
   val NONE_LABEL_ID: Int = -1
 
@@ -123,25 +123,7 @@ class NodeStoreAPI(dbPath: String) extends NodeStoreSPI {
     nodeStore.deleteByLabel(labelId)
   }
 
-  //  // Big cost!!!
-  //  def addLabelForNode(nodeId: Long, labelId: Int): Unit = {
-  //    val node = getNode(nodeId)
-  //    val labels = node.labelIds ++ Array(labelId)
-  //    nodeLabelStore.set(nodeId, labelId)
-  //    nodeStore.set(new StoredNodeWithProperty(node.id, labels, node.properties))
-  //  }
-  //
-  //  // Big big cost!!!
-  //  def removeLabelFromNode(nodeId: Long, labelId: Int): Unit = {
-  //    val node = getNode(nodeId)
-  //    val labels = node.labelIds.filter(_!=labelId)
-  //    nodeLabelStore.delete(nodeId, labelId)
-  //    nodeStore.set(new StoredNodeWithProperty(node.id, labels, node.properties))
-  //    nodeStore.delete(nodeId, labelId)
-  //  }
-
   override def close(): Unit ={
-    idGenerator.flush()
     nodeDB.close()
     nodeLabelDB.close()
     metaDB.close()

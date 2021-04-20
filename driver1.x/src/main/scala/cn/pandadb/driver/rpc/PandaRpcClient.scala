@@ -12,11 +12,13 @@ import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 class PandaRpcClient(hostName:String, port: Int, clientName: String, serverName: String) {
-  var config: RpcEnvClientConfig = new RpcEnvClientConfig(new RpcConf(), clientName)
+  val sparkConf = new RpcConf()
+  sparkConf.set("spark.network.timeout", "3700s")
+  val config: RpcEnvClientConfig = new RpcEnvClientConfig(sparkConf, clientName)
   val rpcEnv = HippoRpcEnvFactory.create(config)
   var endpointRef = rpcEnv.setupEndpointRef(new RpcAddress(hostName, port), serverName)
 
-  val DURATION_TIME = "21600s"
+  val DURATION_TIME = "3600s"
 
   def sendCypherRequest(cypher: String, params:Map[String, Any]): Stream[DriverValue] ={
     val res = endpointRef.getChunkedStream[Any](CypherRequest(cypher, params), Duration(DURATION_TIME))

@@ -1,6 +1,6 @@
 package cn.pandadb.kernel.kv.index
 
-import cn.pandadb.kernel.kv.meta.{IndexIdGenerator, RelationIdGenerator}
+import cn.pandadb.kernel.kv.meta.{IdGenerator}
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter, RocksDBStorage}
 
 import scala.collection.mutable
@@ -12,17 +12,16 @@ import scala.collection.mutable
  * @Date 2020/12/23
  * @Version 0.1
  */
-class IndexStoreAPI(dbPath: String) {
+class IndexStoreAPI(dbPath: String, rocksdbCfgPath: String = "default") {
 
   type IndexId   = Int
 //  type Long    = Long
 
-  private val metaDB = RocksDBStorage.getDB(s"${dbPath}/indexMeta")
+  private val metaDB = RocksDBStorage.getDB(s"${dbPath}/indexMeta", rocksdbConfigPath = rocksdbCfgPath)
   private val meta = new IndexMetaData(metaDB)
-  private val indexDB = RocksDBStorage.getDB(s"${dbPath}/index")
+  private val indexDB = RocksDBStorage.getDB(s"${dbPath}/index", rocksdbConfigPath = rocksdbCfgPath)
   private val index = new IndexStore(indexDB)
-  private val indexIdDB = RocksDBStorage.getDB(s"${dbPath}/indexId")
-  private val indexIdGenerator = new IndexIdGenerator(indexIdDB)
+  private val indexIdGenerator = new IdGenerator(metaDB, 200)
 
   //indexId->([name, address], Store)
   private val fulltextIndexMap = new mutable.HashMap[Int, (Array[Int], FulltextIndexStore)]()
@@ -183,8 +182,6 @@ class IndexStoreAPI(dbPath: String) {
     findRange(indexId, IndexEncoder.FLOAT_CODE, IndexEncoder.encode(startValue), IndexEncoder.encode(endValue), startClosed, endClosed)
 
   def close(): Unit = {
-    indexIdGenerator.flush()
-    indexIdDB.close()
     indexDB.close()
     metaDB.close()
     fulltextIndexMap.foreach(p=>p._2._2.close())

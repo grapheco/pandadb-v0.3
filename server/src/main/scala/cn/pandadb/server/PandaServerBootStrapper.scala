@@ -7,16 +7,22 @@ import org.apache.commons.io.IOUtils
 import cn.pandadb.server.common.configuration.{Config, SettingKeys}
 
 
-class PandaServerBootstrapper() {
+class PandaServerBootstrapper() extends LazyLogging {
 
   val logo = IOUtils.toString(this.getClass.getClassLoader.getResourceAsStream("logo.txt"), "utf-8");
 
   private var pandaServer: PandaServer = null
   def start(configFile: File, configOverrides: Map[String, String] = Map()): Unit = {
     addShutdownHook()
-    println(logo)
-
     val config = new Config().withFile(Option(configFile)).withSettings(configOverrides)
+    println(logo)
+    logger.info("==== PandaDB Server Starting... ====")
+
+    config.getRocksdbConfigFilePath match {
+      case "default" => logger.info("==== Using default RocksDB settings ====")
+      case _ => logger.info("=== Using RocksDB configuration file ====")
+    }
+
     pandaServer = new PandaServer(config)
     pandaServer.start()
   }

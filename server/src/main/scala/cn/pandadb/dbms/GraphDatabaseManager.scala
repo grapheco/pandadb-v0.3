@@ -72,16 +72,22 @@ class DefaultGraphDatabaseManager(config: Config) extends GraphDatabaseManager w
   }
 
   override def init(): Unit = {
-    logger.info(s"data path: $dataPath")
-    logger.info(s"db name: $defaultDBName")
+    logger.info(s"==== Data path: $dataPath ====")
+    logger.info(s"==== DB name: $defaultDBName ====")
     defaultDB = createDatabase(defaultDBName)
+    logger.debug(s"${this.getClass} inited.")
   }
 
   private def newGraphFacade(path: String): GraphFacade = {
-    val nodeStore = new NodeStoreAPI(path)
-    val relationStore = new RelationStoreAPI(path)
-    val indexStore = new IndexStoreAPI(path)
-    val statistics = new Statistics(path)
+    logger.debug(s"start to get NodeStoreAPI.")
+    val nodeStore = new NodeStoreAPI(path, config.getRocksdbConfigFilePath)
+    logger.debug(s"start to get RelStoreAPI")
+    val relationStore = new RelationStoreAPI(path, config.getRocksdbConfigFilePath)
+    logger.debug(s"node and rel db got.")
+    val indexStore = new IndexStoreAPI(path, config.getRocksdbConfigFilePath)
+    logger.debug(s"index db got.")
+    val statistics = new Statistics(path, config.getRocksdbConfigFilePath)
+    logger.debug(s"statistics db got.")
     new GraphFacade(
       nodeStore,
       relationStore,

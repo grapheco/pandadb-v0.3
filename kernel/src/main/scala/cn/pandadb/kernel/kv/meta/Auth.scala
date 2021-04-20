@@ -11,9 +11,9 @@ import cn.pandadb.kernel.kv.db.KeyValueDB
  * @Date 2021/1/19
  * @Version 0.1
  */
-class Auth (path: String) {
+class Auth (path: String, rocksdbConfPath:String = "defalut") {
 
-  val db: KeyValueDB = RocksDBStorage.getDB(s"${path}/auth")
+  val db: KeyValueDB = RocksDBStorage.getDB(s"${path}/auth", rocksdbConfigPath = rocksdbConfPath)
 
   private val DEFAULT_USERNAME = "pandadb"
   private val DEFAULT_PASSWORD = "pandadb"

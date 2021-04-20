@@ -27,7 +27,6 @@ import org.neo4j.driver.internal.retry.RetrySettings;
 import org.neo4j.driver.internal.security.InternalAuthToken;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 
-import javax.swing.*;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;

@@ -2,68 +2,21 @@ package cn.pandadb.kernel.kv
 
 import java.io.File
 
+import cn.pandadb.kernel.kv.configuration.RocksDBConfigBuilder
 import cn.pandadb.kernel.kv.db.{KeyValueDB, KeyValueIterator, KeyValueWriteBatch}
-import org.rocksdb.{BlockBasedTableConfig, BloomFilter, CompactionStyle, CompressionType, FlushOptions, IndexType, LRUCache, Options, RocksDB, WriteBatch, WriteOptions}
+import com.typesafe.scalalogging.LazyLogging
+import org.rocksdb.{BlockBasedTableConfig, BloomFilter, CompactionStyle, CompressionType, FlushOptions, IndexType, LRUCache, Options, ReadOptions, RocksDB, WriteBatch, WriteOptions}
 
-object RocksDBStorage {
+object RocksDBStorage extends LazyLogging{
   RocksDB.loadLibrary()
 
-
-  def getDB(path:String,
-            createIfMissing:Boolean = true,
-            withBloomFilter:Boolean = true,
+  def getDB(path: String,
+            createIfMissing: Boolean = true,
+            withBloomFilter: Boolean = true,
             isHDD: Boolean = false,
             useForImporter: Boolean = false,
-            prefix: Int = 0): KeyValueDB = {
-    val options: Options = new Options()
-    val tableConfig = new BlockBasedTableConfig()
-
-    // bloom filter
-    if(withBloomFilter){
-      tableConfig.setFilterPolicy(new BloomFilter(15, false))
-    }
-    // prefixExtractor
-    if (prefix > 0){
-      options.useCappedPrefixExtractor(prefix)
-      tableConfig.setIndexType(IndexType.kHashSearch)
-    }
-    // ssd or hdd
-    if(isHDD) {
-      tableConfig.setBlockSize(256 * 1024)
-      //      tableConfig.setCacheIndexAndFilterBlocks(true)
-      options.setOptimizeFiltersForHits(true)
-        .setSkipCheckingSstFileSizesOnDbOpen(true)
-        .setLevelCompactionDynamicLevelBytes(true)
-        .setWriteBufferSize(256 * 1024 * 1024)
-        .setTargetFileSizeBase(256 * 1024 * 1024)
-      //      .setMaxFileOpeningThreads(1) // if multi hard disk, set this
-    }else {
-      tableConfig.setBlockSize(4 * 1024)
-      options.setWriteBufferSize(64 * 1024 * 1024)
-        .setTargetFileSizeBase(64 * 1024 * 1024)
-    }
-
-        options.setTableFormatConfig(tableConfig)
-          .setCreateIfMissing(createIfMissing)
-          .setCompressionType(CompressionType.LZ4_COMPRESSION)
-          .setMaxOpenFiles(-1)
-          .setCompactionStyle(CompactionStyle.LEVEL)
-          .setDisableAutoCompactions(true)
-          .setLevel0FileNumCompactionTrigger(10)
-          .setLevel0SlowdownWritesTrigger(20)
-          .setLevel0StopWritesTrigger(40)
-          .setMaxBytesForLevelBase(512 * 1024 * 1024)
-
-    if (useForImporter){
-      options.setAllowConcurrentMemtableWrite(true)
-        .setWriteBufferSize(256*1024*1024)
-        .setMaxWriteBufferNumber(8)
-        .setMinWriteBufferNumberToMerge(4)
-        .setArenaBlockSize(512*1024)
-        .setLevel0FileNumCompactionTrigger(512)
-        .setDisableAutoCompactions(true)
-      //        .setMaxBackgroundCompactions(8)
-    }
+            prefix: Int = 0,
+            rocksdbConfigPath: String = "default"): KeyValueDB = {
 
     val dir = new File(path)
     if (!dir.exists()) {
@@ -72,13 +25,57 @@ object RocksDBStorage {
     if (dir.exists && !dir.isDirectory)
       throw new IllegalStateException("Invalid db path, it's a regular file: " + path)
 
-    new RocksDBStorage(RocksDB.open(options, path))
+    if (rocksdbConfigPath == "default") {
+      logger.debug("use default setting")
+      val options: Options = new Options()
+      val tableConfig = new BlockBasedTableConfig()
+
+      tableConfig.setFilterPolicy(new BloomFilter(15, false))
+        .setBlockSize(32L * 1024L)
+        .setBlockCache(new LRUCache(512L * 1024L * 1024L))
+
+      options.setTableFormatConfig(tableConfig)
+        .setCreateIfMissing(createIfMissing)
+        .setCompressionType(CompressionType.NO_COMPRESSION)
+        .setCompactionStyle(CompactionStyle.LEVEL)
+        .setDisableAutoCompactions(false) // true will invalid the compaction trigger, maybe
+        //        .setOptimizeFiltersForHits(true) // true will not generate BloomFilter for L0.
+        .setMaxBackgroundJobs(5)
+        .setSkipCheckingSstFileSizesOnDbOpen(true)
+                .setLevelCompactionDynamicLevelBytes(true)
+        .setAllowConcurrentMemtableWrite(true)
+        .setMaxOpenFiles(-1)
+        .setWriteBufferSize(256L * 1024L * 1024L)
+        .setMinWriteBufferNumberToMerge(3) // 2 or 3 better performance
+        .setLevel0FileNumCompactionTrigger(10) // level0 file num = 10, compression l0->l1 start.(invalid, why???);level0 size=256M * 3 * 10 = 7G
+        .setMaxWriteBufferNumber(8)
+        .setLevel0SlowdownWritesTrigger(20)
+        .setLevel0StopWritesTrigger(40)
+        .setMaxBytesForLevelBase(256L * 1024L * 1024L * 15L) // total size of level1(same as level0)
+        .setMaxBytesForLevelMultiplier(10)
+        .setTargetFileSizeBase(256L * 1024L * 1024L) // maxBytesForLevelBase / 10 or 15
+          .setTargetFileSizeMultiplier(4)
+
+      logger.debug(s"setDisableAutoCompactions: ${options.disableAutoCompactions()}")
+      logger.debug(s"setWriteBufferSize: ${options.writeBufferSize()}")
+      logger.debug(s"setMaxBytesForLevelBase: ${options.maxBytesForLevelBase()}")
+
+      new RocksDBStorage(RocksDB.open(options, path))
+
+    } else {
+      logger.debug("read setting file")
+      val builder = new RocksDBConfigBuilder(rocksdbConfigPath)
+      val db = RocksDB.open(builder.getOptions(), path)
+      new RocksDBStorage(db)
+    }
   }
 }
 
-class RocksDBStorage(val rocksDB: RocksDB) extends KeyValueDB{
+class RocksDBStorage(val rocksDB: RocksDB) extends KeyValueDB {
 
-  override def get(key: Array[Byte]): Array[Byte] = rocksDB.get(key)
+  override def get(key: Array[Byte]): Array[Byte] = {
+    rocksDB.get(key)
+  }
 
   override def put(key: Array[Byte], value: Array[Byte]): Unit = rocksDB.put(key, value)
 
@@ -110,7 +107,6 @@ class RocksDBStorage(val rocksDB: RocksDB) extends KeyValueDB{
       override def value(): Array[Byte] = iter.value()
     }
   }
-
 
   override def flush(): Unit = rocksDB.flush(new FlushOptions)
 

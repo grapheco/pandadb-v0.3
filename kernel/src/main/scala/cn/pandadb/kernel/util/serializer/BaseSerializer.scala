@@ -1,10 +1,10 @@
 package cn.pandadb.kernel.util.serializer
 
+import cn.pandadb.kernel.blob.api.Blob
+import cn.pandadb.kernel.blob.impl.BlobFactory
 import java.io.ByteArrayOutputStream
-
-import cn.pandadb.kernel.util.serializer.BaseSerializer.{_readAnyArray, _writeAnyArray}
+import java.util.Date
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
-
 import scala.collection.mutable
 
 /**
@@ -90,6 +90,7 @@ object BaseSerializer extends BaseSerializer {
     bytes
   }
 
+  // no use?
   def bytes2IntQueue(bytes: Array[Byte]): mutable.Queue[Int] = {
     val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytes)
     readIntQueue(byteBuf)
@@ -113,7 +114,8 @@ object BaseSerializer extends BaseSerializer {
 
 trait BaseSerializer {
 
-  // data type:  Map("String"->1, "Int" -> 2, "Long" -> 3, "Double" -> 4, "Float" -> 5, "Boolean" -> 6, "Array[String] -> 7")
+  // data type:  Map("String"->1, "Int" -> 2, "Long" -> 3, "Double" -> 4, "Float" -> 5, "Boolean" -> 6,
+  // "Array[String]" -> 7", "blob" -> 8, "date" -> 9)
   val allocator: ByteBufAllocator
 
   def serialize(longNum: Long): Array[Byte] = {
@@ -135,10 +137,22 @@ trait BaseSerializer {
   protected def _writeString(value: String, byteBuf: ByteBuf): Unit = {
     val strInBytes: Array[Byte] = value.getBytes
     val length: Int = strInBytes.length
-    // write type
-    byteBuf.writeByte(1)
-    byteBuf.writeShort(length)
-    byteBuf.writeBytes(strInBytes)
+
+    def _writeShortString(): Unit = {
+      byteBuf.writeByte(1)
+      byteBuf.writeShort(length)
+      byteBuf.writeBytes(strInBytes)
+    }
+
+    def _writeLongString(): Unit = {
+      byteBuf.writeByte(1)
+      byteBuf.writeShort(-1)
+      byteBuf.writeInt(length)
+      byteBuf.writeBytes(strInBytes)
+    }
+    // pow(2,15) = 32768
+    if (length < 32767) _writeShortString()
+    else _writeLongString()
   }
 
   protected def _writeInt(value: Int, byteBuf: ByteBuf): Unit = {
@@ -166,6 +180,18 @@ trait BaseSerializer {
     byteBuf.writeBoolean(value)
   }
 
+  protected def _writeBlob(value: Blob, byteBuf: ByteBuf): ByteBuf = {
+    byteBuf.writeByte(8)
+    val blobInBytes = value.toBytes()
+    byteBuf.writeInt(blobInBytes.length)
+    byteBuf.writeBytes(blobInBytes)
+  }
+
+  protected def _writeDate(value: Date, byteBuf: ByteBuf): Unit = {
+    byteBuf.writeByte(9)
+    byteBuf.writeLong(value.getTime)
+  }
+
   protected def _writeKV(keyId: Int, value: Any, byteBuf: ByteBuf): Any = {
     byteBuf.writeByte(keyId)
     value match {
@@ -175,6 +201,8 @@ trait BaseSerializer {
       case s: Int => _writeInt(value.asInstanceOf[Int], byteBuf)
       case s: Long => _writeLong(value.asInstanceOf[Long], byteBuf)
       case s: Array[Any] => _writeAnyArray(value.asInstanceOf[Array[Any]], byteBuf)
+      case s: Blob => _writeBlob(value.asInstanceOf[Blob], byteBuf)
+      case s: Date => _writeDate(value.asInstanceOf[Date], byteBuf)
       case _ => _writeString(value.asInstanceOf[String], byteBuf)
     }
   }
@@ -223,6 +251,7 @@ trait BaseSerializer {
       case 4 => byteBuf.readDouble()
       case 5 => byteBuf.readFloat()
       case 6 => byteBuf.readBoolean()
+      case 9 => _readDate(byteBuf)
       //      case _ => _readString(byteBuf)
     }
     value
@@ -231,9 +260,32 @@ trait BaseSerializer {
   protected def _readString(byteBuf: ByteBuf): String = {
     val len: Int = byteBuf.readShort().toInt
     val bos: ByteArrayOutputStream = new ByteArrayOutputStream()
-    byteBuf.readBytes(bos, len)
-    bos.toString
+    if (len < 32768 && len > 0) {
+      byteBuf.readBytes(bos, len)
+      bos.toString
+    }
+    else {
+      val trueLen: Int = byteBuf.readInt()
+      byteBuf.readBytes(bos, trueLen)
+      bos.toString
+    }
+
   }
+
+
+
+  protected def _readBlob(byteBuf: ByteBuf): Blob = {
+    val len: Int = byteBuf.readInt()
+    val bytesArray : Array[Byte] = new Array[Byte](len)
+    byteBuf.readBytes(bytesArray)
+    BlobFactory.fromBytes(bytesArray)
+  }
+
+  protected def _readDate(byteBuf: ByteBuf): Date = {
+    val time = byteBuf.readLong()
+    new Date(time)
+  }
+
   protected def _readIntArray(byteBuf: ByteBuf): Array[Int] = {
     val len = byteBuf.readByte().toInt
     new Array[Int](len).map(item => byteBuf.readInt())
@@ -252,6 +304,8 @@ trait BaseSerializer {
         case 5 => byteBuf.readFloat()
         case 6 => byteBuf.readBoolean()
         case 7 => _readAnyArray(byteBuf)
+        case 8 => _readBlob(byteBuf)
+        case 9 => _readDate(byteBuf)
         case _ => _readString(byteBuf)
       }
       propId -> propValue
@@ -262,7 +316,7 @@ trait BaseSerializer {
   def readIntQueue(byteBuf: ByteBuf): mutable.Queue[Int] = {
     val length = byteBuf.readInt()
     val queue: mutable.Queue[Int] = new mutable.Queue[Int]()
-    for(i<-1 to length) queue.enqueue(byteBuf.readInt())
+    for (i <- 1 to length) queue.enqueue(byteBuf.readInt())
     queue
   }
 

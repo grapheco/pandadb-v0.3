@@ -10,6 +10,4 @@ class RocksDBStorageTest {
     val db = RocksDBStorage.getDB("testdata/db")
     Assert.assertNotNull(db)
   }
-
-
 }

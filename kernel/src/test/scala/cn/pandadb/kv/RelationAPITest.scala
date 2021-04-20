@@ -91,4 +91,15 @@ class RelationAPITest {
     relationAPI.relationRemoveProperty(1, 1)
     Assert.assertEquals(None, relationAPI.getRelationById(1).get.properties.get(1))
   }
+
+  @Test
+  def relationsBetweenTest(): Unit = {
+    Assert.assertEquals(relation3.id,
+      relationAPI.findOutRelationsBetween(fromNodeId= relation3.from, toNodeId=relation3.to, edgeType=Some(relation3.typeId)).next().id)
+    Assert.assertEquals(relation3.id,
+      relationAPI.findInRelationsBetween(toNodeId= relation3.to, fromNodeId= relation3.from, edgeType=Some(relation3.typeId)).next().id)
+
+    Assert.assertTrue(relationAPI.findOutRelationsBetween(relation3.from, relation3.to).nonEmpty)
+    Assert.assertTrue(relationAPI.findInRelationsBetween(relation3.from, relation3.to).isEmpty)
+  }
 }
