@@ -98,6 +98,7 @@ script location: `/usr/local/pandadb-server-<version>/bin/cypher-shell`
 
 usage: `./cypher-shell -a panda://localhost:9989 -u "" -p ""`
 
+quit: `:quit`
 ## 5. Driver
 visit https://github.com/grapheco/pandadb-v0.3/releases to get pandadb-driver-1.0-SNAPSHOT.jar.   
 then add the jar to your project, this driver only support `session.run()`.  
