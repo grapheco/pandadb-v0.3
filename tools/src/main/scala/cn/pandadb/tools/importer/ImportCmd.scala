@@ -17,11 +17,19 @@ case class ImportCmd(args: Array[String]) {
 
   val nodeFileList: List[File] = {
     val nodesFilesPath: Array[String] = _getArgByName("nodes").split(",")
-    nodesFilesPath.map(filePath => new File(filePath)).toList
+    if(nodesFilesPath(0) == "") {
+      throw new Exception("No node file detected.")
+    } else {
+      nodesFilesPath.map(filePath => new File(filePath)).toList
+    }
   }
   val relFileList: List[File] = {
     val relsFilesPath: Array[String] = _getArgByName("relationships").split(",")
-    relsFilesPath.map(filePath => new File(filePath)).toList
+    if(relsFilesPath(0) == "") {
+      List[File]()
+    } else {
+      relsFilesPath.map(filePath => new File(filePath)).toList
+    }
   }
   val exportDBPath: File = {
     val dbFile = new File(_getArgByName("db-path"))
