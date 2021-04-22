@@ -16,6 +16,7 @@
         <module>panda-rpc</module>
         <module>driver1.x</module>
         <module>packaging</module>
+        <module>panda-test</module>
     </modules>
 
     <properties>

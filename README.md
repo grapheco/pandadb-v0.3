@@ -12,6 +12,7 @@ intelligent graph database
 PandaDB v0.3 is an open source product licensed under Apache2.0
 
 #Limitation
+1. support 32767 kinds of properties
 
 ## 1. Building PandaDB
 ### 1.1 install all artifacts

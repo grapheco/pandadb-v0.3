@@ -37,12 +37,12 @@ class IndexStoreAPI(dbPath: String, rocksdbCfgPath: String = "default") {
 //  def createIndex(label: Int, prop: Int, fulltext: Boolean = false): IndexId = createIndex(label, Array(prop), fulltext)
 
   def getFulltextIndex(indexId: Int): (Array[Int], FulltextIndexStore) = {
-    fulltextIndexMap.get(indexId).getOrElse{
+    fulltextIndexMap.getOrElse(indexId, {
       val props = meta.getIndexMeta(indexId).get.props.toArray[Int]
       val store = new FulltextIndexStore(s"$fulltextIndexPathPrefix/$indexId")
-      fulltextIndexMap +=indexId->(props, store)
+      fulltextIndexMap += indexId -> (props, store)
       (props, store)
-    }
+    })
   }
 
   def getIndexId(label: Int, props: Array[Int]): Option[IndexId] = meta.getIndexId(label, props)
