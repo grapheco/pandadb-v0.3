@@ -21,7 +21,7 @@ class NodeStore(db: KeyValueDB) {
 
   def get(nodeId: NodeId, labelId: LabelId): Option[StoredNodeWithProperty] = {
     val value = db.get(KeyConverter.toNodeKey(labelId, nodeId))
-    if(value.nonEmpty) Some(NodeSerializer.deserializeNodeValue(value))
+    if(value != null) Some(NodeSerializer.deserializeNodeValue(value))
     else None
   }
 
