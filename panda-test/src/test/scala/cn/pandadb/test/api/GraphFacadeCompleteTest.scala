@@ -50,18 +50,17 @@ class GraphFacadeCompleteTest {
 
     graphFacade.addNode(
       Map("string"->longText, "int"->2147483647, "long"->2147483648L, "double"->233.3, "boolean"->true,
-        "intArray"->Array[Any](1,2,3),
+        "intArray"->Array[Int](1,2,3),
         "stringArray"->Array[String]("aa", "bb", "cc"),
-        "longArray"->Array[Any](2147483648L, 2147483649L, 21474836488L),
-        "booleanArray"->Array[Any](true, false, true),
-        "doubleArray"->Array[Any](1.1, 2.2, 55555555.5)))
+        "longArray"->Array[Long](2147483648L, 2147483649L, 21474836488L),
+        "booleanArray"->Array[Boolean](true, false, true),
+        "doubleArray"->Array[Double](1.1, 2.2, 55555555.5)))
     graphFacade.addNode(Map(), "person")
     graphFacade.addNode(Map(), "person", "singer", "fighter", "star")
   }
 
   @Test
   def testGetNodeProperty(): Unit ={
-
     val n1 = graphFacade.nodeAt(1).get
     val n2 = graphFacade.nodeAt(2).get
     val n3 = graphFacade.nodeAt(3).get
@@ -117,6 +116,12 @@ class GraphFacadeCompleteTest {
     val props = graphFacade.nodeAt(1).get.properties
     Assert.assertArrayEquals(IOUtils.toByteArray(surl), props("blob").asInstanceOf[Blob].toBytes())
   }
+
+
+  // RELATIONSHIP API TEST
+
+
+  //INDEX API TEST
 
   @After
   def close(): Unit = {
