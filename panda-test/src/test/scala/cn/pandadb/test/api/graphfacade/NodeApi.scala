@@ -1,24 +1,20 @@
-package cn.pandadb.test.api
+package cn.pandadb.test.api.graphfacade
 
 import java.io.File
-import java.net.URL
 
-import cn.pandadb.kernel.blob.api.Blob
-import cn.pandadb.kernel.blob.impl.BlobFactory
 import cn.pandadb.kernel.kv.GraphFacade
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
 import cn.pandadb.kernel.store.{NodeStoreSPI, RelationStoreSPI}
-import org.apache.commons.io.{FileUtils, IOUtils}
-import org.grapheco.lynx.{LynxList, LynxValue}
+import org.apache.commons.io.FileUtils
+import org.grapheco.lynx.LynxList
 import org.junit.{After, Assert, Before, Test}
 
 import scala.io.Source
 
-class GraphFacadeCompleteTest {
-
+class NodeApi {
   var nodeStore: NodeStoreSPI = _
   var relationStore: RelationStoreSPI = _
   var indexStore: IndexStoreAPI = _
@@ -79,6 +75,14 @@ class GraphFacadeCompleteTest {
 
     Assert.assertEquals(Set("person"), n2.labels.toSet)
     Assert.assertEquals(Set("person", "singer", "fighter", "star"), n3.labels.toSet)
+
+    /*
+    TODO:
+      0. should test boundary value
+      1. API: getNodesByLabel, test it, exist and not exist situation
+      2. API: filterNodes, test it, test all kinds of properties we support
+      3. show your talent
+     */
   }
 
   @Test
@@ -96,6 +100,12 @@ class GraphFacadeCompleteTest {
     Assert.assertEquals(Set(true, false, true), n1.properties("booleanArray").asInstanceOf[LynxList].value.toArray.map(f => f.value).toSet)
     Assert.assertEquals(Set(1.1, 2.2, 55555555.5), n1.properties("doubleArray").asInstanceOf[LynxList].value.toArray.map(f => f.value).toSet)
     Assert.assertEquals(None, nodeStore.getPropertyKeyId("not exist"))
+
+    /*
+    TODO:
+      0. should test boundary value
+      1. update exist node value to another, like: codeBaby --> codeMaster
+     */
   }
 
   @Test
@@ -107,22 +117,32 @@ class GraphFacadeCompleteTest {
     val n1 = graphFacade.nodeAt(1).get
     Assert.assertEquals(Set("first1","first2"), n1.labels.toSet)
     Assert.assertEquals(None, nodeStore.getLabelId("not exist"))
+    /*
+    TODO:
+      0. should test boundary value
+      1. API: nodeHasLabel, test it, exist and not exist situation
+     */
   }
 
   @Test
-  def testBlobProperty(): Unit ={
-    val url = "https://www.baidu.com/img/flexible/logo/pc/result.png"
-    val surl = new URL(url)
-    graphFacade.addNode(Map("blob"->BlobFactory.fromHttpURL(url)))
-    val props = graphFacade.nodeAt(1).get.properties
-    Assert.assertArrayEquals(IOUtils.toByteArray(surl), props("blob").asInstanceOf[Blob].toBytes())
+  def testDeleteNode(): Unit ={
+    /*
+    TODO:
+     0. should test boundary value
+     1. delete exist node and then search
+     2. delete not exist node then watch is there any exception
+     */
   }
 
-
-  // RELATIONSHIP API TEST
-
-
-  //INDEX API TEST
+  @Test
+  def testNodeIterator(): Unit ={
+    /*
+    TODO:
+      0. should test boundary value
+      1. iterator's node's label and properties is correct, node properties should be complicated
+      2. show your talent
+     */
+  }
 
   @After
   def close(): Unit = {
