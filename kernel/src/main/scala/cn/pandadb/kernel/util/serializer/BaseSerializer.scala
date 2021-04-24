@@ -2,17 +2,22 @@ package cn.pandadb.kernel.util.serializer
 
 import cn.pandadb.kernel.blob.api.Blob
 import cn.pandadb.kernel.blob.impl.BlobFactory
+import cn.pandadb.kernel.util.serializer.BaseSerializer.bytes2Map
+
 import java.io.ByteArrayOutputStream
 import java.util.Date
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
+
 import scala.collection.mutable
+import collection.JavaConverters._
 
 /**
  * @Author: Airzihao
  * @Description:
  * @Date: Created at 19:15 2020/12/17
- * @Modified By:
+ * @Modified By: Airzihao at 2021/04/24
  */
+
 
 object BaseSerializer extends BaseSerializer {
 
@@ -20,15 +25,15 @@ object BaseSerializer extends BaseSerializer {
 
   def anyArray2Bytes(array: Array[Any]): Array[Byte] = {
     val byteBuf: ByteBuf = allocator.heapBuffer()
-    _writeAnyArray(array, byteBuf)
+    _writeArray(array, byteBuf)
     val bytes = exportBytes(byteBuf)
     byteBuf.release()
     bytes
   }
 
-  def bytes2AnyArray(bytes: Array[Byte]): Array[Any] = {
+  def bytes2AnyArray(bytes: Array[Byte]): Array[_] = {
     val byteBuf = Unpooled.wrappedBuffer(bytes)
-    val arr = _readAnyArray(byteBuf)
+    val arr = _readArray(byteBuf)
     byteBuf.release()
     arr
   }
@@ -115,7 +120,7 @@ object BaseSerializer extends BaseSerializer {
 trait BaseSerializer {
 
   // data type:  Map("String"->1, "Int" -> 2, "Long" -> 3, "Double" -> 4, "Float" -> 5, "Boolean" -> 6,
-  // "Array[String]" -> 7", "blob" -> 8, "date" -> 9)
+  // "Array[]" -> 7", "blob" -> 8, "date" -> 9)
   val allocator: ByteBufAllocator
 
   def serialize(longNum: Long): Array[Byte] = {
@@ -137,19 +142,19 @@ trait BaseSerializer {
   protected def _writeString(value: String, byteBuf: ByteBuf): Unit = {
     val strInBytes: Array[Byte] = value.getBytes
     val length: Int = strInBytes.length
+    byteBuf.writeByte(1)
 
     def _writeShortString(): Unit = {
-      byteBuf.writeByte(1)
       byteBuf.writeShort(length)
       byteBuf.writeBytes(strInBytes)
     }
 
     def _writeLongString(): Unit = {
-      byteBuf.writeByte(1)
       byteBuf.writeShort(-1)
       byteBuf.writeInt(length)
       byteBuf.writeBytes(strInBytes)
     }
+
     // pow(2,15) = 32768
     if (length < 32767) _writeShortString()
     else _writeLongString()
@@ -200,33 +205,62 @@ trait BaseSerializer {
       case s: Float => _writeFloat(value.asInstanceOf[Float], byteBuf)
       case s: Int => _writeInt(value.asInstanceOf[Int], byteBuf)
       case s: Long => _writeLong(value.asInstanceOf[Long], byteBuf)
-      case s: Array[Any] => _writeAnyArray(value.asInstanceOf[Array[Any]], byteBuf)
+      case s: Array[_] => _writeArray(value.asInstanceOf[Array[_]], byteBuf)
       case s: Blob => _writeBlob(value.asInstanceOf[Blob], byteBuf)
       case s: Date => _writeDate(value.asInstanceOf[Date], byteBuf)
-      case _ => _writeString(value.asInstanceOf[String], byteBuf)
+      case _ => {
+//        println(value.getClass)
+        _writeString(value.asInstanceOf[String], byteBuf)
+      }
     }
   }
 
-  protected def _writeAnyArray(array: Array[Any], byteBuf: ByteBuf): Unit = {
+  protected def _writeArray(array: Array[_], byteBuf: ByteBuf): Unit = {
     byteBuf.writeByte(7)
-    val len = array.length
+    val len: Int = array.length
     byteBuf.writeInt(len)
-    array.foreach(item => {
-      item match {
-        case s: String => _writeString(item.asInstanceOf[String], byteBuf)
-        case s: Int => _writeInt(item.asInstanceOf[Int], byteBuf)
-        case s: Long => _writeLong(item.asInstanceOf[Long], byteBuf)
-        case s: Double => _writeDouble(item.asInstanceOf[Double], byteBuf)
-        case s: Float => _writeFloat(item.asInstanceOf[Float], byteBuf)
-        case s: Boolean => _writeBoolean(item.asInstanceOf[Boolean], byteBuf)
+
+    array match {
+      case s: Array[String] => {
+        byteBuf.writeByte(1)
+        array.asInstanceOf[Array[String]].foreach(item => _writeString(item, byteBuf))
       }
-    })
+      case s: Array[Int] => {
+        byteBuf.writeByte(2)
+        array.asInstanceOf[Array[Int]].foreach(item => byteBuf.writeInt(item))
+      }
+      case s: Array[Long] => {
+        byteBuf.writeByte(3)
+        array.asInstanceOf[Array[Long]].foreach(item => byteBuf.writeLong(item))
+      }
+      case s: Array[Double] => {
+        byteBuf.writeByte(4)
+        array.asInstanceOf[Array[Double]].foreach(item => byteBuf.writeDouble(item))
+      }
+      case s: Array[Float] => {
+        byteBuf.writeByte(5)
+        array.asInstanceOf[Array[Float]].foreach(item => byteBuf.writeFloat(item))
+      }
+      case s: Array[Boolean] => {
+        byteBuf.writeByte(6)
+        array.asInstanceOf[Array[Boolean]].foreach(item => byteBuf.writeBoolean(item))
+      }
+    }
   }
 
-  protected def _readAnyArray(byteBuf: ByteBuf): Array[Any] = {
+  protected def _readArray[T](byteBuf: ByteBuf): Array[_] = {
     val len = byteBuf.readInt()
-    val arr = new Array[Int](len).map(item => _readAny(byteBuf))
-    arr
+    val typeFlag = byteBuf.readByte().toInt
+    typeFlag match {
+      case 1 => new Array[String](len).map(item => {
+        val typeFlag: Int = byteBuf.readByte().toInt // drop the flag
+        _readString(byteBuf)})
+      case 2 => new Array[Int](len).map(item => byteBuf.readInt())
+      case 3 => new Array[Long](len).map(item => byteBuf.readLong())
+      case 4 => new Array[Double](len).map(item => byteBuf.readDouble())
+      case 5 => new Array[Float](len).map(item => byteBuf.readFloat())
+      case 6 => new Array[Boolean](len).map(item => byteBuf.readBoolean())
+    }
   }
 
   // [byte:len][arr(0)][arr(1)]...
@@ -260,16 +294,17 @@ trait BaseSerializer {
   protected def _readString(byteBuf: ByteBuf): String = {
     val len: Int = byteBuf.readShort().toInt
     val bos: ByteArrayOutputStream = new ByteArrayOutputStream()
+
+    //short
     if (len < 32768 && len > 0) {
       byteBuf.readBytes(bos, len)
-      bos.toString
     }
+    //long
     else {
       val trueLen: Int = byteBuf.readInt()
       byteBuf.readBytes(bos, trueLen)
-      bos.toString
     }
-
+    bos.toString
   }
 
 
@@ -291,7 +326,7 @@ trait BaseSerializer {
     new Array[Int](len).map(item => byteBuf.readInt())
   }
 
-  def  readMap(byteBuf: ByteBuf): Map[Int, Any] = {
+  def readMap(byteBuf: ByteBuf): Map[Int, Any] = {
     val propNum: Int = byteBuf.readByte().toInt
     val propsMap: Map[Int, Any] = new Array[Int](propNum).map(item => {
       val propId: Int = byteBuf.readShort().toInt
@@ -303,7 +338,7 @@ trait BaseSerializer {
         case 4 => byteBuf.readDouble()
         case 5 => byteBuf.readFloat()
         case 6 => byteBuf.readBoolean()
-        case 7 => _readAnyArray(byteBuf)
+        case 7 => _readArray(byteBuf)
         case 8 => _readBlob(byteBuf)
         case 9 => _readDate(byteBuf)
         case _ => _readString(byteBuf)
