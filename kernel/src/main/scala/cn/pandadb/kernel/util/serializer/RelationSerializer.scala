@@ -26,7 +26,7 @@ object RelationSerializer extends BaseSerializer {
     byteBuf.writeLong(fromId)
     byteBuf.writeLong(toId)
     byteBuf.writeByte(typeId)
-    _writeMap(props, byteBuf)
+    MapSerializer.writeMap(props, byteBuf)
     val bytes = exportBytes(byteBuf)
     byteBuf.release()
     bytes
@@ -38,7 +38,7 @@ object RelationSerializer extends BaseSerializer {
     val fromId: Long = byteBuf.readLong()
     val toId: Long = byteBuf.readLong()
     val typeId: Int = byteBuf.readByte().toInt
-    val props: Map[Int, Any] = readMap(byteBuf)
+    val props: Map[Int, Any] = MapSerializer.readMap(byteBuf)
     byteBuf.release()
     new StoredRelationWithProperty(relationId, fromId, toId, typeId, props)
   }
