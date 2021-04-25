@@ -3,10 +3,13 @@ package cn.pandadb.kernel.util.serializer
 import cn.pandadb.kernel.blob.api.Blob
 import cn.pandadb.kernel.blob.impl.BlobFactory
 import cn.pandadb.kernel.util.serializer.BaseSerializer.bytes2Map
-
 import java.io.ByteArrayOutputStream
+import java.time.{Instant, LocalDate, LocalDateTime, LocalTime, OffsetTime, ZoneId, ZoneOffset, ZonedDateTime}
 import java.util.Date
+
+import cn.pandadb.kernel.kv.value.LynxDateTimeUtil
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
+import org.grapheco.lynx.LynxDateTime
 
 import scala.collection.mutable
 import collection.JavaConverters._
@@ -118,9 +121,24 @@ object BaseSerializer extends BaseSerializer {
 }
 
 trait BaseSerializer {
+  object DataType extends Enumeration {
+    type DataType = Value
 
-  // data type:  Map("String"->1, "Int" -> 2, "Long" -> 3, "Double" -> 4, "Float" -> 5, "Boolean" -> 6,
-  // "Array[]" -> 7", "blob" -> 8, "date" -> 9)
+    val STRING = Value(1, "String")
+    val INT = Value(2, "Int")
+    val LONG = Value(3, "Long")
+    val DOUBLE = Value(4, "Double")
+    val FLOAT = Value(5, "Float")
+    val BOOLEAN = Value(6, "Boolean")
+    val ARRAY = Value(7, "Array")
+    val BLOB = Value(8, "Blob")
+    val DATE = Value(9, "Date")
+    val DATE_TIME = Value(10, "DateTime")
+    val LOCAL_DATE_TIME = Value(11, "LocalDateTime")
+    val LOCAL_TIME = Value(12, "LocalTime")
+    val TIME = Value(13, "Time")
+  }
+
   val allocator: ByteBufAllocator
 
   def serialize(longNum: Long): Array[Byte] = {
@@ -142,7 +160,7 @@ trait BaseSerializer {
   protected def _writeString(value: String, byteBuf: ByteBuf): Unit = {
     val strInBytes: Array[Byte] = value.getBytes
     val length: Int = strInBytes.length
-    byteBuf.writeByte(1)
+    byteBuf.writeByte(DataType.STRING.id.toByte)
 
     def _writeShortString(): Unit = {
       byteBuf.writeShort(length)
@@ -161,40 +179,108 @@ trait BaseSerializer {
   }
 
   protected def _writeInt(value: Int, byteBuf: ByteBuf): Unit = {
-    byteBuf.writeByte(2)
+    byteBuf.writeByte(DataType.INT.id.toByte)
     byteBuf.writeInt(value)
   }
 
   protected def _writeLong(value: Long, byteBuf: ByteBuf): Unit = {
-    byteBuf.writeByte(3)
+    byteBuf.writeByte(DataType.LONG.id.toByte)
     byteBuf.writeLong(value)
   }
 
   protected def _writeDouble(value: Double, byteBuf: ByteBuf): Unit = {
-    byteBuf.writeByte(4)
+    byteBuf.writeByte(DataType.DOUBLE.id.toByte)
     byteBuf.writeDouble(value)
   }
 
   protected def _writeFloat(value: Float, byteBuf: ByteBuf): Unit = {
-    byteBuf.writeByte(5)
+    byteBuf.writeByte(DataType.FLOAT.id.toByte)
     byteBuf.writeFloat(value)
   }
 
   protected def _writeBoolean(value: Boolean, byteBuf: ByteBuf): ByteBuf = {
-    byteBuf.writeByte(6)
+    byteBuf.writeByte(DataType.BOOLEAN.id.toByte)
     byteBuf.writeBoolean(value)
   }
 
   protected def _writeBlob(value: Blob, byteBuf: ByteBuf): ByteBuf = {
-    byteBuf.writeByte(8)
+    byteBuf.writeByte(DataType.BLOB.id.toByte)
     val blobInBytes = value.toBytes()
     byteBuf.writeInt(blobInBytes.length)
     byteBuf.writeBytes(blobInBytes)
   }
 
-  protected def _writeDate(value: Date, byteBuf: ByteBuf): Unit = {
-    byteBuf.writeByte(9)
-    byteBuf.writeLong(value.getTime)
+  protected def _writeDate(value: LocalDate, byteBuf: ByteBuf): Unit = {
+    byteBuf.writeByte(DataType.DATE.id.toByte)
+    byteBuf.writeLong(value.toEpochDay)
+  }
+
+  protected def _readDate(byteBuf: ByteBuf): LocalDate = {
+    val epochDay = byteBuf.readLong()
+    LocalDate.ofEpochDay(epochDay)
+  }
+
+  protected def _writeDateTime(value: ZonedDateTime, byteBuf: ByteBuf): Unit = {
+    byteBuf.writeByte(DataType.DATE_TIME.id.toByte)
+
+    val epochSecondUTC: Long = value.toEpochSecond
+    val nano: Int = value.getNano
+    val zoneId: String = value.getZone.getId
+    byteBuf.writeLong(epochSecondUTC)
+    byteBuf.writeInt(nano)
+    _writeString(zoneId, byteBuf)
+  }
+
+  protected def _readDateTime(byteBuf: ByteBuf): ZonedDateTime = {
+    val epochSecondUTC: Long = byteBuf.readLong()
+    val nano: Int = byteBuf.readInt()
+    val zoneStoreType = byteBuf.readByte()
+    val zone: String = _readString(byteBuf)
+    val zoneId: ZoneId = LynxDateTimeUtil.parseZone(zone)
+    ZonedDateTime.ofInstant(Instant.ofEpochSecond(epochSecondUTC, nano), zoneId)
+  }
+
+  protected def _writeLocalDateTime(value: LocalDateTime, byteBuf: ByteBuf): Unit = {
+    byteBuf.writeByte(DataType.LOCAL_DATE_TIME.id.toByte)
+
+    val epochSecond: Long = value.toEpochSecond(ZoneOffset.UTC)
+    val nano: Int = value.getNano
+    byteBuf.writeLong(epochSecond)
+    byteBuf.writeInt(nano)
+  }
+
+  protected def _readLocalDateTime(byteBuf: ByteBuf): LocalDateTime = {
+    val epochSecond: Long = byteBuf.readLong()
+    val nano: Int = byteBuf.readInt()
+    LocalDateTime.ofEpochSecond(epochSecond, nano, ZoneOffset.UTC)
+  }
+
+  protected def _writeTime(value: OffsetTime, byteBuf: ByteBuf): Unit = {
+    byteBuf.writeByte(DataType.TIME.id.toByte)
+
+    val localNanosOfDay: Long = value.toLocalTime.toNanoOfDay
+    val offsetSeconds: Int = value.getOffset.getTotalSeconds
+    byteBuf.writeLong(localNanosOfDay)
+    byteBuf.writeInt(offsetSeconds)
+  }
+
+  protected def _readTime(byteBuf: ByteBuf): OffsetTime = {
+    val localNanosOfDay: Long = byteBuf.readLong()
+    val offsetSeconds: Int = byteBuf.readInt()
+    val zoneOffset: ZoneOffset = ZoneOffset.ofTotalSeconds(offsetSeconds)
+    OffsetTime.of(LocalTime.ofNanoOfDay(localNanosOfDay), zoneOffset)
+  }
+
+  protected def _writeLocalTime(value: LocalTime, byteBuf: ByteBuf): Unit = {
+    byteBuf.writeByte(DataType.LOCAL_TIME.id.toByte)
+
+    val localNanosOfDay: Long = value.toNanoOfDay
+    byteBuf.writeLong(localNanosOfDay)
+  }
+
+  protected def _readLocalTime(byteBuf: ByteBuf): LocalTime = {
+    val localNanosOfDay: Long = byteBuf.readLong()
+    LocalTime.ofNanoOfDay(localNanosOfDay)
   }
 
   protected def _writeKV(keyId: Int, value: Any, byteBuf: ByteBuf): Any = {
@@ -207,16 +293,19 @@ trait BaseSerializer {
       case s: Long => _writeLong(value.asInstanceOf[Long], byteBuf)
       case s: Array[_] => _writeArray(value.asInstanceOf[Array[_]], byteBuf)
       case s: Blob => _writeBlob(value.asInstanceOf[Blob], byteBuf)
-      case s: Date => _writeDate(value.asInstanceOf[Date], byteBuf)
+      case s: LocalDate => _writeDate(s, byteBuf) // date()
+      case s: LocalDateTime => _writeLocalDateTime(s, byteBuf) // localdatetime()
+      case s: LocalTime => _writeLocalTime(s, byteBuf) // localtime()
+      case s: ZonedDateTime => _writeDateTime(s, byteBuf) // datetime()
+      case s: OffsetTime => _writeTime(s, byteBuf) // time()
       case _ => {
-//        println(value.getClass)
         _writeString(value.asInstanceOf[String], byteBuf)
       }
     }
   }
 
   protected def _writeArray(array: Array[_], byteBuf: ByteBuf): Unit = {
-    byteBuf.writeByte(7)
+    byteBuf.writeByte(DataType.ARRAY.id.toByte)
     val len: Int = array.length
     byteBuf.writeInt(len)
 
@@ -276,20 +365,20 @@ trait BaseSerializer {
     map.foreach(kv => _writeKV(kv._1, kv._2, byteBuf))
   }
 
-  protected def _readAny(byteBuf: ByteBuf): Any = {
-    val typeId: Int = byteBuf.readByte().toInt
-    val value = typeId match {
-      case 1 => _readString(byteBuf)
-      case 2 => byteBuf.readInt()
-      case 3 => byteBuf.readLong()
-      case 4 => byteBuf.readDouble()
-      case 5 => byteBuf.readFloat()
-      case 6 => byteBuf.readBoolean()
-      case 9 => _readDate(byteBuf)
-      //      case _ => _readString(byteBuf)
-    }
-    value
-  }
+//  protected def _readAny(byteBuf: ByteBuf): Any = {
+//    val typeId: Int = byteBuf.readByte().toInt
+//    val value = typeId match {
+//      case 1 => _readString(byteBuf)
+//      case 2 => byteBuf.readInt()
+//      case 3 => byteBuf.readLong()
+//      case 4 => byteBuf.readDouble()
+//      case 5 => byteBuf.readFloat()
+//      case 6 => byteBuf.readBoolean()
+//      case 9 => _readDate(byteBuf)
+//      //      case _ => _readString(byteBuf)
+//    }
+//    value
+//  }
 
   protected def _readString(byteBuf: ByteBuf): String = {
     val len: Int = byteBuf.readShort().toInt
@@ -316,10 +405,10 @@ trait BaseSerializer {
     BlobFactory.fromBytes(bytesArray)
   }
 
-  protected def _readDate(byteBuf: ByteBuf): Date = {
-    val time = byteBuf.readLong()
-    new Date(time)
-  }
+//  protected def _readDate(byteBuf: ByteBuf): Date = {
+//    val time = byteBuf.readLong()
+//    new Date(time)
+//  }
 
   protected def _readIntArray(byteBuf: ByteBuf): Array[Int] = {
     val len = byteBuf.readByte().toInt
@@ -331,16 +420,20 @@ trait BaseSerializer {
     val propsMap: Map[Int, Any] = new Array[Int](propNum).map(item => {
       val propId: Int = byteBuf.readShort().toInt
       val propType: Int = byteBuf.readByte().toInt
-      val propValue = propType match {
-        case 1 => _readString(byteBuf)
-        case 2 => byteBuf.readInt()
-        case 3 => byteBuf.readLong()
-        case 4 => byteBuf.readDouble()
-        case 5 => byteBuf.readFloat()
-        case 6 => byteBuf.readBoolean()
-        case 7 => _readArray(byteBuf)
-        case 8 => _readBlob(byteBuf)
-        case 9 => _readDate(byteBuf)
+      val propValue = DataType(propType) match {
+        case DataType.STRING => _readString(byteBuf)
+        case DataType.INT => byteBuf.readInt()
+        case DataType.LONG => byteBuf.readLong()
+        case DataType.DOUBLE => byteBuf.readDouble()
+        case DataType.FLOAT => byteBuf.readFloat()
+        case DataType.BOOLEAN => byteBuf.readBoolean()
+        case DataType.ARRAY => _readArray(byteBuf)
+        case DataType.BLOB => _readBlob(byteBuf)
+        case DataType.DATE => _readDate(byteBuf)
+        case DataType.DATE_TIME => _readDateTime(byteBuf)
+        case DataType.TIME => _readTime(byteBuf)
+        case DataType.LOCAL_DATE_TIME => _readLocalDateTime(byteBuf)
+        case DataType.LOCAL_TIME => _readLocalTime(byteBuf)
         case _ => _readString(byteBuf)
       }
       propId -> propValue

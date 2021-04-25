@@ -2,6 +2,7 @@ package cn.pandadb.util.serializer
 
 import cn.pandadb.kernel.util.Profiler.timing
 import cn.pandadb.kernel.util.serializer.BaseSerializer
+import io.netty.buffer.{ByteBuf, UnpooledByteBufAllocator, UnpooledHeapByteBuf}
 import org.junit.{Assert, Test}
 
 import java.io.File

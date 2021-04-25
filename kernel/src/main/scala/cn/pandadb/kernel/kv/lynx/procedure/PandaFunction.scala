@@ -1,5 +1,5 @@
 package cn.pandadb.kernel.kv.lynx.procedure
-import cn.pandadb.kernel.kv.lynx.procedure.functions.{DateFunction, DateTimeFunction, ExistsFunction, IdFunction, ToIntegerFunction, TypeFunction}
+import cn.pandadb.kernel.kv.lynx.procedure.functions.{DateFunction, DateTimeFunction, ExistsFunction, IdFunction, LocalDateTimeFunction, LocalTimeFunction, TimeFunction, ToIntegerFunction, TypeFunction}
 import org.grapheco.lynx.CallableProcedure
 
 object PandaFunction {
@@ -7,6 +7,9 @@ object PandaFunction {
     ToIntegerFunction,
     DateFunction,
     DateTimeFunction,
+    LocalDateTimeFunction,
+    TimeFunction,
+    LocalTimeFunction,
     TypeFunction,
     IdFunction,
     ExistsFunction
