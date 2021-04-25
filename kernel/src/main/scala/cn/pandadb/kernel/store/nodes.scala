@@ -91,11 +91,11 @@ trait NodeStoreSPI {
 
 
   def serializeLabelIdsToBytes(labelIds: Array[Int]): Array[Byte] = {
-    BaseSerializer.intArray2Bytes(labelIds)
+    BaseSerializer.array2Bytes(labelIds)
   }
 
   def deserializeBytesToLabelIds(bytes: Array[Byte]): Array[Int] = {
-    BaseSerializer.bytes2IntArray(bytes)
+    BaseSerializer.bytes2Array(bytes).asInstanceOf[Array[Int]]
   }
 
   def serializePropertiesToBytes(properties: Map[Int, Any]): Array[Byte] = {
