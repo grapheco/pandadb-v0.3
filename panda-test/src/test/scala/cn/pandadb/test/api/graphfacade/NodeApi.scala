@@ -24,6 +24,10 @@ class NodeApi {
   val longTextFile = Source.fromFile(new File("./testdata/longText"))
   val longText = longTextFile.getLines().next()
 
+  var nodeId1: Long = _
+  var nodeId2: Long = _
+  var nodeId3: Long = _
+
   @Before
   def init(): Unit = {
     val dbPath = "./testdata/testdb/test.db"
@@ -44,22 +48,22 @@ class NodeApi {
       {}
     )
 
-    graphFacade.addNode(
+    nodeId1 = graphFacade.addNode(
       Map("string"->longText, "int"->2147483647, "long"->2147483648L, "double"->233.3, "boolean"->true,
         "intArray"->Array[Int](1,2,3),
         "stringArray"->Array[String]("aa", "bb", "cc"),
         "longArray"->Array[Long](2147483648L, 2147483649L, 21474836488L),
         "booleanArray"->Array[Boolean](true, false, true),
         "doubleArray"->Array[Double](1.1, 2.2, 55555555.5)))
-    graphFacade.addNode(Map(), "person")
-    graphFacade.addNode(Map(), "person", "singer", "fighter", "star")
+    nodeId2 = graphFacade.addNode(Map(), "person")
+    nodeId3 = graphFacade.addNode(Map(), "person", "singer", "fighter", "star")
   }
 
   @Test
   def testGetNodeProperty(): Unit ={
-    val n1 = graphFacade.nodeAt(1).get
-    val n2 = graphFacade.nodeAt(2).get
-    val n3 = graphFacade.nodeAt(3).get
+    val n1 = graphFacade.nodeAt(nodeId1).get
+    val n2 = graphFacade.nodeAt(nodeId2).get
+    val n3 = graphFacade.nodeAt(nodeId3).get
 
     Assert.assertEquals(Seq(), n1.labels)
     Assert.assertEquals(longText, n1.properties("string").value)
@@ -87,8 +91,8 @@ class NodeApi {
 
   @Test
   def testUpdateNodeProperty(): Unit ={
-    graphFacade.nodeRemoveProperty(1, "not exist")
-    val n1 = graphFacade.nodeAt(1).get
+    graphFacade.nodeRemoveProperty(nodeId1, "not exist")
+    val n1 = graphFacade.nodeAt(nodeId1).get
     Assert.assertEquals(longText, n1.properties("string").value)
     Assert.assertEquals(2147483647L, n1.properties("int").value)
     Assert.assertEquals(2147483648L, n1.properties("long").value)
@@ -110,11 +114,11 @@ class NodeApi {
 
   @Test
   def testUpdateNodeLabel(): Unit ={
-    graphFacade.nodeAddLabel(1, "first1")
-    graphFacade.nodeAddLabel(1, "first2")
-    graphFacade.nodeRemoveLabel(1, "not exist")
+    graphFacade.nodeAddLabel(nodeId1, "first1")
+    graphFacade.nodeAddLabel(nodeId1, "first2")
+    graphFacade.nodeRemoveLabel(nodeId1, "not exist")
     Assert.assertEquals(None, nodeStore.getLabelId("not exist"))
-    val n1 = graphFacade.nodeAt(1).get
+    val n1 = graphFacade.nodeAt(nodeId1).get
     Assert.assertEquals(Set("first1","first2"), n1.labels.toSet)
     Assert.assertEquals(None, nodeStore.getLabelId("not exist"))
     /*
