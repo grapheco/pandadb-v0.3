@@ -37,7 +37,7 @@ trait RelationStoreSPI {
 
   def getRelationTypeName(relationTypeId: Int): Option[String];
 
-  def getRelationTypeId(relationTypeName: String): Int;
+  def getRelationTypeId(relationTypeName: String): Option[Int];
 
   def addRelationType(relationTypeName: String): Int;
 
@@ -47,7 +47,7 @@ trait RelationStoreSPI {
 
   def getPropertyKeyName(keyId: Int): Option[String];
 
-  def getPropertyKeyId(keyName: String): Int;
+  def getPropertyKeyId(keyName: String): Option[Int];
 
   def addPropertyKey(keyName: String): Int;
 

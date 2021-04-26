@@ -53,7 +53,7 @@ trait NodeStoreSPI {
 
   def getLabelName(labelId: Int): Option[String];
 
-  def getLabelId(labelName: String): Int;
+  def getLabelId(labelName: String): Option[Int];
 
   def addLabel(labelName: String): Int;
 
@@ -63,11 +63,15 @@ trait NodeStoreSPI {
 
   def getPropertyKeyName(keyId: Int): Option[String];
 
-  def getPropertyKeyId(keyName: String): Int;
+  def getPropertyKeyId(keyName: String): Option[Int];
 
   def addPropertyKey(keyName: String): Int;
 
-  def getNodeById(nodeId: Long, label: Option[Int] = None): Option[StoredNodeWithProperty]
+  def getNodeById(nodeId: Long): Option[StoredNodeWithProperty]
+
+  def getNodeById(nodeId: Long, label: Int): Option[StoredNodeWithProperty]
+
+  def getNodeById(nodeId: Long, label: Option[Int]): Option[StoredNodeWithProperty]
 
   def getNodesByLabel(labelId: Int): Iterator[StoredNodeWithProperty];
 
