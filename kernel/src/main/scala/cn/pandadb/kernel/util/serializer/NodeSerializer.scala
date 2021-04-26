@@ -62,7 +62,7 @@ object NodeSerializer extends BaseSerializer {
   }
 
   private def _writeProp(keyId: Int, value: Any, byteBuf: ByteBuf) = {
-    _writeKV(keyId, value, byteBuf)
+    MapSerializer.writeKV(keyId, value, byteBuf)
   }
 
    def _readLabels(byteBuf: ByteBuf): Array[Int] = {
@@ -72,6 +72,6 @@ object NodeSerializer extends BaseSerializer {
   }
 
    def _readProps(byteBuf: ByteBuf): Map[Int, Any] = {
-    readMap(byteBuf)
+    MapSerializer.readMap(byteBuf)
   }
 }

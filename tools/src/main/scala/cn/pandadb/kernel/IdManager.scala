@@ -2,7 +2,7 @@ package cn.pandadb.kernel
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import cn.pandadb.kernel.util.serializer.BaseSerializer
+import cn.pandadb.kernel.util.serializer.{BaseSerializer, MapSerializer}
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
 
 import scala.collection.mutable
@@ -94,7 +94,7 @@ trait IdMapManager {
     val maxSize: Int = byteBuf.readInt()
     val count: Int = byteBuf.readInt()
     val queue: mutable.Queue[Int] = BaseSerializer.readIntQueue(byteBuf)
-    val id2Name: Map[Int, String] = BaseSerializer.readMap(byteBuf).asInstanceOf[Map[Int, String]]
+    val id2Name: Map[Int, String] = MapSerializer.readMap(byteBuf).asInstanceOf[Map[Int, String]]
     val name2Id: Map[String, Int] = for((id, name) <- id2Name) yield (name, id)
     (maxSize, count, queue, id2Name, name2Id)
   }
