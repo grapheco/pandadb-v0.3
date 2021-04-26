@@ -2,7 +2,7 @@ package cn.pandadb.kernel.util.serializer
 
 import cn.pandadb.kernel.blob.api.Blob
 import cn.pandadb.kernel.blob.impl.BlobFactory
-//import cn.pandadb.kernel.kv.value.LynxDateTimeUtil
+import cn.pandadb.kernel.kv.value.LynxDateTimeUtil
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
 import SerialzerDataType._
 
@@ -196,14 +196,14 @@ trait BaseSerializer {
     _writeString(zoneId, byteBuf)
   }
 
-//  protected def _readDateTime(byteBuf: ByteBuf): ZonedDateTime = {
-//    val epochSecondUTC: Long = byteBuf.readLong()
-//    val nano: Int = byteBuf.readInt()
-//    val zoneStoreType = byteBuf.readByte()
-//    val zone: String = _readString(byteBuf)
-//    val zoneId: ZoneId = LynxDateTimeUtil.parseZone(zone)
-//    ZonedDateTime.ofInstant(Instant.ofEpochSecond(epochSecondUTC, nano), zoneId)
-//  }
+  protected def _readDateTime(byteBuf: ByteBuf): ZonedDateTime = {
+    val epochSecondUTC: Long = byteBuf.readLong()
+    val nano: Int = byteBuf.readInt()
+    val zoneStoreType = byteBuf.readByte()
+    val zone: String = _readString(byteBuf)
+    val zoneId: ZoneId = LynxDateTimeUtil.parseZone(zone)
+    ZonedDateTime.ofInstant(Instant.ofEpochSecond(epochSecondUTC, nano), zoneId)
+  }
 
   protected def _writeLocalDateTime(value: LocalDateTime, byteBuf: ByteBuf): Unit = {
     byteBuf.writeByte(SerialzerDataType.LOCAL_DATE_TIME.id.toByte)

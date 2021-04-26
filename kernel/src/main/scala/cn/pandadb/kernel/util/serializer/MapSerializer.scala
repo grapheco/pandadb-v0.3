@@ -33,7 +33,7 @@ object MapSerializer extends BaseSerializer {
         case SerialzerDataType.BOOLEAN => byteBuf.readBoolean()
         case SerialzerDataType.BLOB => _readBlob(byteBuf)
         case SerialzerDataType.DATE => _readDate(byteBuf)
-//        case SerialzerDataType.DATE_TIME => _readDateTime(byteBuf)
+        case SerialzerDataType.DATE_TIME => _readDateTime(byteBuf)
         case SerialzerDataType.TIME => _readTime(byteBuf)
         case SerialzerDataType.LOCAL_DATE_TIME => _readLocalDateTime(byteBuf)
         case SerialzerDataType.LOCAL_TIME => _readLocalTime(byteBuf)
