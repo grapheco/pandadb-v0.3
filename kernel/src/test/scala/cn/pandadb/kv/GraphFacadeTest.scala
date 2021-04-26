@@ -100,7 +100,8 @@ class GraphFacadeTest {
     Assert.assertEquals(1, res.records.size)
 
     // test index
-    val indexId = graphFacade.createNodePropertyIndex("person", Set("name"))
+    graphFacade.createIndexOnNode("person", Set("name"))
+    val indexId = graphFacade.hasIndex(Set("person"), Set("name")).map(_._1).getOrElse(0)
     graphFacade.writeNodeIndexRecord(indexId, n1, "bob")
     res = graphFacade.cypher("match (n) where n.name='bob' return n")
     Assert.assertEquals(2, res.records.size)
@@ -209,8 +210,8 @@ class GraphFacadeTest {
         graphFacade.cypher(c).show()
     }
 
-    val indexId = indexStore.getIndexId(nodeStore.getLabelId("person"),
-      Array(nodeStore.getPropertyKeyId("age"))).get
+    val indexId = indexStore.getIndexId(nodeStore.getLabelId("person").get,
+      Array(nodeStore.getPropertyKeyId("age").get)).get
     graphFacade.close()
   }
 
@@ -230,8 +231,8 @@ class GraphFacadeTest {
     }
 
     val labelId = nodeStore.getLabelId("person")
-    val propIds = Array(nodeStore.getPropertyKeyId("age"))
-    val indexId = indexStore.getIndexId(labelId, propIds).get
+    val propIds = Array(nodeStore.getPropertyKeyId("age").get)
+    val indexId = indexStore.getIndexId(labelId.get, propIds).get
     println(indexId, labelId, propIds.toSet)
     indexStore.findFloatRange(indexId, 0, 100).foreach(println)
 //    graphFacade.close()
