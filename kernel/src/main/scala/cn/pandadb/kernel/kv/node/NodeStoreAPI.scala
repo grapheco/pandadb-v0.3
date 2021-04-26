@@ -24,11 +24,11 @@ class NodeStoreAPI(dbPath: String, rocksdbCfgPath: String = "default") extends N
 
   override def getLabelName(labelId: Int): Option[String] = nodeLabelName.key(labelId)
 
-  override def getLabelId(labelName: String): Int = nodeLabelName.id(labelName)
+  override def getLabelId(labelName: String): Option[Int] = nodeLabelName.id(labelName)
 
   override def getLabelIds(labelNames: Set[String]): Set[Int] = nodeLabelName.ids(labelNames)
 
-  override def addLabel(labelName: String): Int = nodeLabelName.id(labelName)
+  override def addLabel(labelName: String): Int = nodeLabelName.getOrAddId(labelName)
 
   override def allPropertyKeys(): Array[String] = propertyName.mapString2Int.keys.toArray
 
@@ -36,14 +36,16 @@ class NodeStoreAPI(dbPath: String, rocksdbCfgPath: String = "default") extends N
 
   override def getPropertyKeyName(keyId: Int): Option[String] = propertyName.key(keyId)
 
-  override def getPropertyKeyId(keyName: String): Int = propertyName.id(keyName)
+  override def getPropertyKeyId(keyName: String): Option[Int] = propertyName.id(keyName)
 
-  override def addPropertyKey(keyName: String): Int = propertyName.id(keyName)
+  override def addPropertyKey(keyName: String): Int = propertyName.getOrAddId(keyName)
 
-  override def getNodeById(nodeId: Long, label: Option[Int] = None): Option[StoredNodeWithProperty] = {
-    label.map(nodeStore.get(nodeId, _))
-      .getOrElse(nodeLabelStore.get(nodeId).map(nodeStore.get(nodeId, _).get))
-  }
+  override def getNodeById(nodeId: Long): Option[StoredNodeWithProperty] =
+    nodeLabelStore.get(nodeId).map(nodeStore.get(nodeId, _).get)
+
+  override def getNodeById(nodeId: Long, label: Int): Option[StoredNodeWithProperty] =
+    nodeStore.get(nodeId, label)
+
 
   override def getNodeLabelsById(nodeId: Long): Array[Int] = nodeLabelStore.getAll(nodeId)
 
@@ -100,6 +102,9 @@ class NodeStoreAPI(dbPath: String, rocksdbCfgPath: String = "default") extends N
   override def nodesCount: Long = nodeLabelStore.getNodesCount
 
   override def getNodesByLabel(labelId: Int): Iterator[StoredNodeWithProperty] = nodeStore.getNodesByLabel(labelId)
+
+  override def getNodeById(nodeId: Long, label: Option[Int]): Option[StoredNodeWithProperty] =
+    label.map(getNodeById(nodeId, _)).getOrElse(getNodeById(nodeId))
 
   override def getNodeIdsByLabel(labelId: Int): Iterator[Long] = nodeStore.getNodeIdsByLabel(labelId)
 

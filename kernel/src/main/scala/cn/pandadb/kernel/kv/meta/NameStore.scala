@@ -27,19 +27,12 @@ trait NameStore {
     id
   }
 
-  def key(id: Int): Option[String] = {
-    mapInt2String.get(id)
-  }
+  def key(id: Int): Option[String] = mapInt2String.get(id)
 
-  def id(labelName: String): Int = {
-    val opt = mapString2Int.get(labelName)
-    if (opt.isDefined) {
-      opt.get
-    }
-    else {
-      addToDB(labelName)
-    }
-  }
+  def id(labelName: String): Option[Int] = mapString2Int.get(labelName)
+
+  def getOrAddId(labelName: String): Int =
+    id(labelName).getOrElse(addToDB(labelName))
 
   def ids(keys: Set[String]): Set[Int] = {
     val newIds = keys.map {
