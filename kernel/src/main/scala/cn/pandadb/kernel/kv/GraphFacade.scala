@@ -371,7 +371,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     } else if (labels.size == 1) {
       labels.map(nodeLabelNameMap)
         .head
-        .map(nodeStore.getNodesByLabel)
+        .map(nodeStore.getNodesByLabel(_).filterNot(exact && _.labelIds.length > 1))
         .getOrElse(Iterator.empty)
     } else {
       //TODO statistics choose one min count
