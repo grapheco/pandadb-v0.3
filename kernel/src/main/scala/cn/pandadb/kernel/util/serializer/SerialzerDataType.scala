@@ -45,4 +45,7 @@ object SerialzerDataType extends Enumeration {
   val TIME = Value(12, "Time")
   val ARRAY_TIME = Value(-TIME.id, "Time")
 
+  val ANY = Value(127, "Any")
+  val ARRAY_ANY = Value(-ANY.id, "Array_Any")
+
 }

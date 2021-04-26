@@ -2,8 +2,6 @@ package cn.pandadb.kernel.util.serializer
 
 import io.netty.buffer.ByteBuf
 
-import java.io.ByteArrayOutputStream
-
 /**
  * @Author: Airzihao
  * @Description:
@@ -53,6 +51,13 @@ object ArraySerializer extends BaseSerializer {
         byteBuf.writeInt(len)
         array.asInstanceOf[Array[Boolean]].foreach(item => byteBuf.writeBoolean(item))
       }
+
+      case s: Array[_] => {
+        byteBuf.writeByte(SerialzerDataType.ARRAY_ANY.id)
+        val len: Int = array.length
+        byteBuf.writeInt(len)
+        array.foreach(item => _writeAny(item, byteBuf))
+      }
     }
   }
 
@@ -66,6 +71,7 @@ object ArraySerializer extends BaseSerializer {
       case SerialzerDataType.ARRAY_DOUBLE => new Array[Double](len).map(item => byteBuf.readDouble())
       case SerialzerDataType.ARRAY_FLOAT => new Array[Float](len).map(item => byteBuf.readFloat())
       case SerialzerDataType.ARRAY_BOOLEAN => new Array[Boolean](len).map(item => byteBuf.readBoolean())
+      case SerialzerDataType.ARRAY_ANY => new Array[Any](len).map(item => _readAny(byteBuf))
     }
   }
 
@@ -78,6 +84,7 @@ object ArraySerializer extends BaseSerializer {
       case SerialzerDataType.ARRAY_DOUBLE => new Array[Double](len).map(item => byteBuf.readDouble())
       case SerialzerDataType.ARRAY_FLOAT => new Array[Float](len).map(item => byteBuf.readFloat())
       case SerialzerDataType.ARRAY_BOOLEAN => new Array[Boolean](len).map(item => byteBuf.readBoolean())
+      case SerialzerDataType.ARRAY_ANY => new Array[Any](len).map(item => _readAny(byteBuf))
     }
   }
 

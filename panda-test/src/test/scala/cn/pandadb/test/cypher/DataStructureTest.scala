@@ -39,7 +39,8 @@ class DataStructureTest {
         | money11:[11,22,33,44],
         | money22:[22.1, 33.2, 44.3],
         | flags:[true, true, false],
-        | jobs:['teacher', 'singer', 'player']
+        | jobs:['teacher', 'singer', 'player'],
+        | hybridArr:[1, 2.0, "3.0", true]
         | }) return n
         |""".stripMargin).show()
 
@@ -53,6 +54,7 @@ class DataStructureTest {
     Assert.assertEquals(Set(22.1, 33.2, 44.3), res.properties("money22").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
     Assert.assertEquals(Set(true, true, false), res.properties("flags").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
     Assert.assertEquals(Set("teacher", "singer", "player"), res.properties("jobs").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
+    Assert.assertEquals(Set(1, 2.0, "3.0", true), res.properties("hybridArr").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
     Assert.assertEquals(Set("person", "people"), res.labels.toSet)
   }
 
