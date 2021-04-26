@@ -39,7 +39,8 @@ class DataStructureTest {
         | money11:[11,22,33,44],
         | money22:[22.1, 33.2, 44.3],
         | flags:[true, true, false],
-        | jobs:['teacher', 'singer', 'player']
+        | jobs:['teacher', 'singer', 'player'],
+        | hybridArr:[1, 2.0, "3.0", true]
         | }) return n
         |""".stripMargin).show()
 

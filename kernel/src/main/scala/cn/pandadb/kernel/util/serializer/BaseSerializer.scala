@@ -2,9 +2,7 @@ package cn.pandadb.kernel.util.serializer
 
 import cn.pandadb.kernel.blob.api.Blob
 import cn.pandadb.kernel.blob.impl.BlobFactory
-import cn.pandadb.kernel.kv.value.LynxDateTimeUtil
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
-import SerialzerDataType._
 
 import java.io.ByteArrayOutputStream
 import java.time._
@@ -168,6 +166,30 @@ trait BaseSerializer {
     byteBuf.writeInt(blobInBytes.length)
     byteBuf.writeBytes(blobInBytes)
   }
+
+  protected def _writeAny(value: Any, byteBuf: ByteBuf): Unit = {
+    value match {
+      case s: String => _writeString(s, byteBuf)
+      case s: Int => _writeInt(s, byteBuf)
+      case s: Long => _writeLong(s, byteBuf)
+      case s: Double => _writeDouble(s, byteBuf)
+      case s: Float => _writeFloat(s, byteBuf)
+      case s: Boolean => _writeBoolean(s, byteBuf)
+    }
+  }
+
+  protected def _readAny(byteBuf: ByteBuf): Any = {
+    val typeFlag = byteBuf.readByte().toInt
+    SerialzerDataType(typeFlag) match {
+      case SerialzerDataType.STRING => _readString(byteBuf)
+      case SerialzerDataType.INT => byteBuf.readInt()
+      case SerialzerDataType.LONG => byteBuf.readLong()
+      case SerialzerDataType.DOUBLE => byteBuf.readDouble()
+      case SerialzerDataType.FLOAT => byteBuf.readFloat()
+      case SerialzerDataType.BOOLEAN => byteBuf.readBoolean()
+    }
+  }
+
   def readIntQueue(byteBuf: ByteBuf): mutable.Queue[Int] = {
     val length = byteBuf.readInt()
     val queue: mutable.Queue[Int] = new mutable.Queue[Int]()
@@ -196,14 +218,14 @@ trait BaseSerializer {
     _writeString(zoneId, byteBuf)
   }
 
-  protected def _readDateTime(byteBuf: ByteBuf): ZonedDateTime = {
-    val epochSecondUTC: Long = byteBuf.readLong()
-    val nano: Int = byteBuf.readInt()
-    val zoneStoreType = byteBuf.readByte()
-    val zone: String = _readString(byteBuf)
-    val zoneId: ZoneId = LynxDateTimeUtil.parseZone(zone)
-    ZonedDateTime.ofInstant(Instant.ofEpochSecond(epochSecondUTC, nano), zoneId)
-  }
+//  protected def _readDateTime(byteBuf: ByteBuf): ZonedDateTime = {
+//    val epochSecondUTC: Long = byteBuf.readLong()
+//    val nano: Int = byteBuf.readInt()
+//    val zoneStoreType = byteBuf.readByte()
+//    val zone: String = _readString(byteBuf)
+//    val zoneId: ZoneId = LynxDateTimeUtil.parseZone(zone)
+//    ZonedDateTime.ofInstant(Instant.ofEpochSecond(epochSecondUTC, nano), zoneId)
+//  }
 
   protected def _writeLocalDateTime(value: LocalDateTime, byteBuf: ByteBuf): Unit = {
     byteBuf.writeByte(SerialzerDataType.LOCAL_DATE_TIME.id.toByte)
