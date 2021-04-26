@@ -1,9 +1,9 @@
-package cn.pandadb.test.cypher
+package cn.pandadb.test.cypher.emb
 
 import java.io.File
 
-import cn.pandadb.kernel.{GraphDatabaseBuilder, GraphService}
 import cn.pandadb.kernel.store.PandaNode
+import cn.pandadb.kernel.{GraphDatabaseBuilder, GraphService}
 import org.apache.commons.io.FileUtils
 import org.grapheco.lynx.LynxValue
 import org.junit.{After, Assert, Before, Test}
@@ -14,6 +14,7 @@ import org.junit.{After, Assert, Before, Test}
  *              2021-04-26: Int、Long、Boolean、String、Double、Float
  *                          Array[Int]、Array[Long]、Array[Boolean]
  *                          Array[String]、Array[Double]、Array[Float]
+ *              future: Blob
  * @author: LiamGao
  * @create: 2021-04-26
  */
