@@ -98,7 +98,7 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
     val id = lineArr(idIndex).toLong
     val labels: Array[String] = {
       if (labelIndex == -1){
-        Array[String]("default")
+        new Array[String](0)
       }
       else{
         lineArr(labelIndex).split(importCmd.arrayDelimeter)
