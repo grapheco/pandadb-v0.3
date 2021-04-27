@@ -620,7 +620,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     relsMap.foreach {
       rel => {
         //        addRelation(rel._2.relationType.get, rel._2.startId, rel._2.endId, rel._2.properties.mapValues(_.value))
-        addRelationFromPhysical(rel._2._id, rel._2.relationType.get, rel._2.startId, rel._2.endId, rel._2.properties.mapValues(_.value))
+        addRelationFromPhysical(rel._2._id, rel._2.relationType.get, rel._2.startId, rel._2.endId, rel._2.properties.mapValues(ValueMappings.lynxValueMappingToScala))
       }
     }
 
