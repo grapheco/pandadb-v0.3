@@ -1,0 +1,8 @@
+id:ID,labels:LABEL,prop1:string,prop2:int,prop3:float,prop4:string[],prop5:int[],prop6:boolean[],prop7:boolean
+1,[label1|label2|label3],abc,123,123.123,[abc|def|gh],[1|2|3],[true|false|true|true],false
+2,,abc,89549854,6556.45656546,[abc|def|gh],[1|2|3],[true|false|true|true],false
+3,label3,abc,123,123.123,,[1|2|3],[true|false|true|true],false
+errno,xx,ab,d
+4,[label1|label2|label3],abc,123,123.123,[abc|def|gh],[1|2|3],,false
+
+
