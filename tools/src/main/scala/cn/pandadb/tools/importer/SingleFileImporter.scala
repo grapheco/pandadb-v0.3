@@ -46,26 +46,26 @@ trait SingleFileImporter extends LazyLogging{
           case "double" => lineArr(index).toBoolean
           case "string" => lineArr(index).replace("\"", "")
           case "date" => lineArr(index).replace("\"", "")
-          case "long[]" => lineArr(index).trim.replace("{","")
-            .replace("}","")
+          case "long[]" => lineArr(index).trim.replace("[","")
+            .replace("]","")
             .split(cmd.arrayDelimeter)
             .map(item => item.toLong).toArray[Any]
-          case "int[]" => lineArr(index).trim.replace("{","")
-            .replace("}","")
+          case "int[]" => lineArr(index).trim.replace("[","")
+            .replace("]","")
             .split(cmd.arrayDelimeter)
             .map(item => item.toInt)
             .toArray[Any]
-          case "string[]" => lineArr(index).replace("{","")
-            .replace("}","")
+          case "string[]" => lineArr(index).replace("[","")
+            .replace("]","")
             .split(cmd.arrayDelimeter)
             .toArray[Any]
-          case "boolean[]" => lineArr(index).trim.replace("{","")
-            .replace("}","")
+          case "boolean[]" => lineArr(index).trim.replace("[","")
+            .replace("]","")
             .split(cmd.arrayDelimeter)
             .map(item => item.toBoolean)
             .toArray[Any]
-          case "double[]" => lineArr(index).trim.replace("{","")
-            .replace("}","")
+          case "double[]" => lineArr(index).trim.replace("[","")
+            .replace("]","")
             .split(cmd.arrayDelimeter)
             .map(item => item.toDouble)
             .toArray[Any]
