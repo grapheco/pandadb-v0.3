@@ -6,7 +6,7 @@ import cn.pandadb.kernel.kv.lynx.procedure.PandaFunction
 import org.grapheco.lynx.{CallableProcedure, LynxDate, LynxInteger, LynxString, LynxType, LynxValue, LynxRelationship}
 import org.opencypher.v9_0.util.symbols.CTRelationship
 
-case object TypeFunction extends PandaFunction{
+case object TypeFunction extends PandaFunction {
   override def name: String = ".type"
   val procedure = {
     Some(
@@ -15,7 +15,12 @@ case object TypeFunction extends PandaFunction{
         override val outputs: Seq[(String, LynxType)] = Seq("relationshipType"->CTRelationship)
 
         override def call(args: Seq[LynxValue]): Iterable[Seq[LynxValue]] = {
-          Iterable(Seq(LynxString(args.head.asInstanceOf[LynxRelationship].relationType.get)))
+          val value = args.head
+          value match {
+            case relationship: LynxRelationship =>
+              Iterable(Seq(LynxString(relationship.relationType.get)))
+            case other => throw new FunctionTypeException(other.cypherType.toString)
+          }
         }
       }
     )
@@ -23,4 +28,8 @@ case object TypeFunction extends PandaFunction{
   override def callableProcedure: Some[CallableProcedure] = {
     procedure
   }
+}
+
+class FunctionTypeException(msg: String) extends Exception{
+  override def getMessage: String = s"expect relationship but was $msg"
 }
