@@ -18,7 +18,11 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
   override val cmd: ImportCmd = importCmd
   override val importerFileReader: ImporterFileReader = new ImporterFileReader(file, importCmd.delimeter)
   override val headLine: Array[String] = importerFileReader.getHead.getAsArray
-  override val idIndex: Int = headLine.indexWhere(item => item.contains(":ID"))
+  override val idIndex: Int = {
+    val columnID = headLine.indexWhere(item => item.contains(":ID"))
+    if (columnID == -1) throw new Exception("No :ID Column")
+    columnID
+  }
   if (idIndex == -1) throw new Exception(s"no `:ID` specify in ${csvFile.getName} file")
   override val labelIndex: Int = headLine.indexWhere(item => item.contains(":LABEL"))
   override val estLineCount: Long = estLineCount(csvFile)
