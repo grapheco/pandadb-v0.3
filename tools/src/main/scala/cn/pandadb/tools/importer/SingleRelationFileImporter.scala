@@ -38,6 +38,7 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
           (-1, (-1, ""))
         } else {
           val pair = item._1.split(":")
+          if(pair(0)=="") throw new Exception(s"Missed property name in column ${item._2}.")
           val propId = PDBMetaData.getPropId(pair(0))
           val propType = "string"
           (item._2, (propId, propType))
