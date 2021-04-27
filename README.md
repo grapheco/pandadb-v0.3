@@ -65,32 +65,30 @@ use the shell script: `/usr/local/pandadb-server-<version>/bin/importer-panda.sh
 example: 
 ```
 ./importer-panda.sh --db-path=/pandadb 
---nodes=/testdata/node1.csv --nodes=testdata/node2.csv
---relationships=testdata/rels1.csv --relationships=testdata/rels2.csv
+--nodes=/testdata/node1.csv 
+--nodes=testdata/node2.csv
+--relationships=testdata/rels1.csv 
+--relationships=testdata/rels2.csv
 --delimeter="," --array-delimeter="|"
 ```
 *NOTICE:*
 1. node csv file
-    - *MUST* specify append `:ID` in your major column of csv file and this column must be *NUMBER* type.
-    - *OPTION* specify append `:LABEL` in your label column of csv file, default is `default`.  
+    - *MUST* contain `:ID` and `:LABEL` columns
 2. relationship csv file
-    - *MUST* contain `REL_ID` column in your relationship csv, if append `:IGNORE`, will not add this REL_ID as property.
-    - *MUST* specify append `:TYPE` in your relation type column of csv file.
-    - *MUST* specify append `:START_ID` and `:END_ID` for your columns of start node id and end node id
+    - *MUST* contain `REL_ID`,`:TYPE`,`START_ID`,`END_ID` columns  
 3. delimeter and array-delimeter cannot be the same
 4. supported data types
-    - int, long, boolean, double, string, date
+    - int, long, boolean, double, string
     - string[], int[], long[], boolean[], double[]
-    - BLOB
     - default: string
 
 node csv example:  
 | nodeId:ID | label:LABEL | name | jobs:string[] |  
 | :----: | :----: | :----: | :----: |  
-| 1 | person | alex | {teacher\|coder\|singer} |
+| 1 | person | alex | [teacher\|coder\|singer] |
   
 relationship csv example:
-| REL_ID:IGNORE | relation:TYPE | boss:START_ID | worker:END_ID |  
+| REL_ID | relation:TYPE | :START_ID | :END_ID |  
 | :----: | :----: | :----: | :----: |  
 | 1 | friend | 1 | 2 |
 

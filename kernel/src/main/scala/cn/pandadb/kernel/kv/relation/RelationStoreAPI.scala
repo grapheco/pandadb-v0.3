@@ -34,9 +34,9 @@ class RelationStoreAPI(dbPath: String, rocksdbCfgPath: String = "default") exten
 
   override def getRelationTypeName(relationTypeId: Int): Option[String] = relationTypeNameStore.key(relationTypeId)
 
-  override def getRelationTypeId(relationTypeName: String): Int = relationTypeNameStore.id(relationTypeName)
+  override def getRelationTypeId(relationTypeName: String): Option[Int] = relationTypeNameStore.id(relationTypeName)
 
-  override def addRelationType(relationTypeName: String): Int = relationTypeNameStore.id(relationTypeName)
+  override def addRelationType(relationTypeName: String): Int = relationTypeNameStore.getOrAddId(relationTypeName)
 
   override def allPropertyKeys(): Array[String] = propertyName.mapString2Int.keys.toArray
 
@@ -44,9 +44,9 @@ class RelationStoreAPI(dbPath: String, rocksdbCfgPath: String = "default") exten
 
   override def getPropertyKeyName(keyId: Int): Option[String] = propertyName.key(keyId)
 
-  override def getPropertyKeyId(keyName: String): Int = propertyName.id(keyName)
+  override def getPropertyKeyId(keyName: String): Option[Int] = propertyName.id(keyName)
 
-  override def addPropertyKey(keyName: String): Int = propertyName.id(keyName)
+  override def addPropertyKey(keyName: String): Int = propertyName.getOrAddId(keyName)
 
   override def getRelationById(relId: Long): Option[StoredRelationWithProperty] = relationStore.get(relId)
 

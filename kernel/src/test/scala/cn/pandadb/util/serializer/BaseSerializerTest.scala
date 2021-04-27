@@ -2,6 +2,7 @@ package cn.pandadb.util.serializer
 
 import cn.pandadb.kernel.util.Profiler.timing
 import cn.pandadb.kernel.util.serializer.BaseSerializer
+import io.netty.buffer.{ByteBuf, UnpooledByteBufAllocator, UnpooledHeapByteBuf}
 import org.junit.{Assert, Test}
 
 import java.io.File
@@ -21,12 +22,12 @@ class BaseSerializerTest {
 
   @Test
   def testArr(): Unit = {
-    val bytesArr = serializer.intArray2Bytes(arr)
-    Assert.assertArrayEquals(arr, serializer.bytes2IntArray(bytesArr))
+    val bytesArr = serializer.array2Bytes(arr)
+    Assert.assertArrayEquals(arr, serializer.bytes2Array(bytesArr).asInstanceOf[Array[Int]])
     println("serialize arr.")
-    timing(for (i<-1 to 10000000) serializer.intArray2Bytes(arr))
+    timing(for (i<-1 to 10000000) serializer.array2Bytes(arr))
     println("deserialize arr")
-    timing(for (i<-1 to 10000000) serializer.bytes2IntArray(bytesArr))
+    timing(for (i<-1 to 10000000) serializer.bytes2Array(bytesArr))
   }
 
   @Test
@@ -58,18 +59,6 @@ class BaseSerializerTest {
     _arrayContentEquals(array4, mMap(4).asInstanceOf[Array[String]])
     _arrayContentEquals(array5, mMap(5).asInstanceOf[Array[Boolean]])
     _arrayContentEquals(array6, mMap(6).asInstanceOf[Array[Float]])
-  }
-
-  @Test
-  def testIntArrayMap(): Unit = {
-    val bytesArr = serializer.intArrayMap2Bytes(arr, map)
-    val result = serializer.bytes2IntArrayMap(bytesArr)
-    Assert.assertArrayEquals(arr, result._1)
-    Assert.assertEquals(map, result._2)
-    println("serialize (int array, map).")
-    timing(for(i<-1 to 10000000) serializer.intArrayMap2Bytes(arr, map))
-    println("deserialize (int array, map).")
-    timing(for(i<-1 to 10000000) serializer.bytes2IntArrayMap(bytesArr))
   }
 
   @Test

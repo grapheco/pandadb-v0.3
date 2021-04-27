@@ -46,28 +46,29 @@ trait SingleFileImporter extends LazyLogging{
           case "double" => lineArr(index).toBoolean
           case "string" => lineArr(index).replace("\"", "")
           case "date" => lineArr(index).replace("\"", "")
-          case "long[]" => lineArr(index).trim.replace("{","")
-            .replace("}","")
+          case "long[]" => lineArr(index).trim.replace("[","")
+            .replace("]","")
             .split(cmd.arrayDelimeter)
-            .map(item => item.toLong).toArray[Any]
-          case "int[]" => lineArr(index).trim.replace("{","")
-            .replace("}","")
+            .map(item => item.trim.toLong).toArray[Any]
+          case "int[]" => lineArr(index).trim.replace("[","")
+            .replace("]","")
             .split(cmd.arrayDelimeter)
-            .map(item => item.toInt)
+            .map(item => item.trim.toInt)
             .toArray[Any]
-          case "string[]" => lineArr(index).replace("{","")
-            .replace("}","")
+          case "string[]" => lineArr(index).replace("[","")
+            .replace("]","")
             .split(cmd.arrayDelimeter)
+            .map(f => f.trim)
             .toArray[Any]
-          case "boolean[]" => lineArr(index).trim.replace("{","")
-            .replace("}","")
+          case "boolean[]" => lineArr(index).trim.replace("[","")
+            .replace("]","")
             .split(cmd.arrayDelimeter)
-            .map(item => item.toBoolean)
+            .map(item => item.trim.toBoolean)
             .toArray[Any]
-          case "double[]" => lineArr(index).trim.replace("{","")
-            .replace("}","")
+          case "double[]" => lineArr(index).trim.replace("[","")
+            .replace("]","")
             .split(cmd.arrayDelimeter)
-            .map(item => item.toDouble)
+            .map(item => item.trim.toDouble)
             .toArray[Any]
           case _ => lineArr(index).replace("\"", "")
         }
