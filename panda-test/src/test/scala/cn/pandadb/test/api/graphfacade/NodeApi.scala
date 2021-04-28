@@ -72,14 +72,14 @@ class NodeApi {
     Assert.assertEquals(2147483648L, n1.properties("long").value)
     Assert.assertEquals(233.3, n1.properties("double").value)
     Assert.assertEquals(true, n1.properties("boolean").value)
-    Assert.assertEquals(Set(1,2,3), n1.properties("intArray").asInstanceOf[LynxList].value.toArray.map(f => f.value).toSet)
-    Assert.assertEquals(Set("aa", "bb", "cc"), n1.properties("stringArray").asInstanceOf[LynxList].value.toArray.map(f => f.value).toSet)
-    Assert.assertEquals(Set(2147483648L, 2147483649L, 21474836488L), n1.properties("longArray").asInstanceOf[LynxList].value.toArray.map(f => f.value).toSet)
-    Assert.assertEquals(Set(true, false, true), n1.properties("booleanArray").asInstanceOf[LynxList].value.toArray.map(f => f.value).toSet)
-    Assert.assertEquals(Set(1.1, 2.2, 55555555.5), n1.properties("doubleArray").asInstanceOf[LynxList].value.toArray.map(f => f.value).toSet)
+    Assert.assertEquals(List(1,2,3), n1.properties("intArray").asInstanceOf[LynxList].value.toArray.map(f => f.value).toList)
+    Assert.assertEquals(List("aa", "bb", "cc"), n1.properties("stringArray").asInstanceOf[LynxList].value.toArray.map(f => f.value).toList)
+    Assert.assertEquals(List(2147483648L, 2147483649L, 21474836488L), n1.properties("longArray").asInstanceOf[LynxList].value.toArray.map(f => f.value).toList)
+    Assert.assertEquals(List(true, false, true), n1.properties("booleanArray").asInstanceOf[LynxList].value.toArray.map(f => f.value).toList)
+    Assert.assertEquals(List(1.1, 2.2, 55555555.5), n1.properties("doubleArray").asInstanceOf[LynxList].value.toArray.map(f => f.value).toList)
 
-    Assert.assertEquals(Set("person"), n2.labels.toSet)
-    Assert.assertEquals(Set("person", "singer", "fighter", "star"), n3.labels.toSet)
+    Assert.assertEquals(List("person"), n2.labels.toList)
+    Assert.assertEquals(List("person", "singer", "fighter", "star"), n3.labels.toList)
 
     val n4 = graphFacade.getNodesByLabels(Seq("person"), false)
     Assert.assertEquals(2, n4.size)
@@ -122,11 +122,11 @@ class NodeApi {
     Assert.assertEquals(2147483648L, n1.properties("long").value)
     Assert.assertEquals(233.3, n1.properties("double").value)
     Assert.assertEquals(true, n1.properties("boolean").value)
-    Assert.assertEquals(Set(1,2,3), n1.properties("intArray").asInstanceOf[LynxList].value.toArray.map(f => f.value).toSet)
-    Assert.assertEquals(Set("aa", "bb", "cc"), n1.properties("stringArray").asInstanceOf[LynxList].value.toArray.map(f => f.value).toSet)
-    Assert.assertEquals(Set(2147483648L, 2147483649L, 21474836488L), n1.properties("longArray").asInstanceOf[LynxList].value.toArray.map(f => f.value).toSet)
-    Assert.assertEquals(Set(true, false, true), n1.properties("booleanArray").asInstanceOf[LynxList].value.toArray.map(f => f.value).toSet)
-    Assert.assertEquals(Set(1.1, 2.2, 55555555.5), n1.properties("doubleArray").asInstanceOf[LynxList].value.toArray.map(f => f.value).toSet)
+    Assert.assertEquals(List(1,2,3), n1.properties("intArray").asInstanceOf[LynxList].value.toArray.map(f => f.value).toList)
+    Assert.assertEquals(List("aa", "bb", "cc"), n1.properties("stringArray").asInstanceOf[LynxList].value.toArray.map(f => f.value).toList)
+    Assert.assertEquals(List(2147483648L, 2147483649L, 21474836488L), n1.properties("longArray").asInstanceOf[LynxList].value.toArray.map(f => f.value).toList)
+    Assert.assertEquals(List(true, false, true), n1.properties("booleanArray").asInstanceOf[LynxList].value.toArray.map(f => f.value).toList)
+    Assert.assertEquals(List(1.1, 2.2, 55555555.5), n1.properties("doubleArray").asInstanceOf[LynxList].value.toArray.map(f => f.value).toList)
     Assert.assertEquals(None, nodeStore.getPropertyKeyId("not exist"))
 
 
@@ -167,7 +167,7 @@ class NodeApi {
     graphFacade.nodeRemoveLabel(nodeId1, "not exist")
     Assert.assertEquals(None, nodeStore.getLabelId("not exist"))
     val n1 = graphFacade.nodeAt(nodeId1).get
-    Assert.assertEquals(Set("first1","first2"), n1.labels.toSet)
+    Assert.assertEquals(List("first1","first2"), n1.labels.toList)
     Assert.assertEquals(None, nodeStore.getLabelId("not exist"))
 
     println(n1.labels)
