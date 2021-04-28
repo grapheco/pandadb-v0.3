@@ -38,12 +38,12 @@ trait SingleFileImporter extends LazyLogging{
     propHeadMap.foreach(kv => {
       val index = kv._1
       val propId = kv._2._1
-      val propValue: Any = {
+      val propValue: Any = try {
         kv._2._2 match {
           case "long" => lineArr(index).toLong
           case "int" => lineArr(index).toInt
           case "boolean" => lineArr(index).toBoolean
-          case "double" => lineArr(index).toBoolean
+          case "double" => lineArr(index).toDouble
           case "string" => lineArr(index).replace("\"", "")
           case "date" => lineArr(index).replace("\"", "")
           case "long[]" => lineArr(index).trim.replace("[","")
@@ -72,6 +72,8 @@ trait SingleFileImporter extends LazyLogging{
             .toArray[Any]
           case _ => lineArr(index).replace("\"", "")
         }
+      } catch {
+        case ex: Exception => throw new Exception(s"Bad content at ${lineArr.mkString(",")} in ${csvFile.getAbsoluteFile}, error occurs at column $index.")
       }
       propMap += (propId -> propValue)
     })
