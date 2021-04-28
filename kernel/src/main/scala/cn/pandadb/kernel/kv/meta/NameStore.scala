@@ -14,9 +14,9 @@ trait NameStore {
   val key2ByteArrayFunc: (Int) => Array[Byte]
   val keyPrefixFunc: () => Array[Byte]
 
-  val idGenerator: AtomicInteger = new AtomicInteger(initInt)
-  val mapString2Int: mutable.Map[String, Int] = mutable.Map[String, Int]()
-  val mapInt2String: mutable.Map[Int, String] = mutable.Map[Int, String]()
+  var idGenerator: AtomicInteger = new AtomicInteger(initInt)
+  var mapString2Int: mutable.Map[String, Int] = mutable.Map[String, Int]()
+  var mapInt2String: mutable.Map[Int, String] = mutable.Map[Int, String]()
 
   private def addToDB(labelName: String): Int = {
     val id = idGenerator.incrementAndGet()
@@ -57,7 +57,10 @@ trait NameStore {
   }
 
   def loadAll(): Unit = {
-    var maxId: Int = 0
+    idGenerator = new AtomicInteger(initInt)
+    mapString2Int = mutable.Map[String, Int]()
+    mapInt2String = mutable.Map[Int, String]()
+    var maxId: Int = initInt
     val prefix = keyPrefixFunc()
     val iter = db.newIterator()
     iter.seek(prefix)

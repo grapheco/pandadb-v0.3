@@ -22,7 +22,7 @@ class MetaIdManager(maxSize: Int) extends IdMapManager {
 trait IdMapManager {
 
   protected var MAX_SIZE: Int
-  protected var _count: AtomicInteger = new AtomicInteger(0)
+  protected var _count: AtomicInteger = new AtomicInteger(1)
   protected var _availableIdQueue: mutable.Queue[Int] = this.synchronized(mutable.Queue[Int]())
   protected var _id2Name: Map[Int, String] = Map[Int, String]()
   protected var _name2Id: Map[String, Int] = Map[String, Int]()

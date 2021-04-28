@@ -1,8 +1,5 @@
 package cn.pandadb.test.api.graphfacade
 
-import java.io.File
-import java.util.concurrent.atomic.AtomicInteger
-
 import cn.pandadb.kernel.kv.GraphFacade
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.Statistics
@@ -13,6 +10,8 @@ import org.apache.commons.io.FileUtils
 import org.grapheco.lynx.{LynxList, LynxValue}
 import org.junit.{After, Assert, Before, Test}
 
+import java.io.File
+import java.util.concurrent.atomic.AtomicInteger
 import scala.io.Source
 
 class NodeApi {
@@ -93,24 +92,14 @@ class NodeApi {
     val n7 = graphFacade.getNodesByLabels(Seq(),false)
 
     Assert.assertEquals(3, n7.size)
-
-
-    //graphFacade.filterNodes()
-
-
-    //n6.foreach(println)
-
-   // graphFacade.filterNodes()
-
-    /*
-    TODO: done finished
+      /*
+   TODO: done finished
       0. should test boundary value
       1. API: getNodesByLabel, test it, exist and not exist situation
       2. API: filterNodes, test it, test all kinds of properties we support (no need test)
       3. show your talent
      */
   }
-
 
   @Test
   def testUpdateNodeProperty(): Unit ={
@@ -149,8 +138,6 @@ class NodeApi {
     nodeId3 = graphFacade.addNode(Map(), "person", "singer", "fighter", "star")
 */
 
-
-
     /*
     TODO:
       0. should test boundary value （no need to test）
@@ -188,12 +175,14 @@ class NodeApi {
 
   @Test
   def testDeleteNode(): Unit ={
-
-
+    val res1 = graphFacade.nodeAt(nodeId1)
     graphFacade.deleteNode(nodeId1)
-    val res = graphFacade.nodeAt(nodeId1)
-
-    Assert.assertEquals(None,  res)
+    nodeStore.allLabelIds().foreach(id => println(id, nodeStore.getLabelName(id)))
+    nodeStore.allPropertyKeyIds().foreach(id => println(id, nodeStore.getPropertyKeyName(id)))
+    val labels = nodeStore.getNodeLabelsById(nodeId1)
+    graphFacade.deleteNode(nodeId1)
+    val res2 = graphFacade.nodeAt(nodeId1)
+    Assert.assertEquals(None,  res2)
 
     /*
     TODO:

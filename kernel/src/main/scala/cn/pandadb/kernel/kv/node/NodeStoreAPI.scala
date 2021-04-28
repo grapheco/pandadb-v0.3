@@ -16,7 +16,7 @@ class NodeStoreAPI(dbPath: String, rocksdbCfgPath: String = "default") extends N
   private val propertyName = new PropertyNameStore(metaDB)
   private val idGenerator = new IdGenerator(nodeLabelDB, 200)
 
-  val NONE_LABEL_ID: Int = -1
+  val NONE_LABEL_ID: Int = 0
 
   override def allLabels(): Array[String] = nodeLabelName.mapString2Int.keys.toArray
 
@@ -40,8 +40,11 @@ class NodeStoreAPI(dbPath: String, rocksdbCfgPath: String = "default") extends N
 
   override def addPropertyKey(keyName: String): Int = propertyName.getOrAddId(keyName)
 
-  override def getNodeById(nodeId: Long): Option[StoredNodeWithProperty] =
+  override def getNodeById(nodeId: Long): Option[StoredNodeWithProperty] ={
+//    val labelId = nodeLabelStore.get(nodeId).get
+//    nodeStore.get(nodeId, labelId)
     nodeLabelStore.get(nodeId).map(nodeStore.get(nodeId, _).get)
+  }
 
   override def getNodeById(nodeId: Long, label: Int): Option[StoredNodeWithProperty] =
     nodeStore.get(nodeId, label)
