@@ -22,7 +22,7 @@ object MapSerializer extends BaseSerializer {
   def readMap(byteBuf: ByteBuf): Map[Int, Any] = {
     val propNum: Int = byteBuf.readByte().toInt
     val propsMap: Map[Int, Any] = new Array[Int](propNum).map(item => {
-      val propId: Int = byteBuf.readShort().toInt
+      val propId: Int = byteBuf.readInt()
       val propType: Int = byteBuf.readByte().toInt
       val propValue = SerialzerDataType(propType) match {
         case SerialzerDataType.STRING => _readString(byteBuf)
@@ -54,7 +54,7 @@ object MapSerializer extends BaseSerializer {
   }
 
   def writeKV(keyId: Int, value: Any, byteBuf: ByteBuf): Any = {
-    byteBuf.writeShort(keyId)
+    byteBuf.writeInt(keyId)
     value match {
       case s: Boolean => _writeBoolean(value.asInstanceOf[Boolean], byteBuf)
       case s: Double => _writeDouble(value.asInstanceOf[Double], byteBuf)
