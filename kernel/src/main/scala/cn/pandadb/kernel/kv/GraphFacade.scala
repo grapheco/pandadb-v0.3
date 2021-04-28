@@ -407,8 +407,8 @@ class GraphFacade(nodeStore: NodeStoreSPI,
       .map(res => (res._1, nodeStore.getLabelName(res._2).get, res._3.map(nodeStore.getPropertyKeyName(_).get), res._4))
   }
 
-  def findNodeByIndex(indexId: Int, value: Any): Iterator[StoredNodeWithProperty] =
-    indexStore.find(indexId, value).flatMap(nodeStore.getNodeById(_))
+  def findNodeByIndex(indexId: Int, value: Any): Iterator[PandaNode] =
+    indexStore.find(indexId, value).flatMap(nodeStore.getNodeById(_)).map(mapNode)
 
   override def getProcedure(prefix: List[String], name: String): Option[CallableProcedure] = {
     val functionName = s"${prefix.mkString(".")}.${name}".toLowerCase()
@@ -577,7 +577,6 @@ class GraphFacade(nodeStore: NodeStoreSPI,
             indexInfo => // fixme ------------------------------------only get one prop ↓
               logger.info("seek index: " + indexInfo)
               findNodeByIndex(indexInfo._1, nodeFilter.properties.getOrElse(indexInfo._3.head, null).value)
-                .map(mapNode)
                 .filter(x => filterNodes(x, nodeFilter.properties))
           }
           .getOrElse {
