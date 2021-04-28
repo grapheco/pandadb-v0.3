@@ -54,7 +54,7 @@ class NodeStoreAPI(dbPath: String, rocksdbCfgPath: String = "default") extends N
   override def nodeAddLabel(nodeId: Long, labelId: Int): Unit =
     getNodeById(nodeId)
       .foreach{ node =>
-        val labels = node.labelIds ++ Array(labelId)
+        val labels = (node.labelIds ++ Array(labelId)).distinct
         nodeLabelStore.set(nodeId, labelId)
         nodeStore.set(new StoredNodeWithProperty(node.id, labels, node.properties))
       }

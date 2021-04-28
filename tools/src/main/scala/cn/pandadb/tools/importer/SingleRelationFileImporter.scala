@@ -23,8 +23,16 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
   override val cmd: ImportCmd = importCmd
   override val importerFileReader: ImporterFileReader = new ImporterFileReader(csvFile, importCmd.delimeter)
   override val headLine: Array[String] = importerFileReader.getHead.getAsArray
-  override val idIndex: Int = headLine.indexWhere(item => item.contains("REL_ID"))
-  override val labelIndex: Int = headLine.indexWhere(item => item.contains(":TYPE"))
+  override val idIndex: Int = {
+    val columnId: Int = headLine.indexWhere(item => item.contains("REL_ID"))
+    if (columnId == -1) throw new Exception("No :REL_ID column.")
+    columnId
+  }
+  override val labelIndex: Int = {
+    val columnId: Int = headLine.indexWhere(item => item.contains(":TYPE"))
+    if (columnId == -1) throw new Exception("No :TYPE column.")
+    columnId
+  }
   override val estLineCount: Long = estLineCount(csvFile)
   override val taskCount: Int = globalArgs.coreNum/4
 
@@ -38,6 +46,7 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
           (-1, (-1, ""))
         } else {
           val pair = item._1.split(":")
+          if(pair(0)=="") throw new Exception(s"Missed property name in column ${item._2}.")
           val propId = PDBMetaData.getPropId(pair(0))
           val propType = "string"
           (item._2, (propId, propType))

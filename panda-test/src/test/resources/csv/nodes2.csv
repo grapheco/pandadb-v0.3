@@ -1,0 +1,7 @@
+id:ID,labels:LABEL,prop1:string,prop2,prop3:float,prop4:string[],prop5:int[],prop6:boolean[],prop7:boolean
+8,person,abc,123,123.123,abc|def|gh,1|2|3,true|false|true|true,false
+9,boy,aaa,89549854,6556.45656546,abc|def|gh,1|2|3,true|false|true|true,false
+10,label3,abc,123,123.123,,1|2|3,true|false|true|true,false
+11,worker,abc,123,123.123,abc|def|gh,1|2|3,,false
+
+
