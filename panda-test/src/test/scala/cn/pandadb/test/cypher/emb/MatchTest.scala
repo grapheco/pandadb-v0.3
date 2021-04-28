@@ -4,7 +4,7 @@ import java.io.File
 
 import cn.pandadb.kernel.{GraphDatabaseBuilder, GraphService}
 import org.apache.commons.io.FileUtils
-import org.grapheco.lynx.{LynxNode, LynxValue}
+import org.grapheco.lynx.{LynxNode, LynxRelationship, LynxValue}
 import org.junit.{After, Assert, Before, Test}
 
 /**
@@ -17,13 +17,24 @@ class MatchTest {
   val dbPath = "./testdata/emb"
   var db: GraphService = _
 
+  var id1: Long = _
+  var id2: Long = _
+  var id3: Long = _
+  var n1: Long = _
+  var n2: Long = _
+  var n3: Long = _
+  var n4: Long = _
+  var n5: Long = _
+  var m1: Long = _
+  var m2: Long = _
+
   @Before
   def init(): Unit ={
     FileUtils.deleteDirectory(new File(dbPath))
     FileUtils.forceMkdir(new File(dbPath))
     db = GraphDatabaseBuilder.newEmbeddedDatabase(dbPath)
 
-    val id1 = db.addNode(Map("name"->"alex",
+     id1 = db.addNode(Map("name"->"alex",
       "storage"->1000000,
       "salary"->2333.33,
       "isCoder"->true,
@@ -32,24 +43,25 @@ class MatchTest {
       "bools"->Array[Boolean](true, true, false, false),
       "jobs"->Array[String]("teacher", "coder", "singer")), "person")
 
-    val id2 = db.addNode(Map("name"->"bob",
+     id2 = db.addNode(Map("name"->"bob",
       "storage"->1000000,
       "indexes"->Array[Int](1,2,2,2,2)), "people")
 
-    val id3 = db.addNode(Map("name"->"clause",
+     id3 = db.addNode(Map("name"->"clause",
       "storage"->66666,
       "isCoder"->true,
       "indexes"->Array[Int](1,2,3,4,5)), "person")
+
     db.addRelation("TMP", id1, id2, Map())
     db.addRelation("TMP", id2, id3, Map("index"->2))
 
-    val n1 = db.addNode(Map("name"->"Oliver Stone", "sex"->"male"), "Person","Director")
-    val n2 = db.addNode(Map("name"->"Michael Douglas"), "Person")
-    val n3 = db.addNode(Map("name"->"Charlie Sheen"), "Person")
-    val n4 = db.addNode(Map("name"->"Martin Sheen"), "Person")
-    val n5 = db.addNode(Map("name"->"Rob Reiner"), "Person", "Director")
-    val m1 = db.addNode(Map("title"->"Wall Street", "year"->1987), "Movie")
-    val m2 = db.addNode(Map("title"->"The American President"), "Movie")
+    n1 = db.addNode(Map("name"->"Oliver Stone", "sex"->"male"), "Person","Director")
+    n2 = db.addNode(Map("name"->"Michael Douglas"), "Person")
+    n3 = db.addNode(Map("name"->"Charlie Sheen"), "Person")
+    n4 = db.addNode(Map("name"->"Martin Sheen"), "Person")
+    n5 = db.addNode(Map("name"->"Rob Reiner"), "Person", "Director")
+    m1 = db.addNode(Map("title"->"Wall Street", "year"->1987), "Movie")
+    m2 = db.addNode(Map("title"->"The American President"), "Movie")
 
     val directedR1 = db.addRelation("DIRECTED", n1, m1, Map())
     val directedR2 = db.addRelation("DIRECTED", n5, m2, Map())
@@ -115,6 +127,19 @@ class MatchTest {
 
     val res7 = db.cypher("match data = (n)-[r1]->(m)-[r2]->(q) return count(data)").records().next()("count(data)").asInstanceOf[LynxValue].value
     Assert.assertEquals(1L, res7)
+
+    val res8 = db.cypher("match (n:person)-[r]->(m:people) return r").records().next()("r").asInstanceOf[LynxRelationship]
+    Assert.assertEquals(id1, res8.startNodeId.value)
+    Assert.assertEquals(id2, res8.endNodeId.value)
+    Assert.assertEquals("TMP", res8.relationType.get)
+
+    val res9 = db.cypher("match (n)-[r]->(m) where n.name='Rob Reiner' return r").records().next()("r").asInstanceOf[LynxRelationship]
+    Assert.assertEquals(n5, res9.startNodeId.value)
+    Assert.assertEquals(m2, res9.endNodeId.value)
+    Assert.assertEquals("DIRECTED", res9.relationType.get)
+
+    val res10 = db.cypher("match (n)-[r]->(m) where n.name='XXX' return r").records().toList
+    Assert.assertEquals(0, res10.size)
   }
 
   @After

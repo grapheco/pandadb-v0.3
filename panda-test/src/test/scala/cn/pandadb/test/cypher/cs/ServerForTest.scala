@@ -13,8 +13,8 @@ import org.apache.commons.io.FileUtils
  */
 object ServerForTest {
   def main(args: Array[String]): Unit = {
-    FileUtils.deleteDirectory(new File("./testdata/server"))
+    FileUtils.deleteDirectory(new File("./panda-test/testdata/server"))
     val server = new PandaServerBootstrapper()
-    server.start(new File("./testdata/pandadb.conf"))
+    server.start(new File("./panda-test/testdata/pandadb.conf"))
   }
 }
