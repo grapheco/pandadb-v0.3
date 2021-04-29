@@ -8,10 +8,14 @@ import cn.pandadb.kernel.util.serializer.{BaseSerializer, NodeSerializer}
 
 class NodeStore(db: KeyValueDB) {
   // [labelId,nodeId]->[Node]
+  val NONE_LABEL_ID: Int = 0
 
-  def set(nodeId: NodeId, labelIds: Array[LabelId], value: Array[Byte]): Unit =
-    labelIds.foreach(labelId =>
-      db.put(KeyConverter.toNodeKey(labelId, nodeId), value))
+  def set(nodeId: NodeId, labelIds: Array[LabelId], value: Array[Byte]): Unit = {
+    if (labelIds.nonEmpty)
+      labelIds.foreach(labelId => db.put(KeyConverter.toNodeKey(labelId, nodeId), value))
+    else
+      db.put(KeyConverter.toNodeKey(NONE_LABEL_ID, nodeId), value)
+  }
 
   def set(labelId: LabelId, node: StoredNodeWithProperty): Unit =
     db.put(KeyConverter.toNodeKey(labelId, node.id), NodeSerializer.serialize(node))
