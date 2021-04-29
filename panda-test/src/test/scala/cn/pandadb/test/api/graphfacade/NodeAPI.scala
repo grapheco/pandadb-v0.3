@@ -14,7 +14,7 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 import scala.io.Source
 
-class NodeApi {
+class NodeAPI {
   var nodeStore: NodeStoreSPI = _
   var relationStore: RelationStoreSPI = _
   var indexStore: IndexStoreAPI = _
@@ -84,21 +84,10 @@ class NodeApi {
     Assert.assertEquals(2, n4.size)
     val n5 = graphFacade.getNodesByLabels(Seq("person1"), false)
     Assert.assertEquals(0, n5.size)
-
     val n6 = graphFacade.getNodesByLabels(Seq("person"), true)
     Assert.assertEquals(1, n6.size)
-
-
     val n7 = graphFacade.getNodesByLabels(Seq(),false)
-
     Assert.assertEquals(3, n7.size)
-      /*
-   TODO: done finished
-      0. should test boundary value
-      1. API: getNodesByLabel, test it, exist and not exist situation
-      2. API: filterNodes, test it, test all kinds of properties we support (no need test)
-      3. show your talent
-     */
   }
 
   @Test
@@ -118,31 +107,10 @@ class NodeApi {
     Assert.assertEquals(List(1.1, 2.2, 55555555.5), n1.properties("doubleArray").asInstanceOf[LynxList].value.toArray.map(f => f.value).toList)
     Assert.assertEquals(None, nodeStore.getPropertyKeyId("not exist"))
 
-
-    graphFacade.nodeSetProperty(nodeId1, "newValue", Long.MinValue- 1)
-
-    nodeStore.allPropertyKeys().map(println)
+    graphFacade.nodeSetProperty(nodeId1, "newValue", Long.MinValue - 1)
     val n3 = graphFacade.nodeAt(nodeId1).get
 
     Assert.assertEquals(n3.properties("newValue"), LynxValue(Long.MaxValue))
-
-
-   /* nodeId1 = graphFacade.addNode(
-      Map("string"->longText, "int"->2147483647, "long"->2147483648L, "double"->233.3, "boolean"->true,
-        "intArray"->Array[Int](1,2,3),
-        "stringArray"->Array[String]("aa", "bb", "cc"),
-        "longArray"->Array[Long](2147483648L, 2147483649L, 21474836488L),
-        "booleanArray"->Array[Boolean](true, false, true),
-        "doubleArray"->Array[Double](1.1, 2.2, 55555555.5)))
-    nodeId2 = graphFacade.addNode(Map(), "person")
-    nodeId3 = graphFacade.addNode(Map(), "person", "singer", "fighter", "star")
-*/
-
-    /*
-    TODO:
-      0. should test boundary value （no need to test）
-      1. update exist node value to another, like: codeBaby --> codeMaster
-     */
   }
 
   @Test
@@ -151,92 +119,33 @@ class NodeApi {
     graphFacade.nodeAddLabel(nodeId1, "first1")
     graphFacade.nodeAddLabel(nodeId1, "first1")
     graphFacade.nodeAddLabel(nodeId1, "first2")
+
     graphFacade.nodeRemoveLabel(nodeId1, "not exist")
     Assert.assertEquals(None, nodeStore.getLabelId("not exist"))
+
     val n1 = graphFacade.nodeAt(nodeId1).get
     Assert.assertEquals(List("first1","first2"), n1.labels.toList)
-    Assert.assertEquals(None, nodeStore.getLabelId("not exist"))
-
-    println(n1.labels)
 
     val res = graphFacade.nodeHasLabel(nodeId1, "not exist")
-
     Assert.assertEquals(false, res)
-
-
-
-
-    /*
-    TODO:
-      0. should test boundary value
-      1. API: nodeHasLabel, test it, exist and not exist situation
-     */
   }
 
   @Test
   def testDeleteNode(): Unit ={
-    val res1 = graphFacade.nodeAt(nodeId1)
     graphFacade.deleteNode(nodeId1)
-    nodeStore.allLabelIds().foreach(id => println(id, nodeStore.getLabelName(id)))
-    nodeStore.allPropertyKeyIds().foreach(id => println(id, nodeStore.getPropertyKeyName(id)))
-    val labels = nodeStore.getNodeLabelsById(nodeId1)
     graphFacade.deleteNode(nodeId1)
     val res2 = graphFacade.nodeAt(nodeId1)
-    Assert.assertEquals(None,  res2)
-
-    /*
-    TODO:
-     0. should test boundary value
-     1. delete exist node and then search
-     2. delete not exist node then watch is there any exception
-     */
+    Assert.assertEquals(None, res2)
   }
 
   @Test
   def testNodeIterator(): Unit ={
-    /*
-    TODO:
-      0. should test boundary value
-      1. iterator's node's label and properties is correct, node properties should be complicated
-      2. show your talent
-     */
+    graphFacade.nodes().foreach(node => Assert.assertEquals(graphFacade.nodeAt(node.id).get, node))
   }
 
   @After
   def close(): Unit = {
     graphFacade.close()
-  }
-
-
-
-}
-
-trait p1{
-  val initInt: Int
-  val idGenerator: AtomicInteger = new AtomicInteger(initInt)
-  def op(): Int ={
-    idGenerator.incrementAndGet()
-  }
-}
-class p2 extends p1{
-  override val initInt = 20
-  override val idGenerator: AtomicInteger = new AtomicInteger(initInt)
-}
-
-class p3 extends p1{
-  override val initInt = 30
-  override val idGenerator: AtomicInteger = new AtomicInteger(initInt)
-}
-
-class ap {
-  @Test
-  def testIO(): Unit ={
-    val s2 = new p2
-    val s3 = new p3
-    println(s2.op)
-    println(s2.op)
-    println(s2.op)
-    println(s3.op)
   }
 }
 
