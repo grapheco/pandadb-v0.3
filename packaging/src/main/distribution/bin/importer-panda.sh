@@ -35,11 +35,11 @@ do
   elif [[ $arg == "--nodes"* ]]
   then
     NODES[$NODESCOUNT]=$arg
-        NODESCOUNT+=1
+        let NODESCOUNT++
   elif [[ $arg == "--relationships"* ]]
   then
     RELS[$RELSCOUNT]=$arg
-        RELSCOUNT+=1
+        let RELSCOUNT++
   elif [[ $arg == "--delimeter"* ]]
   then
     DELIMETER=$arg
