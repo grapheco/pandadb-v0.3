@@ -142,12 +142,16 @@ class CreateRelationTest {
   def testRelationWithReturn(): Unit = {
     val n1 = db.addNode(Map("name"->"A", "sex"->"male"), "Person","Director")
     val n2 = db.addNode(Map("name"->"B"), "Person")
+    val n3 = db.addNode(Map("name"->"C"), "Person")
+    val n4 = db.addNode(Map("name"->"D"), "Person")
 
     val cypher = """MATCH
+                   |  (b:Person{name:'B'}),
                    |  (a:Person{name:'A'}),
-                   |  (b:Person{name:'B'})
+                   |  (d:Person{name:'D'}),
+                   |  (c:Person{name:'C'})
                    |CREATE (a)-[r1:RELTYPE{abc:[1,2,3]}]->(b)
-                   |RETURN r1,a,b""".stripMargin
+                   |RETURN c,r1,a,b,d""".stripMargin
 
     val res = db.cypher(cypher).records().toList
     Assert.assertEquals(1, res.size)
@@ -158,8 +162,12 @@ class CreateRelationTest {
 
     val nodeA = res(0).get("a").get.asInstanceOf[LynxNode]
     val nodeB = res(0).get("b").get.asInstanceOf[LynxNode]
+    val nodeC = res(0).get("c").get.asInstanceOf[LynxNode]
+    val nodeD = res(0).get("d").get.asInstanceOf[LynxNode]
     Assert.assertEquals(n1, nodeA.id.value)
     Assert.assertEquals(n2, nodeB.id.value)
+    Assert.assertEquals(n3, nodeC.id.value)
+    Assert.assertEquals(n4, nodeD.id.value)
   }
 
 
