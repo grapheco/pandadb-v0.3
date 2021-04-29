@@ -4,7 +4,7 @@ import java.io.File
 
 import cn.pandadb.kernel.{GraphDatabaseBuilder, GraphService}
 import org.apache.commons.io.FileUtils
-import org.grapheco.lynx.LynxValue
+import org.grapheco.lynx.{LynxNode, LynxValue}
 import org.junit.{After, Assert, Before, Test}
 
 /**
@@ -47,6 +47,8 @@ class FunctionTest {
       "storage"->1000000,
       "isCoder"->true,
       "indexs"->Array[Int](1,2,3,4,5)), "person")
+
+    db.addRelation("KNOW", nodeId1, nodeId2, Map("year"->2021))
   }
 
   @Test
@@ -65,21 +67,32 @@ class FunctionTest {
     val res1 = db.cypher("match (n) return id(n)").records().toList.map(f => f("id(n)").asInstanceOf[LynxValue].value).toSet
     val res2 = db.cypher("match (n:person) return id(n)").records().toList.map(f => f("id(n)").asInstanceOf[LynxValue].value).toSet
     val res3 = db.cypher("match (n:people) return id(n)").records().toList.map(f => f("id(n)").asInstanceOf[LynxValue].value).toSet
-
+    val res4 = db.cypher(s"match (n) where id(n)=$nodeId3 return n").records().next()("n").asInstanceOf[LynxNode]
     Assert.assertEquals(Set(nodeId1, nodeId2, nodeId3), res1)
     Assert.assertEquals(Set(nodeId1, nodeId3), res2)
     Assert.assertEquals(Set(nodeId2), res3)
+    Assert.assertEquals(nodeId3, res4.id.value)
   }
 
   @Test
   def testType(): Unit ={
-    val res1 = db.cypher("match (n) return type(n)").show()
-
+    val res1 = db.cypher("match (n)-[r]->(m) return type(r)").records().next()("type(r)").asInstanceOf[LynxValue].value
+    Assert.assertEquals("KNOW", res1)
   }
 
   @Test
   def testExist(): Unit ={
+    val res1 = db.cypher("match (n) where exists(n.name) return n").records().toList
+    Assert.assertEquals(3, res1.size)
 
+    val res2 = db.cypher("match (n) where exists(n.isCoder) return n").records().toList
+    Assert.assertEquals(2, res2.size)
+  }
+
+  @Test
+  def testToInteger(): Unit ={
+    val res1 = db.cypher("match (n{name:'alex'}) return toInteger(n.salary)").records().next()("toInteger(n.salary)").asInstanceOf[LynxValue].value
+    Assert.assertEquals(2333L, res1)
   }
 
   @After
