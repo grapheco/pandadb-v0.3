@@ -2,15 +2,8 @@
 
 NODESCOUNT=0
 RELSCOUNT=0
-
-add_node_file(){
-  NODES[${NODESCOUNT}]=$1
-  NODESCOUNT+=1
-}
-add_rels_file(){
-  RELS[${RELSCOUNT}]=$1
-  RELSCOUNT+=1
-}
+DELIMETER="--delimeter=,"
+ARRAY_DELIMETER="--array-delimeter=|"
 
 help_func(){
   echo ""
