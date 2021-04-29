@@ -61,7 +61,6 @@ class NodeAPI {
 
   @Test
   def testGetNodeProperty(): Unit ={
-    nodeStore.allPropertyKeyIds().foreach(id =>println(id, nodeStore.getPropertyKeyName(id)))
     val n1 = graphFacade.nodeAt(nodeId1).get
     val n2 = graphFacade.nodeAt(nodeId2).get
     val n3 = graphFacade.nodeAt(nodeId3).get
@@ -112,7 +111,6 @@ class NodeAPI {
     val n3 = graphFacade.nodeAt(nodeId1).get
 
     Assert.assertEquals(n3.properties("newValue"), LynxValue(Long.MaxValue))
-
   }
 
   @Test
@@ -123,7 +121,6 @@ class NodeAPI {
     graphFacade.nodeAddLabel(nodeId1, "first2")
 
     graphFacade.nodeRemoveLabel(nodeId1, "not exist")
-
     Assert.assertEquals(None, nodeStore.getLabelId("not exist"))
 
     val n1 = graphFacade.nodeAt(nodeId1).get
@@ -135,51 +132,20 @@ class NodeAPI {
 
   @Test
   def testDeleteNode(): Unit ={
-    val res1 = graphFacade.nodeAt(nodeId1)
     graphFacade.deleteNode(nodeId1)
     graphFacade.deleteNode(nodeId1)
     val res2 = graphFacade.nodeAt(nodeId1)
-    Assert.assertEquals(None,  res2)
+    Assert.assertEquals(None, res2)
   }
 
   @Test
   def testNodeIterator(): Unit ={
-    val nodeArray = graphFacade.nodes().foreach(node => Assert.assertEquals(graphFacade.nodeAt(node.id).get, node))
+    graphFacade.nodes().foreach(node => Assert.assertEquals(graphFacade.nodeAt(node.id).get, node))
   }
 
   @After
   def close(): Unit = {
     graphFacade.close()
-  }
-
-}
-
-trait p1{
-  val initInt: Int
-  val idGenerator: AtomicInteger = new AtomicInteger(initInt)
-  def op(): Int ={
-    idGenerator.incrementAndGet()
-  }
-}
-class p2 extends p1{
-  override val initInt = 20
-  override val idGenerator: AtomicInteger = new AtomicInteger(initInt)
-}
-
-class p3 extends p1{
-  override val initInt = 30
-  override val idGenerator: AtomicInteger = new AtomicInteger(initInt)
-}
-
-class ap {
-  @Test
-  def testIO(): Unit ={
-    val s2 = new p2
-    val s3 = new p3
-    println(s2.op)
-    println(s2.op)
-    println(s2.op)
-    println(s3.op)
   }
 }
 

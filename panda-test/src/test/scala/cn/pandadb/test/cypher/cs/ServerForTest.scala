@@ -12,6 +12,7 @@ import org.apache.commons.io.FileUtils
  * @create: 2021-04-26
  */
 object ServerForTest {
+  // make sure [working directory] and [conf path] are correct
   def main(args: Array[String]): Unit = {
     FileUtils.deleteDirectory(new File("./panda-test/testdata/server"))
     val server = new PandaServerBootstrapper()
