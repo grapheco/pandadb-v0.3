@@ -57,18 +57,33 @@ class NodeStoreAPI(dbPath: String, rocksdbCfgPath: String = "default") extends N
   override def nodeAddLabel(nodeId: Long, labelId: Int): Unit =
     getNodeById(nodeId)
       .foreach{ node =>
-        val labels = (node.labelIds ++ Array(labelId)).distinct
-        nodeLabelStore.set(nodeId, labelId)
-        nodeStore.set(new StoredNodeWithProperty(node.id, labels, node.properties))
+        if (!node.labelIds.contains(labelId)) {
+          val labels = node.labelIds ++ Array(labelId)
+          nodeLabelStore.set(nodeId, labelId)
+          nodeStore.set(new StoredNodeWithProperty(node.id, labels, node.properties))
+          // if node is nonLabel node, delete it
+          if(node.labelIds.isEmpty){
+            nodeLabelStore.delete(nodeId, NONE_LABEL_ID)
+            nodeStore.delete(nodeId, NONE_LABEL_ID)
+          }
+        }
       }
 
   override def nodeRemoveLabel(nodeId: Long, labelId: Int): Unit =
     nodeStore.get(nodeId, labelId)
       .foreach{ node=>
-        val labels = node.labelIds.filter(_ != labelId)
-        nodeLabelStore.delete(node.id, labelId)
-        nodeStore.set(new StoredNodeWithProperty(node.id, labels, node.properties))
-        nodeStore.delete(nodeId, labelId)
+        if (node.labelIds.contains(labelId)) {
+          val labels = node.labelIds.filter(_ != labelId)
+          val newNode = new StoredNodeWithProperty(node.id, labels, node.properties)
+          // if node is only one label, add NONE_LABEL_ID after delete it
+          if(node.labelIds.length == 1){
+            nodeLabelStore.set(nodeId, NONE_LABEL_ID)
+            nodeStore.set(NONE_LABEL_ID, newNode)
+          }
+          nodeLabelStore.delete(node.id, labelId)
+          nodeStore.set(newNode)
+          nodeStore.delete(nodeId, labelId)
+        }
       }
 
   override def nodeSetProperty(nodeId: Long, propertyKeyId: Int, propertyValue: Any): Unit =

@@ -264,7 +264,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
   def nodeAt(id: Long, label: String): Option[PandaNode] =
     nodeLabelNameMap(label).map(nodeStore.getNodeById(id, _).orNull).map(mapNode)
 
-  def nodeHasLabel(id: Long, label: String): Boolean = nodeLabelNameMap(label).forall(nodeStore.hasLabel(id, _))
+  def nodeHasLabel(id: Long, label: String): Boolean = nodeLabelNameMap(label).exists(nodeStore.hasLabel(id, _))
 
   def relationAt(id: Long): Option[PandaRelationship] = relationStore.getRelationById(id).map(mapRelation)
 
