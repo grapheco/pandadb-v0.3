@@ -17,7 +17,6 @@ object IndexEncoder {
   val TRUE_CODE: Byte = 1
   val INTEGER_CODE: Byte = 2
   val FLOAT_CODE: Byte = 3
-//  val LONG_CODE: Byte = 4
   val STRING_CODE: Byte = 5
   val MAP_CODE: Byte = 6
 
@@ -54,7 +53,6 @@ object IndexEncoder {
    */
   def encode(data: Any): Array[Byte] = {
     data match {
-      //case data == null => Array.emptyByteArray
       case data: Boolean => Array.emptyByteArray
       case data: Byte => integerEncode(data.toLong)
       case data: Short => integerEncode(data.toLong)
@@ -65,12 +63,12 @@ object IndexEncoder {
       case data: String => stringEncode(data)
       case data: Map[Int, Any] => BaseSerializer.map2Bytes(data)
       case data: Any => throw new Exception(s"this value type: ${data.getClass} is not supported")
+      case _ => Array.emptyByteArray
     }
   }
 
   def typeCode(data: Any): Byte = {
     data match {
-      //case data == null => NULL
       case data: Boolean if data => TRUE_CODE
       case data: Boolean if !data => FALSE_CODE
       case data: Byte => INTEGER_CODE
@@ -82,6 +80,7 @@ object IndexEncoder {
       case data: String => STRING_CODE
       case data: Map[Int, Any] => MAP_CODE
       case data: Any => throw new Exception(s"this value type: ${data.getClass} is not supported")
+      case _ => NULL
     }
   }
 
