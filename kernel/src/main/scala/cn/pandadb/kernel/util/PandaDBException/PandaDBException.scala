@@ -6,6 +6,6 @@ package cn.pandadb.kernel.util.PandaDBException
  * @Date: Created at 9:55 2021/5/6
  * @Modified By:
  */
-class PandaDBException(msg: String) extends Exception{
-  override def getMessage: String = msg
+class PandaDBException(msg: String) extends Exception(msg) {
 }
+
