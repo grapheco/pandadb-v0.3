@@ -57,19 +57,12 @@ object PandaImporter extends LazyLogging {
     logger.info(s"Estimated node count: $estNodeCount.")
     logger.info(s"Estimated relation count: $estRelCount.")
 
-//    val nodeDB = RocksDBStorage.getDB(path = s"${importCmd.database}/nodes", useForImporter = true, isHDD = true)
-//    val nodeLabelDB = RocksDBStorage.getDB(s"${importCmd.database}/nodeLabel", useForImporter = true, isHDD = true)
-//    val relationDB = RocksDBStorage.getDB(s"${importCmd.database}/rels", useForImporter = true, isHDD = true)
-//    val inRelationDB = RocksDBStorage.getDB(s"${importCmd.database}/inEdge", useForImporter = true, isHDD = true)
-//    val outRelationDB = RocksDBStorage.getDB(s"${importCmd.database}/outEdge", useForImporter = true, isHDD = true)
-//    val relationTypeDB = RocksDBStorage.getDB(s"${importCmd.database}/relLabelIndex", useForImporter = true, isHDD = true)
-
-    val nodeDB = RocksDBStorage.getDB(path = s"${importCmd.database}/nodes", isHDD = true)
-    val nodeLabelDB = RocksDBStorage.getDB(s"${importCmd.database}/nodeLabel", isHDD = true)
-    val relationDB = RocksDBStorage.getDB(s"${importCmd.database}/rels", isHDD = true)
-    val inRelationDB = RocksDBStorage.getDB(s"${importCmd.database}/inEdge", isHDD = true)
-    val outRelationDB = RocksDBStorage.getDB(s"${importCmd.database}/outEdge", isHDD = true)
-    val relationTypeDB = RocksDBStorage.getDB(s"${importCmd.database}/relLabelIndex", isHDD = true)
+    val nodeDB = RocksDBStorage.getDB(path = s"${importCmd.database}/nodes", rocksdbConfigPath = importCmd.rocksDBConfFilePath)
+    val nodeLabelDB = RocksDBStorage.getDB(s"${importCmd.database}/nodeLabel", rocksdbConfigPath = importCmd.rocksDBConfFilePath)
+    val relationDB = RocksDBStorage.getDB(s"${importCmd.database}/rels", rocksdbConfigPath = importCmd.rocksDBConfFilePath)
+    val inRelationDB = RocksDBStorage.getDB(s"${importCmd.database}/inEdge", rocksdbConfigPath = importCmd.rocksDBConfFilePath)
+    val outRelationDB = RocksDBStorage.getDB(s"${importCmd.database}/outEdge", rocksdbConfigPath = importCmd.rocksDBConfFilePath)
+    val relationTypeDB = RocksDBStorage.getDB(s"${importCmd.database}/relLabelIndex", rocksdbConfigPath = importCmd.rocksDBConfFilePath)
 
 
     val globalArgs = GlobalArgs(Runtime.getRuntime().availableProcessors(),

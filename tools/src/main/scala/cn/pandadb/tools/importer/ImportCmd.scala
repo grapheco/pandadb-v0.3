@@ -1,5 +1,7 @@
 package cn.pandadb.tools.importer
 
+import cn.pandadb.kernel.util.PandaDBException.PandaDBException
+
 import java.io.File
 
 /**
@@ -38,6 +40,12 @@ case class ImportCmd(args: Array[String]) {
       throw new Exception(s"The export db path $dbFile is not an empty directory.")
     }
     dbFile
+  }
+
+  val rocksDBConfFilePath: String = {
+    val confFilePath = _getArgByName("rocksConf")
+    if (confFilePath.equals("")) "default"
+    else confFilePath
   }
 
   val delimeter: String = {
