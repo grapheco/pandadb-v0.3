@@ -37,33 +37,48 @@ case class ImportCmd(args: Array[String]) {
     val dbFile = new File(_getArgByName("db-path"))
     if (!dbFile.exists()) dbFile.mkdirs()
     if (!dbFile.isDirectory || dbFile.listFiles().length != 0) {
-      throw new Exception(s"The export db path $dbFile is not an empty directory.")
+      throw new Exception(s"The export db path ${dbFile.getAbsolutePath} is not an empty directory.")
     }
     dbFile
   }
 
   val nodeDBPath: String = {
-    _getArgByName("nodeDBPath")
+    val path = _getArgByName("nodeDBPath")
+    if (path == "") throw new PandaDBException("nodeDBPath is blank.")
+    path
   }
   val nodeLabelDBPath: String = {
-    _getArgByName("nodeLabelDBPath")
+    val path = _getArgByName("nodeLabelDBPath")
+    if (path == "") throw new PandaDBException("nodeLabelDBPath is blank.")
+    path
   }
   val relationDBPath: String = {
-    _getArgByName("relationDBPath")
+    val path = _getArgByName("relationDBPath")
+    if (path == "") throw new PandaDBException("relationDBPath is blank.")
+    path
   }
   val inRelationDBPath: String = {
-    _getArgByName("inRelationDBPath")
+    val path = _getArgByName("inRelationDBPath")
+    if (path == "") throw new PandaDBException("inRelationDBPath is blank.")
+    path
   }
   val outRelationDBPath: String = {
-    _getArgByName("outRelationDBPath")
+    val path = _getArgByName("outRelationDBPath")
+    if (path == "") throw new PandaDBException("outRelationDBPath is blank.")
+    path
   }
   val relationTypeDBPath: String = {
-    _getArgByName("relationTypeDBPath")
+    val path = _getArgByName("relationTypeDBPath")
+    if (path == "") throw new PandaDBException("relationTypeDBPath is blank.")
+    path
   }
 
   val rocksDBConfFilePath: String = {
     val confFilePath = _getArgByName("rocksConf")
-    if (confFilePath.equals("")) "default"
+    if (confFilePath.equals("")) {
+      println("warning: default rocksConf used.")
+      "default"
+    }
     else confFilePath
   }
 
