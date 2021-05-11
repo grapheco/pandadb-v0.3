@@ -39,6 +39,27 @@ do
   elif [[ $arg == "--array-delimeter"* ]]
   then
     ARRAY_DELIMETER=$arg
+  elif [[ $arg == "--nodeDBPath"* ]]
+  then
+    NODEDB_PATH=$arg
+  elif [[ $arg == "--relationDBPath"* ]]
+  then
+    RELATIONDB_PATH=$arg
+  elif [[ $arg == "--nodeLabelDBPath"* ]]
+  then
+    NODELABELDB_PATH=$arg
+  elif [[ $arg == "--inRelationDBPath"* ]]
+  then
+    INRELATIONDB_PATH=$arg
+  elif [[ $arg == "--outRelationDBPath"* ]]
+  then
+    OUTRELATIONDB_PATH=$arg
+  elif [[ $arg == "--relationTypeDBPath"* ]]
+  then
+    RELATIONTYPEDB_PATH=$arg
+  elif [[ $arg == "--rocksConf"* ]]
+  then
+    ROCKS_CONF=$arg
   fi
 done
 }
@@ -54,7 +75,7 @@ then
 fi
 get_params_func "$@"
 
-java -cp "$PANDADB_LAB""//*" "cn.pandadb.tools.importer.PandaImporter" "$DBPATH" "${NODES[@]}" "${RELS[@]}" "$DELIMETER" "$ARRAY_DELIMETER"
+java -cp "$PANDADB_LAB""//*" "cn.pandadb.tools.importer.PandaImporter" "$DBPATH" "${NODES[@]}" "${RELS[@]}" "$DELIMETER" "$ARRAY_DELIMETER" "$NODEDB_PATH" "$NODELABELDB_PATH" "$RELATIONDB_PATH" "$INRELATIONDB_PATH" "$OUTRELATIONDB_PATH" "$RELATIONTYPEDB_PATH" "$ROCKS_CONF"
 
 }
 
