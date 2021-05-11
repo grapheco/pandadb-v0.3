@@ -6,6 +6,9 @@ import cn.pandadb.kernel.util.serializer.NodeSerializer
 import org.rocksdb.{WriteBatch, WriteOptions}
 
 import java.io.File
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 /**
  * @Author: Airzihao
@@ -84,8 +87,11 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
         })
 
       })
-      nodeDB.write(writeOptions, nodeBatch)
-      nodeLabelDB.write(writeOptions, labelBatch)
+      val f1: Future[Unit] = Future{nodeDB.write(writeOptions, nodeBatch)}
+      val f2: Future[Unit] = Future{nodeLabelDB.write(writeOptions, labelBatch)}
+      Await.result(f1, Duration.Inf)
+      Await.result(f2, Duration.Inf)
+
       nodeBatch.clear()
       labelBatch.clear()
       globalCount.addAndGet(batchData.length)
@@ -93,8 +99,11 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
       globalPropCount.addAndGet(batchData.length*propHeadMap.size)
     }
 
-    nodeDB.flush()
-    nodeLabelDB.flush()
+    val f1: Future[Unit] = Future{nodeDB.flush()}
+    val f2: Future[Unit] = Future{nodeLabelDB.flush()}
+    Await.result(f1, Duration.Inf)
+    Await.result(f2, Duration.Inf)
+
     true
   }
 

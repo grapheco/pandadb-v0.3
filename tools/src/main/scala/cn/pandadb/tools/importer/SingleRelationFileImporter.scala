@@ -11,6 +11,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.Duration
 
 /**
   * @Author: Airzihao
@@ -100,10 +103,15 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
           labelBatch.put(KeyConverter.toRelationTypeKey(relation.typeId, relation.id), Array.emptyByteArray)
 
         })
-        relationDB.write(writeOptions, storeBatch)
-        inRelationDB.write(writeOptions, inBatch)
-        outRelationDB.write(writeOptions, outBatch)
-        relationTypeDB.write(writeOptions,labelBatch)
+        val f1: Future[Unit] = Future{relationDB.write(writeOptions, storeBatch)}
+        val f2: Future[Unit] = Future{inRelationDB.write(writeOptions, inBatch)}
+        val f3: Future[Unit] = Future{outRelationDB.write(writeOptions, outBatch)}
+        val f4: Future[Unit] = Future{relationTypeDB.write(writeOptions,labelBatch)}
+        Await.result(f1, Duration.Inf)
+        Await.result(f2, Duration.Inf)
+        Await.result(f3, Duration.Inf)
+        Await.result(f4, Duration.Inf)
+
         storeBatch.clear()
         inBatch.clear()
         outBatch.clear()
@@ -114,10 +122,15 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
       }
     }
 
-    relationDB.flush()
-    inRelationDB.flush()
-    outRelationDB.flush()
-    relationTypeDB.flush()
+    val f1: Future[Unit] = Future{relationDB.flush()}
+    val f2: Future[Unit] = Future{inRelationDB.flush()}
+    val f3: Future[Unit] = Future{outRelationDB.flush()}
+    val f4: Future[Unit] = Future{relationTypeDB.flush()}
+    Await.result(f1, Duration.Inf)
+    Await.result(f2, Duration.Inf)
+    Await.result(f3, Duration.Inf)
+    Await.result(f4, Duration.Inf)
+
     true
   }
 
