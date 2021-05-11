@@ -65,7 +65,6 @@ class BaseSerializerTest {
 
   @Test
   def testLongString(): Unit = {
-    println(Short.MaxValue)
     val testString = Source.fromFile("./testinput/longString").mkString
     val map = Map(1 -> testString)
     val bytesArr = serializer.map2Bytes(map)

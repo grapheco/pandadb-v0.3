@@ -65,7 +65,11 @@ object RocksDBStorage extends LazyLogging{
       logger.debug(s"setWriteBufferSize: ${options.writeBufferSize()}")
       logger.debug(s"setMaxBytesForLevelBase: ${options.maxBytesForLevelBase()}")
 
-      new RocksDBStorage(RocksDB.open(options, path))
+      try {
+        new RocksDBStorage(RocksDB.open(options, path))
+      } catch {
+        case ex: Exception => throw new PandaDBException(s"$path, ${ex.getMessage}")
+      }
 
     } else {
       logger.debug("read setting file")
