@@ -4,6 +4,7 @@ import java.io.File
 
 import cn.pandadb.kernel.kv.configuration.RocksDBConfigBuilder
 import cn.pandadb.kernel.kv.db.{KeyValueDB, KeyValueIterator, KeyValueWriteBatch}
+import cn.pandadb.kernel.util.PandaDBException.PandaDBException
 import com.typesafe.scalalogging.LazyLogging
 import org.rocksdb.{BlockBasedTableConfig, BloomFilter, CompactionStyle, CompressionType, FlushOptions, IndexType, LRUCache, Options, ReadOptions, RocksDB, WriteBatch, WriteOptions}
 
@@ -30,31 +31,35 @@ object RocksDBStorage extends LazyLogging{
       val options: Options = new Options()
       val tableConfig = new BlockBasedTableConfig()
 
-      tableConfig.setFilterPolicy(new BloomFilter(15, false))
-        .setBlockSize(32L * 1024L)
-        .setBlockCache(new LRUCache(512L * 1024L * 1024L))
+      tableConfig.setFilterPolicy(new BloomFilter(10, false))
+        .setBlockSize(512L * 1024L)
+        .setBlockCache(new LRUCache(1024L * 1024L * 1024L))
+
+      println("block size: ", tableConfig.blockSize())
 
       options.setTableFormatConfig(tableConfig)
         .setCreateIfMissing(createIfMissing)
-        .setCompressionType(CompressionType.NO_COMPRESSION)
+        .setCompressionType(CompressionType.LZ4_COMPRESSION)
         .setCompactionStyle(CompactionStyle.LEVEL)
         .setDisableAutoCompactions(false) // true will invalid the compaction trigger, maybe
-        //        .setOptimizeFiltersForHits(true) // true will not generate BloomFilter for L0.
-        .setMaxBackgroundJobs(5)
-        .setSkipCheckingSstFileSizesOnDbOpen(true)
-                .setLevelCompactionDynamicLevelBytes(true)
-        .setAllowConcurrentMemtableWrite(true)
-        .setMaxOpenFiles(-1)
-        .setWriteBufferSize(256L * 1024L * 1024L)
-        .setMinWriteBufferNumberToMerge(3) // 2 or 3 better performance
-        .setLevel0FileNumCompactionTrigger(10) // level0 file num = 10, compression l0->l1 start.(invalid, why???);level0 size=256M * 3 * 10 = 7G
+        .setOptimizeFiltersForHits(false) // true will not generate BloomFilter for L0.
+        .setMaxBackgroundJobs(4)
         .setMaxWriteBufferNumber(8)
+        .setSkipCheckingSstFileSizesOnDbOpen(true)
+        .setLevelCompactionDynamicLevelBytes(true)
+        .setAllowConcurrentMemtableWrite(true)
+        .setCompactionReadaheadSize(2 * 1024 * 1024L)
+        .setMaxOpenFiles(-1)
+        .setUseDirectIoForFlushAndCompaction(true) // maybe importer use
+        .setWriteBufferSize(256L * 1024L * 1024L)
+        .setMinWriteBufferNumberToMerge(2) // 2 or 3 better performance
+        .setLevel0FileNumCompactionTrigger(10) // level0 file num = 10, compression l0->l1 start.(invalid, why???);level0 size=256M * 3 * 10 = 7G
         .setLevel0SlowdownWritesTrigger(20)
         .setLevel0StopWritesTrigger(40)
         .setMaxBytesForLevelBase(256L * 1024L * 1024L * 15L) // total size of level1(same as level0)
         .setMaxBytesForLevelMultiplier(10)
         .setTargetFileSizeBase(256L * 1024L * 1024L) // maxBytesForLevelBase / 10 or 15
-          .setTargetFileSizeMultiplier(4)
+          .setTargetFileSizeMultiplier(2)
 
       logger.debug(s"setDisableAutoCompactions: ${options.disableAutoCompactions()}")
       logger.debug(s"setWriteBufferSize: ${options.writeBufferSize()}")
@@ -64,7 +69,9 @@ object RocksDBStorage extends LazyLogging{
 
     } else {
       logger.debug("read setting file")
-      val builder = new RocksDBConfigBuilder(rocksdbConfigPath)
+      val rocksFile = new File(rocksdbConfigPath)
+      if (!rocksFile.exists()) throw new PandaDBException("rocksdb config file not exist...")
+      val builder = new RocksDBConfigBuilder(rocksFile)
       val db = RocksDB.open(builder.getOptions(), path)
       new RocksDBStorage(db)
     }
