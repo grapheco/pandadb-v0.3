@@ -42,6 +42,25 @@ case class ImportCmd(args: Array[String]) {
     dbFile
   }
 
+  val nodeDBPath: String = {
+    _getArgByName("nodeDBPath")
+  }
+  val nodeLabelDBPath: String = {
+    _getArgByName("nodeLabelDBPath")
+  }
+  val relationDBPath: String = {
+    _getArgByName("relationDBPath")
+  }
+  val inRelationDBPath: String = {
+    _getArgByName("inRelationDBPath")
+  }
+  val outRelationDBPath: String = {
+    _getArgByName("outRelationDBPath")
+  }
+  val relationTypeDBPath: String = {
+    _getArgByName("relationTypeDBPath")
+  }
+
   val rocksDBConfFilePath: String = {
     val confFilePath = _getArgByName("rocksConf")
     if (confFilePath.equals("")) "default"
