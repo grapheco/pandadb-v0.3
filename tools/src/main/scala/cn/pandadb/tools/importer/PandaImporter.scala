@@ -57,13 +57,12 @@ object PandaImporter extends LazyLogging {
     logger.info(s"Estimated node count: $estNodeCount.")
     logger.info(s"Estimated relation count: $estRelCount.")
 
-    val nodeDB = RocksDBStorage.getDB(path = s"${importCmd.database}/nodes", rocksdbConfigPath = importCmd.rocksDBConfFilePath)
-    val nodeLabelDB = RocksDBStorage.getDB(s"${importCmd.database}/nodeLabel", rocksdbConfigPath = importCmd.rocksDBConfFilePath)
-    val relationDB = RocksDBStorage.getDB(s"${importCmd.database}/rels", rocksdbConfigPath = importCmd.rocksDBConfFilePath)
-    val inRelationDB = RocksDBStorage.getDB(s"${importCmd.database}/inEdge", rocksdbConfigPath = importCmd.rocksDBConfFilePath)
-    val outRelationDB = RocksDBStorage.getDB(s"${importCmd.database}/outEdge", rocksdbConfigPath = importCmd.rocksDBConfFilePath)
-    val relationTypeDB = RocksDBStorage.getDB(s"${importCmd.database}/relLabelIndex", rocksdbConfigPath = importCmd.rocksDBConfFilePath)
-
+    val nodeDB = RocksDBStorage.getDB(path = importCmd.nodeDBPath, rocksdbConfigPath = importCmd.rocksDBConfFilePath)
+    val nodeLabelDB = RocksDBStorage.getDB(importCmd.nodeLabelDBPath, rocksdbConfigPath = importCmd.rocksDBConfFilePath)
+    val relationDB = RocksDBStorage.getDB(importCmd.relationDBPath, rocksdbConfigPath = importCmd.rocksDBConfFilePath)
+    val inRelationDB = RocksDBStorage.getDB(importCmd.inRelationDBPath, rocksdbConfigPath = importCmd.rocksDBConfFilePath)
+    val outRelationDB = RocksDBStorage.getDB(importCmd.outRelationDBPath, rocksdbConfigPath = importCmd.rocksDBConfFilePath)
+    val relationTypeDB = RocksDBStorage.getDB(importCmd.relationTypeDBPath, rocksdbConfigPath = importCmd.rocksDBConfFilePath)
 
     val globalArgs = GlobalArgs(Runtime.getRuntime().availableProcessors(),
       globalNodeCount, globalNodePropCount,
