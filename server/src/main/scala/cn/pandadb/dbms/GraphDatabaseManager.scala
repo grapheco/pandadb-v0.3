@@ -1,14 +1,7 @@
 package cn.pandadb.dbms
 
-import scala.reflect.io.Path
 import com.typesafe.scalalogging.LazyLogging
-
-import cn.pandadb.kernel.GraphService
-import cn.pandadb.kernel.kv.GraphFacade
-import cn.pandadb.kernel.kv.index.IndexStoreAPI
-import cn.pandadb.kernel.kv.meta.Statistics
-import cn.pandadb.kernel.kv.node.NodeStoreAPI
-import cn.pandadb.kernel.kv.relation.RelationStoreAPI
+import cn.pandadb.kernel.{GraphDatabaseBuilder, GraphService}
 import cn.pandadb.server.common.configuration.Config
 import cn.pandadb.server.common.lifecycle.LifecycleAdapter
 
@@ -32,13 +25,7 @@ trait GraphDatabaseManager extends LifecycleAdapter {
 class DefaultGraphDatabaseManager(config: Config) extends GraphDatabaseManager with LazyLogging {
   var defaultDB: GraphService = null
   val defaultDBName = config.getLocalDBName()
-  val dataPath = {
-    if (config.getLocalDataStorePath() != "not setting") {
-      config.getLocalDataStorePath()
-    } else {
-      config.getDefaultDBHome() + "/data"
-    }
-  }
+  val dataPath = config.getLocalDataStorePath()
 
   def getDbHome: String = {
     dataPath
@@ -49,8 +36,46 @@ class DefaultGraphDatabaseManager(config: Config) extends GraphDatabaseManager w
   }
 
   override def createDatabase(name: String): GraphService = {
-    val dbPath = Path(dataPath)./(name).toString()
-    newGraphFacade(dbPath)
+    val nodeMetaDBPath = config.getNodeMetaDBPath()
+    val nodeDBPath = config.getNodeDBPath()
+    val nodeLabelDBPath = config.getNodeLabelDBPath()
+    val relationMetaDBPath = config.getRelationMetaDBPath()
+    val relationDBPath = config.getRelationDBPath()
+    val inRelationDBPath = config.getInRelationDBPath()
+    val outRelationDBPath = config.getOutRelationDBPath()
+    val relationLabelDBPath = config.getRelationLabelDBPath()
+    val indexMetaDBPath = config.getIndexMetaDBPath()
+    val indexDBPath = config.getIndexDBPath()
+    val fulltextIndexPath = config.getFullIndexDBPath()
+    val statisticsDBPath = config.getStatisticsDBPath()
+    val rocksDBConfigFilePath: String = config.getRocksdbConfigFilePath()
+
+    logger.info(s"nodeMetaDBPath  $nodeMetaDBPath ")
+    logger.info(s"nodeDBPath  $nodeDBPath ")
+    logger.info(s"nodeLabelDBPath  $nodeLabelDBPath ")
+    logger.info(s"relationMetaDBPath  $relationMetaDBPath ")
+    logger.info(s"relationDBPath  $relationDBPath ")
+    logger.info(s"inRelationDBPath  $inRelationDBPath ")
+    logger.info(s"outRelationDBPath  $outRelationDBPath ")
+    logger.info(s"relationLabelDBPath  $relationLabelDBPath ")
+    logger.info(s"indexMetaDBPath  $indexMetaDBPath ")
+    logger.info(s"indexDBPath  $indexDBPath ")
+    logger.info(s"fulltextIndexPath  $fulltextIndexPath ")
+    logger.info(s"statisticsDBPath  $statisticsDBPath ")
+    logger.info(s"rocksDBConfigFilePath $rocksDBConfigFilePath")
+    GraphDatabaseBuilder.newEmbeddedDatabase2( nodeMetaDBPath,
+      nodeDBPath,
+      nodeLabelDBPath,
+      relationMetaDBPath,
+      relationDBPath,
+      inRelationDBPath,
+      outRelationDBPath,
+      relationLabelDBPath,
+      indexMetaDBPath,
+      indexDBPath,
+      fulltextIndexPath,
+      statisticsDBPath,
+      rocksDBConfigPath = rocksDBConfigFilePath)
   }
 
   override def stop(): Unit = {
@@ -78,22 +103,4 @@ class DefaultGraphDatabaseManager(config: Config) extends GraphDatabaseManager w
     logger.debug(s"${this.getClass} inited.")
   }
 
-  private def newGraphFacade(path: String): GraphFacade = {
-    logger.debug(s"start to get NodeStoreAPI.")
-    val nodeStore = new NodeStoreAPI(path, config.getRocksdbConfigFilePath)
-    logger.debug(s"start to get RelStoreAPI")
-    val relationStore = new RelationStoreAPI(path, config.getRocksdbConfigFilePath)
-    logger.debug(s"node and rel db got.")
-    val indexStore = new IndexStoreAPI(path, config.getRocksdbConfigFilePath)
-    logger.debug(s"index db got.")
-    val statistics = new Statistics(path, config.getRocksdbConfigFilePath)
-    logger.debug(s"statistics db got.")
-    new GraphFacade(
-      nodeStore,
-      relationStore,
-      indexStore,
-      statistics,
-      {}
-    )
-  }
 }

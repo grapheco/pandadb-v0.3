@@ -56,43 +56,43 @@ class Config extends LazyLogging {
   def validate(): Unit = {}
 
   def getNodeMetaDBPath(): String = {
-    getValueAsString(SettingKeys.nodeMetaDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/nodeMeta")
+    getValueAsString(SettingKeys.nodeMetaDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/nodeMeta")
   }
   def getNodeDBPath(): String = {
-    getValueAsString(SettingKeys.nodeDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/nodes")
+    getValueAsString(SettingKeys.nodeDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/nodes")
   }
   def getNodeLabelDBPath(): String = {
-    getValueAsString(SettingKeys.nodeLabelDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/nodeLabel")
+    getValueAsString(SettingKeys.nodeLabelDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/nodeLabel")
   }
   def getRelationMetaDBPath(): String = {
-    getValueAsString(SettingKeys.relationMetaDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/relationMeta")
+    getValueAsString(SettingKeys.relationMetaDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/relationMeta")
   }
   def getRelationDBPath(): String = {
-    getValueAsString(SettingKeys.relationDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/rels")
+    getValueAsString(SettingKeys.relationDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/rels")
   }
   def getInRelationDBPath(): String = {
-    getValueAsString(SettingKeys.inRelationDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/inEdge")
+    getValueAsString(SettingKeys.inRelationDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/inEdge")
   }
   def getOutRelationDBPath(): String = {
-    getValueAsString(SettingKeys.outRelationDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/outEdge")
+    getValueAsString(SettingKeys.outRelationDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/outEdge")
   }
   def getRelationLabelDBPath(): String = {
-    getValueAsString(SettingKeys.relationLabelDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/relLabelIndex")
+    getValueAsString(SettingKeys.relationLabelDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/relLabelIndex")
   }
   def getStatisticsDBPath(): String = {
-    getValueAsString(SettingKeys.statisticsDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/statistics")
+    getValueAsString(SettingKeys.statisticsDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/statistics")
   }
   def getIndexDBPath(): String = {
-    getValueAsString(SettingKeys.indexDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/index")
+    getValueAsString(SettingKeys.indexDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/index")
   }
   def getIndexMetaDBPath(): String = {
-    getValueAsString(SettingKeys.indexMetaDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/indexMeta")
+    getValueAsString(SettingKeys.indexMetaDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/indexMeta")
   }
   def getFullIndexDBPath(): String = {
-    getValueAsString(SettingKeys.fullIndexDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/fulltextIndex")
+    getValueAsString(SettingKeys.fullIndexDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/fulltextIndex")
   }
   def getAuthDBPath(): String = {
-    getValueAsString(SettingKeys.authDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/auth")
+    getValueAsString(SettingKeys.authDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/auth")
   }
 
 
@@ -113,7 +113,7 @@ class Config extends LazyLogging {
   }
 
   def getLocalDataStorePath(): String = {
-    getValueAsString(SettingKeys.localDBHomePath, "not setting")
+    getValueAsString(SettingKeys.localDBHomePath, getDefaultDBHome() + "/data")
   }
 
   def getLocalDBName(): String ={
@@ -123,7 +123,7 @@ class Config extends LazyLogging {
   def getDefaultDBHome(): String ={
     settingsMap(SettingKeys.defaultLocalDBHome)
   }
-  def getRocksdbConfigFilePath: String = {
+  def getRocksdbConfigFilePath(): String = {
     getValueAsString(SettingKeys.rocksdbConfigPath, defaultValue = "default")
   }
 
