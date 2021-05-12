@@ -50,11 +50,11 @@ object PandaServerEntryPoint extends LazyLogging {
 
   def main(args: Array[String]): Unit = {
     /*
-      args(0): conf file path
-      args(1): default path of db's data folder, if conf file not define.
+      started by script of pandadb.sh
+      args(0): pandadb.conf file path
+      args(1): the pandadb's root path, if conf file not specified, use this root path
      */
-    if (args.length <= 1) sys.error("need conf file and db path")
-    else if (args.length > 2) sys.error("too much command")
+    if (args.length != 2) sys.error("need conf file and db path")
 
     val configFile = new File(args(0))
     val dbHome = Map[String, String](SettingKeys.defaultLocalDBHome -> args(1))

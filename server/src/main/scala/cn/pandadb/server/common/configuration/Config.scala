@@ -15,7 +15,7 @@ object SettingKeys {
 
   val localDBHomePath = "db.home.path"
   val localDBName = "db.name"
-  val defaultLocalDBHome = "db.default.home.path"
+  val defaultLocalDBHome = "db.default.home.path" // set by starter script
 
   val rocksdbConfigPath = "db.rocksdb.file.path"
 
@@ -56,43 +56,43 @@ class Config extends LazyLogging {
   def validate(): Unit = {}
 
   def getNodeMetaDBPath(): String = {
-    getValueAsString(SettingKeys.nodeMetaDBPath, "default")
+    getValueAsString(SettingKeys.nodeMetaDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/nodeMeta")
   }
   def getNodeDBPath(): String = {
-    getValueAsString(SettingKeys.nodeDBPath, "default")
+    getValueAsString(SettingKeys.nodeDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/nodes")
   }
   def getNodeLabelDBPath(): String = {
-    getValueAsString(SettingKeys.nodeLabelDBPath, "default")
+    getValueAsString(SettingKeys.nodeLabelDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/nodeLabel")
   }
   def getRelationMetaDBPath(): String = {
-    getValueAsString(SettingKeys.relationMetaDBPath, "default")
+    getValueAsString(SettingKeys.relationMetaDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/relationMeta")
   }
   def getRelationDBPath(): String = {
-    getValueAsString(SettingKeys.relationDBPath, "default")
+    getValueAsString(SettingKeys.relationDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/rels")
   }
   def getInRelationDBPath(): String = {
-    getValueAsString(SettingKeys.inRelationDBPath, "default")
+    getValueAsString(SettingKeys.inRelationDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/inEdge")
   }
   def getOutRelationDBPath(): String = {
-    getValueAsString(SettingKeys.outRelationDBPath, "default")
+    getValueAsString(SettingKeys.outRelationDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/outEdge")
   }
   def getRelationLabelDBPath(): String = {
-    getValueAsString(SettingKeys.relationLabelDBPath, "default")
+    getValueAsString(SettingKeys.relationLabelDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/relLabelIndex")
   }
   def getStatisticsDBPath(): String = {
-    getValueAsString(SettingKeys.statisticsDBPath, "default")
+    getValueAsString(SettingKeys.statisticsDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/statistics")
   }
   def getIndexDBPath(): String = {
-    getValueAsString(SettingKeys.indexDBPath, "default")
+    getValueAsString(SettingKeys.indexDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/index")
   }
   def getIndexMetaDBPath(): String = {
-    getValueAsString(SettingKeys.indexMetaDBPath, "default")
+    getValueAsString(SettingKeys.indexMetaDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/indexMeta")
   }
   def getFullIndexDBPath(): String = {
-    getValueAsString(SettingKeys.fullIndexDBPath, "default")
+    getValueAsString(SettingKeys.fullIndexDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/fulltextIndex")
   }
   def getAuthDBPath(): String = {
-    getValueAsString(SettingKeys.authDBPath, "default")
+    getValueAsString(SettingKeys.authDBPath, s"${getDefaultDBHome()}/data/${getLocalDBName()}/auth")
   }
 
 
@@ -121,7 +121,7 @@ class Config extends LazyLogging {
   }
 
   def getDefaultDBHome(): String ={
-    settingsMap.get(SettingKeys.defaultLocalDBHome).get
+    settingsMap(SettingKeys.defaultLocalDBHome)
   }
   def getRocksdbConfigFilePath: String = {
     getValueAsString(SettingKeys.rocksdbConfigPath, defaultValue = "default")
