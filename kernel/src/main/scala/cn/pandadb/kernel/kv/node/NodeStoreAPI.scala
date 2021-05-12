@@ -5,18 +5,24 @@ import cn.pandadb.kernel.kv.meta.{IdGenerator, NodeLabelNameStore, PropertyNameS
 import cn.pandadb.kernel.store.{NodeStoreSPI, StoredNodeWithProperty}
 
 
-class NodeStoreAPI(dbPath: String, rocksdbCfgPath: String = "default") extends NodeStoreSPI {
+class NodeStoreAPI(nodeDBPath: String, nodeDBConfigPath: String,
+                   nodeLabelDBPath: String, nodeLabelConfigPath: String,
+                   metaDBPath: String, metaDBConfigPath: String) extends NodeStoreSPI {
 
-  private val nodeDB = RocksDBStorage.getDB(s"${dbPath}/nodes", rocksdbConfigPath = rocksdbCfgPath)
+  private val nodeDB = RocksDBStorage.getDB(nodeDBPath, rocksdbConfigPath = nodeDBConfigPath)
   private val nodeStore = new NodeStore(nodeDB)
-  private val nodeLabelDB = RocksDBStorage.getDB(s"${dbPath}/nodeLabel", rocksdbConfigPath = rocksdbCfgPath)
+  private val nodeLabelDB = RocksDBStorage.getDB(nodeLabelDBPath, rocksdbConfigPath = nodeLabelConfigPath)
   private val nodeLabelStore = new NodeLabelStore(nodeLabelDB)
-  private val metaDB = RocksDBStorage.getDB(s"${dbPath}/nodeMeta", rocksdbConfigPath = rocksdbCfgPath)
+  private val metaDB = RocksDBStorage.getDB(metaDBPath, rocksdbConfigPath = metaDBConfigPath)
   private val nodeLabelName = new NodeLabelNameStore(metaDB)
   private val propertyName = new PropertyNameStore(metaDB)
   private val idGenerator = new IdGenerator(nodeLabelDB, 200)
 
   val NONE_LABEL_ID: Int = 0
+
+  def this(dbPath: String, rocksdbCfgPath: String = "default"){
+    this(s"${dbPath}/nodes", rocksdbCfgPath, s"${dbPath}/nodeLabel", rocksdbCfgPath, s"${dbPath}/nodeMeta", rocksdbCfgPath)
+  }
 
   override def allLabels(): Array[String] = nodeLabelName.mapString2Int.keys.toArray
 

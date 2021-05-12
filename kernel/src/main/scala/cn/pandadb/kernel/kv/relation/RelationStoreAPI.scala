@@ -11,20 +11,32 @@ import cn.pandadb.kernel.store.{RelationStoreSPI, StoredRelation, StoredRelation
  * @Date 2020/12/22
  * @Version 0.1
  */
-class RelationStoreAPI(dbPath: String, rocksdbCfgPath: String = "default") extends RelationStoreSPI{
+class RelationStoreAPI(relationDBPath: String, relationConfigPath: String,
+                       inRelationDBPath: String, inRelationConfigPath: String,
+                       outRelationDBPath: String, outRelationConfigPath: String,
+                       relationLabelDBPath: String, relationLabelConfigPath: String,
+                       metaDBPath: String, metaConfigPath: String) extends RelationStoreSPI{
 
-  private val relationDB = RocksDBStorage.getDB(s"${dbPath}/rels", rocksdbConfigPath = rocksdbCfgPath)
+  private val relationDB = RocksDBStorage.getDB(relationDBPath, rocksdbConfigPath = relationConfigPath)
   private val relationStore = new RelationPropertyStore(relationDB)
-  private val inRelationDB = RocksDBStorage.getDB(s"${dbPath}/inEdge", rocksdbConfigPath = rocksdbCfgPath)
+  private val inRelationDB = RocksDBStorage.getDB(inRelationDBPath, rocksdbConfigPath = inRelationConfigPath)
   private val inRelationStore = new RelationDirectionStore(inRelationDB, RelationDirection.IN)
-  private val outRelationDB = RocksDBStorage.getDB(s"${dbPath}/outEdge", rocksdbConfigPath = rocksdbCfgPath)
+  private val outRelationDB = RocksDBStorage.getDB(outRelationDBPath, rocksdbConfigPath = outRelationConfigPath)
   private val outRelationStore = new RelationDirectionStore(outRelationDB, RelationDirection.OUT)
-  private val relationLabelDB = RocksDBStorage.getDB(s"${dbPath}/relLabelIndex", rocksdbConfigPath = rocksdbCfgPath)
+  private val relationLabelDB = RocksDBStorage.getDB(relationLabelDBPath, rocksdbConfigPath = relationLabelConfigPath)
   private val relationLabelStore = new RelationLabelIndex(relationLabelDB)
-  private val metaDB = RocksDBStorage.getDB(s"${dbPath}/relationMeta", rocksdbConfigPath = rocksdbCfgPath)
+  private val metaDB = RocksDBStorage.getDB(metaDBPath, rocksdbConfigPath = metaConfigPath)
   private val relationTypeNameStore = new RelationTypeNameStore(metaDB)
   private val propertyName = new PropertyNameStore(metaDB)
   private val relationIdGenerator = new IdGenerator(relationDB, 200)
+
+  def this(dbPath: String, rocksdbCfgPath: String = "default"){
+    this(s"${dbPath}/rels", rocksdbCfgPath,
+      s"${dbPath}/inEdge", rocksdbCfgPath,
+      s"${dbPath}/outEdge", rocksdbCfgPath,
+      s"${dbPath}/relLabelIndex", rocksdbCfgPath,
+      s"${dbPath}/relationMeta", rocksdbCfgPath)
+  }
 
   override def allRelationTypes(): Array[String] = relationTypeNameStore.mapString2Int.keys.toArray
 

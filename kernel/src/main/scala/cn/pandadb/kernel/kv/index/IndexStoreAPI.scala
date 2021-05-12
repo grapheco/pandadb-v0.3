@@ -12,20 +12,25 @@ import scala.collection.mutable
  * @Date 2020/12/23
  * @Version 0.1
  */
-class IndexStoreAPI(dbPath: String, rocksdbCfgPath: String = "default") {
+class IndexStoreAPI(metaDBPath: String, metaDBConfigPath: String,
+                    indexDBPath: String, indexDBConfigPath: String, fulltextIndexPath: String) {
 
   type IndexId   = Int
 //  type Long    = Long
 
-  private val metaDB = RocksDBStorage.getDB(s"${dbPath}/indexMeta", rocksdbConfigPath = rocksdbCfgPath)
+  private val metaDB = RocksDBStorage.getDB(metaDBPath, rocksdbConfigPath = metaDBConfigPath)
   private val meta = new IndexMetaData(metaDB)
-  private val indexDB = RocksDBStorage.getDB(s"${dbPath}/index", rocksdbConfigPath = rocksdbCfgPath)
+  private val indexDB = RocksDBStorage.getDB(indexDBPath, rocksdbConfigPath = indexDBConfigPath)
   private val index = new IndexStore(indexDB)
   private val indexIdGenerator = new IdGenerator(metaDB, 200)
 
   //indexId->([name, address], Store)
   private val fulltextIndexMap = new mutable.HashMap[Int, (Array[Int], FulltextIndexStore)]()
-  private val fulltextIndexPathPrefix = s"${dbPath}/index/fulltextIndex"
+  private val fulltextIndexPathPrefix = fulltextIndexPath
+
+  def this(dbPath: String, rocksdbCfgPath: String = "default") {
+    this(s"${dbPath}/indexMeta", rocksdbCfgPath, s"${dbPath}/index", rocksdbCfgPath, s"${dbPath}/index/fulltextIndex")
+  }
 
   def createIndex(label: Int, props: Array[Int], fulltext: Boolean = false): IndexId =
     meta.getIndexId(label, props).getOrElse{
