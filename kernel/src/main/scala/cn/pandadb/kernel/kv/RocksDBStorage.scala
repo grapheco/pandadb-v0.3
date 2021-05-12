@@ -35,8 +35,6 @@ object RocksDBStorage extends LazyLogging{
         .setBlockSize(512L * 1024L)
         .setBlockCache(new LRUCache(1024L * 1024L * 1024L))
 
-      println("block size: ", tableConfig.blockSize())
-
       options.setTableFormatConfig(tableConfig)
         .setCreateIfMissing(createIfMissing)
         .setCompressionType(CompressionType.LZ4_COMPRESSION)
