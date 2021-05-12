@@ -20,5 +20,7 @@ class ConfigTest {
     Assert.assertEquals(9989, config.getRpcPort())
     Assert.assertEquals("pandadb-server", config.getRpcServerName())
     Assert.assertEquals("default", config.getRocksdbConfigFilePath)
+    Assert.assertEquals("/testPath/test.db", config.getNodeMetaDBPath())
+    Assert.assertEquals("default", config.getIndexDBPath())
   }
 }

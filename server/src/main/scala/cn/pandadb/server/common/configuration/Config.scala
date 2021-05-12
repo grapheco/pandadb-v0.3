@@ -18,6 +18,22 @@ object SettingKeys {
   val defaultLocalDBHome = "db.default.home.path"
 
   val rocksdbConfigPath = "db.rocksdb.file.path"
+
+  // db path
+  val nodeMetaDBPath = "db.nodeMetaDB.path"
+  val nodeDBPath = "db.nodeDB.path"
+  val nodeLabelDBPath = "db.nodeLabelDB.path"
+  val relationMetaDBPath = "db.relationMetaDB.path"
+  val relationDBPath = "db.relationDB.path"
+  val inRelationDBPath = "db.inRelationDB.path"
+  val outRelationDBPath = "db.outRelationDB.path"
+  val relationLabelDBPath = "db.relationLabelDB.path"
+  val statisticsDBPath = "db.statisticsDB.path"
+  val indexDBPath = "db.indexDB.path"
+  val indexMetaDBPath = "db.indexMetaDB.path"
+  val fullIndexDBPath = "db.fullIndexDB.path"
+  val authDBPath = "db.authDB.path"
+
 }
 
 class Config extends LazyLogging {
@@ -38,6 +54,47 @@ class Config extends LazyLogging {
   }
 
   def validate(): Unit = {}
+
+  def getNodeMetaDBPath(): String = {
+    getValueAsString(SettingKeys.nodeMetaDBPath, "default")
+  }
+  def getNodeDBPath(): String = {
+    getValueAsString(SettingKeys.nodeDBPath, "default")
+  }
+  def getNodeLabelDBPath(): String = {
+    getValueAsString(SettingKeys.nodeLabelDBPath, "default")
+  }
+  def getRelationMetaDBPath(): String = {
+    getValueAsString(SettingKeys.relationMetaDBPath, "default")
+  }
+  def getRelationDBPath(): String = {
+    getValueAsString(SettingKeys.relationDBPath, "default")
+  }
+  def getInRelationDBPath(): String = {
+    getValueAsString(SettingKeys.inRelationDBPath, "default")
+  }
+  def getOutRelationDBPath(): String = {
+    getValueAsString(SettingKeys.outRelationDBPath, "default")
+  }
+  def getRelationLabelDBPath(): String = {
+    getValueAsString(SettingKeys.relationLabelDBPath, "default")
+  }
+  def getStatisticsDBPath(): String = {
+    getValueAsString(SettingKeys.statisticsDBPath, "default")
+  }
+  def getIndexDBPath(): String = {
+    getValueAsString(SettingKeys.indexDBPath, "default")
+  }
+  def getIndexMetaDBPath(): String = {
+    getValueAsString(SettingKeys.indexMetaDBPath, "default")
+  }
+  def getFullIndexDBPath(): String = {
+    getValueAsString(SettingKeys.fullIndexDBPath, "default")
+  }
+  def getAuthDBPath(): String = {
+    getValueAsString(SettingKeys.authDBPath, "default")
+  }
+
 
   def getListenHost(): String = {
     getValueAsString(SettingKeys.rpcListenHost, "127.0.0.1")
