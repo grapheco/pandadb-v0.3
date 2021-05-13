@@ -16,7 +16,10 @@ class RocksDBConfigBuilder(rocksFile: File) extends LazyLogging{
     val prop = new Properties()
     val is = new BufferedInputStream(new FileInputStream(rocksFile))
     prop.load(is)
-    logger.info(s"settings nums: ${prop.keySet().size()}")
+    val settings = prop.asScala
+    logger.info(s"settings nums: ${settings.size}")
+    settings.foreach(s => logger.debug(s"key:${s._1}, value:${s._2}"))
+
     val options: Options = new Options()
     val tableConfig = new BlockBasedTableConfig()
     var bloomFilterBits = 10
@@ -104,6 +107,9 @@ class RocksDBConfigBuilder(rocksFile: File) extends LazyLogging{
       }
       case "options.setMaxBackgroundJobs" => {
         options.setMaxBackgroundJobs(prop.getProperty("options.setMaxBackgroundJobs").toInt)
+      }
+      case "options.setMaxFileOpeningThreads" => {
+        options.setMaxFileOpeningThreads(prop.getProperty("options.setMaxFileOpeningThreads").toInt)
       }
       case "options.setMaxWriteBufferNumber" => {
         options.setMaxWriteBufferNumber(prop.getProperty("options.setMaxWriteBufferNumber").toInt)
