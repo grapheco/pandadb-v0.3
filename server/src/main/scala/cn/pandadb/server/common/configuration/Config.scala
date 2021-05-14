@@ -121,6 +121,7 @@ class Config extends LazyLogging {
   }
 
   def getDefaultDBHome(): String ={
+    // startup script will set this value
     settingsMap(SettingKeys.defaultLocalDBHome)
   }
   def getRocksdbConfigFilePath(): String = {

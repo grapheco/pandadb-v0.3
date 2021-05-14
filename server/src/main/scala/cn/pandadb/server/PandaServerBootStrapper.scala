@@ -18,7 +18,7 @@ class PandaServerBootstrapper() extends LazyLogging {
     println(logo)
     logger.info("==== PandaDB Server Starting... ====")
 
-    config.getRocksdbConfigFilePath match {
+    config.getRocksdbConfigFilePath() match {
       case "default" => logger.info("==== Using default RocksDB settings ====")
       case _ => logger.info("=== Using RocksDB configuration file ====")
     }

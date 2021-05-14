@@ -23,6 +23,5 @@ class ConfigTest {
     Assert.assertEquals("/test/pandadb-v0.3/data/pandadb.db/nodeMeta", config.getNodeMetaDBPath())
     Assert.assertEquals("/test/pandadb-v0.3/data/pandadb.db/index", config.getIndexDBPath())
     Assert.assertEquals("/test/data/pandadb.db/nodeLabel", config.getNodeLabelDBPath())
-
   }
 }

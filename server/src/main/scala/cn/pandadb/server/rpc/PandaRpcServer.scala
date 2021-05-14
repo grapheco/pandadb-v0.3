@@ -28,25 +28,15 @@ class PandaRpcServer(config: Config, dbManager: GraphDatabaseManager)
 
   override def init(): Unit = {
     logger.debug(this.getClass + ": init")
-    rpcConfig = RpcEnvServerConfig(new RpcConf(), config.getRpcServerName(),
-      config.getListenHost(), config.getRpcPort())
+    rpcConfig = RpcEnvServerConfig(new RpcConf(), config.getRpcServerName(), config.getListenHost(), config.getRpcPort())
     rpcEnv = HippoRpcEnvFactory.create(rpcConfig)
-    auth = {
-      val path = {
-        if (config.getLocalDataStorePath() != "not setting") {
-          config.getLocalDataStorePath() + "/" + config.getLocalDBName()
-        } else {
-          config.getDefaultDBHome() + "/data/" + config.getLocalDBName()
-        }
-      }
-      new Auth(path, config.getRocksdbConfigFilePath)
-    }
+    auth = new Auth(config.getAuthDBPath(), config.getRocksdbConfigFilePath())
   }
 
   override def start(): Unit = {
     logger.debug(this.getClass + ": start")
 
-    val graphService = dbManager.getDatabase("default")
+    val graphService = dbManager.getDatabase()
     val endpoint = new PandaEndpoint(rpcEnv)
     val handler = new PandaStreamHandler(graphService, auth)
     rpcEnv.setupEndpoint(config.getRpcServerName(), endpoint)

@@ -8,7 +8,7 @@ import cn.pandadb.server.common.lifecycle.LifecycleAdapter
 
 trait GraphDatabaseManager extends LifecycleAdapter {
 
-  def getDatabase(name: String): GraphService;
+  def getDatabase(): GraphService;
 
   def createDatabase(name: String): GraphService;
 
@@ -31,7 +31,7 @@ class DefaultGraphDatabaseManager(config: Config) extends GraphDatabaseManager w
     dataPath
   }
 
-  override def getDatabase(name: String): GraphService = {
+  override def getDatabase(): GraphService = {
     defaultDB
   }
 

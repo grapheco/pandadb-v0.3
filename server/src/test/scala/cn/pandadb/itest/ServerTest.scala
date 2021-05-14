@@ -7,38 +7,40 @@ import cn.pandadb.server.common.configuration.{Config, SettingKeys}
 import org.apache.commons.io.FileUtils
 import org.junit.{Assert, Test}
 
+import scala.collection.mutable
+
 class ServerTest {
 
-  val configFile = new File("./pandadb.conf")
-
-  @Test
-  def testAddExtraSettings(): Unit ={
-    val dataHome = Map[String, String]("db.default.home.path"->"/pandadb")
-    val config = new Config().withFile(Option(configFile)).withSettings(dataHome)
-    Assert.assertEquals("/pandadb", config.getDefaultDBHome())
-  }
+  val settings = mutable.HashMap(
+    "dbms.server.rpc.listen.host" -> "0.0.0.0",
+    "dbms.server.rpc.listen.port"->"9989",
+    "dbms.server.rpc.service.name"->"pandadb-server"
+  )
 
   @Test
   def testConfHasDBDescribe(): Unit ={
-    val map = Map[String, String](
-      SettingKeys.localDBHomePath -> "/pandadb",
-      SettingKeys.localDBName -> "hasPandadb.db",
-      SettingKeys.defaultLocalDBHome -> "/pandadb_default"
-    )
+    settings += SettingKeys.localDBHomePath -> "./testdata/pandadb"
+    settings += SettingKeys.localDBName -> "hasPandadb.db"
+    settings += SettingKeys.defaultLocalDBHome -> "./testdata/pandadb_default"
 
-    FileUtils.deleteDirectory(new File(map.get(SettingKeys.localDBHomePath).get))
+    FileUtils.deleteDirectory(new File(settings(SettingKeys.localDBHomePath)))
     val serverBootstrapper = new PandaServerBootstrapper()
-    serverBootstrapper.start(configFile, map)
+    serverBootstrapper.start(null, settings.toMap)
   }
 
   @Test
   def testConfNoDBDescribe(): Unit ={
-    val map = Map[String, String](
-      SettingKeys.defaultLocalDBHome -> "/pandadb_default"
-    )
-
-//    FileUtils.deleteDirectory(new File(map.get(SettingKeys.defaultLocalDBHome).get))
+    settings += SettingKeys.defaultLocalDBHome -> "./testdata/pandadb_default"
+    FileUtils.deleteDirectory(new File(settings(SettingKeys.defaultLocalDBHome)))
     val serverBootstrapper = new PandaServerBootstrapper()
-    serverBootstrapper.start(configFile, map)
+    serverBootstrapper.start(null, settings.toMap)
+  }
+
+  @Test
+  def testConfStart(): Unit ={
+    val confFile = new File("./testdata/pandadb.conf")
+    FileUtils.deleteDirectory(new File("/testdata"))
+    val serverBootstrapper = new PandaServerBootstrapper()
+    serverBootstrapper.start(confFile, Map("db.default.home.path" -> "./testdata"))
   }
 }
