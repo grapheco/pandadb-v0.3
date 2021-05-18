@@ -107,7 +107,7 @@
             <dependency>
                 <groupId>org.grapheco</groupId>
                 <artifactId>lynx-framework</artifactId>
-                <version>0.3-SNAPSHOT</version>
+                <version>0.4-SNAPSHOT</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.apache.logging.log4j</groupId>

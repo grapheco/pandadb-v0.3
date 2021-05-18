@@ -3,11 +3,10 @@ package cn.pandadb.kernel.kv
 import com.typesafe.scalalogging.LazyLogging
 import cn.pandadb.kernel.GraphService
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
-import cn.pandadb.kernel.kv.lynx.procedure.PandaFunction
 import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.value.ValueMappings
 import cn.pandadb.kernel.store._
-import org.grapheco.lynx.{CallableProcedure, ContextualNodeInputRef, CypherRunner, GraphModel, LynxId, LynxNode, LynxRelationship, LynxResult, LynxValue, NodeFilter, NodeInput, NodeInputRef, PathTriple, RelationshipFilter, RelationshipInput, StoredNodeInputRef}
+import org.grapheco.lynx.{ContextualNodeInputRef, CypherRunner, GraphModel, LynxId, LynxNode, LynxRelationship, LynxResult, LynxValue, NodeFilter, NodeInput, NodeInputRef, PathTriple, RelationshipFilter, RelationshipInput, StoredNodeInputRef}
 import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, SemanticDirection}
 
 class GraphFacade(nodeStore: NodeStoreSPI,
@@ -110,6 +109,8 @@ class GraphFacade(nodeStore: NodeStoreSPI,
           })
     }
   }
+
+  override def deleteNodes(nodesIDs: Iterator[LynxId], forced: Boolean): Unit = ???
 
   override def deleteRelation(id: Id): Unit = {
     relationStore.getRelationById(id).foreach {
@@ -409,12 +410,6 @@ class GraphFacade(nodeStore: NodeStoreSPI,
 
   def findNodeByIndex(indexId: Int, value: Any): Iterator[PandaNode] =
     indexStore.find(indexId, value).flatMap(nodeStore.getNodeById(_)).map(mapNode)
-
-  override def getProcedure(prefix: List[String], name: String): Option[CallableProcedure] = {
-    val functionName = s"${prefix.mkString(".")}.${name}".toLowerCase()
-    PandaFunction.lookup(functionName).callableProcedure
-
-  } //todo when procedure is need
 
   override def paths(startNodeFilter: NodeFilter,
                      relationshipFilter: RelationshipFilter,
