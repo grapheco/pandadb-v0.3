@@ -19,7 +19,7 @@ object Statistics {
 
 class Statistics(path: String, rocksdbCfgPath: String = "default") {
 
-  val db: KeyValueDB = RocksDBStorage.getDB(s"${path}/statistics", rocksdbConfigPath = rocksdbCfgPath)
+  val db: KeyValueDB = RocksDBStorage.getDB(s"${path}/statistics", rocksdbConfigPath = rocksdbCfgPath)._1
 
   private var _allNodesCount: Long = -1
   private var _allRelationCount: Long = -1

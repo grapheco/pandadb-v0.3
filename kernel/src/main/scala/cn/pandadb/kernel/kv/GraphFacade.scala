@@ -110,7 +110,9 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     }
   }
 
-  override def deleteNodes(nodesIDs: Iterator[LynxId], forced: Boolean): Unit = ???
+  override def deleteNodes(nodesIDs: Iterator[LynxId], forced: Boolean): Unit = {
+    nodeStore.deleteNodes(nodesIDs.map(_.asInstanceOf[NodeId].value))
+  }
 
   override def deleteRelation(id: Id): Unit = {
     relationStore.getRelationById(id).foreach {
@@ -620,4 +622,18 @@ class GraphFacade(nodeStore: NodeStoreSPI,
 
     onCreated(nodesMap, relsMap)
   }
+
+  override def filterNodesWithRelations(nodesIDs: Seq[LynxId]): Seq[LynxId] = ???
+
+  override def deleteRelationsOfNodes(nodesIDs: Seq[LynxId]): Unit = ???
+
+  override def deleteFreeNodes(nodesIDs: Seq[LynxId]): Unit = ???
+
+  override def setNodeProperty(nodeId: LynxId, propertyName: String, value: AnyRef): Seq[LynxValue] = ???
+
+  override def setNodeLabels(nodeId: LynxId, labels: Seq[String]): Seq[LynxValue] = ???
+
+  override def setRelationshipProperty(triple: Seq[LynxValue], propertyName: String, value: AnyRef): Seq[LynxValue] = ???
+
+  override def setRelationshipTypes(triple: Seq[LynxValue], labels: Seq[String]): Seq[LynxValue] = ???
 }

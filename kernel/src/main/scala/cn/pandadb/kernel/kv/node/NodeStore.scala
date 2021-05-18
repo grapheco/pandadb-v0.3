@@ -5,6 +5,7 @@ import cn.pandadb.kernel.kv.db.KeyValueDB
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import cn.pandadb.kernel.store.StoredNodeWithProperty
 import cn.pandadb.kernel.util.serializer.{BaseSerializer, NodeSerializer}
+import org.rocksdb.WriteBatch
 
 class NodeStore(db: KeyValueDB) {
   // [labelId,nodeId]->[Node]
@@ -102,5 +103,4 @@ class NodeStore(db: KeyValueDB) {
   def delete(nodeId:Long, labelIds: Array[LabelId]): Unit = labelIds.foreach(delete(nodeId, _))
 
   def delete(node: StoredNodeWithProperty): Unit = delete(node.id, node.labelIds)
-
 }

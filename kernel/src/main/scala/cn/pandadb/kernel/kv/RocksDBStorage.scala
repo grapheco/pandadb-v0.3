@@ -17,7 +17,7 @@ object RocksDBStorage extends LazyLogging{
             isHDD: Boolean = false,
             useForImporter: Boolean = false,
             prefix: Int = 0,
-            rocksdbConfigPath: String = "default"): KeyValueDB = {
+            rocksdbConfigPath: String = "default"): (KeyValueDB, Options) = {
 
     val dir = new File(path)
     if (!dir.exists()) {
@@ -64,7 +64,7 @@ object RocksDBStorage extends LazyLogging{
       logger.debug(s"setMaxBytesForLevelBase: ${options.maxBytesForLevelBase()}")
 
       try {
-        new RocksDBStorage(RocksDB.open(options, path))
+        (new RocksDBStorage(RocksDB.open(options, path)), options)
       } catch {
         case ex: Exception => throw new PandaDBException(s"$path, ${ex.getMessage}")
       }
@@ -73,9 +73,9 @@ object RocksDBStorage extends LazyLogging{
       logger.debug("read setting file")
       val rocksFile = new File(rocksdbConfigPath)
       if (!rocksFile.exists()) throw new PandaDBException("rocksdb config file not exist...")
-      val builder = new RocksDBConfigBuilder(rocksFile)
-      val db = RocksDB.open(builder.getOptions(), path)
-      new RocksDBStorage(db)
+      val options = new RocksDBConfigBuilder(rocksFile).getOptions()
+      val db = RocksDB.open(options, path)
+      (new RocksDBStorage(db), options)
     }
   }
 }

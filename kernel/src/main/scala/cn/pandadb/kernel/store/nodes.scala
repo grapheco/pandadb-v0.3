@@ -1,6 +1,5 @@
 package cn.pandadb.kernel.store
 
-import cn.pandadb.kernel.kv.node.NodeLabelStore
 import cn.pandadb.kernel.util.serializer.BaseSerializer
 import org.grapheco.lynx.{LynxId, LynxNode, LynxNull, LynxValue}
 
@@ -93,6 +92,7 @@ trait NodeStoreSPI {
 
   def deleteNode(nodeId: Long): Unit;
 
+  def deleteNodes(nodeIDs: Iterator[Long]): Unit;
 
   def serializeLabelIdsToBytes(labelIds: Array[Int]): Array[Byte] = {
     BaseSerializer.array2Bytes(labelIds)
