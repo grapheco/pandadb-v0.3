@@ -138,11 +138,26 @@ class GraphFacade(nodeStore: NodeStoreSPI,
   override def nodeSetProperty(id: Id, key: String, value: Any): Unit =
     nodeStore.nodeSetProperty(id, nodeStore.addPropertyKey(key), value)
 
+  override def nodeSetProperty(id: Id, data: Array[(String ,AnyRef)], withReturn: Boolean): Option[Seq[LynxValue]] = {
+    data.foreach(kv => nodeStore.nodeSetProperty(id, nodeStore.addPropertyKey(kv._1), kv._2))
+    if (withReturn){
+      Option(Seq(mapNode(nodeStore.getNodeById(id).get)))
+    }else None
+  }
+
   override def nodeRemoveProperty(id: Id, key: String): Unit =
     nodePropNameMap(key).foreach(nodeStore.nodeRemoveProperty(id, _))
 
   override def nodeAddLabel(id: Id, label: String): Unit =
     nodeStore.nodeAddLabel(id, nodeStore.addLabel(label))
+
+  override def nodeAddLabels(id: Id, labels: Array[String], withReturn: Boolean): Option[Seq[LynxValue]] = {
+    if (withReturn) {
+      labels.foreach(label => nodeStore.nodeAddLabel(id, nodeStore.addLabel(label)))
+      Option(Seq(mapNode(nodeStore.getNodeById(id).get)))
+    }
+    else None
+  }
 
   override def nodeRemoveLabel(id: Id, label: String): Unit =
     nodeLabelNameMap(label).foreach(nodeStore.nodeRemoveLabel(id, _))
@@ -150,10 +165,21 @@ class GraphFacade(nodeStore: NodeStoreSPI,
   override def relationSetProperty(id: Id, key: String, value: Any): Unit =
     relationStore.relationSetProperty(id, relationStore.addPropertyKey(key), value)
 
+  override def relationSetProperty(triple: Seq[LynxValue], data: Array[(String ,AnyRef)], withReturn: Boolean): Option[Seq[LynxValue]] = {
+    val relId = triple(1).asInstanceOf[LynxRelationship].id.value.asInstanceOf[Long]
+    data.foreach(kv => relationStore.relationSetProperty(relId, relationStore.addPropertyKey(kv._1), kv._2))
+    if (withReturn){
+      Option(Seq(triple.head, mapRelation(relationStore.getRelationById(relId).get), triple(2)))
+    }
+    else None
+  }
+
   override def relationRemoveProperty(id: Id, key: String): Unit =
     relPropNameMap(key).foreach(relationStore.relationRemoveProperty(id, _))
 
   override def relationAddLabel(id: Id, label: String): Unit = ???
+
+  override def relationAddLabel(id: Id, label: String, withReturn: Boolean): Option[Seq[LynxValue]] = ???
 
   override def relationRemoveLabel(id: Id, label: String): Unit = ???
 
@@ -629,11 +655,17 @@ class GraphFacade(nodeStore: NodeStoreSPI,
 
   override def deleteFreeNodes(nodesIDs: Seq[LynxId]): Unit = ???
 
-  override def setNodeProperty(nodeId: LynxId, propertyName: String, value: AnyRef): Seq[LynxValue] = ???
+  override def setNodeProperty(nodeId: LynxId,  data: Array[(String ,AnyRef)], withReturn: Boolean): Option[Seq[LynxValue]] = {
+    nodeSetProperty(nodeId.value.asInstanceOf[Long], data, withReturn)
+  }
 
-  override def setNodeLabels(nodeId: LynxId, labels: Seq[String]): Seq[LynxValue] = ???
+  override def addNodeLabels(nodeId: LynxId, labels: Array[String], withReturn: Boolean): Option[Seq[LynxValue]] = {
+    nodeAddLabels(nodeId.value.asInstanceOf[Long], labels, withReturn)
+  }
 
-  override def setRelationshipProperty(triple: Seq[LynxValue], propertyName: String, value: AnyRef): Seq[LynxValue] = ???
-
-  override def setRelationshipTypes(triple: Seq[LynxValue], labels: Seq[String]): Seq[LynxValue] = ???
+  override def setRelationshipProperty(triple: Seq[LynxValue], data: Array[(String ,AnyRef)], withReturn: Boolean): Option[Seq[LynxValue]] = {
+    relationSetProperty(triple, data, withReturn)
+  }
+  // can not do this
+  override def setRelationshipTypes(triple: Seq[LynxValue], labels: Array[String], withReturn: Boolean): Option[Seq[LynxValue]] = ???
 }
