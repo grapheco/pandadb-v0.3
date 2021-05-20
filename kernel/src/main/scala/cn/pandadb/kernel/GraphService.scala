@@ -12,12 +12,10 @@ trait GraphService {
   def addNode(nodeProps: Map[String, Any], labels: String*): Id
 
   def nodeSetProperty(id: Id, key: String, value: Any): Unit
-  def nodeSetProperty(id: Id, data: Array[(String ,AnyRef)], withReturn: Boolean): Option[Seq[LynxValue]]
 
   def nodeRemoveProperty(id: Id, key: String): Unit
 
   def nodeAddLabel(id: Id, label: String): Unit
-  def nodeAddLabels(id: Id, labels: Array[String], withReturn: Boolean): Option[Seq[LynxValue]]
 
   def nodeRemoveLabel(id: Id, label: String): Unit
 
@@ -26,12 +24,10 @@ trait GraphService {
   def addRelation(label: String, from: Long, to: Long, relProps: Map[String, Any]): Id
 
   def relationSetProperty(id: Id, key: String, value: Any): Unit
-  def relationSetProperty(triple: Seq[LynxValue], data: Array[(String ,AnyRef)], withReturn: Boolean): Option[Seq[LynxValue]]
 
   def relationRemoveProperty(id: Id, key: String): Unit
 
   def relationAddLabel(id: Id, label: String): Unit
-  def relationAddLabel(id: Id, label: String, withReturn: Boolean): Option[Seq[LynxValue]]
 
   def relationRemoveLabel(id: Id, label: String): Unit
 
