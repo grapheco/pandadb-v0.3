@@ -2,11 +2,12 @@ package cn.pandadb.kernel.kv
 
 import com.typesafe.scalalogging.LazyLogging
 import cn.pandadb.kernel.GraphService
+import cn.pandadb.kernel.functions.PandaFunctions
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.value.ValueMappings
 import cn.pandadb.kernel.store._
-import org.grapheco.lynx.{ContextualNodeInputRef, CypherRunner, GraphModel, LynxId, LynxNode, LynxRelationship, LynxResult, LynxValue, NodeFilter, NodeInput, NodeInputRef, PathTriple, RelationshipFilter, RelationshipInput, StoredNodeInputRef}
+import org.grapheco.lynx.{ContextualNodeInputRef, CypherRunner, GraphModel, LynxId, LynxNode, LynxRelationship, LynxResult, LynxValue, NodeFilter, NodeInput, NodeInputRef, PathTriple, ProcedureRegistry, RelationshipFilter, RelationshipInput, StoredNodeInputRef}
 import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, SemanticDirection}
 
 class GraphFacade(nodeStore: NodeStoreSPI,
@@ -16,7 +17,9 @@ class GraphFacade(nodeStore: NodeStoreSPI,
                   onClose: => Unit
                  ) extends LazyLogging with GraphService with GraphModel {
 
-  val runner = new CypherRunner(this)
+  val runner = new CypherRunner(this){
+    override protected lazy val procedures: ProcedureRegistry = PandaFunctions.register()
+  }
 
   init()
 
