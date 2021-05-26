@@ -27,7 +27,7 @@ object PDBMetaData {
   private val _labelIdManager: MetaIdManager = new MetaIdManager(Int.MaxValue)
 
   def persist(dbPath: String): Unit = {
-    val rocksDB = RocksDBStorage.getDB(s"${dbPath}/metadata")._1
+    val rocksDB = RocksDBStorage.getDB(s"${dbPath}/metadata")
     rocksDB.put("_nodeIdAllocator".getBytes(), BaseSerializer.serialize(_nodeIdAllocator.get()))
     rocksDB.put("_relationIdAllocator".getBytes(), BaseSerializer.serialize(_relationIdAllocator.get()))
     rocksDB.put("_indexIdAllocator".getBytes(), BaseSerializer.serialize(_indexIdAllocator.get()))
@@ -35,8 +35,8 @@ object PDBMetaData {
     rocksDB.put("_typeIdManager".getBytes(), _typeIdManager.serialized)
     rocksDB.put("_labelIdManager".getBytes(), _labelIdManager.serialized)
 
-    val nodeMetaDB = RocksDBStorage.getDB(s"${dbPath}/nodeMeta")._1
-    val relMetaDB = RocksDBStorage.getDB(s"${dbPath}/relationMeta")._1
+    val nodeMetaDB = RocksDBStorage.getDB(s"${dbPath}/nodeMeta")
+    val relMetaDB = RocksDBStorage.getDB(s"${dbPath}/relationMeta")
     nodeMetaDB.put(KeyConverter.nodeIdGeneratorKeyToBytes(), ByteUtils.longToBytes(_nodeIdAllocator.get()))
     relMetaDB.put(KeyConverter.relationIdGeneratorKeyToBytes(), ByteUtils.longToBytes(_relationIdAllocator.get()))
     _labelIdManager.all.foreach{
@@ -64,7 +64,7 @@ object PDBMetaData {
   }
 
   def init(dbPath: String): Unit = {
-    val rocksDB = RocksDBStorage.getDB(s"${dbPath}/metadata")._1
+    val rocksDB = RocksDBStorage.getDB(s"${dbPath}/metadata")
     _nodeIdAllocator.set(BaseSerializer.bytes2Long(rocksDB.get("_nodeIdAllocator".getBytes())))
     _relationIdAllocator.set(BaseSerializer.bytes2Long(rocksDB.get("_relationIdAllocator".getBytes())))
     _indexIdAllocator.set(BaseSerializer.bytes2Int(rocksDB.get("_indexIdAllocator".getBytes())))

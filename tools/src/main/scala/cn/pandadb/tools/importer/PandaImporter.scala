@@ -68,25 +68,25 @@ object PandaImporter extends LazyLogging {
       globalNodeCount, globalNodePropCount,
       globalRelCount, globalRelPropCount,
       estNodeCount, estRelCount,
-      nodeDB._1, nodeLabelDB = nodeLabelDB._1,
-      relationDB = relationDB._1, inrelationDB = inRelationDB._1,
-      outRelationDB = outRelationDB._1, relationTypeDB = relationTypeDB._1, statistics
+      nodeDB, nodeLabelDB = nodeLabelDB,
+      relationDB = relationDB, inrelationDB = inRelationDB,
+      outRelationDB = outRelationDB, relationTypeDB = relationTypeDB, statistics
     )
     logger.info(s"Import task started. $time")
     service.scheduleAtFixedRate(nodeCountProgressLogger, 0, 30, TimeUnit.SECONDS)
     service.scheduleAtFixedRate(relCountProgressLogger, 0, 30, TimeUnit.SECONDS)
 
     importCmd.nodeFileList.foreach(file => new SingleNodeFileImporter(file, importCmd, globalArgs).importData())
-    nodeDB._1.close()
-    nodeLabelDB._1.close()
+    nodeDB.close()
+    nodeLabelDB.close()
     logger.info(s"$globalNodeCount nodes imported. $time")
     logger.info(s"$globalNodePropCount props of node imported. $time")
 
     importCmd.relFileList.foreach(file => new SingleRelationFileImporter(file, importCmd, globalArgs).importData())
-    relationDB._1.close()
-    inRelationDB._1.close()
-    outRelationDB._1.close()
-    relationTypeDB._1.close()
+    relationDB.close()
+    inRelationDB.close()
+    outRelationDB.close()
+    relationTypeDB.close()
     logger.info(s"$globalRelCount relations imported. $time")
     logger.info(s"$globalRelPropCount props of relation imported. $time")
 
