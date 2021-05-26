@@ -17,15 +17,15 @@ class RelationStoreAPI(relationDBPath: String, relationConfigPath: String,
                        relationLabelDBPath: String, relationLabelConfigPath: String,
                        metaDBPath: String, metaConfigPath: String) extends RelationStoreSPI{
 
-  private val relationDB = RocksDBStorage.getDB(relationDBPath, rocksdbConfigPath = relationConfigPath)._1
+  private val relationDB = RocksDBStorage.getDB(relationDBPath, rocksdbConfigPath = relationConfigPath)
   private val relationStore = new RelationPropertyStore(relationDB)
-  private val inRelationDB = RocksDBStorage.getDB(inRelationDBPath, rocksdbConfigPath = inRelationConfigPath)._1
+  private val inRelationDB = RocksDBStorage.getDB(inRelationDBPath, rocksdbConfigPath = inRelationConfigPath)
   private val inRelationStore = new RelationDirectionStore(inRelationDB, RelationDirection.IN)
-  private val outRelationDB = RocksDBStorage.getDB(outRelationDBPath, rocksdbConfigPath = outRelationConfigPath)._1
+  private val outRelationDB = RocksDBStorage.getDB(outRelationDBPath, rocksdbConfigPath = outRelationConfigPath)
   private val outRelationStore = new RelationDirectionStore(outRelationDB, RelationDirection.OUT)
-  private val relationLabelDB = RocksDBStorage.getDB(relationLabelDBPath, rocksdbConfigPath = relationLabelConfigPath)._1
+  private val relationLabelDB = RocksDBStorage.getDB(relationLabelDBPath, rocksdbConfigPath = relationLabelConfigPath)
   private val relationLabelStore = new RelationLabelIndex(relationLabelDB)
-  private val metaDB = RocksDBStorage.getDB(metaDBPath, rocksdbConfigPath = metaConfigPath)._1
+  private val metaDB = RocksDBStorage.getDB(metaDBPath, rocksdbConfigPath = metaConfigPath)
   private val relationTypeNameStore = new RelationTypeNameStore(metaDB)
   private val propertyName = new PropertyNameStore(metaDB)
   private val relationIdGenerator = new IdGenerator(relationDB, 200)

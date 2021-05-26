@@ -32,7 +32,7 @@
         <lucene.version>7.5.0</lucene.version>
         <scala-logging.version>3.8.0</scala-logging.version>
         <log4j-slf4j-impl.version>2.14.0</log4j-slf4j-impl.version>
-        <junit.version>4.12</junit.version>
+        <junit.version>4.13.1</junit.version>
         <pandadb.version>${project.version}</pandadb.version>
     </properties>
 

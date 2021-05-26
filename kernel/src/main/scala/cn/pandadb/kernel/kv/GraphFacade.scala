@@ -113,8 +113,23 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     }
   }
 
-  override def deleteNodes(nodesIDs: Iterator[LynxId], forced: Boolean): Unit = {
-    nodeStore.deleteNodes(nodesIDs.map(_.asInstanceOf[NodeId].value))
+  override def filterNodesWithRelations(nodesIDs: Seq[LynxId]): Seq[LynxId] = {//TODO opt perf.
+    nodesIDs.filter(nid => {
+      val nidL = nid.asInstanceOf[NodeId].value
+      relationStore.findOutRelations(nidL).nonEmpty || relationStore.findInRelations(nidL).nonEmpty
+    })
+  }
+
+  override def deleteRelationsOfNodes(nodesIDs: Seq[LynxId]): Unit = {//TODO opt perf.
+    nodesIDs.foreach(nid => {
+      val nidL = nid.asInstanceOf[NodeId].value
+      relationStore.findOutRelations(nidL).foreach(rel => relationStore.deleteRelation(rel.id))
+      relationStore.findInRelations(nidL).foreach(rel => relationStore.deleteRelation(rel.id))
+    })
+  }
+
+  override def deleteFreeNodes(nodesIDs: Seq[LynxId]): Unit = {
+    nodeStore.deleteNodes(nodesIDs.map(_.asInstanceOf[NodeId].value).toIterator)
   }
 
   override def deleteRelation(id: Id): Unit = {
@@ -627,12 +642,6 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     onCreated(nodesMap, relsMap)
   }
 
-  override def filterNodesWithRelations(nodesIDs: Seq[LynxId]): Seq[LynxId] = ???
-
-  override def deleteRelationsOfNodes(nodesIDs: Seq[LynxId]): Unit = ???
-
-  override def deleteFreeNodes(nodesIDs: Seq[LynxId]): Unit = ???
-
   override def setNodeProperty(nodeId: LynxId,  data: Array[(String ,AnyRef)], withReturn: Boolean): Option[Seq[LynxValue]] = {
     data.foreach(kv => nodeSetProperty(nodeId.value.asInstanceOf[Long], kv._1, kv._2))
     if (withReturn) {
@@ -642,7 +651,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     }
     else None
   }
-
+  
   override def addNodeLabels(nodeId: LynxId, labels: Array[String], withReturn: Boolean): Option[Seq[LynxValue]] = {
     labels.foreach(label => nodeAddLabel(nodeId.value.asInstanceOf[Long], label))
     if (withReturn) {
@@ -665,37 +674,4 @@ class GraphFacade(nodeStore: NodeStoreSPI,
   }
   // can not do this
   override def setRelationshipTypes(triple: Seq[LynxValue], labels: Array[String], withReturn: Boolean): Option[Seq[LynxValue]] = ???
-
-  override def removeNodeProperty(nodeId: LynxId, data: Array[String], withReturn: Boolean): Option[Seq[LynxValue]] = {
-    data.foreach(key => nodeRemoveProperty(nodeId.value.asInstanceOf[Long], key))
-    if (withReturn) {
-      val node = nodeAt(nodeId)
-      if (node.isDefined) Option(Seq(node.get))
-      else None
-    }
-    else None
-  }
-
-  override def removeNodeLabels(nodeId: LynxId, labels: Array[String], withReturn: Boolean): Option[Seq[LynxValue]] = {
-    labels.foreach(label => nodeRemoveLabel(nodeId.value.asInstanceOf[Long], label))
-    if (withReturn) {
-      val node = nodeAt(nodeId)
-      if (node.isDefined) Option(Seq(node.get))
-      else None
-    }
-    else None
-  }
-
-  override def removeRelationshipProperty(triple: Seq[LynxValue], data: Array[String], withReturn: Boolean): Option[Seq[LynxValue]] = {
-    val relId = triple(1).asInstanceOf[LynxRelationship].id.value.asInstanceOf[Long]
-    data.foreach(key => relationRemoveProperty(relId, key))
-    if (withReturn){
-      val relationship = relationAt(relId)
-      if (relationship.isDefined) Option(Seq(triple.head, relationship.get, triple(2)))
-      else None
-    }
-    else None
-  }
-
-  override def removeRelationshipType(triple: Seq[LynxValue], labels: Array[String], withReturn: Boolean): Option[Seq[LynxValue]] = ???
 }

@@ -18,9 +18,9 @@ class IndexStoreAPI(metaDBPath: String, metaDBConfigPath: String,
   type IndexId   = Int
 //  type Long    = Long
 
-  private val metaDB = RocksDBStorage.getDB(metaDBPath, rocksdbConfigPath = metaDBConfigPath)._1
+  private val metaDB = RocksDBStorage.getDB(metaDBPath, rocksdbConfigPath = metaDBConfigPath)
   private val meta = new IndexMetaData(metaDB)
-  private val indexDB = RocksDBStorage.getDB(indexDBPath, rocksdbConfigPath = indexDBConfigPath)._1
+  private val indexDB = RocksDBStorage.getDB(indexDBPath, rocksdbConfigPath = indexDBConfigPath)
   private val index = new IndexStore(indexDB)
   private val indexIdGenerator = new IdGenerator(metaDB, 200)
 

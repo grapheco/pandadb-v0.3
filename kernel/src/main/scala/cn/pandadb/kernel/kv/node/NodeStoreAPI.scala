@@ -4,18 +4,22 @@ import cn.pandadb.kernel.kv.KeyConverter.NodeId
 import cn.pandadb.kernel.kv.{KeyConverter, RocksDBStorage}
 import cn.pandadb.kernel.kv.meta.{IdGenerator, NodeLabelNameStore, PropertyNameStore}
 import cn.pandadb.kernel.store.{NodeStoreSPI, StoredNodeWithProperty}
-import org.rocksdb.WriteBatch
+import org.rocksdb.{WriteBatch, WriteOptions}
 
 
 class NodeStoreAPI(nodeDBPath: String, nodeDBConfigPath: String,
                    nodeLabelDBPath: String, nodeLabelConfigPath: String,
                    metaDBPath: String, metaDBConfigPath: String) extends NodeStoreSPI {
 
-  private val (nodeDB, nodeDBOption) = RocksDBStorage.getDB(nodeDBPath, rocksdbConfigPath = nodeDBConfigPath)
+  private val nodeDB = RocksDBStorage.getDB(nodeDBPath, rocksdbConfigPath = nodeDBConfigPath)
+  private val writeOptions = new WriteOptions()
+  writeOptions.setDisableWAL(true)
+  writeOptions.setIgnoreMissingColumnFamilies(true)
+  writeOptions.setSync(false)
   private val nodeStore = new NodeStore(nodeDB)
-  private val (nodeLabelDB, nodeLabelDBOption) = RocksDBStorage.getDB(nodeLabelDBPath, rocksdbConfigPath = nodeLabelConfigPath)
+  private val nodeLabelDB = RocksDBStorage.getDB(nodeLabelDBPath, rocksdbConfigPath = nodeLabelConfigPath)
   private val nodeLabelStore = new NodeLabelStore(nodeLabelDB)
-  private val metaDB = RocksDBStorage.getDB(metaDBPath, rocksdbConfigPath = metaDBConfigPath)._1
+  private val metaDB = RocksDBStorage.getDB(metaDBPath, rocksdbConfigPath = metaDBConfigPath)
   private val nodeLabelName = new NodeLabelNameStore(metaDB)
   private val propertyName = new PropertyNameStore(metaDB)
   private val idGenerator = new IdGenerator(nodeLabelDB, 200)
@@ -150,8 +154,8 @@ class NodeStoreAPI(nodeDBPath: String, nodeDBConfigPath: String,
       labelWB.deleteRange(KeyConverter.toNodeLabelKey(nid, 0),
         KeyConverter.toNodeLabelKey(nid, -1))
     })
-    nodeDB.write(nodeDBOption, nodesWB) //TODO Important! to guarantee atomic
-    nodeLabelDB.write(nodeLabelDBOption, labelWB) //TODO Important! to guarantee atomic
+    nodeDB.write(writeOptions, nodesWB) //TODO Important! to guarantee atomic
+    nodeLabelDB.write(writeOptions, labelWB) //TODO Important! to guarantee atomic
   }
 
   // big cost
