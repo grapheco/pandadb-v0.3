@@ -2,7 +2,7 @@ package cn.pandadb.test.cypher.emb
 
 import cn.pandadb.kernel.{GraphDatabaseBuilder, GraphService}
 import org.apache.commons.io.FileUtils
-import org.grapheco.lynx.{ConstrainViolationException, LynxValue, WrongNumberOfArgumentsException}
+import org.grapheco.lynx.{ConstrainViolatedException, LynxValue, WrongNumberOfArgumentsException}
 import org.junit.function.ThrowingRunnable
 import org.junit.{After, Assert, Before, Test}
 
@@ -75,7 +75,7 @@ class DeleteNodeTest {
   @Test
   def testDeleteNode(): Unit = {
 
-    Assert.assertThrows(classOf[ConstrainViolationException], new ThrowingRunnable() {
+    Assert.assertThrows(classOf[ConstrainViolatedException], new ThrowingRunnable() {
       override def run(): Unit = {
         db.cypher("MATCH (n) Delete n")
       }

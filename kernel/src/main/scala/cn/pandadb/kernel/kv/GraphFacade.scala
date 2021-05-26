@@ -674,4 +674,37 @@ class GraphFacade(nodeStore: NodeStoreSPI,
   }
   // can not do this
   override def setRelationshipTypes(triple: Seq[LynxValue], labels: Array[String], withReturn: Boolean): Option[Seq[LynxValue]] = ???
+
+  override def removeNodeProperty(nodeId: LynxId, data: Array[String], withReturn: Boolean): Option[Seq[LynxValue]] = {
+    data.foreach(key => nodeRemoveProperty(nodeId.value.asInstanceOf[Long], key))
+    if (withReturn) {
+      val node = nodeAt(nodeId)
+      if (node.isDefined) Option(Seq(node.get))
+      else None
+    }
+    else None
+  }
+
+  override def removeNodeLabels(nodeId: LynxId, labels: Array[String], withReturn: Boolean): Option[Seq[LynxValue]] = {
+    labels.foreach(label => nodeRemoveLabel(nodeId.value.asInstanceOf[Long], label))
+    if (withReturn) {
+      val node = nodeAt(nodeId)
+      if (node.isDefined) Option(Seq(node.get))
+      else None
+    }
+    else None
+  }
+
+  override def removeRelationshipProperty(triple: Seq[LynxValue], data: Array[String], withReturn: Boolean): Option[Seq[LynxValue]] = {
+    val relId = triple(1).asInstanceOf[LynxRelationship].id.value.asInstanceOf[Long]
+    data.foreach(key => relationRemoveProperty(relId, key))
+    if (withReturn){
+      val relationship = relationAt(relId)
+      if (relationship.isDefined) Option(Seq(triple.head, relationship.get, triple(2)))
+      else None
+    }
+    else None
+  }
+  // can not do this
+  override def removeRelationshipType(triple: Seq[LynxValue], labels: Array[String], withReturn: Boolean): Option[Seq[LynxValue]] = ???
 }
