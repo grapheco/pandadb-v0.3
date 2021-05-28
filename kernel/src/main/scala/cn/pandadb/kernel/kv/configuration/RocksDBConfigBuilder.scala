@@ -17,7 +17,7 @@ class RocksDBConfigBuilder(rocksFile: File) extends LazyLogging{
     val is = new BufferedInputStream(new FileInputStream(rocksFile))
     prop.load(is)
     val settings = prop.asScala
-    logger.info(s"settings nums: ${settings.size}")
+    logger.debug(s"settings nums: ${settings.size}")
 
     val options: Options = new Options()
     val tableConfig = new BlockBasedTableConfig()
