@@ -26,17 +26,22 @@ do_console(){
   java -cp "$PANDADB_LAB""//*" $PANDADB_ENTRY $PANDADB_CONF $PANDADB_HOME
 }
 do_start(){
-  nohup java -cp "$PANDADB_LAB""//*" $PANDADB_ENTRY $PANDADB_CONF $PANDADB_HOME > $PANDADB_LOG 2>&1 &
-  cat $PANDADB_CONF | while read line
-  do
-    result1=$(echo $line | grep "rpc.listen.host")
-    result2=$(echo $line | grep "rpc.listen.port")
-    if [ "$result1" != "" ] || [ "$result2" != "" ]
-    then echo $line
-    fi
-  done
   PANDADB_PID=`pgrep -f "PandaServerEntryPoint"`
-  echo "pandadb server started...pid: $PANDADB_PID"
+  if [ "$PANDADB_PID" != "" ]
+  then echo "pandadb is running on pid: $PANDADB_PID"
+  else
+    nohup java -cp "$PANDADB_LAB""//*" $PANDADB_ENTRY $PANDADB_CONF $PANDADB_HOME > $PANDADB_LOG 2>&1 &
+    cat $PANDADB_CONF | while read line
+    do
+      result1=$(echo $line | grep "rpc.listen.host")
+      result2=$(echo $line | grep "rpc.listen.port")
+      if [ "$result1" != "" ] || [ "$result2" != "" ]
+      then echo $line
+      fi
+    done
+    PANDADB_PID=`pgrep -f "PandaServerEntryPoint"`
+    echo "pandadb server started...pid: $PANDADB_PID"
+  fi
 }
 do_stop(){
   PANDADB_PID=`pgrep -f "PandaServerEntryPoint"`
