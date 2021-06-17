@@ -49,32 +49,32 @@ case class ImportCmd(args: Array[String]) {
 
   val nodeDBPath: String = {
     val path = _getArgByName("nodeDBPath")
-    if (!advancdeMode && path == "") throw new PandaDBException("nodeDBPath is blank.")
+    if (advancdeMode && path == "") throw new PandaDBException("nodeDBPath is blank.")
     path
   }
   val nodeLabelDBPath: String = {
     val path = _getArgByName("nodeLabelDBPath")
-    if (!advancdeMode && path == "") throw new PandaDBException("nodeLabelDBPath is blank.")
+    if (advancdeMode && path == "") throw new PandaDBException("nodeLabelDBPath is blank.")
     path
   }
   val relationDBPath: String = {
     val path = _getArgByName("relationDBPath")
-    if (!advancdeMode && path == "") throw new PandaDBException("relationDBPath is blank.")
+    if (advancdeMode && path == "") throw new PandaDBException("relationDBPath is blank.")
     path
   }
   val inRelationDBPath: String = {
     val path = _getArgByName("inRelationDBPath")
-    if (!advancdeMode && path == "") throw new PandaDBException("inRelationDBPath is blank.")
+    if (advancdeMode && path == "") throw new PandaDBException("inRelationDBPath is blank.")
     path
   }
   val outRelationDBPath: String = {
     val path = _getArgByName("outRelationDBPath")
-    if (!advancdeMode && path == "") throw new PandaDBException("outRelationDBPath is blank.")
+    if (advancdeMode && path == "") throw new PandaDBException("outRelationDBPath is blank.")
     path
   }
   val relationTypeDBPath: String = {
     val path = _getArgByName("relationTypeDBPath")
-    if (!advancdeMode && path == "") throw new PandaDBException("relationTypeDBPath is blank.")
+    if (advancdeMode && path == "") throw new PandaDBException("relationTypeDBPath is blank.")
     path
   }
 
