@@ -85,4 +85,13 @@ class BaseSerializerTest {
     Assert.assertArrayEquals(blob.toBytes(), deSerializedBlob.toBytes())
   }
 
+  @Test
+  def testBlankString(): Unit = {
+    val blankString = ""
+    val map = Map(1 -> blankString)
+    val bytesArr = serializer.map2Bytes(map)
+    val deserializedMap = serializer.bytes2Map(bytesArr)
+    Assert.assertEquals(blankString, deserializedMap(1))
+  }
+
 }

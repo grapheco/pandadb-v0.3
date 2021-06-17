@@ -124,7 +124,7 @@ trait BaseSerializer {
     val bos: ByteArrayOutputStream = new ByteArrayOutputStream()
 
     //short
-    if (len < 32768 && len > 0) {
+    if (len < 32768 && len >= 0) {
       byteBuf.readBytes(bos, len)
     }
     //long
