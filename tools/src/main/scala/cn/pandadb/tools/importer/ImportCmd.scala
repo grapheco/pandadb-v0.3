@@ -96,12 +96,23 @@ case class ImportCmd(args: Array[String]) {
     else "|"
   }
 
+  val advancdeMode: Boolean = {
+    val flag = _getArgByName("advanced-mode", "false")
+    if(flag.equals("true")) true
+    else false
+  }
+
   private def _getArgByName(name: String): String = {
     val filtered: Array[String] = args.filter(arg => arg.startsWith(s"--$name=")).map(arg => arg.replace(s"--$name=", ""))
     if (filtered.length == 0) ""
     else filtered.mkString(",")
   }
 
+  private def _getArgByName(name: String, default: String): String = {
+    val filtered: Array[String] = args.filter(arg => arg.startsWith(s"--$name=")).map(arg => arg.replace(s"--$name=", ""))
+    if (filtered.length == 0) default
+    else filtered.mkString(",")
+  }
   private def _transferDelimeter(srcDelimeter: String): String = {
     val needTransfer: Boolean = srcDelimeter.equals("|")
     if (needTransfer) s"\\$srcDelimeter"
