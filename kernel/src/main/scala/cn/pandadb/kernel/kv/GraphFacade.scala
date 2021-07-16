@@ -1,24 +1,29 @@
 package cn.pandadb.kernel.kv
 
-import com.typesafe.scalalogging.LazyLogging
 import cn.pandadb.kernel.GraphService
-import cn.pandadb.kernel.functions.PandaFunctions
 import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.value.ValueMappings
 import cn.pandadb.kernel.store._
-import org.grapheco.lynx.{ContextualNodeInputRef, CypherRunner, GraphModel, LynxId, LynxNode, LynxRelationship, LynxResult, LynxValue, NodeFilter, NodeInput, NodeInputRef, PathTriple, ProcedureRegistry, RelationshipFilter, RelationshipInput, StoredNodeInputRef}
+import com.typesafe.scalalogging.LazyLogging
+import org.grapheco.aipm.rpc.FaceFeatureClient
+import org.grapheco.lynx.cypherplus._
+import org.grapheco.lynx._
 import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, SemanticDirection}
+
 
 class GraphFacade(nodeStore: NodeStoreSPI,
                   relationStore: RelationStoreSPI,
                   indexStore: IndexStoreAPI,
                   statistics: Statistics,
                   onClose: => Unit
-                 ) extends LazyLogging with GraphService with GraphModel {
+                 ) extends LazyLogging with GraphService with GraphModelPlus {
 
-  val runner = new CypherRunner(this){
-    override protected lazy val procedures: ProcedureRegistry = PandaFunctions.register()
+//  val runner = new CypherRunner(this){
+//    override protected lazy val procedures: ProcedureRegistry = PandaFunctions.register()
+//  }
+  val runner = new CypherRunnerPlus(this) {
+    procedures.asInstanceOf[DefaultProcedureRegistry].registerAnnotatedClass(classOf[DefaultBlobFunctions])
   }
 
   init()
@@ -707,4 +712,25 @@ class GraphFacade(nodeStore: NodeStoreSPI,
   }
   // can not do this
   override def removeRelationshipType(triple: Seq[LynxValue], labels: Array[String], withReturn: Boolean): Option[Seq[LynxValue]] = ???
+
+  override def getSubProperty(value: LynxValue, propertyKey: String): LynxValue = {
+    propertyKey match {
+      case "faceFeature" => {
+        val client = new FaceFeatureClient("10.0.90.173:8081")
+        val feature = client.getFaceFeatures(value.value.asInstanceOf[Blob].toBytes())
+        val result: LynxList = LynxList(feature.map(list => LynxList(list.map(item => LynxDouble(item)))))
+        result
+      }
+    }
+  }
+
+  override def getSemanticComparator(algoName: Option[String]): SemanticComparator = {
+    new SemanticComparator {
+      override def compare(a: LynxValue, b: LynxValue): Option[Double] = Some(0.1)
+    }
+  }
+
+  override def getInternalBlob(bid: String): Blob = {
+    Blob.EMPTY
+  }
 }

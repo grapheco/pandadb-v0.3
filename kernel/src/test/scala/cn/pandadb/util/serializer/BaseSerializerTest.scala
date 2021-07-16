@@ -1,10 +1,9 @@
 package cn.pandadb.util.serializer
 
-import cn.pandadb.kernel.blob.api.{Blob, ManagedBlob}
-import cn.pandadb.kernel.blob.impl.BlobFactory
 import cn.pandadb.kernel.util.Profiler.timing
 import cn.pandadb.kernel.util.serializer.BaseSerializer
 import io.netty.buffer.{ByteBuf, UnpooledByteBufAllocator, UnpooledHeapByteBuf}
+import org.grapheco.lynx.cypherplus.Blob
 import org.junit.{Assert, Test}
 
 import java.io.File
@@ -79,7 +78,7 @@ class BaseSerializerTest {
   @Test
   def testBlob(): Unit = {
     val surl = "https://www.baidu.com/img/flexible/logo/pc/result.png"
-    val blob = BlobFactory.fromHttpURL(surl)
+    val blob = Blob.fromHttpURL(surl)
     val bytesArray = BaseSerializer.map2Bytes(Map(1-> blob))
     val deSerializedBlob = BaseSerializer.bytes2Map(bytesArray).get(1).get.asInstanceOf[Blob]
     Assert.assertArrayEquals(blob.toBytes(), deSerializedBlob.toBytes())

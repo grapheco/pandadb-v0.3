@@ -1,8 +1,7 @@
 package cn.pandadb.kernel.util.serializer
 
-import cn.pandadb.kernel.blob.api.Blob
-import cn.pandadb.kernel.blob.impl.BlobFactory
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
+import org.grapheco.lynx.cypherplus.Blob
 
 import java.io.ByteArrayOutputStream
 import java.time._
@@ -274,7 +273,7 @@ trait BaseSerializer {
     val len: Int = byteBuf.readInt()
     val bytesArray : Array[Byte] = new Array[Byte](len)
     byteBuf.readBytes(bytesArray)
-    BlobFactory.fromBytes(bytesArray)
+    Blob.fromBytes(bytesArray)
   }
 
   def exportBytes(byteBuf: ByteBuf): Array[Byte] = {

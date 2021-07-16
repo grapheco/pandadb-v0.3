@@ -12,12 +12,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>kernel</artifactId>
-
     <properties>
         <commons-io.version>2.6</commons-io.version>
         <commons-codec.version>1.11</commons-codec.version>
         <mime-util.version>2.1.3</mime-util.version>
         <org.apache.httpcomponents.version>4.5.7</org.apache.httpcomponents.version>
+        <aipm.version>0.1-SNAPSHOT</aipm.version>
     </properties>
     <dependencies>
         <dependency>
@@ -36,7 +36,7 @@
         </dependency>
         <dependency>
             <groupId>org.grapheco</groupId>
-            <artifactId>lynx-framework</artifactId>
+            <artifactId>lynx-cypherplus</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -84,6 +84,11 @@
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <version>${org.apache.httpcomponents.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.grapheco</groupId>
+            <artifactId>aipm-network</artifactId>
+            <version>0.1-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
@@ -158,7 +163,7 @@
             <url>http://10.0.82.220:8081/repository/maven-public/</url>
         </repository>
         <repository>
-            <id>repos-s</id>
+            <id>sdc</id>
             <name>Repository</name>
             <url>http://10.0.82.220:8081/repository/maven-snapshot/</url>
         </repository>

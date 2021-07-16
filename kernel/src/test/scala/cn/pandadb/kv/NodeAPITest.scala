@@ -1,12 +1,12 @@
 package cn.pandadb.kv
-import cn.pandadb.kernel.blob.api.Blob
-import cn.pandadb.kernel.blob.impl.BlobFactory
+
 
 import java.io.File
 import cn.pandadb.kernel.kv.RocksDBStorage
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.store.{NodeStoreSPI, StoredNodeWithProperty}
 import org.apache.commons.io.IOUtils
+import org.grapheco.lynx.cypherplus.Blob
 import org.junit.{After, Assert, Before, Test}
 import org.rocksdb.RocksDB
 
@@ -31,7 +31,7 @@ class NodeAPITest {
   val node5 = new StoredNodeWithProperty(5,Array(1,2),Map(0->"pig", 1->2, 2-> 0.7, 3->true))
   val url = "https://www.baidu.com/img/flexible/logo/pc/result.png"
   val surl = new URL(url)
-  val node6 = new StoredNodeWithProperty(id = 6,Array(10),Map(0->"baidu", 2->BlobFactory.fromHttpURL(url)))
+  val node6 = new StoredNodeWithProperty(id = 6,Array(10),Map(0->"baidu", 2->Blob.fromHttpURL(url)))
 
   @Before
   def init(): Unit = {

@@ -1,7 +1,8 @@
 package cn.pandadb.kernel.kv.value
 
-import java.util.Date
+import org.grapheco.lynx.cypherplus.LynxBlob
 
+import java.util.Date
 import org.grapheco.lynx.{InvalidValueException, LynxBoolean, LynxDate, LynxDateTime, LynxDouble, LynxInteger, LynxList, LynxLocalDateTime, LynxLocalTime, LynxMap, LynxNull, LynxString, LynxTime, LynxValue}
 
 object ValueMappings {
@@ -18,6 +19,7 @@ object ValueMappings {
       case v: LynxLocalDateTime => v.value
       case v: LynxTime => v.value
       case v: LynxLocalTime => v.value
+      case v: LynxBlob => v.value
       case v: LynxList => v.value.map(lynxValueMappingToScala(_)).toArray
       case _ => throw InvalidValueException(value)
     }

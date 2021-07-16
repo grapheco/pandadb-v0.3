@@ -103,25 +103,10 @@
                 <artifactId>lucene-queryparser</artifactId>
                 <version>${lucene.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>org.grapheco</groupId>
-                <artifactId>lynx-framework</artifactId>
+                <artifactId>lynx-cypherplus</artifactId>
                 <version>0.4-SNAPSHOT</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.logging.log4j</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.slf4j</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.typesafe.scala-logging</groupId>
-                        <artifactId>scala-logging_2.12</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.grapheco</groupId>
@@ -252,6 +237,11 @@
             <id>repos</id>
             <name>Repository</name>
             <url>http://10.0.82.220:8081/repository/maven-public/</url>
+        </repository>
+        <repository>
+            <id>sdc</id>
+            <name>Repository</name>
+            <url>http://10.0.82.220:8081/repository/maven-snapshot/</url>
         </repository>
     </repositories>
 </project>

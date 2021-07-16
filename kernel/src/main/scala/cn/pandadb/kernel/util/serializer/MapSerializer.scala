@@ -1,7 +1,7 @@
 package cn.pandadb.kernel.util.serializer
 
-import cn.pandadb.kernel.blob.api.Blob
 import io.netty.buffer.ByteBuf
+import org.grapheco.lynx.cypherplus.Blob
 
 import java.time.{LocalDate, LocalDateTime, LocalTime, OffsetTime, ZonedDateTime}
 
