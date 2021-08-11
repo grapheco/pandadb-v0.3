@@ -1,5 +1,7 @@
 package cn.pandadb.kernel.transaction
 
+import org.grapheco.lynx.LynxTransaction
+
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -11,7 +13,7 @@ import scala.collection.mutable.ArrayBuffer
 
 
 // todo
-class Transaction(id: String) {
+class PandaTransaction(id: String) extends LynxTransaction{
 
   val queryStates: ArrayBuffer[QueryStat] = new ArrayBuffer[QueryStat]()
 

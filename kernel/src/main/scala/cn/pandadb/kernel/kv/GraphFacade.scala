@@ -5,10 +5,10 @@ import cn.pandadb.kernel.kv.index.IndexStoreAPI
 import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.kv.value.ValueMappings
 import cn.pandadb.kernel.store._
+import cn.pandadb.kernel.transaction.PandaTransaction
 import com.typesafe.scalalogging.LazyLogging
-import org.grapheco.aipm.rpc.FaceFeatureClient
-import org.grapheco.lynx.cypherplus._
 import org.grapheco.lynx._
+import org.grapheco.lynx.cypherplus._
 import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, SemanticDirection}
 
 
@@ -16,7 +16,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
                   relationStore: RelationStoreSPI,
                   indexStore: IndexStoreAPI,
                   statistics: Statistics,
-                  onClose: => Unit
+                  onCloπse: => Unit
                  ) extends LazyLogging with GraphService with GraphModelPlus {
 
 //  val runner = new CypherRunner(this){
@@ -32,9 +32,9 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     ???
   }
 
-  override def cypher(query: String, parameters: Map[String, Any] = Map.empty): LynxResult = {
+  override def cypher(query: String, parameters: Map[String, Any] = Map.empty, tx: PandaTransaction): LynxResult = {
     runner.compile(query)
-    runner.run(query, parameters)
+    runner.run(query, parameters, tx)
   }
 
   override def close(): Unit = {
@@ -43,7 +43,6 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     nodeStore.close()
     relationStore.close()
     indexStore.close()
-    onClose
   }
 
   private def nodeLabelNameMap(name: String): Option[Int] = nodeStore.getLabelId(name)

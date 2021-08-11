@@ -9,8 +9,8 @@ package cn.pandadb.kernel.transaction
 trait TransactionManager {
 
   // todo
-  def begin(): Transaction = {
-    new Transaction("")
+  def begin(): PandaTransaction = {
+    new PandaTransaction("")
   }
 
 
