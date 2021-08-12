@@ -3,7 +3,7 @@ package cn.pandadb.kernel.kv
 import java.io.File
 
 import cn.pandadb.kernel.kv.configuration.RocksDBConfigBuilder
-import cn.pandadb.kernel.kv.db.{KeyValueIterator, KeyValueTransactionDB}
+import cn.pandadb.kernel.kv.db.{KeyValueIterator}
 import cn.pandadb.kernel.util.PandaDBException.PandaDBException
 import com.typesafe.scalalogging.LazyLogging
 import org.rocksdb._
