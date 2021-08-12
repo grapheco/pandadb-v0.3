@@ -4,7 +4,7 @@ import java.io.File
 
 import cn.pandadb.kernel.transaction.PandaTransactionManager
 import org.apache.commons.io.FileUtils
-import org.junit.{After, Before, Test}
+import org.junit.{After, Assert, Before, Test}
 
 /**
  * @program: pandadb-v0.3
@@ -40,12 +40,24 @@ class TransactionTest {
   @Test
   def test(): Unit ={
     var tx = transactionManager.begin()
-    tx.execute("create (n:person{name:'glx'}) return n")
-    tx.rollback()
-    println("=========================")
+    tx.execute("create (n:person{name:'glx'}) return n").show() // memory data
+    tx.execute("create (n:City{name:'China'}) return n").show() // memory data
+    tx.commit() // commit tx, data flush
     tx = transactionManager.begin()
-    tx.execute("match (n) return n")
+    tx.execute("match (n) return n").show() // search db data
     tx.commit()
     transactionManager.close()
   }
+
+  @Test
+  def queryCreatedNodeInSameTx(): Unit ={
+    val tx = transactionManager.begin()
+    tx.execute("create (n:person{name:'glx'}) return n")
+    val res = tx.execute("match (n) return n").records()
+    tx.commit()
+    transactionManager.close()
+    Assert.assertEquals(1, res.size)
+  }
+
+
 }

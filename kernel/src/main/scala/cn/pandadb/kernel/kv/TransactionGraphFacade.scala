@@ -39,7 +39,7 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
   }
 
   override def close(): Unit = {
-    statistics.flush(null)
+//    statistics.flush(null) // todo: flush
     statistics.close()
     nodeStore.close()
     relationStore.close()

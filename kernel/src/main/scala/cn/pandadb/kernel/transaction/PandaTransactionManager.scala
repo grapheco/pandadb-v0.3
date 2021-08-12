@@ -76,8 +76,7 @@ class PandaTransactionManager(nodeMetaDBPath: String,
   }
 
   def close(): Unit ={
-    nodeStore.close()
-    relationStore.close()
+    graphFacade.close()
   }
   private def checkDir(dir: String): Unit = {
     val file = new File(dir)

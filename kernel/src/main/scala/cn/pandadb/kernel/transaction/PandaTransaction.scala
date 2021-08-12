@@ -1,7 +1,7 @@
 package cn.pandadb.kernel.transaction
 
 import cn.pandadb.kernel.kv.TransactionGraphFacade
-import org.grapheco.lynx.LynxTransaction
+import org.grapheco.lynx.{LynxResult, LynxTransaction}
 import org.rocksdb.Transaction
 
 import scala.collection.mutable.ArrayBuffer
@@ -13,14 +13,12 @@ import scala.collection.mutable.ArrayBuffer
  * @Modified By:
  */
 
-
-// todo
 class PandaTransaction(private val id: String, val rocksTxMap: Map[String, Transaction], private val graphFacade: TransactionGraphFacade) extends LynxTransaction{
 
   val queryStates: ArrayBuffer[QueryStat] = new ArrayBuffer[QueryStat]()
-  def execute(cypherStat: String): Unit = {
+  def execute(cypherStat: String): LynxResult = {
 
-    graphFacade.cypher(cypherStat, Map.empty, this).show()
+    val res = graphFacade.cypher(cypherStat, Map.empty, this)
 
     val queryStats = QueryStat(cypherStat, QUERYSTATUS.EXECUTING)
     queryStates.append(queryStats)
@@ -30,6 +28,8 @@ class PandaTransaction(private val id: String, val rocksTxMap: Map[String, Trans
     } catch {
       case e : Exception => queryStats.status = QUERYSTATUS.FAILED
     }
+
+    res
   }
 
   def commit(): Unit = {
