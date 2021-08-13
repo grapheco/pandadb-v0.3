@@ -46,16 +46,16 @@ case class LazyPandaNode(longId: Long, nodeStoreSPI: NodeStoreSPI) extends LynxN
   }
 }
 
-case class TransactionLazyPandaNode(longId: Long, nodeStoreSPI: TransactionNodeStoreSPI) extends LynxNode {
+case class TransactionLazyPandaNode(longId: Long, nodeStoreSPI: TransactionNodeStoreSPI, tx:LynxTransaction) extends LynxNode {
   lazy val nodeValue: PandaNode = transfer(nodeStoreSPI)
   override val id: LynxId = NodeId(longId)
 
-  override def labels: Seq[String] = nodeStoreSPI.getNodeLabelsById(longId).map(f=>nodeStoreSPI.getLabelName(f).get).toSeq
+  override def labels: Seq[String] = nodeStoreSPI.getNodeLabelsById(longId, tx).map(f=>nodeStoreSPI.getLabelName(f).get).toSeq
 
   override def property(name: String): Option[LynxValue] = nodeValue.properties.get(name)
 
   def transfer(nodeStore: TransactionNodeStoreSPI): PandaNode = {
-    val node = nodeStore.getNodeById(longId).get
+    val node = nodeStore.getNodeById(longId, tx).get
     PandaNode(node.id,
       node.labelIds.map((id: Int) => nodeStore.getLabelName(id).get).toSeq,
       node.properties.map(kv=>(nodeStore.getPropertyKeyName(kv._1).getOrElse("unknown"), LynxValue(kv._2))).toSeq:_*)
@@ -145,9 +145,9 @@ trait NodeStoreSPI {
 trait TransactionNodeStoreSPI {
   def generateTransactions(writeOptions: WriteOptions): Map[String, Transaction];
 
-  def allLabels(): Array[String];
+  def allLabels(tx: LynxTransaction): Array[String];
 
-  def allLabelIds(): Array[Int];
+  def allLabelIds(tx: LynxTransaction): Array[Int];
 
   def getLabelName(labelId: Int): Option[String];
 
@@ -165,19 +165,19 @@ trait TransactionNodeStoreSPI {
 
   def addPropertyKey(keyName: String, tx: LynxTransaction): Int;
 
-  def getNodeById(nodeId: Long): Option[StoredNodeWithProperty]
+  def getNodeById(nodeId: Long, tx: LynxTransaction): Option[StoredNodeWithProperty]
 
-  def getNodeById(nodeId: Long, label: Int): Option[StoredNodeWithProperty]
+  def getNodeById(nodeId: Long, label: Int, tx: LynxTransaction): Option[StoredNodeWithProperty]
 
-  def getNodeById(nodeId: Long, label: Option[Int]): Option[StoredNodeWithProperty]
+  def getNodeById(nodeId: Long, label: Option[Int], tx: LynxTransaction): Option[StoredNodeWithProperty]
 
-  def getNodesByLabel(labelId: Int): Iterator[StoredNodeWithProperty];
+  def getNodesByLabel(labelId: Int, tx: LynxTransaction): Iterator[StoredNodeWithProperty];
 
-  def getNodeIdsByLabel(labelId: Int): Iterator[Long];
+  def getNodeIdsByLabel(labelId: Int, tx: LynxTransaction): Iterator[Long];
 
-  def getNodeLabelsById(nodeId: Long): Array[Int];
+  def getNodeLabelsById(nodeId: Long, tx: LynxTransaction): Array[Int];
 
-  def hasLabel(nodeId: Long, label: Int): Boolean;
+  def hasLabel(nodeId: Long, label: Int, tx: LynxTransaction): Boolean;
 
   def newNodeId(): Long;
 
@@ -209,9 +209,9 @@ trait TransactionNodeStoreSPI {
     BaseSerializer.bytes2Map(bytes)
   }
 
-  def allNodes(): Iterator[StoredNodeWithProperty]
+  def allNodes(tx: LynxTransaction): Iterator[StoredNodeWithProperty]
 
-  def nodesCount: Long
+  def nodesCount(tx: LynxTransaction): Long
 
   def deleteNodesByLabel(labelId: Int, tx: LynxTransaction): Unit
 

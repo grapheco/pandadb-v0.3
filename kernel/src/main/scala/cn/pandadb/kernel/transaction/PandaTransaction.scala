@@ -18,7 +18,7 @@ class PandaTransaction(private val id: String, val rocksTxMap: Map[String, Trans
   val queryStates: ArrayBuffer[QueryStat] = new ArrayBuffer[QueryStat]()
   def execute(cypherStat: String): LynxResult = {
 
-    val res = graphFacade.cypher(cypherStat, Map.empty, this)
+    val res = graphFacade.cypher(cypherStat, Map.empty, Option(this))
 
     val queryStats = QueryStat(cypherStat, QUERYSTATUS.EXECUTING)
     queryStates.append(queryStats)

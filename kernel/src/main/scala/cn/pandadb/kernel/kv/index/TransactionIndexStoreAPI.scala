@@ -28,10 +28,10 @@ class TransactionIndexStoreAPI(metaDB: TransactionDB, indexDB: TransactionDB, fu
       DBNameMap.indexMetaDB -> metaDB.beginTransaction(writeOptions))
   }
 
-  def createIndex(label: Int, props: Array[Int], fulltext: Boolean = false, tx: Transaction): IndexId =
+  def createIndex(label: Int, props: Array[Int], fulltext: Boolean = false, tx: LynxTransaction): IndexId =
     meta.getIndexId(label, props).getOrElse{
       val id = indexIdGenerator.nextId().toInt
-      meta.addIndexMeta(label, props, fulltext, id, tx)
+      meta.addIndexMeta(label, props, fulltext, id, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.indexMetaDB))
       id
     }
 
@@ -52,8 +52,8 @@ class TransactionIndexStoreAPI(metaDB: TransactionDB, indexDB: TransactionDB, fu
 
   def allIndexId: Iterator[IndexMeta] = meta.all()
 
-  def insertIndexRecord(indexId: IndexId, data: Any, id: Long, tx: Transaction): Unit = {
-    index.set(indexId, IndexEncoder.typeCode(data), IndexEncoder.encode(data), id, tx)
+  def insertIndexRecord(indexId: IndexId, data: Any, id: Long, tx: LynxTransaction): Unit = {
+    index.set(indexId, IndexEncoder.typeCode(data), IndexEncoder.encode(data), id, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.indexDB))
   }
 
   // todo: transaction

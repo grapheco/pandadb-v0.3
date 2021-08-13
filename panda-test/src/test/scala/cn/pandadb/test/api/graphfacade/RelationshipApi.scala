@@ -104,7 +104,7 @@ class RelationshipApi {
 
     Assert.assertEquals(false, db.relationAt(rid).get.properties.contains("str"))
 
-    Assert.assertEquals(8, db.relationships().size)
+    Assert.assertEquals(8, db.relationships(None).size)
 
   }
 

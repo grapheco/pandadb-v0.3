@@ -100,7 +100,7 @@ trait TransactionRelationStoreSPI {
 
   def allRelationTypeIds(): Array[Int];
 
-  def relationCount: Long
+  def relationCount(tx: LynxTransaction): Long
 
   def getRelationTypeName(relationTypeId: Int): Option[String];
 
@@ -118,9 +118,9 @@ trait TransactionRelationStoreSPI {
 
   def addPropertyKey(keyName: String, tx: LynxTransaction): Int;
 
-  def getRelationById(relId: Long): Option[StoredRelationWithProperty];
+  def getRelationById(relId: Long, tx: LynxTransaction): Option[StoredRelationWithProperty];
 
-  def getRelationIdsByRelationType(relationTypeId: Int): Iterator[Long];
+  def getRelationIdsByRelationType(relationTypeId: Int, tx: LynxTransaction): Iterator[Long];
 
   def relationSetProperty(relationId: Long, propertyKeyId: Int, propertyValue: Any, tx: LynxTransaction): Unit;
 
@@ -128,13 +128,13 @@ trait TransactionRelationStoreSPI {
 
   def deleteRelation(relationId: Long, tx: LynxTransaction): Unit;
 
-  def findToNodeIds(fromNodeId: Long): Iterator[Long];
+  def findToNodeIds(fromNodeId: Long, tx: LynxTransaction): Iterator[Long];
 
-  def findToNodeIds(fromNodeId: Long, relationType: Int): Iterator[Long];
+  def findToNodeIds(fromNodeId: Long, relationType: Int, tx: LynxTransaction): Iterator[Long];
 
-  def findFromNodeIds(toNodeId: Long): Iterator[Long];
+  def findFromNodeIds(toNodeId: Long, tx: LynxTransaction): Iterator[Long];
 
-  def findFromNodeIds(toNodeId: Long, relationType: Int): Iterator[Long];
+  def findFromNodeIds(toNodeId: Long, relationType: Int, tx: LynxTransaction): Iterator[Long];
 
   def newRelationId(): Long;
 
@@ -142,19 +142,19 @@ trait TransactionRelationStoreSPI {
 
   def addRelation(relation: StoredRelationWithProperty, tx: LynxTransaction): Unit
 
-  def allRelations(withProperty: Boolean = false): Iterator[StoredRelation]
+  def allRelations(withProperty: Boolean = false, tx: LynxTransaction): Iterator[StoredRelation]
 
-  def findOutRelations(fromNodeId: Long): Iterator[StoredRelation] = findOutRelations(fromNodeId, None)
+  def findOutRelations(fromNodeId: Long, tx: LynxTransaction): Iterator[StoredRelation] = findOutRelations(fromNodeId, None, tx)
 
-  def findOutRelations(fromNodeId: Long, edgeType: Option[Int] = None): Iterator[StoredRelation]
+  def findOutRelations(fromNodeId: Long, edgeType: Option[Int] = None, tx: LynxTransaction): Iterator[StoredRelation]
 
-  def findInRelations(toNodeId: Long): Iterator[StoredRelation] = findInRelations(toNodeId, None)
+  def findInRelations(toNodeId: Long, tx: LynxTransaction): Iterator[StoredRelation] = findInRelations(toNodeId, None, tx)
 
-  def findInRelations(toNodeId: Long, edgeType: Option[Int] = None): Iterator[StoredRelation]
+  def findInRelations(toNodeId: Long, edgeType: Option[Int] = None, tx: LynxTransaction): Iterator[StoredRelation]
 
-  def findInRelationsBetween(toNodeId: Long, fromNodeId: Long, edgeType: Option[Int] = None): Iterator[StoredRelation]
+  def findInRelationsBetween(toNodeId: Long, fromNodeId: Long, edgeType: Option[Int] = None, tx: LynxTransaction): Iterator[StoredRelation]
 
-  def findOutRelationsBetween(fromNodeId: Long, toNodeId: Long, edgeType: Option[Int] = None): Iterator[StoredRelation]
+  def findOutRelationsBetween(fromNodeId: Long, toNodeId: Long, edgeType: Option[Int] = None, tx: LynxTransaction): Iterator[StoredRelation]
 
   def close(): Unit
 }

@@ -4,7 +4,7 @@ import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import cn.pandadb.kernel.kv.KeyConverter.{LabelId, NodeId}
 import cn.pandadb.kernel.store.StoredNodeWithProperty
 import cn.pandadb.kernel.util.serializer.NodeSerializer
-import org.rocksdb.{Transaction, TransactionDB, WriteBatch, WriteOptions}
+import org.rocksdb.{ReadOptions, Transaction, TransactionDB, WriteBatch, WriteOptions}
 
 /**
  * @Author: Airzihao
@@ -15,6 +15,7 @@ import org.rocksdb.{Transaction, TransactionDB, WriteBatch, WriteOptions}
 class TransactionNodeStore(db: TransactionDB) {
   // [labelId,nodeId]->[Node]
   val NONE_LABEL_ID: Int = 0
+  val readOptions = new ReadOptions()
 
   def set(nodeId: NodeId, labelIds: Array[LabelId], value: Array[Byte], tx: Transaction): Unit = {
     if (labelIds.nonEmpty)
@@ -29,14 +30,14 @@ class TransactionNodeStore(db: TransactionDB) {
   def set(node: StoredNodeWithProperty, tx: Transaction): Unit =
     set(node.id, node.labelIds, NodeSerializer.serialize(node), tx)
 
-  def get(nodeId: NodeId, labelId: LabelId): Option[StoredNodeWithProperty] = {
-    val value = db.get(KeyConverter.toNodeKey(labelId, nodeId))
+  def get(nodeId: NodeId, labelId: LabelId, tx: Transaction): Option[StoredNodeWithProperty] = {
+    val value = tx.get(readOptions, KeyConverter.toNodeKey(labelId, nodeId))
     if(value != null) Some(NodeSerializer.deserializeNodeValue(value))
     else None
   }
 
-  def all() : Iterator[StoredNodeWithProperty] = {
-    val iter = db.newIterator()
+  def all(tx: Transaction) : Iterator[StoredNodeWithProperty] = {
+    val iter = tx.getIterator(readOptions)
     iter.seekToFirst()
 
     new Iterator[StoredNodeWithProperty] (){
@@ -51,8 +52,8 @@ class TransactionNodeStore(db: TransactionDB) {
     }.filter(_!=null)
   }
 
-  def getNodesByLabel(labelId: LabelId): Iterator[StoredNodeWithProperty] = {
-    val iter = db.newIterator()
+  def getNodesByLabel(labelId: LabelId, tx: Transaction): Iterator[StoredNodeWithProperty] = {
+    val iter = tx.getIterator(readOptions)
     val prefix = KeyConverter.toNodeKey(labelId)
     iter.seek(prefix)
 
@@ -66,8 +67,8 @@ class TransactionNodeStore(db: TransactionDB) {
     }
   }
 
-  def getNodeIdsByLabel(labelId: LabelId): Iterator[NodeId] = {
-    val iter = db.newIterator()
+  def getNodeIdsByLabel(labelId: LabelId, tx: Transaction): Iterator[NodeId] = {
+    val iter = tx.getIterator(readOptions)
     val prefix = KeyConverter.toNodeKey(labelId)
     iter.seek(prefix)
 
@@ -81,8 +82,8 @@ class TransactionNodeStore(db: TransactionDB) {
     }
   }
 
-  def getNodesByLabelWithoutDeserialize(labelId: LabelId): Iterator[NodeId] = {
-    val iter = db.newIterator()
+  def getNodesByLabelWithoutDeserialize(labelId: LabelId, tx: Transaction): Iterator[NodeId] = {
+    val iter = tx.getIterator(readOptions)
     val prefix = KeyConverter.toNodeKey(labelId)
     iter.seek(prefix)
 

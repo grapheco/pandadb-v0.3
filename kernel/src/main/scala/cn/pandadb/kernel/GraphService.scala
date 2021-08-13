@@ -5,9 +5,7 @@ import org.grapheco.lynx.{LynxResult, LynxTransaction}
 trait GraphService {
   type Id = Long
 
-  def cypher(query: String, parameters: Map[String, Any] = Map.empty): LynxResult
-
-  def cypher(query: String, parameters: Map[String, Any], tx: LynxTransaction): LynxResult
+  def cypher(query: String, parameters: Map[String, Any] = Map.empty, tx: Option[LynxTransaction] = None): LynxResult
 
   def close(): Unit
 
@@ -43,35 +41,35 @@ trait GraphService {
 trait TransactionGraphService {
   type Id = Long
 
-  def cypher(query: String, parameters: Map[String, Any], tx: LynxTransaction): LynxResult
+  def cypher(query: String, parameters: Map[String, Any], tx: Option[LynxTransaction]): LynxResult
 
   def close(): Unit
 
-  def addNode(tx: LynxTransaction, nodeProps: Map[String, Any], labels: String*): Id
+  def addNode(tx: Option[LynxTransaction], nodeProps: Map[String, Any], labels: String*): Id
 
-  def nodeSetProperty(tx: LynxTransaction, id: Id, key: String, value: Any): Unit
+  def nodeSetProperty(tx: Option[LynxTransaction], id: Id, key: String, value: Any): Unit
 
-  def nodeRemoveProperty(tx: LynxTransaction, id: Id, key: String): Unit
+  def nodeRemoveProperty(tx: Option[LynxTransaction], id: Id, key: String): Unit
 
-  def nodeAddLabel(tx: LynxTransaction, id: Id, label: String): Unit
+  def nodeAddLabel(tx: Option[LynxTransaction], id: Id, label: String): Unit
 
-  def nodeRemoveLabel(tx: LynxTransaction, id: Id, label: String): Unit
+  def nodeRemoveLabel(tx: Option[LynxTransaction], id: Id, label: String): Unit
 
-  def deleteNode(tx: LynxTransaction, id: Id): Unit
+  def deleteNode(tx: Option[LynxTransaction], id: Id): Unit
 
-  def addRelation(tx: LynxTransaction, label: String, from: Long, to: Long, relProps: Map[String, Any]): Id
+  def addRelation(tx: Option[LynxTransaction], label: String, from: Long, to: Long, relProps: Map[String, Any]): Id
 
-  def relationSetProperty(tx: LynxTransaction, id: Id, key: String, value: Any): Unit
+  def relationSetProperty(tx: Option[LynxTransaction], id: Id, key: String, value: Any): Unit
 
-  def relationRemoveProperty(tx: LynxTransaction, id: Id, key: String): Unit
+  def relationRemoveProperty(tx: Option[LynxTransaction], id: Id, key: String): Unit
 
-  def relationAddLabel(tx: LynxTransaction, id: Id, label: String): Unit
+  def relationAddLabel(tx: Option[LynxTransaction], id: Id, label: String): Unit
 
-  def relationRemoveLabel(tx: LynxTransaction, id: Id, label: String): Unit
+  def relationRemoveLabel(tx: Option[LynxTransaction], id: Id, label: String): Unit
 
-  def deleteRelation(tx: LynxTransaction, id: Id): Unit
+  def deleteRelation(tx: Option[LynxTransaction], id: Id): Unit
 
-  def createIndexOnNode(tx: LynxTransaction, label: String, props: Set[String]): Unit
+  def createIndexOnNode(tx: Option[LynxTransaction], label: String, props: Set[String]): Unit
 
-  def createIndexOnRelation(tx: LynxTransaction, typeName: String, props: Set[String]): Unit
+  def createIndexOnRelation(tx: Option[LynxTransaction], typeName: String, props: Set[String]): Unit
 }

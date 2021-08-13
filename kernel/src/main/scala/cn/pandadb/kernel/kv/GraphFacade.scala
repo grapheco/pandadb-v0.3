@@ -28,16 +28,11 @@ class GraphFacade(nodeStore: NodeStoreSPI,
 
   init()
 
-  override def getIndexes(): Array[(LabelName, List[PropertyKeyName])] = {
+  override def getIndexes(tx: Option[LynxTransaction]): Array[(LabelName, List[PropertyKeyName])] = {
     ???
   }
-
-  override def cypher(query: String, parameters: Map[String, Any]): LynxResult = {
-    runner.compile(query)
-    runner.run(query, parameters)
-  }
-
-  override def cypher(query: String, parameters: Map[String, Any], tx: LynxTransaction): LynxResult = {
+  
+  override def cypher(query: String, parameters: Map[String, Any], tx: Option[LynxTransaction]): LynxResult = {
     runner.compile(query)
     runner.run(query, parameters, tx)
   }
@@ -122,14 +117,14 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     }
   }
 
-  override def filterNodesWithRelations(nodesIDs: Seq[LynxId]): Seq[LynxId] = { //TODO opt perf.
+  override def filterNodesWithRelations(nodesIDs: Seq[LynxId], tx: Option[LynxTransaction]): Seq[LynxId] = { //TODO opt perf.
     nodesIDs.filter(nid => {
       val nidL = nid.asInstanceOf[NodeId].value
       relationStore.findOutRelations(nidL).nonEmpty || relationStore.findInRelations(nidL).nonEmpty
     })
   }
 
-  override def deleteRelationsOfNodes(nodesIDs: Seq[LynxId], tx: LynxTransaction): Unit = { //TODO opt perf.
+  override def deleteRelationsOfNodes(nodesIDs: Seq[LynxId], tx: Option[LynxTransaction]): Unit = { //TODO opt perf.
     nodesIDs.foreach(nid => {
       val nidL = nid.asInstanceOf[NodeId].value
       relationStore.findOutRelations(nidL).foreach(rel => relationStore.deleteRelation(rel.id))
@@ -137,7 +132,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     })
   }
 
-  override def deleteFreeNodes(nodesIDs: Seq[LynxId], tx: LynxTransaction): Unit = {
+  override def deleteFreeNodes(nodesIDs: Seq[LynxId], tx: Option[LynxTransaction]): Unit = {
     nodeStore.deleteNodes(nodesIDs.map(_.asInstanceOf[NodeId].value).toIterator)
   }
 
@@ -223,7 +218,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     }
   }
 
-  override def createIndex(labelName: LabelName, properties: List[PropertyKeyName], tx: LynxTransaction): Unit = {
+  override def createIndex(labelName: LabelName, properties: List[PropertyKeyName], tx: Option[LynxTransaction]): Unit = {
     val l = labelName.name
     val ps = properties.map(p => p.name).toSet
     createIndexOnNode(l, ps)
@@ -286,7 +281,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     }
   }
 
-  override def nodes(): Iterator[PandaNode] = nodeStore.allNodes().map(mapNode)
+  override def nodes(tx: Option[LynxTransaction]): Iterator[PandaNode] = nodeStore.allNodes().map(mapNode)
 
   def nodeAt(id: LynxId): Option[PandaNode] = nodeAt(id.value.asInstanceOf[Long])
 
@@ -444,8 +439,8 @@ class GraphFacade(nodeStore: NodeStoreSPI,
   override def paths(startNodeFilter: NodeFilter,
                      relationshipFilter: RelationshipFilter,
                      endNodeFilter: NodeFilter,
-                     direction: SemanticDirection): Iterator[PathTriple] =
-    nodes(startNodeFilter).flatMap(node => paths(node.id, relationshipFilter, endNodeFilter, direction))
+                     direction: SemanticDirection, tx: Option[LynxTransaction]): Iterator[PathTriple] =
+    nodes(startNodeFilter, None).flatMap(node => paths(node.id, relationshipFilter, endNodeFilter, direction))
 
 
   def paths(nodeId: LynxId, direction: SemanticDirection): Iterator[PathTriple] =
@@ -502,7 +497,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
       .filter(trip => endNodeFilter.matches(trip.endNode))
   }
 
-  override def expand(nodeId: LynxId, direction: SemanticDirection): Iterator[PathTriple] = {
+  override def expand(nodeId: LynxId, direction: SemanticDirection, tx: Option[LynxTransaction]): Iterator[PathTriple] = {
     val rels = direction match {
       case SemanticDirection.INCOMING => relationStore.findInRelations(nodeId.value.asInstanceOf[Long]).map(r => {
         val toNode = mapNode(nodeStore.getNodeById(r.to).get)
@@ -532,7 +527,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     rels
   }
 
-  override def expand(nodeId: LynxId, relationshipFilter: RelationshipFilter, endNodeFilter: NodeFilter, direction: SemanticDirection): Iterator[PathTriple] = {
+  override def expand(nodeId: LynxId, relationshipFilter: RelationshipFilter, endNodeFilter: NodeFilter, direction: SemanticDirection, tx: Option[LynxTransaction]): Iterator[PathTriple] = {
     // has properties?
     endNodeFilter.properties.toSeq match {
       case Seq() => expand(nodeId, direction, relationshipFilter).filter(
@@ -592,7 +587,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     }
   }
 
-  override def nodes(nodeFilter: NodeFilter): Iterator[PandaNode] = {
+  override def nodes(nodeFilter: NodeFilter, tx: Option[LynxTransaction]): Iterator[PandaNode] = {
     (nodeFilter.labels.nonEmpty, nodeFilter.properties.nonEmpty) match {
       case (false, false) => allNodes().iterator.map(mapNode)
       case (true, false) => nodes(nodeFilter.labels, exact = false)
@@ -614,10 +609,10 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     }
   }
 
-  override def relationships(): Iterator[PathTriple] =
+  override def relationships(tx: Option[LynxTransaction]): Iterator[PathTriple] =
     allRelations().toIterator.map(rel => PathTriple(nodeAt(rel.from).get, mapRelation(rel), nodeAt(rel.to).get))
 
-  override def createElements[T](nodesInput: Seq[(String, NodeInput)], relsInput: Seq[(String, RelationshipInput)], onCreated: (Seq[(String, LynxNode)], Seq[(String, LynxRelationship)]) => T, tx: LynxTransaction): T = {
+  override def createElements[T](nodesInput: Seq[(String, NodeInput)], relsInput: Seq[(String, RelationshipInput)], onCreated: (Seq[(String, LynxNode)], Seq[(String, LynxRelationship)]) => T, tx: Option[LynxTransaction]): T = {
     val nodesMap: Seq[(String, PandaNode)] = nodesInput.map(x => {
       val (varname, input) = x
       val id = nodeStore.newNodeId()
@@ -652,7 +647,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     onCreated(nodesMap, relsMap)
   }
 
-  override def setNodeProperty(nodeId: LynxId, data: Array[(String, Any)], cleanExistProperties: Boolean = false, tx: LynxTransaction): Option[LynxNode] = {
+  override def setNodeProperty(nodeId: LynxId, data: Array[(String, Any)], cleanExistProperties: Boolean = false, tx: Option[LynxTransaction]): Option[LynxNode] = {
     val node = nodeAt(nodeId)
     if (node.isDefined){
       if (cleanExistProperties) {
@@ -664,12 +659,12 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     else None
   }
 
-  override def addNodeLabels(nodeId: LynxId, labels: Array[String], tx: LynxTransaction): Option[LynxNode] = {
+  override def addNodeLabels(nodeId: LynxId, labels: Array[String], tx: Option[LynxTransaction]): Option[LynxNode] = {
     labels.foreach(label => nodeAddLabel(nodeId.value.asInstanceOf[Long], label))
     nodeAt(nodeId)
   }
 
-  override def setRelationshipProperty(triple: Seq[LynxValue], data: Array[(String, Any)], tx: LynxTransaction): Option[Seq[LynxValue]] = {
+  override def setRelationshipProperty(triple: Seq[LynxValue], data: Array[(String, Any)], tx: Option[LynxTransaction]): Option[Seq[LynxValue]] = {
     val relId = triple(1).asInstanceOf[LynxRelationship].id.value.asInstanceOf[Long]
     data.foreach(kv => relationSetProperty(relId, kv._1, kv._2))
     val relationship = relationAt(relId)
@@ -678,19 +673,19 @@ class GraphFacade(nodeStore: NodeStoreSPI,
   }
 
   // can not do this
-  override def setRelationshipTypes(triple: Seq[LynxValue], labels: Array[String], tx: LynxTransaction): Option[Seq[LynxValue]] = ???
+  override def setRelationshipTypes(triple: Seq[LynxValue], labels: Array[String], tx: Option[LynxTransaction]): Option[Seq[LynxValue]] = ???
 
-  override def removeNodeProperty(nodeId: LynxId, data: Array[String], tx: LynxTransaction): Option[LynxNode] = {
+  override def removeNodeProperty(nodeId: LynxId, data: Array[String], tx: Option[LynxTransaction]): Option[LynxNode] = {
     data.foreach(key => nodeRemoveProperty(nodeId.value.asInstanceOf[Long], key))
     nodeAt(nodeId)
   }
 
-  override def removeNodeLabels(nodeId: LynxId, labels: Array[String], tx: LynxTransaction): Option[LynxNode] = {
+  override def removeNodeLabels(nodeId: LynxId, labels: Array[String], tx: Option[LynxTransaction]): Option[LynxNode] = {
     labels.foreach(label => nodeRemoveLabel(nodeId.value.asInstanceOf[Long], label))
     nodeAt(nodeId)
   }
 
-  override def removeRelationshipProperty(triple: Seq[LynxValue], data: Array[String], tx: LynxTransaction): Option[Seq[LynxValue]] = {
+  override def removeRelationshipProperty(triple: Seq[LynxValue], data: Array[String], tx: Option[LynxTransaction]): Option[Seq[LynxValue]] = {
     val relId = triple(1).asInstanceOf[LynxRelationship].id.value.asInstanceOf[Long]
     data.foreach(key => relationRemoveProperty(relId, key))
     val relationship = relationAt(relId)
@@ -699,7 +694,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
   }
 
   // can not do this
-  override def removeRelationshipType(triple: Seq[LynxValue], labels: Array[String], tx: LynxTransaction): Option[Seq[LynxValue]] = ???
+  override def removeRelationshipType(triple: Seq[LynxValue], labels: Array[String], tx: Option[LynxTransaction]): Option[Seq[LynxValue]] = ???
 
   override def getSubProperty(value: LynxValue, propertyKey: String): LynxValue = {
 //    propertyKey match {
@@ -729,15 +724,15 @@ class GraphFacade(nodeStore: NodeStoreSPI,
 
   override def estimateRelationship(relType: String): Id = statistics.getRelationTypeCount(relationStore.getRelationTypeId(relType).get).get
 
-  override def pathsWithLength(startNodeFilter: NodeFilter, relationshipFilter: RelationshipFilter, endNodeFilter: NodeFilter, direction: SemanticDirection, length: Option[Option[expressions.Range]]): Iterator[Seq[PathTriple]] = ???
+  override def pathsWithLength(startNodeFilter: NodeFilter, relationshipFilter: RelationshipFilter, endNodeFilter: NodeFilter, direction: SemanticDirection, length: Option[Option[expressions.Range]], tx: Option[LynxTransaction]): Iterator[Seq[PathTriple]] = ???
 
-  override def copyNode(srcNode: LynxNode, maskNode: LynxNode, tx: LynxTransaction): Seq[LynxValue] = ???
+  override def copyNode(srcNode: LynxNode, maskNode: LynxNode, tx: Option[LynxTransaction]): Seq[LynxValue] = ???
 
-  override def mergeNode(nodeFilter: NodeFilter, forceToCreate: Boolean, tx: LynxTransaction): LynxNode = ???
+  override def mergeNode(nodeFilter: NodeFilter, forceToCreate: Boolean, tx: Option[LynxTransaction]): LynxNode = ???
 
-  override def mergeRelationship(relationshipFilter: RelationshipFilter, leftNode: LynxNode, rightNode: LynxNode, direction: SemanticDirection, forceToCreate: Boolean, tx: LynxTransaction): PathTriple = ???
+  override def mergeRelationship(relationshipFilter: RelationshipFilter, leftNode: LynxNode, rightNode: LynxNode, direction: SemanticDirection, forceToCreate: Boolean, tx: Option[LynxTransaction]): PathTriple = ???
 
-  override def deleteRelation(id: LynxId, tx: LynxTransaction): Unit = ???
+  override def deleteRelation(id: LynxId, tx: Option[LynxTransaction]): Unit = ???
 
-  override def deleteRelations(ids: Iterator[LynxId], tx: LynxTransaction): Unit = ???
+  override def deleteRelations(ids: Iterator[LynxId], tx: Option[LynxTransaction]): Unit = ???
 }

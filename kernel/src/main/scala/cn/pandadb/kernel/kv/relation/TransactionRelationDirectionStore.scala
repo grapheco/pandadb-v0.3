@@ -4,7 +4,7 @@ import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import cn.pandadb.kernel.kv.db.KeyValueDB
 import cn.pandadb.kernel.kv.relation.TransactionRelationDirection.{Direction, IN}
 import cn.pandadb.kernel.store.StoredRelation
-import org.rocksdb.{Transaction, TransactionDB, WriteBatch}
+import org.rocksdb.{ReadOptions, Transaction, TransactionDB, WriteBatch}
 
 /**
  * @Author: Airzihao
@@ -25,6 +25,7 @@ class TransactionRelationDirectionStore(db: TransactionDB, DIRECTION: Direction)
    * type(1Byte),nodeId(8Bytes),relationLabel(4Bytes),category(8Bytes),fromNodeId(8Bytes)-->relationValue(id, properties)
    * ------------------------
    */
+  val readOptions = new ReadOptions()
 
   def getKey(relation: StoredRelation): Array[Byte] =
     if (DIRECTION == IN) KeyConverter.edgeKeyToBytes(relation.to, relation.typeId, relation.from)
@@ -58,27 +59,27 @@ class TransactionRelationDirectionStore(db: TransactionDB, DIRECTION: Direction)
     }
   }
 
-  def get(node1: Long, edgeType: Int, node2: Long): Option[Long] = {
+  def get(node1: Long, edgeType: Int, node2: Long, tx: Transaction): Option[Long] = {
     val keyBytes = KeyConverter.edgeKeyToBytes(node1, edgeType, node2)
-    val value = db.get(keyBytes)
+    val value = tx.get(readOptions, keyBytes)
     if (value!=null)
       Some(ByteUtils.getLong(value, 0))
     else
       None
   }
 
-  def getNodeIds(nodeId: Long): Iterator[Long] = {
+  def getNodeIds(nodeId: Long, tx: Transaction): Iterator[Long] = {
     val prefix = KeyConverter.edgeKeyPrefixToBytes(nodeId)
-    new NodeIdIterator(db, prefix)
+    new NodeIdIterator(tx, prefix)
   }
 
-  def getNodeIds(nodeId: Long, edgeType: Int): Iterator[Long] = {
+  def getNodeIds(nodeId: Long, edgeType: Int, tx: Transaction): Iterator[Long] = {
     val prefix = KeyConverter.edgeKeyPrefixToBytes(nodeId, edgeType)
-    new NodeIdIterator(db, prefix)
+    new NodeIdIterator(tx, prefix)
   }
 
-  class NodeIdIterator(db: TransactionDB, prefix: Array[Byte]) extends Iterator[Long]{
-    val iter = db.newIterator()
+  class NodeIdIterator(tx: Transaction, prefix: Array[Byte]) extends Iterator[Long]{
+    val iter = tx.getIterator(readOptions)
     iter.seek(prefix)
 
     override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
@@ -90,18 +91,18 @@ class TransactionRelationDirectionStore(db: TransactionDB, DIRECTION: Direction)
     }
   }
 
-  def getRelationIds(nodeId: Long): Iterator[Long] = {
+  def getRelationIds(nodeId: Long, tx: Transaction): Iterator[Long] = {
     val prefix = KeyConverter.edgeKeyPrefixToBytes(nodeId)
-    new RelationIdIterator(db, prefix)
+    new RelationIdIterator(tx, prefix)
   }
 
-  def getRelationIds(nodeId: Long, edgeType: Int): Iterator[Long] = {
+  def getRelationIds(nodeId: Long, edgeType: Int, tx: Transaction): Iterator[Long] = {
     val prefix = KeyConverter.edgeKeyPrefixToBytes(nodeId, edgeType)
-    new RelationIdIterator(db, prefix)
+    new RelationIdIterator(tx, prefix)
   }
 
-  class RelationIdIterator(db: TransactionDB, prefix: Array[Byte]) extends Iterator[Long]{
-    val iter = db.newIterator()
+  class RelationIdIterator(tx: Transaction, prefix: Array[Byte]) extends Iterator[Long]{
+    val iter = tx.getIterator(readOptions)
     iter.seek(prefix)
 
     override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
@@ -113,19 +114,19 @@ class TransactionRelationDirectionStore(db: TransactionDB, DIRECTION: Direction)
     }
   }
 
-  def getRelations(nodeId: Long): Iterator[StoredRelation] = {
+  def getRelations(nodeId: Long, tx: Transaction): Iterator[StoredRelation] = {
     val prefix = KeyConverter.edgeKeyPrefixToBytes(nodeId)
-    new RelationIterator(db, prefix)
+    new RelationIterator(tx, prefix)
   }
 
-  def getRelations(nodeId: Long, edgeType: Int): Iterator[StoredRelation] = {
+  def getRelations(nodeId: Long, edgeType: Int, tx: Transaction): Iterator[StoredRelation] = {
     val prefix = KeyConverter.edgeKeyPrefixToBytes(nodeId, edgeType)
-    new RelationIterator(db, prefix)
+    new RelationIterator(tx, prefix)
   }
 
-  def getRelation(firstNodeId: Long, edgeType: Int, secondNodeId: Long): Option[StoredRelation] = {
+  def getRelation(firstNodeId: Long, edgeType: Int, secondNodeId: Long, tx: Transaction): Option[StoredRelation] = {
     val key = KeyConverter.edgeKeyToBytes(firstNodeId, edgeType, secondNodeId)
-    val values = db.get(key)
+    val values = tx.get(readOptions, key)
     if (values == null) None
     else {
       val id = ByteUtils.getLong(values, 0)
@@ -134,8 +135,8 @@ class TransactionRelationDirectionStore(db: TransactionDB, DIRECTION: Direction)
     }
   }
 
-  class RelationIterator(db: TransactionDB, prefix: Array[Byte]) extends Iterator[StoredRelation]{
-    val iter = db.newIterator()
+  class RelationIterator(tx: Transaction, prefix: Array[Byte]) extends Iterator[StoredRelation]{
+    val iter = tx.getIterator(readOptions)
     iter.seek(prefix)
 
     override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
@@ -155,8 +156,8 @@ class TransactionRelationDirectionStore(db: TransactionDB, DIRECTION: Direction)
     }
   }
 
-  def all(): Iterator[StoredRelation] = {
-    new RelationIterator(db, Array.emptyByteArray)
+  def all(tx: Transaction): Iterator[StoredRelation] = {
+    new RelationIterator(tx, Array.emptyByteArray)
   }
 
   def close(): Unit = {

@@ -33,9 +33,9 @@ class TransactionNodeStoreAPI(nodeDB: TransactionDB,
       DBNameMap.nodeMetaDB -> metaDB.beginTransaction(writeOptions))
   }
 
-  override def allLabels(): Array[String] = nodeLabelName.mapString2Int.keys.toArray
+  override def allLabels(tx: LynxTransaction): Array[String] = nodeLabelName.mapString2Int.keys.toArray
 
-  override def allLabelIds(): Array[Int] = nodeLabelName.mapInt2String.keys.toArray
+  override def allLabelIds(tx: LynxTransaction): Array[Int] = nodeLabelName.mapInt2String.keys.toArray
 
   override def getLabelName(labelId: Int): Option[String] = nodeLabelName.key(labelId)
 
@@ -55,24 +55,36 @@ class TransactionNodeStoreAPI(nodeDB: TransactionDB,
 
   override def addPropertyKey(keyName: String, tx: LynxTransaction): Int = propertyName.getOrAddId(keyName, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.nodeMetaDB))
 
-  override def getNodeById(nodeId: Long): Option[StoredNodeWithProperty] = nodeLabelStore.get(nodeId).map(nodeStore.get(nodeId, _).get)
+  override def getNodeById(nodeId: Long, tx: LynxTransaction): Option[StoredNodeWithProperty] = {
+    nodeLabelStore.get(nodeId, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.nodeLabelDB))
+      .map(nodeStore.get(nodeId, _, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.nodeDB)).get)
+  }
 
-  override def getNodeById(nodeId: Long, label: Int): Option[StoredNodeWithProperty] = nodeStore.get(nodeId, label)
+  override def getNodeById(nodeId: Long, label: Int, tx: LynxTransaction): Option[StoredNodeWithProperty] = {
+    nodeStore.get(nodeId, label, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.nodeDB))
+  }
 
-  override def getNodeById(nodeId: Long, label: Option[Int]): Option[StoredNodeWithProperty] = label.map(getNodeById(nodeId, _)).getOrElse(getNodeById(nodeId))
+  override def getNodeById(nodeId: Long, label: Option[Int], tx: LynxTransaction): Option[StoredNodeWithProperty] = {
+    label.map(getNodeById(nodeId, _, tx))
+      .getOrElse(getNodeById(nodeId, tx))
+  }
 
-  override def getNodesByLabel(labelId: Int): Iterator[StoredNodeWithProperty] = nodeStore.getNodesByLabel(labelId)
+  override def getNodesByLabel(labelId: Int, tx: LynxTransaction): Iterator[StoredNodeWithProperty] =
+    nodeStore.getNodesByLabel(labelId, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.nodeDB))
 
-  override def getNodeIdsByLabel(labelId: Int): Iterator[Long] = nodeStore.getNodeIdsByLabel(labelId)
+  override def getNodeIdsByLabel(labelId: Int, tx: LynxTransaction): Iterator[Long] =
+    nodeStore.getNodeIdsByLabel(labelId, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.nodeDB))
 
-  override def getNodeLabelsById(nodeId: Long): Array[Int] = nodeLabelStore.getAll(nodeId)
+  override def getNodeLabelsById(nodeId: Long, tx: LynxTransaction): Array[Int] =
+    nodeLabelStore.getAll(nodeId, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.nodeLabelDB))
 
-  override def hasLabel(nodeId: Long, label: Int): Boolean = nodeLabelStore.exist(nodeId, label)
+  override def hasLabel(nodeId: Long, label: Int, tx: LynxTransaction): Boolean =
+    nodeLabelStore.exist(nodeId, label, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.nodeLabelDB))
 
   override def newNodeId(): Long = idGenerator.nextId()
 
   override def nodeAddLabel(nodeId: Long, labelId: Int, tx: LynxTransaction): Unit = {
-    getNodeById(nodeId)
+    getNodeById(nodeId, tx)
       .foreach { node =>
         if (!node.labelIds.contains(labelId)) {
           val labels = node.labelIds ++ Array(labelId)
@@ -88,7 +100,7 @@ class TransactionNodeStoreAPI(nodeDB: TransactionDB,
   }
 
   override def nodeRemoveLabel(nodeId: Long, labelId: Int, tx: LynxTransaction): Unit = {
-    nodeStore.get(nodeId, labelId)
+    nodeStore.get(nodeId, labelId, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.nodeDB))
       .foreach { node =>
         if (node.labelIds.contains(labelId)) {
           val labels = node.labelIds.filter(_ != labelId)
@@ -106,7 +118,7 @@ class TransactionNodeStoreAPI(nodeDB: TransactionDB,
   }
 
   override def nodeSetProperty(nodeId: Long, propertyKeyId: Int, propertyValue: Any, tx: LynxTransaction): Unit = {
-    getNodeById(nodeId)
+    getNodeById(nodeId, tx)
       .foreach {
         node =>
           nodeStore.set(new StoredNodeWithProperty(node.id, node.labelIds,
@@ -115,7 +127,7 @@ class TransactionNodeStoreAPI(nodeDB: TransactionDB,
   }
 
   override def nodeRemoveProperty(nodeId: Long, propertyKeyId: Int, tx: LynxTransaction): Any = {
-    getNodeById(nodeId)
+    getNodeById(nodeId, tx)
       .foreach {
         node =>
           nodeStore.set(new StoredNodeWithProperty(node.id, node.labelIds,
@@ -134,12 +146,12 @@ class TransactionNodeStoreAPI(nodeDB: TransactionDB,
     }
   }
 
-  override def allNodes(): Iterator[StoredNodeWithProperty] = nodeStore.all()
+  override def allNodes(tx: LynxTransaction): Iterator[StoredNodeWithProperty] = nodeStore.all(tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.nodeDB))
 
-  override def nodesCount: Long = nodeLabelStore.getNodesCount
+  override def nodesCount(tx: LynxTransaction): Long = nodeLabelStore.getNodesCount(tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.nodeLabelDB))
 
   override def deleteNode(nodeId: Long, tx: LynxTransaction): Unit = {
-    nodeLabelStore.getAll(nodeId)
+    nodeLabelStore.getAll(nodeId, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.nodeLabelDB))
       .foreach(nodeStore.delete(nodeId, _, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.nodeDB)))
     nodeLabelStore.delete(nodeId, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.nodeLabelDB))
   }
@@ -148,7 +160,7 @@ class TransactionNodeStoreAPI(nodeDB: TransactionDB,
     val nodesWB = new WriteBatch()
     val labelWB = new WriteBatch()
     nodeIDs.foreach(nid => {
-      nodeLabelStore.getAll(nid).foreach(lid => {
+      nodeLabelStore.getAll(nid, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.nodeLabelDB)).foreach(lid => {
         nodesWB.delete(KeyConverter.toNodeKey(lid, nid))
       })
       labelWB.deleteRange(KeyConverter.toNodeLabelKey(nid, 0),
@@ -160,10 +172,10 @@ class TransactionNodeStoreAPI(nodeDB: TransactionDB,
   }
 
   override def deleteNodesByLabel(labelId: Int, tx: LynxTransaction): Unit = {
-    nodeStore.getNodeIdsByLabel(labelId)
+    nodeStore.getNodeIdsByLabel(labelId, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.nodeDB))
       .foreach {
         nodeId =>
-          nodeLabelStore.getAll(nodeId)
+          nodeLabelStore.getAll(nodeId, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.nodeLabelDB))
             .foreach {
               nodeStore.delete(nodeId, _, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.nodeDB))
             }

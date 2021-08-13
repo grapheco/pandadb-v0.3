@@ -64,19 +64,20 @@ class PandaTransactionManager(nodeMetaDBPath: String,
 
   private val statistics = new TransactionStatistics(TransactionRocksDBStorage.getDB(statisticsDBPath))
 
-  private val graphFacade = new TransactionGraphFacade(nodeStore, relationStore, indexStore, statistics, {})
-
   override def begin(): PandaTransaction = {
     val id = globalTransactionId.getAndIncrement()
     val writeOptions = new WriteOptions()
     val txMap = nodeStore.generateTransactions(writeOptions) ++ relationStore.generateTransactions(writeOptions) ++
       indexStore.generateTransactions(writeOptions) ++ statistics.generateTransactions(writeOptions)
 
-    new PandaTransaction(s"$id", txMap, graphFacade)
+    new PandaTransaction(s"$id", txMap, new TransactionGraphFacade(nodeStore, relationStore, indexStore, statistics, {}))
   }
 
   def close(): Unit ={
-    graphFacade.close()
+    statistics.close()
+    indexStore.close()
+    nodeStore.close()
+    relationStore.close()
   }
   private def checkDir(dir: String): Unit = {
     val file = new File(dir)

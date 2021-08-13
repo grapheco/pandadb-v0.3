@@ -1,7 +1,7 @@
 package cn.pandadb.kernel.kv.relation
 
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
-import org.rocksdb.{Transaction, TransactionDB}
+import org.rocksdb.{ReadOptions, Transaction, TransactionDB}
 
 /**
  * @Author: Airzihao
@@ -10,6 +10,7 @@ import org.rocksdb.{Transaction, TransactionDB}
  * @Modified By:
  */
 class TransactionRelationLabelIndex(db: TransactionDB) {
+  val readOptions = new ReadOptions()
 
   def set(labelId: Int, relId: Long, tx: Transaction): Unit ={
     val keyBytes = KeyConverter.toRelationTypeKey(labelId, relId)
@@ -21,9 +22,9 @@ class TransactionRelationLabelIndex(db: TransactionDB) {
     tx.delete(keyBytes)
   }
 
-  def getRelations(labelId: Int): Iterator[Long] = {
+  def getRelations(labelId: Int, tx: Transaction): Iterator[Long] = {
     val keyPrefix = KeyConverter.toRelationTypeKey(labelId)
-    val iter = db.newIterator()
+    val iter = tx.getIterator(readOptions)
     iter.seek(keyPrefix)
 
     new Iterator[Long] (){

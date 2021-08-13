@@ -3,7 +3,7 @@ package cn.pandadb.kernel.kv.relation
 import cn.pandadb.kernel.kv.KeyConverter
 import cn.pandadb.kernel.store.{StoredRelation, StoredRelationWithProperty}
 import cn.pandadb.kernel.util.serializer.RelationSerializer
-import org.rocksdb.{Transaction, TransactionDB}
+import org.rocksdb.{ReadOptions, Transaction, TransactionDB}
 
 /**
  * @Author: Airzihao
@@ -12,6 +12,7 @@ import org.rocksdb.{Transaction, TransactionDB}
  * @Modified By:
  */
 class TransactionRelationPropertyStore(db: TransactionDB) {
+  val readOptions = new ReadOptions()
 
   def set(relation: StoredRelationWithProperty, tx: Transaction): Unit = {
     val keyBytes = KeyConverter.toRelationKey(relation.id)
@@ -26,20 +27,20 @@ class TransactionRelationPropertyStore(db: TransactionDB) {
 
   def delete(relationId: Long, tx: Transaction): Unit = tx.delete(KeyConverter.toRelationKey(relationId))
 
-  def get(relationId: Long): Option[StoredRelationWithProperty] = {
+  def get(relationId: Long, tx: Transaction): Option[StoredRelationWithProperty] = {
     val keyBytes = KeyConverter.toRelationKey(relationId)
-    val res = db.get(keyBytes)
+    val res = tx.get(readOptions, keyBytes)
     if (res != null)
       Some(RelationSerializer.deserializeRelWithProps(res))
     else
       None
   }
 
-  def exist(relationId: Long): Boolean = db.get(KeyConverter.toRelationKey(relationId)) != null
+  def exist(relationId: Long, tx: Transaction): Boolean = tx.get(readOptions, KeyConverter.toRelationKey(relationId)) != null
 
-  def all(): Iterator[StoredRelationWithProperty] = {
+  def all(tx: Transaction): Iterator[StoredRelationWithProperty] = {
     new Iterator[StoredRelationWithProperty]{
-      val iter = db.newIterator()
+      val iter = tx.getIterator(readOptions)
       iter.seekToFirst()
 
       override def hasNext: Boolean = iter.isValid
@@ -52,8 +53,8 @@ class TransactionRelationPropertyStore(db: TransactionDB) {
     }
   }
 
-  def count: Long = {
-    val iter = db.newIterator()
+  def count(tx: Transaction): Long = {
+    val iter = tx.getIterator(readOptions)
     iter.seekToFirst()
     var count:Long = 0
     while (iter.isValid){

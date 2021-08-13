@@ -140,7 +140,7 @@ class NodeAPI {
 
   @Test
   def testNodeIterator(): Unit ={
-    graphFacade.nodes().foreach(node => Assert.assertEquals(graphFacade.nodeAt(node.id).get, node))
+    graphFacade.nodes(None).foreach(node => Assert.assertEquals(graphFacade.nodeAt(node.id).get, node))
   }
 
   @After

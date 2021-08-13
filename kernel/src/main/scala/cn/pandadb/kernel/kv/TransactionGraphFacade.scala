@@ -29,11 +29,11 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
 
   init()
 
-  override def getIndexes(): Array[(LabelName, List[PropertyKeyName])] = {
+  override def getIndexes(tx: Option[LynxTransaction]): Array[(LabelName, List[PropertyKeyName])] = {
     ???
   }
 
-  override def cypher(query: String, parameters: Map[String, Any], tx: LynxTransaction): LynxResult = {
+  override def cypher(query: String, parameters: Map[String, Any], tx: Option[LynxTransaction]): LynxResult = {
     runner.compile(query)
     runner.run(query, parameters, tx)
   }
@@ -54,15 +54,15 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
 
   private def relPropNameMap(name: String): Option[Int] = relationStore.getPropertyKeyId(name)
 
-  override def addNode(tx: LynxTransaction, nodeProps: Map[String, Any], labels: String*): Id = {
+  override def addNode(tx: Option[LynxTransaction], nodeProps: Map[String, Any], labels: String*): Id = {
     addNode(tx, None, labels, nodeProps)
   }
 
-  private def addNode(tx: LynxTransaction, id: Option[Long], labels: Seq[String], nodeProps: Map[String, Any]): Id = {
+  private def addNode(tx: Option[LynxTransaction], id: Option[Long], labels: Seq[String], nodeProps: Map[String, Any]): Id = {
     val nodeId = id.getOrElse(nodeStore.newNodeId())
-    val labelIds = labels.map(nodeStore.addLabel(_, tx)).toArray
-    val props = nodeProps.map(v => (nodeStore.addPropertyKey(v._1, tx), v._2))
-    nodeStore.addNode(new StoredNodeWithProperty(nodeId, labelIds, props), tx)
+    val labelIds = labels.map(nodeStore.addLabel(_, tx.get)).toArray
+    val props = nodeProps.map(v => (nodeStore.addPropertyKey(v._1, tx.get), v._2))
+    nodeStore.addNode(new StoredNodeWithProperty(nodeId, labelIds, props), tx.get)
     statistics.increaseNodeCount(1) // TODO batch
     labelIds.foreach(statistics.increaseNodeLabelCount(_, 1))
     // index
@@ -70,7 +70,7 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
       _.foreach {
         propsIndex =>
           if (propsIndex.props.length <= 1) {
-            indexStore.insertIndexRecord(propsIndex.indexId, props.getOrElse(propsIndex.props.head, null), nodeId, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.indexDB))
+            indexStore.insertIndexRecord(propsIndex.indexId, props.getOrElse(propsIndex.props.head, null), nodeId, tx.get)
           } else {
             // TODO combined index
           }
@@ -79,37 +79,37 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
     nodeId
   }
 
-  override def addRelation(tx: LynxTransaction, label: String, from: Id, to: Id, relProps: Map[String, Any]): Id = {
+  override def addRelation(tx: Option[LynxTransaction], label: String, from: Id, to: Id, relProps: Map[String, Any]): Id = {
     addRelation(tx, None, label, from, to, relProps)
   }
 
-  def addRelationFromPhysicalPlan(tx: LynxTransaction, id: Long, label: String, from: Id, to: Id, relProps: Map[String, Any]): Id = {
+  def addRelationFromPhysicalPlan(tx: Option[LynxTransaction], id: Long, label: String, from: Id, to: Id, relProps: Map[String, Any]): Id = {
     addRelation(tx, Some(id), label: String, from: Id, to: Id, relProps: Map[String, Any])
   }
 
-  private def addRelation(tx: LynxTransaction, id: Option[Long], label: String, from: Long, to: Long, relProps: Map[String, Any]): Id = {
+  private def addRelation(tx: Option[LynxTransaction], id: Option[Long], label: String, from: Long, to: Long, relProps: Map[String, Any]): Id = {
     val rid = id.getOrElse(relationStore.newRelationId())
-    val labelId = relationStore.addRelationType(label, tx)
-    val props = relProps.map(v => (relationStore.addPropertyKey(v._1, tx), v._2))
+    val labelId = relationStore.addRelationType(label, tx.get)
+    val props = relProps.map(v => (relationStore.addPropertyKey(v._1, tx.get), v._2))
     val rel = new StoredRelationWithProperty(rid, from, to, labelId, props)
     //TODO: transaction safe
-    relationStore.addRelation(rel, tx)
+    relationStore.addRelation(rel, tx.get)
     statistics.increaseRelationCount(1) // TODO batch , index statistic
     statistics.increaseRelationTypeCount(labelId, 1)
     rid
   }
 
-  override def deleteNode(tx: LynxTransaction, id: Id): Unit = {
-    nodeStore.getNodeById(id).foreach {
+  override def deleteNode(tx: Option[LynxTransaction], id: Id): Unit = {
+    nodeStore.getNodeById(id, tx.get).foreach {
       node =>
-        nodeStore.deleteNode(node.id, tx)
+        nodeStore.deleteNode(node.id, tx.get)
         statistics.decreaseNodes(1)
         node.labelIds.foreach(statistics.decreaseNodeLabelCount(_, 1))
         node.labelIds.map(indexStore.getIndexIdByLabel).foreach(
           _.foreach {
             propsIndex =>
               if (propsIndex.props.length <= 1) {
-                indexStore.deleteIndexRecord(propsIndex.indexId, node.properties.getOrElse(propsIndex.props.head, null), node.id, tx)
+                indexStore.deleteIndexRecord(propsIndex.indexId, node.properties.getOrElse(propsIndex.props.head, null), node.id, tx.get)
               } else {
                 // TODO combined index
               }
@@ -118,128 +118,128 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
     }
   }
 
-  override def filterNodesWithRelations(nodesIDs: Seq[LynxId]): Seq[LynxId] = { //TODO opt perf.
+  override def filterNodesWithRelations(nodesIDs: Seq[LynxId], tx: Option[LynxTransaction]): Seq[LynxId] = { //TODO opt perf.
     nodesIDs.filter(nid => {
       val nidL = nid.asInstanceOf[NodeId].value
-      relationStore.findOutRelations(nidL).nonEmpty || relationStore.findInRelations(nidL).nonEmpty
+      relationStore.findOutRelations(nidL, tx.get).nonEmpty || relationStore.findInRelations(nidL, tx.get).nonEmpty
     })
   }
 
-  override def deleteRelationsOfNodes(nodesIDs: Seq[LynxId], tx: LynxTransaction): Unit = { //TODO opt perf.
+  override def deleteRelationsOfNodes(nodesIDs: Seq[LynxId], tx: Option[LynxTransaction]): Unit = { //TODO opt perf.
     nodesIDs.foreach(nid => {
       val nidL = nid.asInstanceOf[NodeId].value
-      relationStore.findOutRelations(nidL).foreach(rel => relationStore.deleteRelation(rel.id, tx))
-      relationStore.findInRelations(nidL).foreach(rel => relationStore.deleteRelation(rel.id, tx))
+      relationStore.findOutRelations(nidL, tx.get).foreach(rel => relationStore.deleteRelation(rel.id, tx.get))
+      relationStore.findInRelations(nidL, tx.get).foreach(rel => relationStore.deleteRelation(rel.id, tx.get))
     })
   }
 
-  override def deleteFreeNodes(nodesIDs: Seq[LynxId], tx: LynxTransaction): Unit = {
-    nodeStore.deleteNodes(nodesIDs.map(_.asInstanceOf[NodeId].value).toIterator, tx)
+  override def deleteFreeNodes(nodesIDs: Seq[LynxId], tx: Option[LynxTransaction]): Unit = {
+    nodeStore.deleteNodes(nodesIDs.map(_.asInstanceOf[NodeId].value).toIterator, tx.get)
   }
 
-  override def deleteRelation(tx: LynxTransaction, id: Id): Unit = {
-    relationStore.getRelationById(id).foreach {
+  override def deleteRelation(tx: Option[LynxTransaction], id: Id): Unit = {
+    relationStore.getRelationById(id, tx.get).foreach {
       rel =>
-        relationStore.deleteRelation(rel.id, tx)
+        relationStore.deleteRelation(rel.id, tx.get)
         statistics.decreaseRelations(1)
         statistics.setRelationTypeCount(rel.typeId, 1)
     }
   }
 
-  def allNodes(): Iterable[StoredNodeWithProperty] = {
-    nodeStore.allNodes().toIterable
+  def allNodes(tx: Option[LynxTransaction]): Iterable[StoredNodeWithProperty] = {
+    nodeStore.allNodes(tx.get).toIterable
   }
 
-  def allRelations(): Iterable[StoredRelation] = {
-    relationStore.allRelations().toIterable
+  def allRelations(tx: Option[LynxTransaction]): Iterable[StoredRelation] = {
+    relationStore.allRelations(false, tx.get).toIterable
   }
 
-  def writeNodeIndexRecord(tx: LynxTransaction, indexId: Int, nodeId: Long, propertyValue: Any): Unit = {
-    indexStore.insertIndexRecord(indexId, propertyValue, nodeId, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.indexDB))
+  def writeNodeIndexRecord(tx: Option[LynxTransaction], indexId: Int, nodeId: Long, propertyValue: Any): Unit = {
+    indexStore.insertIndexRecord(indexId, propertyValue, nodeId, tx.get)
   }
 
-  override def nodeSetProperty(tx: LynxTransaction, id: Id, key: String, value: Any): Unit =
-    nodeStore.nodeSetProperty(id, nodeStore.addPropertyKey(key, tx), value, tx)
+  override def nodeSetProperty(tx: Option[LynxTransaction], id: Id, key: String, value: Any): Unit =
+    nodeStore.nodeSetProperty(id, nodeStore.addPropertyKey(key, tx.get), value, tx.get)
 
 
-  override def nodeRemoveProperty(tx: LynxTransaction, id: Id, key: String): Unit =
-    nodePropNameMap(key).foreach(nodeStore.nodeRemoveProperty(id, _, tx))
+  override def nodeRemoveProperty(tx: Option[LynxTransaction], id: Id, key: String): Unit =
+    nodePropNameMap(key).foreach(nodeStore.nodeRemoveProperty(id, _, tx.get))
 
-  override def nodeAddLabel(tx: LynxTransaction, id: Id, label: String): Unit =
-    nodeStore.nodeAddLabel(id, nodeStore.addLabel(label, tx), tx)
+  override def nodeAddLabel(tx: Option[LynxTransaction], id: Id, label: String): Unit =
+    nodeStore.nodeAddLabel(id, nodeStore.addLabel(label, tx.get), tx.get)
 
-  override def nodeRemoveLabel(tx: LynxTransaction, id: Id, label: String): Unit =
-    nodeLabelNameMap(label).foreach(nodeStore.nodeRemoveLabel(id, _, tx))
+  override def nodeRemoveLabel(tx: Option[LynxTransaction], id: Id, label: String): Unit =
+    nodeLabelNameMap(label).foreach(nodeStore.nodeRemoveLabel(id, _, tx.get))
 
-  override def relationSetProperty(tx: LynxTransaction, id: Id, key: String, value: Any): Unit =
-    relationStore.relationSetProperty(id, relationStore.addPropertyKey(key, tx), value, tx)
+  override def relationSetProperty(tx: Option[LynxTransaction], id: Id, key: String, value: Any): Unit =
+    relationStore.relationSetProperty(id, relationStore.addPropertyKey(key, tx.get), value, tx.get)
 
-  override def relationRemoveProperty(tx: LynxTransaction, id: Id, key: String): Unit =
-    relPropNameMap(key).foreach(relationStore.relationRemoveProperty(id, _, tx))
+  override def relationRemoveProperty(tx: Option[LynxTransaction], id: Id, key: String): Unit =
+    relPropNameMap(key).foreach(relationStore.relationRemoveProperty(id, _, tx.get))
 
-  override def relationAddLabel(tx: LynxTransaction, id: Id, label: String): Unit = ???
+  override def relationAddLabel(tx: Option[LynxTransaction], id: Id, label: String): Unit = ???
 
-  override def relationRemoveLabel(tx: LynxTransaction, id: Id, label: String): Unit = ???
+  override def relationRemoveLabel(tx: Option[LynxTransaction], id: Id, label: String): Unit = ???
 
-  override def createIndexOnNode(tx: LynxTransaction, label: String, props: Set[String]): Unit = {
-    val labelId = nodeStore.addLabel(label, tx)
-    val propsId = props.map(nodeStore.addPropertyKey(_, tx)).toArray.sorted
-    val indexId = indexStore.createIndex(labelId, propsId, false, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.indexDB))
+  override def createIndexOnNode(tx: Option[LynxTransaction], label: String, props: Set[String]): Unit = {
+    val labelId = nodeStore.addLabel(label, tx.get)
+    val propsId = props.map(nodeStore.addPropertyKey(_, tx.get)).toArray.sorted
+    val indexId = indexStore.createIndex(labelId, propsId, false, tx.get)
     if (propsId.length == 1) {
       indexStore.insertIndexRecordBatch(
         indexId,
-        nodeStore.getNodesByLabel(labelId).map {
+        nodeStore.getNodesByLabel(labelId, tx.get).map {
           node =>
             (node.properties.getOrElse(propsId(0), null), node.id)
-        }, tx
+        }, tx.get
       )
-      statistics.setIndexPropertyCount(indexId, nodeStore.getNodesByLabel(labelId).length)
+      statistics.setIndexPropertyCount(indexId, nodeStore.getNodesByLabel(labelId, tx.get).length)
     } else {
       // TODO combined index
     }
   }
 
-  override def createIndexOnRelation(tx: LynxTransaction, typeName: String, props: Set[String]): Unit = {
-    val typeId = relationStore.addRelationType(typeName, tx)
-    val propsId = props.map(relationStore.addPropertyKey(_, tx)).toArray.sorted
-    val indexId = indexStore.createIndex(typeId, propsId, false, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.indexDB))
+  override def createIndexOnRelation(tx: Option[LynxTransaction], typeName: String, props: Set[String]): Unit = {
+    val typeId = relationStore.addRelationType(typeName, tx.get)
+    val propsId = props.map(relationStore.addPropertyKey(_, tx.get)).toArray.sorted
+    val indexId = indexStore.createIndex(typeId, propsId, false, tx.get)
     if (propsId.length == 1) {
       indexStore.insertIndexRecordBatch(
         indexId,
-        relationStore.getRelationIdsByRelationType(typeId)
-          .map(relationStore.getRelationById(_).get)
+        relationStore.getRelationIdsByRelationType(typeId, tx.get)
+          .map(relationStore.getRelationById(_, tx.get).get)
           .map {
             rel =>
               (rel.properties.getOrElse(propsId(0), null), rel.id)
-          }, tx
+          }, tx.get
       )
-      statistics.setIndexPropertyCount(indexId, relationStore.getRelationIdsByRelationType(typeId).length)
+      statistics.setIndexPropertyCount(indexId, relationStore.getRelationIdsByRelationType(typeId, tx.get).length)
     } else {
       // TODO combined index
     }
   }
 
-  override def createIndex(labelName: LabelName, properties: List[PropertyKeyName], tx: LynxTransaction): Unit = {
+  override def createIndex(labelName: LabelName, properties: List[PropertyKeyName], tx: Option[LynxTransaction]): Unit = {
     val l = labelName.name
     val ps = properties.map(p => p.name).toSet
     createIndexOnNode(tx, l, ps)
     createIndexOnRelation(tx, l, ps)
   }
 
-  def refresh(tx: LynxTransaction): Unit = {
-    statistics.nodeCount = nodeStore.nodesCount
+  def refresh(tx: Option[LynxTransaction]): Unit = {
+    statistics.nodeCount = nodeStore.nodesCount(tx.get)
     logger.info(s"node count: ${statistics.nodeCount}")
-    statistics.relationCount = relationStore.relationCount
+    statistics.relationCount = relationStore.relationCount(tx.get)
     logger.info(s"relation count: ${statistics.relationCount}")
-    nodeStore.allLabelIds().foreach {
+    nodeStore.allLabelIds(tx.get).foreach {
       l =>
-        statistics.setNodeLabelCount(l, nodeStore.getNodeIdsByLabel(l).length)
+        statistics.setNodeLabelCount(l, nodeStore.getNodeIdsByLabel(l, tx.get).length)
         logger.info(s"label ${l} count: ${statistics.getNodeLabelCount(l)}")
     }
     relationStore.allRelationTypeIds().foreach {
       t =>
         statistics.setRelationTypeCount(t,
-          relationStore.getRelationIdsByRelationType(t).length)
+          relationStore.getRelationIdsByRelationType(t, tx.get).length)
         logger.info(s"type ${t} count: ${statistics.getRelationTypeCount(t)}")
     }
     indexStore.allIndexId.foreach {
@@ -274,37 +274,37 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
   }
 
   //TODO need props?
-  def rels(includeStartNodes: Boolean, includeEndNodes: Boolean): Iterator[(PandaRelationship, Option[PandaNode], Option[PandaNode])] = {
-    relationStore.allRelations(withProperty = true).map(mapRelation).map { rel =>
+  def rels(includeStartNodes: Boolean, includeEndNodes: Boolean, tx: Option[LynxTransaction]): Iterator[(PandaRelationship, Option[PandaNode], Option[PandaNode])] = {
+    relationStore.allRelations(withProperty = true, tx.get).map(mapRelation).map { rel =>
       (rel,
-        if (includeStartNodes) nodeAt(rel.startNodeId) else None,
-        if (includeEndNodes) nodeAt(rel.endNodeId) else None)
+        if (includeStartNodes) nodeAt(rel.startNodeId, tx) else None,
+        if (includeEndNodes) nodeAt(rel.endNodeId, tx) else None)
     }
   }
 
-  override def nodes(): Iterator[PandaNode] = nodeStore.allNodes().map(mapNode)
+  override def nodes(tx: Option[LynxTransaction]): Iterator[PandaNode] = nodeStore.allNodes(tx.get).map(mapNode)
 
-  def nodeAt(id: LynxId): Option[PandaNode] = nodeAt(id.value.asInstanceOf[Long])
+  def nodeAt(id: LynxId, tx: Option[LynxTransaction]): Option[PandaNode] = nodeAt(id.value.asInstanceOf[Long], tx)
 
-  def nodeAt(id: Long): Option[PandaNode] = nodeStore.getNodeById(id).map(mapNode)
+  def nodeAt(id: Long, tx: Option[LynxTransaction]): Option[PandaNode] = nodeStore.getNodeById(id, tx.get).map(mapNode)
 
-  def nodeAt(id: Long, label: String): Option[PandaNode] =
-    nodeLabelNameMap(label).map(nodeStore.getNodeById(id, _).orNull).map(mapNode)
+  def nodeAt(id: Long, label: String, tx: Option[LynxTransaction]): Option[PandaNode] =
+    nodeLabelNameMap(label).map(nodeStore.getNodeById(id, _, tx.get).orNull).map(mapNode)
 
-  def nodeHasLabel(id: Long, label: String): Boolean = nodeLabelNameMap(label).exists(nodeStore.hasLabel(id, _))
+  def nodeHasLabel(id: Long, label: String, tx: Option[LynxTransaction]): Boolean = nodeLabelNameMap(label).exists(nodeStore.hasLabel(id, _, tx.get))
 
-  def relationAt(id: Long): Option[PandaRelationship] = relationStore.getRelationById(id).map(mapRelation)
+  def relationAt(id: Long, tx: Option[LynxTransaction]): Option[PandaRelationship] = relationStore.getRelationById(id, tx.get).map(mapRelation)
 
-  def relationAt(id: LynxId): Option[PandaRelationship] = relationAt(id.value.asInstanceOf[Long])
+  def relationAt(id: LynxId, tx: Option[LynxTransaction]): Option[PandaRelationship] = relationAt(id.value.asInstanceOf[Long], tx)
 
 
   def rels(types: Seq[String],
            labels1: Seq[String],
            labels2: Seq[String],
            includeStartNodes: Boolean,
-           includeEndNodes: Boolean): Iterator[(LynxRelationship, Option[LynxNode], Option[LynxNode])] = {
+           includeEndNodes: Boolean, tx: Option[LynxTransaction]): Iterator[(LynxRelationship, Option[LynxNode], Option[LynxNode])] = {
     val includeProperty = false
-    rels(types, labels1, labels2, includeProperty, includeStartNodes, includeEndNodes)
+    rels(types, labels1, labels2, includeProperty, includeStartNodes, includeEndNodes, tx)
   }
 
   def rels(types: Seq[String],
@@ -312,7 +312,7 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
            labels2: Seq[String],
            includeProperty: Boolean,
            includeStartNodes: Boolean,
-           includeEndNodes: Boolean): Iterator[(LynxRelationship, Option[LynxNode], Option[LynxNode])] = {
+           includeEndNodes: Boolean, tx: Option[LynxTransaction]): Iterator[(LynxRelationship, Option[LynxNode], Option[LynxNode])] = {
 
     if (labels1.map(nodeLabelNameMap).contains(None) ||
       labels2.map(nodeLabelNameMap).contains(None) ||
@@ -327,85 +327,85 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
           // TODO if types is small
           typeIds.map(
             typeId =>
-              getNodesByLabels(labels1, exact = false).flatMap {
+              getNodesByLabels(labels1, exact = false, tx).flatMap {
                 startNode =>
                   relationStore
-                    .findOutRelations(startNode.id, Some(typeId))
-                    .map(rel => (rel, nodeStore.getNodeLabelsById(rel.to)))
+                    .findOutRelations(startNode.id, Some(typeId), tx.get)
+                    .map(rel => (rel, nodeStore.getNodeLabelsById(rel.to, tx.get)))
                     .withFilter(_._2.toSeq.containsSlice(label2Id))
                     .map(relEnd => (
-                      if (includeProperty) relationAt(relEnd._1.id).orNull else mapRelation(relEnd._1),
+                      if (includeProperty) relationAt(relEnd._1.id, tx).orNull else mapRelation(relEnd._1),
                       if (includeStartNodes) Some(mapNode(startNode)) else None,
-                      if (includeEndNodes) nodeStore.getNodeById(relEnd._1.to, relEnd._2.headOption).map(mapNode) else None
+                      if (includeEndNodes) nodeStore.getNodeById(relEnd._1.to, relEnd._2.headOption, tx.get).map(mapNode) else None
                     ))
               }
           ).reduce(_ ++ _)
         case (_, false, true) => // [nodesWithLabel1]-[rels]-[nodesWithLabel2]
-          getNodesByLabels(labels1, exact = false).flatMap {
+          getNodesByLabels(labels1, exact = false, tx).flatMap {
             startNode =>
               relationStore
-                .findOutRelations(startNode.id)
-                .map(rel => (rel, nodeStore.getNodeLabelsById(rel.to)))
+                .findOutRelations(startNode.id, tx.get)
+                .map(rel => (rel, nodeStore.getNodeLabelsById(rel.to, tx.get)))
                 .withFilter(_._2.toSeq.containsSlice(label2Id))
                 .map(relEnd => (
-                  if (includeProperty) relationAt(relEnd._1.id).orNull else mapRelation(relEnd._1),
+                  if (includeProperty) relationAt(relEnd._1.id, tx).orNull else mapRelation(relEnd._1),
                   if (includeStartNodes) Some(mapNode(startNode)) else None,
-                  if (includeEndNodes) nodeStore.getNodeById(relEnd._1.to, relEnd._2.headOption).map(mapNode) else None
+                  if (includeEndNodes) nodeStore.getNodeById(relEnd._1.to, relEnd._2.headOption, tx.get).map(mapNode) else None
                 ))
           }
         case (_, true, false) => // [nodesWithLabel1]-[relsWithTypes]-[nodes]
           typeIds.map(
             typeId =>
-              getNodesByLabels(labels1, exact = false).flatMap {
+              getNodesByLabels(labels1, exact = false, tx).flatMap {
                 startNode =>
                   relationStore
-                    .findOutRelations(startNode.id, Some(typeId))
+                    .findOutRelations(startNode.id, Some(typeId), tx.get)
                     .map(rel => (
-                      if (includeProperty) relationAt(rel.id).orNull else mapRelation(rel),
+                      if (includeProperty) relationAt(rel.id, tx).orNull else mapRelation(rel),
                       if (includeStartNodes) Some(mapNode(startNode)) else None,
-                      if (includeEndNodes) nodeAt(rel.to) else None
+                      if (includeEndNodes) nodeAt(rel.to, tx) else None
                     ))
               }
           ).reduce(_ ++ _)
         case (true, false, false) => // [nodesWithLabel1]-[allRel]-[allNodes]
-          getNodesByLabels(labels1, exact = false).flatMap {
+          getNodesByLabels(labels1, exact = false, tx).flatMap {
             startNode =>
               relationStore
-                .findOutRelations(startNode.id)
+                .findOutRelations(startNode.id, tx.get)
                 .map(rel => (
-                  if (includeProperty) relationAt(rel.id).orNull else mapRelation(rel),
+                  if (includeProperty) relationAt(rel.id, tx).orNull else mapRelation(rel),
                   if (includeStartNodes) Some(mapNode(startNode)) else None,
-                  if (includeEndNodes) nodeAt(rel.to) else None
+                  if (includeEndNodes) nodeAt(rel.to, tx) else None
                 ))
           }
         case (false, false, false) => // [allRelations]
           relationStore
-            .allRelations(withProperty = includeProperty)
+            .allRelations(withProperty = includeProperty, tx.get)
             .map(rel => (
               mapRelation(rel),
-              if (includeStartNodes) nodeAt(rel.from) else None,
-              if (includeEndNodes) nodeAt(rel.to) else None
+              if (includeStartNodes) nodeAt(rel.from, tx) else None,
+              if (includeEndNodes) nodeAt(rel.to, tx) else None
             ))
       }
     }
   }
 
-  def nodes(labels: Seq[String], exact: Boolean): Iterator[PandaNode] = getNodesByLabels(labels, exact).map(mapNode)
+  def nodes(labels: Seq[String], exact: Boolean, tx: Option[LynxTransaction]): Iterator[PandaNode] = getNodesByLabels(labels, exact, tx).map(mapNode)
 
-  def getNodesByLabels(labels: Seq[String], exact: Boolean): Iterator[StoredNode] = {
+  def getNodesByLabels(labels: Seq[String], exact: Boolean, tx: Option[LynxTransaction]): Iterator[StoredNode] = {
     if (labels.isEmpty) {
-      nodeStore.allNodes()
+      nodeStore.allNodes(tx.get)
     } else if (labels.size == 1) {
       labels.map(nodeLabelNameMap)
         .head
-        .map(nodeStore.getNodesByLabel(_).filterNot(exact && _.labelIds.length > 1))
+        .map(nodeStore.getNodesByLabel(_, tx.get).filterNot(exact && _.labelIds.length > 1))
         .getOrElse(Iterator.empty)
     } else {
       //TODO statistics choose one min count
       val labelIds = labels.map(nodeLabelNameMap).sorted
       val label = nodeLabelNameMap(labels.head) // head is None, if has None
       label.map {
-        nodeStore.getNodesByLabel(_).filter {
+        nodeStore.getNodesByLabel(_, tx.get).filter {
           if (exact)
             _.labelIds.sorted.toSeq == labelIds
           else
@@ -434,28 +434,28 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
       .map(res => (res._1, nodeStore.getLabelName(res._2).get, res._3.map(nodeStore.getPropertyKeyName(_).get), res._4))
   }
 
-  def findNodeByIndex(indexId: Int, value: Any): Iterator[PandaNode] =
-    indexStore.find(indexId, value).flatMap(nodeStore.getNodeById(_)).map(mapNode)
+  def findNodeByIndex(indexId: Int, value: Any, tx: Option[LynxTransaction]): Iterator[PandaNode] =
+    indexStore.find(indexId, value).flatMap(nodeStore.getNodeById(_, tx.get)).map(mapNode)
 
   override def paths(startNodeFilter: NodeFilter,
                      relationshipFilter: RelationshipFilter,
                      endNodeFilter: NodeFilter,
-                     direction: SemanticDirection): Iterator[PathTriple] =
-    nodes(startNodeFilter).flatMap(node => paths(node.id, relationshipFilter, endNodeFilter, direction))
+                     direction: SemanticDirection, tx: Option[LynxTransaction]): Iterator[PathTriple] =
+    nodes(startNodeFilter, tx).flatMap(node => paths(node.id, relationshipFilter, endNodeFilter, direction, tx))
 
 
-  def paths(nodeId: LynxId, direction: SemanticDirection): Iterator[PathTriple] =
-    nodeAt(nodeId).map(
+  def paths(nodeId: LynxId, direction: SemanticDirection, tx: Option[LynxTransaction]): Iterator[PathTriple] =
+    nodeAt(nodeId, tx).map(
       n =>
         direction match {
-          case SemanticDirection.INCOMING => relationStore.findInRelations(n.longId).map(r => (n, r, r.from))
-          case SemanticDirection.OUTGOING => relationStore.findOutRelations(n.longId).map(r => (n, r, r.to))
-          case SemanticDirection.BOTH => relationStore.findInRelations(n.longId).map(r => (n, r, r.from)) ++
-            relationStore.findOutRelations(n.longId).map(r => (n, r, r.to))
+          case SemanticDirection.INCOMING => relationStore.findInRelations(n.longId, tx.get).map(r => (n, r, r.from))
+          case SemanticDirection.OUTGOING => relationStore.findOutRelations(n.longId, tx.get).map(r => (n, r, r.to))
+          case SemanticDirection.BOTH => relationStore.findInRelations(n.longId, tx.get).map(r => (n, r, r.from)) ++
+            relationStore.findOutRelations(n.longId, tx.get).map(r => (n, r, r.to))
         }
     )
       .getOrElse(Iterator.empty)
-      .map(p => PathTriple(p._1, relationAt(p._2.id).orNull, nodeAt(p._3).orNull))
+      .map(p => PathTriple(p._1, relationAt(p._2.id, tx).orNull, nodeAt(p._3, tx).orNull))
 
   //  override def paths(nodeId: LynxId,
   //                     relationshipFilter: RelationshipFilter,
@@ -467,77 +467,77 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
   def paths(nodeId: LynxId,
             relationshipFilter: RelationshipFilter,
             endNodeFilter: NodeFilter,
-            direction: SemanticDirection): Iterator[PathTriple] = {
-    nodeAt(nodeId).map(
+            direction: SemanticDirection, tx: Option[LynxTransaction]): Iterator[PathTriple] = {
+    nodeAt(nodeId, tx).map(
       node => {
         if (relationshipFilter.types.nonEmpty) {
           relationshipFilter.types.map(relTypeNameMap).map(
             _.map(
               relType =>
                 direction match {
-                  case SemanticDirection.INCOMING => relationStore.findInRelations(node.longId, Some(relType)).map(r => (node, r, r.from))
-                  case SemanticDirection.OUTGOING => relationStore.findOutRelations(node.longId, Some(relType)).map(r => (node, r, r.to))
-                  case SemanticDirection.BOTH => relationStore.findInRelations(node.longId, Some(relType)).map(r => (node, r, r.from)) ++
-                    relationStore.findOutRelations(node.longId, Some(relType)).map(r => (node, r, r.to))
+                  case SemanticDirection.INCOMING => relationStore.findInRelations(node.longId, Some(relType), tx.get).map(r => (node, r, r.from))
+                  case SemanticDirection.OUTGOING => relationStore.findOutRelations(node.longId, Some(relType), tx.get).map(r => (node, r, r.to))
+                  case SemanticDirection.BOTH => relationStore.findInRelations(node.longId, Some(relType), tx.get).map(r => (node, r, r.from)) ++
+                    relationStore.findOutRelations(node.longId, Some(relType), tx.get).map(r => (node, r, r.to))
                 }
             ).getOrElse(Iterator.empty)
           )
         } else {
           Seq(direction match {
-            case SemanticDirection.INCOMING => relationStore.findInRelations(node.longId).map(r => (node, r, r.from))
-            case SemanticDirection.OUTGOING => relationStore.findOutRelations(node.longId).map(r => (node, r, r.to))
-            case SemanticDirection.BOTH => relationStore.findInRelations(node.longId).map(r => (node, r, r.from)) ++
-              relationStore.findOutRelations(node.longId).map(r => (node, r, r.to))
+            case SemanticDirection.INCOMING => relationStore.findInRelations(node.longId, tx.get).map(r => (node, r, r.from))
+            case SemanticDirection.OUTGOING => relationStore.findOutRelations(node.longId, tx.get).map(r => (node, r, r.to))
+            case SemanticDirection.BOTH => relationStore.findInRelations(node.longId, tx.get).map(r => (node, r, r.from)) ++
+              relationStore.findOutRelations(node.longId, tx.get).map(r => (node, r, r.to))
           })
         }
       }
     )
       .getOrElse(Iterator.empty)
       .reduce(_ ++ _)
-      .map(p => PathTriple(p._1, relationAt(p._2.id).orNull, nodeAt(p._3).orNull))
+      .map(p => PathTriple(p._1, relationAt(p._2.id, tx).orNull, nodeAt(p._3, tx).orNull))
       .filter(trip => endNodeFilter.matches(trip.endNode))
   }
 
-  override def expand(nodeId: LynxId, direction: SemanticDirection): Iterator[PathTriple] = {
+  override def expand(nodeId: LynxId, direction: SemanticDirection, tx: Option[LynxTransaction]): Iterator[PathTriple] = {
     val rels = direction match {
-      case SemanticDirection.INCOMING => relationStore.findInRelations(nodeId.value.asInstanceOf[Long]).map(r => {
-        val toNode = mapNode(nodeStore.getNodeById(r.to).get)
+      case SemanticDirection.INCOMING => relationStore.findInRelations(nodeId.value.asInstanceOf[Long], tx.get).map(r => {
+        val toNode = mapNode(nodeStore.getNodeById(r.to, tx.get).get)
         val rel = mapRelation(r)
-        val fromNode = mapNode(nodeStore.getNodeById(r.from).get)
+        val fromNode = mapNode(nodeStore.getNodeById(r.from, tx.get).get)
         PathTriple(toNode, rel, fromNode)
       })
-      case SemanticDirection.OUTGOING => relationStore.findOutRelations(nodeId.value.asInstanceOf[Long]).map(r => {
-        val toNode = mapNode(nodeStore.getNodeById(r.to).get)
+      case SemanticDirection.OUTGOING => relationStore.findOutRelations(nodeId.value.asInstanceOf[Long], tx.get).map(r => {
+        val toNode = mapNode(nodeStore.getNodeById(r.to, tx.get).get)
         val rel = mapRelation(r)
-        val fromNode = mapNode(nodeStore.getNodeById(r.from).get)
+        val fromNode = mapNode(nodeStore.getNodeById(r.from, tx.get).get)
         PathTriple(fromNode, rel, toNode)
       })
-      case SemanticDirection.BOTH => relationStore.findInRelations(nodeId.value.asInstanceOf[Long]).map(r => {
-        val toNode = mapNode(nodeStore.getNodeById(r.to).get)
+      case SemanticDirection.BOTH => relationStore.findInRelations(nodeId.value.asInstanceOf[Long], tx.get).map(r => {
+        val toNode = mapNode(nodeStore.getNodeById(r.to, tx.get).get)
         val rel = mapRelation(r)
-        val fromNode = mapNode(nodeStore.getNodeById(r.from).get)
+        val fromNode = mapNode(nodeStore.getNodeById(r.from, tx.get).get)
         PathTriple(toNode, rel, fromNode)
       }) ++
-        relationStore.findOutRelations(nodeId.value.asInstanceOf[Long]).map(r => {
-          val toNode = mapNode(nodeStore.getNodeById(r.to).get)
+        relationStore.findOutRelations(nodeId.value.asInstanceOf[Long], tx.get).map(r => {
+          val toNode = mapNode(nodeStore.getNodeById(r.to, tx.get).get)
           val rel = mapRelation(r)
-          val fromNode = mapNode(nodeStore.getNodeById(r.from).get)
+          val fromNode = mapNode(nodeStore.getNodeById(r.from, tx.get).get)
           PathTriple(fromNode, rel, toNode)
         })
     }
     rels
   }
 
-  override def expand(nodeId: LynxId, relationshipFilter: RelationshipFilter, endNodeFilter: NodeFilter, direction: SemanticDirection): Iterator[PathTriple] = {
+  override def expand(nodeId: LynxId, relationshipFilter: RelationshipFilter, endNodeFilter: NodeFilter, direction: SemanticDirection, tx: Option[LynxTransaction]): Iterator[PathTriple] = {
     // has properties?
     endNodeFilter.properties.toSeq match {
-      case Seq() => expand(nodeId, direction, relationshipFilter).filter(
+      case Seq() => expand(nodeId, direction, relationshipFilter, tx).filter(
         item => {
           val PathTriple(_, rel, endNode, _) = item
           relationshipFilter.matches(rel) && endNodeFilter.labels.forall(endNode.labels.contains(_))
         }
       )
-      case _ => expand(nodeId, direction, relationshipFilter).filter(
+      case _ => expand(nodeId, direction, relationshipFilter, tx).filter(
         item => {
           val PathTriple(_, rel, endNode, _) = item
           relationshipFilter.matches(rel) && endNodeFilter.matches(endNode)
@@ -547,7 +547,7 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
   }
 
   // has relationship types?
-  def expand(nodeId: LynxId, direction: SemanticDirection, relationshipFilter: RelationshipFilter): Iterator[PathTriple] = {
+  def expand(nodeId: LynxId, direction: SemanticDirection, relationshipFilter: RelationshipFilter, tx: Option[LynxTransaction]): Iterator[PathTriple] = {
     val typeId = {
       relationshipFilter.types match {
         case Seq() => None
@@ -559,61 +559,61 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
       Iterator.empty
     } else {
       direction match {
-        case SemanticDirection.INCOMING => relationStore.findInRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
-          val toNode = TransactionLazyPandaNode(r.to, nodeStore)
+        case SemanticDirection.INCOMING => relationStore.findInRelations(nodeId.value.asInstanceOf[Long], typeId, tx.get).map(r => {
+          val toNode = TransactionLazyPandaNode(r.to, nodeStore, tx.get)
           val rel = mapRelation(r)
-          val fromNode = TransactionLazyPandaNode(r.from, nodeStore)
+          val fromNode = TransactionLazyPandaNode(r.from, nodeStore, tx.get)
           PathTriple(toNode, rel, fromNode)
         })
 
-        case SemanticDirection.OUTGOING => relationStore.findOutRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
-          val toNode = TransactionLazyPandaNode(r.to, nodeStore)
+        case SemanticDirection.OUTGOING => relationStore.findOutRelations(nodeId.value.asInstanceOf[Long], typeId, tx.get).map(r => {
+          val toNode = TransactionLazyPandaNode(r.to, nodeStore, tx.get)
           val rel = mapRelation(r)
-          val fromNode = TransactionLazyPandaNode(r.from, nodeStore)
+          val fromNode = TransactionLazyPandaNode(r.from, nodeStore, tx.get)
           PathTriple(fromNode, rel, toNode)
         })
-        case SemanticDirection.BOTH => relationStore.findInRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
-          val toNode = TransactionLazyPandaNode(r.to, nodeStore)
+        case SemanticDirection.BOTH => relationStore.findInRelations(nodeId.value.asInstanceOf[Long], typeId, tx.get).map(r => {
+          val toNode = TransactionLazyPandaNode(r.to, nodeStore, tx.get)
           val rel = mapRelation(r)
-          val fromNode = TransactionLazyPandaNode(r.from, nodeStore)
+          val fromNode = TransactionLazyPandaNode(r.from, nodeStore, tx.get)
           PathTriple(toNode, rel, fromNode)
         }) ++
-          relationStore.findOutRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
-            val toNode = TransactionLazyPandaNode(r.to, nodeStore)
+          relationStore.findOutRelations(nodeId.value.asInstanceOf[Long], typeId, tx.get).map(r => {
+            val toNode = TransactionLazyPandaNode(r.to, nodeStore, tx.get)
             val rel = mapRelation(r)
-            val fromNode = TransactionLazyPandaNode(r.from, nodeStore)
+            val fromNode = TransactionLazyPandaNode(r.from, nodeStore, tx.get)
             PathTriple(fromNode, rel, toNode)
           })
       }
     }
   }
 
-  override def nodes(nodeFilter: NodeFilter): Iterator[PandaNode] = {
+  override def nodes(nodeFilter: NodeFilter, tx: Option[LynxTransaction]): Iterator[PandaNode] = {
     (nodeFilter.labels.nonEmpty, nodeFilter.properties.nonEmpty) match {
-      case (false, false) => allNodes().iterator.map(mapNode)
-      case (true, false) => nodes(nodeFilter.labels, exact = false)
-      case (false, true) => allNodes().iterator.map(mapNode).filter(filterNodes(_, nodeFilter.properties))
+      case (false, false) => allNodes(tx).iterator.map(mapNode)
+      case (true, false) => nodes(nodeFilter.labels, exact = false, tx)
+      case (false, true) => allNodes(tx).iterator.map(mapNode).filter(filterNodes(_, nodeFilter.properties))
       case (true, true) =>
         hasIndex(nodeFilter.labels.toSet, nodeFilter.properties.keys.toSet)
           .map {
             indexInfo => // fixme ------------------------------------only get one prop ↓
               logger.info("seek index: " + indexInfo)
-              findNodeByIndex(indexInfo._1, nodeFilter.properties.getOrElse(indexInfo._3.head, null).value)
+              findNodeByIndex(indexInfo._1, nodeFilter.properties.getOrElse(indexInfo._3.head, null).value, tx)
                 .filter(x => filterNodes(x, nodeFilter.properties))
           }
           .getOrElse {
             logger.info("scan label")
-            getNodesByLabels(nodeFilter.labels, exact = false)
+            getNodesByLabels(nodeFilter.labels, exact = false, tx)
               .map(mapNode)
               .filter(filterNodes(_, nodeFilter.properties))
           }
     }
   }
 
-  override def relationships(): Iterator[PathTriple] =
-    allRelations().toIterator.map(rel => PathTriple(nodeAt(rel.from).get, mapRelation(rel), nodeAt(rel.to).get))
+  override def relationships(tx: Option[LynxTransaction]): Iterator[PathTriple] =
+    allRelations(tx).toIterator.map(rel => PathTriple(nodeAt(rel.from, tx).get, mapRelation(rel), nodeAt(rel.to, tx).get))
 
-  override def createElements[T](nodesInput: Seq[(String, NodeInput)], relsInput: Seq[(String, RelationshipInput)], onCreated: (Seq[(String, LynxNode)], Seq[(String, LynxRelationship)]) => T, tx: LynxTransaction): T = {
+  override def createElements[T](nodesInput: Seq[(String, NodeInput)], relsInput: Seq[(String, RelationshipInput)], onCreated: (Seq[(String, LynxNode)], Seq[(String, LynxRelationship)]) => T, tx: Option[LynxTransaction]): T = {
     val nodesMap: Seq[(String, PandaNode)] = nodesInput.map(x => {
       val (varname, input) = x
       val id = nodeStore.newNodeId()
@@ -648,54 +648,54 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
     onCreated(nodesMap, relsMap)
   }
 
-  override def setNodeProperty(nodeId: LynxId, data: Array[(String, Any)], cleanExistProperties: Boolean = false, tx: LynxTransaction): Option[LynxNode] = {
-    val node = nodeAt(nodeId)
+  override def setNodeProperty(nodeId: LynxId, data: Array[(String, Any)], cleanExistProperties: Boolean = false, tx: Option[LynxTransaction]): Option[LynxNode] = {
+    val node = nodeAt(nodeId, tx)
     if (node.isDefined){
       if (cleanExistProperties) {
         node.get.properties.keys.foreach(key => nodeRemoveProperty(tx, nodeId.value.asInstanceOf[Long], key))
       }
       data.foreach(kv => nodeSetProperty(tx, nodeId.value.asInstanceOf[Long], kv._1, kv._2))
-      nodeAt(nodeId)
+      nodeAt(nodeId, tx)
     }
     else None
   }
 
-  override def addNodeLabels(nodeId: LynxId, labels: Array[String], tx: LynxTransaction): Option[LynxNode] = {
+  override def addNodeLabels(nodeId: LynxId, labels: Array[String], tx: Option[LynxTransaction]): Option[LynxNode] = {
     labels.foreach(label => nodeAddLabel(tx, nodeId.value.asInstanceOf[Long], label))
-    nodeAt(nodeId)
+    nodeAt(nodeId, tx)
   }
 
-  override def setRelationshipProperty(triple: Seq[LynxValue], data: Array[(String, Any)], tx: LynxTransaction): Option[Seq[LynxValue]] = {
+  override def setRelationshipProperty(triple: Seq[LynxValue], data: Array[(String, Any)], tx: Option[LynxTransaction]): Option[Seq[LynxValue]] = {
     val relId = triple(1).asInstanceOf[LynxRelationship].id.value.asInstanceOf[Long]
     data.foreach(kv => relationSetProperty(tx, relId, kv._1, kv._2))
-    val relationship = relationAt(relId)
+    val relationship = relationAt(relId, tx)
     if (relationship.isDefined) Option(Seq(triple.head, relationship.get, triple(2)))
     else None
   }
 
   // can not do this
-  override def setRelationshipTypes(triple: Seq[LynxValue], labels: Array[String], tx: LynxTransaction): Option[Seq[LynxValue]] = ???
+  override def setRelationshipTypes(triple: Seq[LynxValue], labels: Array[String], tx: Option[LynxTransaction]): Option[Seq[LynxValue]] = ???
 
-  override def removeNodeProperty(nodeId: LynxId, data: Array[String], tx: LynxTransaction): Option[LynxNode] = {
+  override def removeNodeProperty(nodeId: LynxId, data: Array[String], tx: Option[LynxTransaction]): Option[LynxNode] = {
     data.foreach(key => nodeRemoveProperty(tx, nodeId.value.asInstanceOf[Long], key))
-    nodeAt(nodeId)
+    nodeAt(nodeId, tx)
   }
 
-  override def removeNodeLabels(nodeId: LynxId, labels: Array[String], tx: LynxTransaction): Option[LynxNode] = {
+  override def removeNodeLabels(nodeId: LynxId, labels: Array[String], tx: Option[LynxTransaction]): Option[LynxNode] = {
     labels.foreach(label => nodeRemoveLabel(tx, nodeId.value.asInstanceOf[Long], label))
-    nodeAt(nodeId)
+    nodeAt(nodeId, tx)
   }
 
-  override def removeRelationshipProperty(triple: Seq[LynxValue], data: Array[String], tx: LynxTransaction): Option[Seq[LynxValue]] = {
+  override def removeRelationshipProperty(triple: Seq[LynxValue], data: Array[String], tx: Option[LynxTransaction]): Option[Seq[LynxValue]] = {
     val relId = triple(1).asInstanceOf[LynxRelationship].id.value.asInstanceOf[Long]
     data.foreach(key => relationRemoveProperty(tx, relId, key))
-    val relationship = relationAt(relId)
+    val relationship = relationAt(relId, tx)
     if (relationship.isDefined) Option(Seq(triple.head, relationship.get, triple(2)))
     else None
   }
 
   // can not do this
-  override def removeRelationshipType(triple: Seq[LynxValue], labels: Array[String], tx: LynxTransaction): Option[Seq[LynxValue]] = ???
+  override def removeRelationshipType(triple: Seq[LynxValue], labels: Array[String], tx: Option[LynxTransaction]): Option[Seq[LynxValue]] = ???
 
   override def getSubProperty(value: LynxValue, propertyKey: String): LynxValue = {
     //    propertyKey match {
@@ -725,15 +725,15 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
 
   override def estimateRelationship(relType: String): Id = statistics.getRelationTypeCount(relationStore.getRelationTypeId(relType).get).get
 
-  override def pathsWithLength(startNodeFilter: NodeFilter, relationshipFilter: RelationshipFilter, endNodeFilter: NodeFilter, direction: SemanticDirection, length: Option[Option[expressions.Range]]): Iterator[Seq[PathTriple]] = ???
+  override def pathsWithLength(startNodeFilter: NodeFilter, relationshipFilter: RelationshipFilter, endNodeFilter: NodeFilter, direction: SemanticDirection, length: Option[Option[expressions.Range]], tx: Option[LynxTransaction]): Iterator[Seq[PathTriple]] = ???
 
-  override def copyNode(srcNode: LynxNode, maskNode: LynxNode, tx: LynxTransaction): Seq[LynxValue] = ???
+  override def copyNode(srcNode: LynxNode, maskNode: LynxNode, tx: Option[LynxTransaction]): Seq[LynxValue] = ???
 
-  override def mergeNode(nodeFilter: NodeFilter, forceToCreate: Boolean, tx: LynxTransaction): LynxNode = ???
+  override def mergeNode(nodeFilter: NodeFilter, forceToCreate: Boolean, tx: Option[LynxTransaction]): LynxNode = ???
 
-  override def mergeRelationship(relationshipFilter: RelationshipFilter, leftNode: LynxNode, rightNode: LynxNode, direction: SemanticDirection, forceToCreate: Boolean, tx: LynxTransaction): PathTriple = ???
+  override def mergeRelationship(relationshipFilter: RelationshipFilter, leftNode: LynxNode, rightNode: LynxNode, direction: SemanticDirection, forceToCreate: Boolean, tx: Option[LynxTransaction]): PathTriple = ???
 
-  override def deleteRelation(id: LynxId, tx: LynxTransaction): Unit = ???
+  override def deleteRelation(id: LynxId, tx: Option[LynxTransaction]): Unit = ???
 
-  override def deleteRelations(ids: Iterator[LynxId], tx: LynxTransaction): Unit = ???
+  override def deleteRelations(ids: Iterator[LynxId], tx: Option[LynxTransaction]): Unit = ???
 }

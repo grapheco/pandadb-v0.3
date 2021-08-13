@@ -2,7 +2,7 @@ package cn.pandadb.kernel.kv.node
 
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import cn.pandadb.kernel.kv.KeyConverter.{LabelId, NodeId}
-import org.rocksdb.{Transaction, TransactionDB, WriteBatch, WriteOptions}
+import org.rocksdb.{ReadOptions, Transaction, TransactionDB, WriteBatch, WriteOptions}
 
 /**
  * @Author: Airzihao
@@ -11,6 +11,8 @@ import org.rocksdb.{Transaction, TransactionDB, WriteBatch, WriteOptions}
  * @Modified By:
  */
 class TransactionNodeLabelStore(db: TransactionDB) {
+  val readOptions = new ReadOptions()
+
   def set(nodeId: NodeId, labelId: LabelId, tx: Transaction): Unit =
     tx.put(KeyConverter.toNodeLabelKey(nodeId, labelId), Array.emptyByteArray)
 
@@ -28,22 +30,22 @@ class TransactionNodeLabelStore(db: TransactionDB) {
     }
   }
 
-  def get(nodeId: NodeId): Option[LabelId] = {
+  def get(nodeId: NodeId, tx: Transaction): Option[LabelId] = {
     val keyPrefix = KeyConverter.toNodeLabelKey(nodeId)
-    val iter = db.newIterator()
+    val iter = tx.getIterator(readOptions)
     iter.seek(keyPrefix)
     if (iter.isValid && iter.key().startsWith(keyPrefix)) Some(KeyConverter.getLabelIdInNodeLabelKey(iter.key()))
     else None
   }
 
-  def exist(nodeId: NodeId, label: LabelId): Boolean = {
+  def exist(nodeId: NodeId, label: LabelId, tx: Transaction): Boolean = {
     val key = KeyConverter.toNodeLabelKey(nodeId, label)
-    db.get(key)!=null
+    tx.get(readOptions, key) != null
   }
 
-  def getAll(nodeId: NodeId): Array[LabelId] = {
+  def getAll(nodeId: NodeId, tx: Transaction): Array[LabelId] = {
     val keyPrefix = KeyConverter.toNodeLabelKey(nodeId)
-    val iter = db.newIterator()
+    val iter = tx.getIterator(readOptions)
     iter.seek(keyPrefix)
     new Iterator[LabelId] (){
       override def hasNext: Boolean = iter.isValid && iter.key().startsWith(keyPrefix)
@@ -57,8 +59,8 @@ class TransactionNodeLabelStore(db: TransactionDB) {
   }
 
 
-  def getNodesCount: Long = {
-    val iter = db.newIterator()
+  def getNodesCount(tx: Transaction): Long = {
+    val iter = tx.getIterator(readOptions)
     iter.seekToFirst()
     var count:Long = 0
     var currentNode:Long = 0
