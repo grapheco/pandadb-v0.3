@@ -8,8 +8,9 @@ import cn.pandadb.kernel.kv.meta.TransactionStatistics
 import cn.pandadb.kernel.kv.{TransactionGraphFacade, TransactionRocksDBStorage}
 import cn.pandadb.kernel.kv.node.TransactionNodeStoreAPI
 import cn.pandadb.kernel.kv.relation.TransactionRelationStoreAPI
+import cn.pandadb.kernel.util.log.PandaUndoLogWriter
 import com.typesafe.scalalogging.LazyLogging
-import org.rocksdb.WriteOptions
+import org.rocksdb.{ReadOptions, Snapshot, WriteOptions}
 
 
 /**
@@ -30,6 +31,7 @@ class PandaTransactionManager(nodeMetaDBPath: String,
                               indexDBPath: String,
                               fulltextIndexPath: String,
                               statisticsDBPath: String,
+                              undoLogFilePath: String,
                               rocksDBConfigPath: String = "default") extends TransactionManager with LazyLogging {
 
   val globalTransactionId = new AtomicLong(1)
@@ -64,16 +66,19 @@ class PandaTransactionManager(nodeMetaDBPath: String,
 
   private val statistics = new TransactionStatistics(TransactionRocksDBStorage.getDB(statisticsDBPath))
 
+  private val logWriter = new PandaUndoLogWriter(undoLogFilePath + "/undo.txt")
+
   override def begin(): PandaTransaction = {
     val id = globalTransactionId.getAndIncrement()
     val writeOptions = new WriteOptions()
     val txMap = nodeStore.generateTransactions(writeOptions) ++ relationStore.generateTransactions(writeOptions) ++
       indexStore.generateTransactions(writeOptions) ++ statistics.generateTransactions(writeOptions)
 
-    new PandaTransaction(s"$id", txMap, new TransactionGraphFacade(nodeStore, relationStore, indexStore, statistics, {}))
+    new PandaTransaction(s"$id", txMap, new TransactionGraphFacade(nodeStore, relationStore, indexStore, statistics, logWriter, {}))
   }
 
   def close(): Unit ={
+    logWriter.close()
     statistics.close()
     indexStore.close()
     nodeStore.close()

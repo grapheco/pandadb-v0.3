@@ -1,6 +1,7 @@
 package cn.pandadb.kernel.transaction
 
 import cn.pandadb.kernel.kv.TransactionGraphFacade
+import cn.pandadb.kernel.util.PandaDBException.PandaDBException
 import org.grapheco.lynx.{LynxResult, LynxTransaction}
 import org.rocksdb.Transaction
 
@@ -13,28 +14,33 @@ import scala.collection.mutable.ArrayBuffer
  * @Modified By:
  */
 
-class PandaTransaction(private val id: String, val rocksTxMap: Map[String, Transaction], private val graphFacade: TransactionGraphFacade) extends LynxTransaction{
+class PandaTransaction(val id: String, val rocksTxMap: Map[String, Transaction], private val graphFacade: TransactionGraphFacade) extends LynxTransaction{
 
   val queryStates: ArrayBuffer[QueryStat] = new ArrayBuffer[QueryStat]()
-  def execute(cypherStat: String): LynxResult = {
-
-    val res = graphFacade.cypher(cypherStat, Map.empty, Option(this))
+  def execute(cypherStat: String, parameters: Map[String, Any]): LynxResult = {
 
     val queryStats = QueryStat(cypherStat, QUERYSTATUS.EXECUTING)
     queryStates.append(queryStats)
+
     try {
       //execute the query
+      val res = graphFacade.cypher(cypherStat, parameters, Option(this))
       queryStats.status = QUERYSTATUS.SUCCEED
+      res
     } catch {
-      case e : Exception => queryStats.status = QUERYSTATUS.FAILED
+      case e : Exception => {
+        queryStats.status = QUERYSTATUS.FAILED
+        throw new PandaDBException(s"execute cypher failed...")
+      }
     }
-
-    res
   }
 
   def commit(): Unit = {
+    graphFacade.getLogWriter().flush()
     // check all the status
-    rocksTxMap.values.foreach(_.commit())
+    rocksTxMap.foreach(f => {
+      f._2.commit()
+    })
   }
 
 

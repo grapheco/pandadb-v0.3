@@ -2,9 +2,12 @@ package cn.pandadb.transaction
 
 import java.io.File
 
+import cn.pandadb.kernel.kv.TransactionRocksDBStorage
 import cn.pandadb.kernel.transaction.PandaTransactionManager
+import cn.pandadb.kernel.util.log.PandaLogReader
 import org.apache.commons.io.FileUtils
 import org.junit.{After, Assert, Before, Test}
+import org.rocksdb.{ReadOptions, Snapshot}
 
 /**
  * @program: pandadb-v0.3
@@ -31,33 +34,49 @@ class TransactionTest {
     val indexDBPath = "./testinput/panda/index.db"
     val fulltextIndexPath = "./testinput/panda/fulltextIndex.db"
     val statisticsDBPath = "./testinput/panda/statistics.db"
+    val undoLogFilePath = "./testinput/panda"
 
     transactionManager = new PandaTransactionManager(nodeMetaDBPath, nodeDBPath,nodeLabelDBPath,
       relationMetaDBPath,relationDBPath, inRelationDBPath,outRelationDBPath,relationLabelDBPath,
-      indexMetaDBPath,indexDBPath,fulltextIndexPath,statisticsDBPath)
+      indexMetaDBPath,indexDBPath,fulltextIndexPath,statisticsDBPath, undoLogFilePath)
   }
 
   @Test
-  def test(): Unit ={
+  def testUndoLog(): Unit ={
     var tx = transactionManager.begin()
-    tx.execute("create (n:person{name:'glx'}) return n").show() // memory data
-    tx.execute("create (n:City{name:'China'}) return n").show() // memory data
+    tx.execute("create (n:person{name:'glx'}) return n", Map.empty).show() // memory data
+    tx.execute("create (n:City{name:'China'}) return n", Map.empty).show() // memory data
+    tx.execute(
+      """
+        |match (n:person)
+        |match (m:City)
+        |create (n)-[r:know]->(m)
+        |""".stripMargin, Map.empty)
     tx.commit() // commit tx, data flush
     tx = transactionManager.begin()
-    tx.execute("match (n) return n").show() // search db data
+    var res = tx.execute("match (n) return n", Map.empty).records() // search db data
     tx.commit()
+    Assert.assertEquals(2, res.size)
+
+    // recover
+    tx = transactionManager.begin()
+    val reader = new PandaLogReader("./testinput/panda/undo.txt")
+    reader.recover(tx.rocksTxMap)
+    res = tx.execute("match (n) return n", Map.empty).records()
+    Assert.assertEquals(0, res.size)
+    res = tx.execute("match (n)-[r]->(m) return r", Map.empty).records()
+    Assert.assertEquals(0, res.size)
     transactionManager.close()
   }
 
   @Test
   def queryCreatedNodeInSameTx(): Unit ={
     val tx = transactionManager.begin()
-    tx.execute("create (n:person{name:'glx'}) return n")
-    val res = tx.execute("match (n) return n").records()
+    tx.execute("create (n:person{name:'glx'}) return n", Map.empty)
+    val res = tx.execute("match (n) return n", Map.empty).records()
     tx.commit()
     transactionManager.close()
     Assert.assertEquals(1, res.size)
   }
-
 
 }

@@ -1,6 +1,9 @@
 package cn.pandadb.kernel.kv.relation
 
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
+import cn.pandadb.kernel.transaction.{DBNameMap, PandaTransaction}
+import cn.pandadb.kernel.util.log.LogWriter
+import org.grapheco.lynx.LynxTransaction
 import org.rocksdb.{ReadOptions, Transaction, TransactionDB}
 
 /**
@@ -12,14 +15,18 @@ import org.rocksdb.{ReadOptions, Transaction, TransactionDB}
 class TransactionRelationLabelIndex(db: TransactionDB) {
   val readOptions = new ReadOptions()
 
-  def set(labelId: Int, relId: Long, tx: Transaction): Unit ={
+  def set(labelId: Int, relId: Long, tx: LynxTransaction, logWriter: LogWriter): Unit ={
     val keyBytes = KeyConverter.toRelationTypeKey(labelId, relId)
-    tx.put(keyBytes, Array.emptyByteArray)
+    val ptx = tx.asInstanceOf[PandaTransaction]
+    logWriter.writeUndoLog(ptx.id, DBNameMap.relationLabelDB, keyBytes, db.get(keyBytes))
+    ptx.rocksTxMap(DBNameMap.relationLabelDB).put(keyBytes, Array.emptyByteArray)
   }
 
-  def delete(labelId: Int, relId: Long, tx: Transaction): Unit = {
+  def delete(labelId: Int, relId: Long, tx: LynxTransaction, logWriter: LogWriter): Unit = {
     val keyBytes = KeyConverter.toRelationTypeKey(labelId, relId)
-    tx.delete(keyBytes)
+    val ptx = tx.asInstanceOf[PandaTransaction]
+    logWriter.writeUndoLog(ptx.id, DBNameMap.relationLabelDB, keyBytes, db.get(keyBytes))
+    ptx.rocksTxMap(DBNameMap.relationLabelDB).delete(keyBytes)
   }
 
   def getRelations(labelId: Int, tx: Transaction): Iterator[Long] = {

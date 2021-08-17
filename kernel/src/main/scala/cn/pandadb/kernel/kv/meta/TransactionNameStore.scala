@@ -4,12 +4,16 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import cn.pandadb.kernel.kv.ByteUtils
 import cn.pandadb.kernel.kv.db.KeyValueDB
+import cn.pandadb.kernel.transaction.{DBNameMap, PandaTransaction}
+import cn.pandadb.kernel.util.log.LogWriter
+import org.grapheco.lynx.LynxTransaction
 import org.rocksdb.{Transaction, TransactionDB}
 
 import scala.collection.mutable
 
 trait TransactionNameStore {
   val db: TransactionDB
+  val dbName: String
   val initInt: Int
   val key2ByteArrayFunc: (Int) => Array[Byte]
   val keyPrefixFunc: () => Array[Byte]
@@ -18,13 +22,17 @@ trait TransactionNameStore {
   var mapString2Int: mutable.Map[String, Int] = mutable.Map[String, Int]()
   var mapInt2String: mutable.Map[Int, String] = mutable.Map[Int, String]()
 
-  private def addToDB(labelName: String, tx: Transaction): Int = {
+  private def addToDB(labelName: String, tx: LynxTransaction, logWriter: LogWriter): Int = {
     // todo: reset map and id if failed.
     val id = idGenerator.incrementAndGet()
     mapString2Int += labelName -> id
     mapInt2String += id -> labelName
     val key = key2ByteArrayFunc(id)
-    tx.put(key, ByteUtils.stringToBytes(labelName))
+
+    val ptx = tx.asInstanceOf[PandaTransaction]
+    logWriter.writeUndoLog(ptx.id, dbName, key, Array.emptyByteArray)
+
+    ptx.rocksTxMap(DBNameMap.nodeMetaDB).put(key, ByteUtils.stringToBytes(labelName))
     id
   }
 
@@ -32,10 +40,10 @@ trait TransactionNameStore {
 
   def id(labelName: String): Option[Int] = mapString2Int.get(labelName)
 
-  def getOrAddId(labelName: String, tx: Transaction): Int =
-    id(labelName).getOrElse(addToDB(labelName, tx))
+  def getOrAddId(labelName: String, tx: LynxTransaction, logWriter: LogWriter): Int =
+    id(labelName).getOrElse(addToDB(labelName, tx, logWriter))
 
-  def ids(keys: Set[String], tx: Transaction): Set[Int] = {
+  def ids(keys: Set[String], tx: LynxTransaction, logWriter: LogWriter): Set[Int] = {
     val newIds = keys.map {
       key =>
         val opt = mapString2Int.get(key)
@@ -43,7 +51,7 @@ trait TransactionNameStore {
           opt.get
         }
         else {
-          addToDB(key, tx)
+          addToDB(key, tx, logWriter)
         }
     }
     newIds

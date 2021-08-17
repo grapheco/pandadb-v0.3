@@ -2,7 +2,10 @@ package cn.pandadb.kernel.kv.relation
 
 import cn.pandadb.kernel.kv.KeyConverter
 import cn.pandadb.kernel.store.{StoredRelation, StoredRelationWithProperty}
+import cn.pandadb.kernel.transaction.{DBNameMap, PandaTransaction}
+import cn.pandadb.kernel.util.log.LogWriter
 import cn.pandadb.kernel.util.serializer.RelationSerializer
+import org.grapheco.lynx.LynxTransaction
 import org.rocksdb.{ReadOptions, Transaction, TransactionDB}
 
 /**
@@ -14,18 +17,27 @@ import org.rocksdb.{ReadOptions, Transaction, TransactionDB}
 class TransactionRelationPropertyStore(db: TransactionDB) {
   val readOptions = new ReadOptions()
 
-  def set(relation: StoredRelationWithProperty, tx: Transaction): Unit = {
+  def set(relation: StoredRelationWithProperty, tx: LynxTransaction, logWriter: LogWriter): Unit = {
+    val ptx = tx.asInstanceOf[PandaTransaction]
     val keyBytes = KeyConverter.toRelationKey(relation.id)
-    tx.put(keyBytes, RelationSerializer.serialize(relation))
+    logWriter.writeUndoLog(ptx.id, DBNameMap.relationDB, keyBytes, db.get(keyBytes))
+    ptx.rocksTxMap(DBNameMap.relationDB).put(keyBytes, RelationSerializer.serialize(relation))
   }
 
-  def set(relation: StoredRelation, tx: Transaction): Unit = {
+  def set(relation: StoredRelation, tx: LynxTransaction, logWriter: LogWriter): Unit = {
+    val ptx = tx.asInstanceOf[PandaTransaction]
     val keyBytes = KeyConverter.toRelationKey(relation.id)
-    tx.put(keyBytes, RelationSerializer.serialize(
+    logWriter.writeUndoLog(ptx.id, DBNameMap.relationDB, keyBytes, db.get(keyBytes))
+    ptx.rocksTxMap(DBNameMap.relationDB).put(keyBytes, RelationSerializer.serialize(
       new StoredRelationWithProperty(relation.id, relation.from, relation.to, relation.typeId, Map())))
   }
 
-  def delete(relationId: Long, tx: Transaction): Unit = tx.delete(KeyConverter.toRelationKey(relationId))
+  def delete(relationId: Long, tx: LynxTransaction, logWriter: LogWriter): Unit = {
+    val ptx = tx.asInstanceOf[PandaTransaction]
+    val keyBytes = KeyConverter.toRelationKey(relationId)
+    logWriter.writeUndoLog(ptx.id, DBNameMap.relationDB, keyBytes, db.get(keyBytes))
+    ptx.rocksTxMap(DBNameMap.relationDB).delete(keyBytes)
+  }
 
   def get(relationId: Long, tx: Transaction): Option[StoredRelationWithProperty] = {
     val keyBytes = KeyConverter.toRelationKey(relationId)

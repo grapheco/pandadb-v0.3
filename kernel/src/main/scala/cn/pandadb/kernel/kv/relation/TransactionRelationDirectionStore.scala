@@ -4,6 +4,9 @@ import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import cn.pandadb.kernel.kv.db.KeyValueDB
 import cn.pandadb.kernel.kv.relation.TransactionRelationDirection.{Direction, IN}
 import cn.pandadb.kernel.store.StoredRelation
+import cn.pandadb.kernel.transaction.{DBNameMap, PandaTransaction}
+import cn.pandadb.kernel.util.log.LogWriter
+import org.grapheco.lynx.LynxTransaction
 import org.rocksdb.{ReadOptions, Transaction, TransactionDB, WriteBatch}
 
 /**
@@ -19,6 +22,12 @@ object TransactionRelationDirection extends Enumeration {
 }
 
 class TransactionRelationDirectionStore(db: TransactionDB, DIRECTION: Direction) {
+  val dbName = {
+    DIRECTION match {
+      case TransactionRelationDirection.IN => DBNameMap.inRelationDB
+      case TransactionRelationDirection.OUT => DBNameMap.outRelationDB
+    }
+  }
   /**
    * in edge data structure
    * ------------------------
@@ -31,31 +40,43 @@ class TransactionRelationDirectionStore(db: TransactionDB, DIRECTION: Direction)
     if (DIRECTION == IN) KeyConverter.edgeKeyToBytes(relation.to, relation.typeId, relation.from)
     else                 KeyConverter.edgeKeyToBytes(relation.from, relation.typeId, relation.to)
 
-  def set(relation: StoredRelation, tx: Transaction): Unit = {
+  def set(relation: StoredRelation, tx: LynxTransaction, logWriter: LogWriter): Unit = {
+    val ptx = tx.asInstanceOf[PandaTransaction]
     val keyBytes = getKey(relation)
-    tx.put(keyBytes, ByteUtils.longToBytes(relation.id))
+    logWriter.writeUndoLog(ptx.id, dbName, keyBytes, db.get(keyBytes))
+    ptx.rocksTxMap(dbName).put(keyBytes, ByteUtils.longToBytes(relation.id))
   }
 
-  def delete(relation: StoredRelation, tx: Transaction): Unit = {
+  def delete(relation: StoredRelation, tx: LynxTransaction, logWriter: LogWriter): Unit = {
+    val ptx = tx.asInstanceOf[PandaTransaction]
     val keyBytes = getKey(relation)
-    tx.delete(keyBytes)
+    logWriter.writeUndoLog(ptx.id, dbName, keyBytes, db.get(keyBytes))
+    ptx.rocksTxMap(dbName).delete(keyBytes)
   }
 
-  def deleteRange(firstId: Long, tx: Transaction): Unit = {
+  def deleteRange(firstId: Long, tx: LynxTransaction, logWriter: LogWriter): Unit = {
     this.synchronized{
+      val ptx = tx.asInstanceOf[PandaTransaction]
+      val thisTx = ptx.rocksTxMap(dbName)
+      getRelationIdsForLog(firstId, thisTx).foreach(kv => logWriter.writeUndoLog(ptx.id, dbName, kv._1, kv._2))
+
       val batch = new WriteBatch()
       batch.deleteRange(KeyConverter.edgeKeyPrefixToBytes(firstId,0),
         KeyConverter.edgeKeyPrefixToBytes(firstId, -1))
-      tx.rebuildFromWriteBatch(batch)
+      thisTx.rebuildFromWriteBatch(batch)
     }
   }
 
-  def deleteRange(firstId: Long, typeId: Int, tx: Transaction): Unit = {
+  def deleteRange(firstId: Long, typeId: Int, tx: LynxTransaction, logWriter: LogWriter): Unit = {
     this.synchronized{
+      val ptx = tx.asInstanceOf[PandaTransaction]
+      val thisTx = ptx.rocksTxMap(dbName)
+      getRelationIdsForLog(firstId, typeId, thisTx).foreach(kv => logWriter.writeUndoLog(ptx.id, dbName, kv._1, kv._2))
+
       val batch = new WriteBatch()
       batch.deleteRange(KeyConverter.edgeKeyToBytes(firstId, typeId, 0),
         KeyConverter.edgeKeyToBytes(firstId, typeId, -1))
-      tx.rebuildFromWriteBatch(batch)
+      thisTx.rebuildFromWriteBatch(batch)
     }
   }
 
@@ -95,10 +116,18 @@ class TransactionRelationDirectionStore(db: TransactionDB, DIRECTION: Direction)
     val prefix = KeyConverter.edgeKeyPrefixToBytes(nodeId)
     new RelationIdIterator(tx, prefix)
   }
+  def getRelationIdsForLog(nodeId: Long, tx: Transaction): Iterator[(Array[Byte], Array[Byte])] = {
+    val prefix = KeyConverter.edgeKeyPrefixToBytes(nodeId)
+    new RelationIdIteratorForLog(tx, prefix)
+  }
 
   def getRelationIds(nodeId: Long, edgeType: Int, tx: Transaction): Iterator[Long] = {
     val prefix = KeyConverter.edgeKeyPrefixToBytes(nodeId, edgeType)
     new RelationIdIterator(tx, prefix)
+  }
+  def getRelationIdsForLog(nodeId: Long, edgeType: Int, tx: Transaction): Iterator[(Array[Byte], Array[Byte])] = {
+    val prefix = KeyConverter.edgeKeyPrefixToBytes(nodeId, edgeType)
+    new RelationIdIteratorForLog(tx, prefix)
   }
 
   class RelationIdIterator(tx: Transaction, prefix: Array[Byte]) extends Iterator[Long]{
@@ -111,6 +140,20 @@ class TransactionRelationDirectionStore(db: TransactionDB, DIRECTION: Direction)
       val id = ByteUtils.getLong(iter.value(), 0)
       iter.next()
       id
+    }
+  }
+
+  class RelationIdIteratorForLog(tx: Transaction, prefix: Array[Byte]) extends Iterator[(Array[Byte], Array[Byte])]{
+    val iter = tx.getIterator(readOptions)
+    iter.seek(prefix)
+
+    override def hasNext: Boolean = iter.isValid && iter.key().startsWith(prefix)
+
+    override def next(): (Array[Byte], Array[Byte]) = {
+      val key = iter.key()
+      val value = iter.value()
+      iter.next()
+      (key, value)
     }
   }
 
