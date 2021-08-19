@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import cn.pandadb.kernel.kv.ByteUtils
 import cn.pandadb.kernel.kv.db.KeyValueDB
 import cn.pandadb.kernel.transaction.{DBNameMap, PandaTransaction}
-import cn.pandadb.kernel.util.log.LogWriter
+import cn.pandadb.kernel.util.log.PandaLog
 import org.grapheco.lynx.LynxTransaction
 import org.rocksdb.{Transaction, TransactionDB}
 
@@ -22,7 +22,7 @@ trait TransactionNameStore {
   var mapString2Int: mutable.Map[String, Int] = mutable.Map[String, Int]()
   var mapInt2String: mutable.Map[Int, String] = mutable.Map[Int, String]()
 
-  private def addToDB(labelName: String, tx: LynxTransaction, logWriter: LogWriter): Int = {
+  private def addToDB(labelName: String, tx: LynxTransaction, logWriter: PandaLog): Int = {
     // todo: reset map and id if failed.
     val id = idGenerator.incrementAndGet()
     mapString2Int += labelName -> id
@@ -40,10 +40,10 @@ trait TransactionNameStore {
 
   def id(labelName: String): Option[Int] = mapString2Int.get(labelName)
 
-  def getOrAddId(labelName: String, tx: LynxTransaction, logWriter: LogWriter): Int =
+  def getOrAddId(labelName: String, tx: LynxTransaction, logWriter: PandaLog): Int =
     id(labelName).getOrElse(addToDB(labelName, tx, logWriter))
 
-  def ids(keys: Set[String], tx: LynxTransaction, logWriter: LogWriter): Set[Int] = {
+  def ids(keys: Set[String], tx: LynxTransaction, logWriter: PandaLog): Set[Int] = {
     val newIds = keys.map {
       key =>
         val opt = mapString2Int.get(key)

@@ -8,9 +8,13 @@ import cn.pandadb.kernel.kv.meta.TransactionStatistics
 import cn.pandadb.kernel.kv.{TransactionGraphFacade, TransactionRocksDBStorage}
 import cn.pandadb.kernel.kv.node.TransactionNodeStoreAPI
 import cn.pandadb.kernel.kv.relation.TransactionRelationStoreAPI
-import cn.pandadb.kernel.util.log.PandaUndoLogWriter
+import cn.pandadb.kernel.util.CommonUtils
+import cn.pandadb.kernel.util.log.{PandaLog}
 import com.typesafe.scalalogging.LazyLogging
-import org.rocksdb.{ReadOptions, Snapshot, WriteOptions}
+import org.apache.commons.io.FileUtils
+import org.rocksdb.{ReadOptions, Snapshot, Transaction, WriteOptions}
+
+import scala.io.Source
 
 
 /**
@@ -34,19 +38,20 @@ class PandaTransactionManager(nodeMetaDBPath: String,
                               undoLogFilePath: String,
                               rocksDBConfigPath: String = "default") extends TransactionManager with LazyLogging {
 
-  val globalTransactionId = new AtomicLong(1)
-  checkDir(nodeMetaDBPath)
-  checkDir(nodeDBPath)
-  checkDir(nodeLabelDBPath)
-  checkDir(relationMetaDBPath)
-  checkDir(relationDBPath)
-  checkDir(inRelationDBPath)
-  checkDir(outRelationDBPath)
-  checkDir(relationLabelDBPath)
-  checkDir(indexMetaDBPath)
-  checkDir(indexDBPath)
-  checkDir(fulltextIndexPath)
-  checkDir(statisticsDBPath)
+  CommonUtils.checkDir(nodeMetaDBPath)
+  CommonUtils.checkDir(nodeDBPath)
+  CommonUtils.checkDir(nodeLabelDBPath)
+  CommonUtils.checkDir(relationMetaDBPath)
+  CommonUtils.checkDir(relationDBPath)
+  CommonUtils.checkDir(inRelationDBPath)
+  CommonUtils.checkDir(outRelationDBPath)
+  CommonUtils.checkDir(relationLabelDBPath)
+  CommonUtils.checkDir(indexMetaDBPath)
+  CommonUtils.checkDir(indexDBPath)
+  CommonUtils.checkDir(fulltextIndexPath)
+  CommonUtils.checkDir(statisticsDBPath)
+  CommonUtils.checkDir(undoLogFilePath)
+
 
   private val nodeDB = TransactionRocksDBStorage.getDB(nodeDBPath)
   private val nodeLabelDB = TransactionRocksDBStorage.getDB(nodeLabelDBPath)
@@ -66,34 +71,27 @@ class PandaTransactionManager(nodeMetaDBPath: String,
 
   private val statistics = new TransactionStatistics(TransactionRocksDBStorage.getDB(statisticsDBPath))
 
-  private val logWriter = new PandaUndoLogWriter(undoLogFilePath + "/undo.txt")
+  private val pandaLog = new PandaLog(undoLogFilePath)
+
+  private val globalTransactionId = new AtomicLong(pandaLog.recoverDB(getTransactions()))
 
   override def begin(): PandaTransaction = {
     val id = globalTransactionId.getAndIncrement()
-    val writeOptions = new WriteOptions()
-    val txMap = nodeStore.generateTransactions(writeOptions) ++ relationStore.generateTransactions(writeOptions) ++
-      indexStore.generateTransactions(writeOptions) ++ statistics.generateTransactions(writeOptions)
+    val txMap = getTransactions()
+    new PandaTransaction(s"$id", txMap, new TransactionGraphFacade(nodeStore, relationStore, indexStore, statistics, pandaLog, {}))
+  }
 
-    new PandaTransaction(s"$id", txMap, new TransactionGraphFacade(nodeStore, relationStore, indexStore, statistics, logWriter, {}))
+  def getTransactions(): Map[String, Transaction] ={
+    val writeOptions = new WriteOptions()
+    nodeStore.generateTransactions(writeOptions) ++ relationStore.generateTransactions(writeOptions) ++
+      indexStore.generateTransactions(writeOptions) ++ statistics.generateTransactions(writeOptions)
   }
 
   def close(): Unit ={
-    logWriter.close()
+    pandaLog.close()
     statistics.close()
     indexStore.close()
     nodeStore.close()
     relationStore.close()
-  }
-  private def checkDir(dir: String): Unit = {
-    val file = new File(dir)
-    if (!file.exists()) {
-      file.mkdirs()
-      logger.info(s"New created data path (${dir})")
-    }
-    else {
-      if (!file.isDirectory) {
-        throw new Exception(s"The data path (${dir}) is invalid: not directory")
-      }
-    }
   }
 }

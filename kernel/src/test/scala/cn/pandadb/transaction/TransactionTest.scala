@@ -1,13 +1,15 @@
 package cn.pandadb.transaction
 
-import java.io.File
+import java.io.{BufferedWriter, File, FileWriter}
 
 import cn.pandadb.kernel.kv.TransactionRocksDBStorage
 import cn.pandadb.kernel.transaction.PandaTransactionManager
-import cn.pandadb.kernel.util.log.PandaLogReader
+import cn.pandadb.kernel.util.log.PandaLog
 import org.apache.commons.io.FileUtils
 import org.junit.{After, Assert, Before, Test}
 import org.rocksdb.{ReadOptions, Snapshot}
+
+import scala.io.Source
 
 /**
  * @program: pandadb-v0.3
@@ -17,7 +19,7 @@ import org.rocksdb.{ReadOptions, Snapshot}
  */
 class TransactionTest {
   var transactionManager: PandaTransactionManager = null
-
+  var undoLogFilePath = ""
   @Before
   def init(): Unit ={
     FileUtils.deleteDirectory(new File("./testinput/panda"))
@@ -34,7 +36,7 @@ class TransactionTest {
     val indexDBPath = "./testinput/panda/index.db"
     val fulltextIndexPath = "./testinput/panda/fulltextIndex.db"
     val statisticsDBPath = "./testinput/panda/statistics.db"
-    val undoLogFilePath = "./testinput/panda"
+    undoLogFilePath = "./testinput/panda"
 
     transactionManager = new PandaTransactionManager(nodeMetaDBPath, nodeDBPath,nodeLabelDBPath,
       relationMetaDBPath,relationDBPath, inRelationDBPath,outRelationDBPath,relationLabelDBPath,
@@ -58,14 +60,6 @@ class TransactionTest {
     tx.commit()
     Assert.assertEquals(2, res.size)
 
-    // recover
-    tx = transactionManager.begin()
-    val reader = new PandaLogReader("./testinput/panda/undo.txt")
-    reader.recover(tx.rocksTxMap)
-    res = tx.execute("match (n) return n", Map.empty).records()
-    Assert.assertEquals(0, res.size)
-    res = tx.execute("match (n)-[r]->(m) return r", Map.empty).records()
-    Assert.assertEquals(0, res.size)
     transactionManager.close()
   }
 
@@ -74,9 +68,9 @@ class TransactionTest {
     val tx = transactionManager.begin()
     tx.execute("create (n:person{name:'glx'}) return n", Map.empty)
     val res = tx.execute("match (n) return n", Map.empty).records()
+    Assert.assertEquals(1, res.size)
     tx.commit()
     transactionManager.close()
-    Assert.assertEquals(1, res.size)
   }
 
 }

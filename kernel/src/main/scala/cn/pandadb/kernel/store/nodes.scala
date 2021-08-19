@@ -1,6 +1,6 @@
 package cn.pandadb.kernel.store
 
-import cn.pandadb.kernel.util.log.LogWriter
+import cn.pandadb.kernel.util.log.{PandaLog}
 import cn.pandadb.kernel.util.serializer.BaseSerializer
 import org.grapheco.lynx.{LynxId, LynxNode, LynxNull, LynxTransaction, LynxValue}
 import org.rocksdb.{Transaction, WriteOptions}
@@ -154,7 +154,7 @@ trait TransactionNodeStoreSPI {
 
   def getLabelId(labelName: String): Option[Int];
 
-  def addLabel(labelName: String, tx: LynxTransaction, logWriter: LogWriter): Int;
+  def addLabel(labelName: String, tx: LynxTransaction, logWriter: PandaLog): Int;
 
   def allPropertyKeys(): Array[String];
 
@@ -164,7 +164,7 @@ trait TransactionNodeStoreSPI {
 
   def getPropertyKeyId(keyName: String): Option[Int];
 
-  def addPropertyKey(keyName: String, tx: LynxTransaction, logWriter: LogWriter): Int;
+  def addPropertyKey(keyName: String, tx: LynxTransaction, logWriter: PandaLog): Int;
 
   def getNodeById(nodeId: Long, tx: LynxTransaction): Option[StoredNodeWithProperty]
 
@@ -182,17 +182,17 @@ trait TransactionNodeStoreSPI {
 
   def newNodeId(): Long;
 
-  def nodeAddLabel(nodeId: Long, labelId: Int, tx: LynxTransaction, logWriter: LogWriter): Unit;
+  def nodeAddLabel(nodeId: Long, labelId: Int, tx: LynxTransaction, logWriter: PandaLog): Unit;
 
-  def nodeRemoveLabel(nodeId: Long, labelId: Int, tx: LynxTransaction, logWriter: LogWriter): Unit;
+  def nodeRemoveLabel(nodeId: Long, labelId: Int, tx: LynxTransaction, logWriter: PandaLog): Unit;
 
-  def nodeSetProperty(nodeId: Long, propertyKeyId: Int, propertyValue: Any, tx: LynxTransaction, logWriter: LogWriter): Unit;
+  def nodeSetProperty(nodeId: Long, propertyKeyId: Int, propertyValue: Any, tx: LynxTransaction, logWriter: PandaLog): Unit;
 
-  def nodeRemoveProperty(nodeId: Long, propertyKeyId: Int, tx: LynxTransaction, logWriter: LogWriter): Any;
+  def nodeRemoveProperty(nodeId: Long, propertyKeyId: Int, tx: LynxTransaction, logWriter: PandaLog): Any;
 
-  def deleteNode(nodeId: Long, tx: LynxTransaction, logWriter: LogWriter): Unit;
+  def deleteNode(nodeId: Long, tx: LynxTransaction, logWriter: PandaLog): Unit;
 
-  def deleteNodes(nodeIDs: Iterator[Long], tx: LynxTransaction, logWriter: LogWriter): Unit;
+  def deleteNodes(nodeIDs: Iterator[Long], tx: LynxTransaction, logWriter: PandaLog): Unit;
 
   def serializeLabelIdsToBytes(labelIds: Array[Int]): Array[Byte] = {
     BaseSerializer.array2Bytes(labelIds)
@@ -214,11 +214,11 @@ trait TransactionNodeStoreSPI {
 
   def nodesCount(tx: LynxTransaction): Long
 
-  def deleteNodesByLabel(labelId: Int, tx: LynxTransaction, logWriter: LogWriter): Unit
+  def deleteNodesByLabel(labelId: Int, tx: LynxTransaction, logWriter: PandaLog): Unit
 
-  def addNode(node: StoredNodeWithProperty, tx: LynxTransaction, logWriter: LogWriter): Unit
+  def addNode(node: StoredNodeWithProperty, tx: LynxTransaction, logWriter: PandaLog): Unit
 
-  def getLabelIds(labelNames: Set[String], tx: LynxTransaction, logWriter: LogWriter): Set[Int]
+  def getLabelIds(labelNames: Set[String], tx: LynxTransaction, logWriter: PandaLog): Set[Int]
 
   def close(): Unit
 

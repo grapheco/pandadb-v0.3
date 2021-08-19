@@ -5,7 +5,7 @@ import cn.pandadb.kernel.kv.db.KeyValueDB
 import cn.pandadb.kernel.kv.relation.TransactionRelationDirection.{Direction, IN}
 import cn.pandadb.kernel.store.StoredRelation
 import cn.pandadb.kernel.transaction.{DBNameMap, PandaTransaction}
-import cn.pandadb.kernel.util.log.LogWriter
+import cn.pandadb.kernel.util.log.PandaLog
 import org.grapheco.lynx.LynxTransaction
 import org.rocksdb.{ReadOptions, Transaction, TransactionDB, WriteBatch}
 
@@ -40,21 +40,21 @@ class TransactionRelationDirectionStore(db: TransactionDB, DIRECTION: Direction)
     if (DIRECTION == IN) KeyConverter.edgeKeyToBytes(relation.to, relation.typeId, relation.from)
     else                 KeyConverter.edgeKeyToBytes(relation.from, relation.typeId, relation.to)
 
-  def set(relation: StoredRelation, tx: LynxTransaction, logWriter: LogWriter): Unit = {
+  def set(relation: StoredRelation, tx: LynxTransaction, logWriter: PandaLog): Unit = {
     val ptx = tx.asInstanceOf[PandaTransaction]
     val keyBytes = getKey(relation)
     logWriter.writeUndoLog(ptx.id, dbName, keyBytes, db.get(keyBytes))
     ptx.rocksTxMap(dbName).put(keyBytes, ByteUtils.longToBytes(relation.id))
   }
 
-  def delete(relation: StoredRelation, tx: LynxTransaction, logWriter: LogWriter): Unit = {
+  def delete(relation: StoredRelation, tx: LynxTransaction, logWriter: PandaLog): Unit = {
     val ptx = tx.asInstanceOf[PandaTransaction]
     val keyBytes = getKey(relation)
     logWriter.writeUndoLog(ptx.id, dbName, keyBytes, db.get(keyBytes))
     ptx.rocksTxMap(dbName).delete(keyBytes)
   }
 
-  def deleteRange(firstId: Long, tx: LynxTransaction, logWriter: LogWriter): Unit = {
+  def deleteRange(firstId: Long, tx: LynxTransaction, logWriter: PandaLog): Unit = {
     this.synchronized{
       val ptx = tx.asInstanceOf[PandaTransaction]
       val thisTx = ptx.rocksTxMap(dbName)
@@ -67,7 +67,7 @@ class TransactionRelationDirectionStore(db: TransactionDB, DIRECTION: Direction)
     }
   }
 
-  def deleteRange(firstId: Long, typeId: Int, tx: LynxTransaction, logWriter: LogWriter): Unit = {
+  def deleteRange(firstId: Long, typeId: Int, tx: LynxTransaction, logWriter: PandaLog): Unit = {
     this.synchronized{
       val ptx = tx.asInstanceOf[PandaTransaction]
       val thisTx = ptx.rocksTxMap(dbName)

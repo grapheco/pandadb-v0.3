@@ -3,7 +3,7 @@ package cn.pandadb.kernel.kv.relation
 import cn.pandadb.kernel.kv.meta.{IdGenerator, PropertyNameStore, RelationTypeNameStore, TransactionIdGenerator, TransactionPropertyNameStore, TransactionRelationTypeNameStore}
 import cn.pandadb.kernel.store.{StoredRelation, StoredRelationWithProperty, TransactionRelationStoreSPI}
 import cn.pandadb.kernel.transaction.{DBNameMap, PandaTransaction}
-import cn.pandadb.kernel.util.log.LogWriter
+import cn.pandadb.kernel.util.log.PandaLog
 import org.grapheco.lynx.LynxTransaction
 import org.rocksdb.{Transaction, TransactionDB, WriteOptions}
 
@@ -45,7 +45,7 @@ class TransactionRelationStoreAPI(relationDB: TransactionDB,
 
   override def getRelationTypeId(relationTypeName: String): Option[Int] = relationTypeNameStore.id(relationTypeName)
 
-  override def addRelationType(relationTypeName: String, tx: LynxTransaction, logWriter: LogWriter): Int =
+  override def addRelationType(relationTypeName: String, tx: LynxTransaction, logWriter: PandaLog): Int =
     relationTypeNameStore.getOrAddId(relationTypeName, tx, logWriter)
 
   override def allPropertyKeys(): Array[String] = propertyName.mapString2Int.keys.toArray
@@ -56,14 +56,14 @@ class TransactionRelationStoreAPI(relationDB: TransactionDB,
 
   override def getPropertyKeyId(keyName: String): Option[Int] = propertyName.id(keyName)
 
-  override def addPropertyKey(keyName: String, tx: LynxTransaction, logWriter: LogWriter): Int =
+  override def addPropertyKey(keyName: String, tx: LynxTransaction, logWriter: PandaLog): Int =
     propertyName.getOrAddId(keyName, tx, logWriter)
 
   override def getRelationById(relId: Long, tx: LynxTransaction): Option[StoredRelationWithProperty] = relationStore.get(relId, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.relationDB))
 
   override def getRelationIdsByRelationType(relationTypeId: Int, tx: LynxTransaction): Iterator[Long] = relationLabelStore.getRelations(relationTypeId, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.relationLabelDB))
 
-  override def relationSetProperty(relationId: Long, propertyKeyId: Int, propertyValue: Any, tx: LynxTransaction, logWriter: LogWriter): Unit = {
+  override def relationSetProperty(relationId: Long, propertyKeyId: Int, propertyValue: Any, tx: LynxTransaction, logWriter: PandaLog): Unit = {
     relationStore.get(relationId, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.relationDB)).foreach{
       rel =>
         relationStore.set(new StoredRelationWithProperty(rel.id, rel.from, rel.to, rel.typeId,
@@ -71,7 +71,7 @@ class TransactionRelationStoreAPI(relationDB: TransactionDB,
     }
   }
 
-  override def relationRemoveProperty(relationId: Long, propertyKeyId: Int, tx: LynxTransaction, logWriter: LogWriter): Any = {
+  override def relationRemoveProperty(relationId: Long, propertyKeyId: Int, tx: LynxTransaction, logWriter: PandaLog): Any = {
     relationStore.get(relationId, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.relationDB)).foreach{
       rel =>
         relationStore.set(new StoredRelationWithProperty(rel.id, rel.from, rel.to, rel.typeId,
@@ -79,7 +79,7 @@ class TransactionRelationStoreAPI(relationDB: TransactionDB,
     }
   }
 
-  override def deleteRelation(relationId: Long, tx: LynxTransaction, logWriter: LogWriter): Unit = {
+  override def deleteRelation(relationId: Long, tx: LynxTransaction, logWriter: PandaLog): Unit = {
     relationStore.get(relationId, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.relationDB)).foreach{
       relation =>
         relationStore.delete(relationId, tx, logWriter)
@@ -101,14 +101,14 @@ class TransactionRelationStoreAPI(relationDB: TransactionDB,
 
   override def newRelationId(): Long = relationIdGenerator.nextId()
 
-  override def addRelation(relation: StoredRelation, tx: LynxTransaction, logWriter: LogWriter): Unit = {
+  override def addRelation(relation: StoredRelation, tx: LynxTransaction, logWriter: PandaLog): Unit = {
     relationStore.set(relation, tx, logWriter)
     inRelationStore.set(relation, tx, logWriter)
     outRelationStore.set(relation, tx, logWriter)
     relationLabelStore.set(relation.typeId, relation.id, tx, logWriter)
   }
 
-  override def addRelation(relation: StoredRelationWithProperty, tx: LynxTransaction, logWriter: LogWriter): Unit = {
+  override def addRelation(relation: StoredRelationWithProperty, tx: LynxTransaction, logWriter: PandaLog): Unit = {
     relationStore.set(relation, tx, logWriter)
     inRelationStore.set(relation, tx, logWriter)
     outRelationStore.set(relation, tx, logWriter)

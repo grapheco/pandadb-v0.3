@@ -12,4 +12,8 @@ object DBNameMap {
   val statisticsDB = "statisticsDB"
   val indexDB = "indexDB"
   val indexMetaDB = "indexMetaDB"
+
+  val undoLogName = "undoLog.txt"
+  val guardLogName = "guardLog.txt"
+  val idLogName = "txId.txt"
 }

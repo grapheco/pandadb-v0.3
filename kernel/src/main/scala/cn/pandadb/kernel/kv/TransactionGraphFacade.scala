@@ -6,7 +6,7 @@ import cn.pandadb.kernel.kv.meta.{Statistics, TransactionStatistics}
 import cn.pandadb.kernel.kv.value.ValueMappings
 import cn.pandadb.kernel.store._
 import cn.pandadb.kernel.transaction.{DBNameMap, PandaTransaction}
-import cn.pandadb.kernel.util.log.LogWriter
+import cn.pandadb.kernel.util.log.{PandaLog}
 import com.typesafe.scalalogging.LazyLogging
 import org.grapheco.lynx._
 import org.grapheco.lynx.cypherplus._
@@ -15,11 +15,11 @@ import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, SemanticDire
 
 
 class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
-                  relationStore: TransactionRelationStoreSPI,
-                  indexStore: TransactionIndexStoreAPI,
-                  statistics: TransactionStatistics,
-                  logWriter: LogWriter,
-                  onClose: => Unit
+                             relationStore: TransactionRelationStoreSPI,
+                             indexStore: TransactionIndexStoreAPI,
+                             statistics: TransactionStatistics,
+                             logWriter: PandaLog,
+                             onClose: => Unit
                  ) extends LazyLogging with TransactionGraphService with GraphModelPlus {
 
   //  val runner = new CypherRunner(this){
@@ -31,7 +31,7 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
 
 //  init()
 
-  def getLogWriter(): LogWriter ={
+  def getLogWriter(): PandaLog ={
     logWriter
   }
   override def getIndexes(tx: Option[LynxTransaction]): Array[(LabelName, List[PropertyKeyName])] = {

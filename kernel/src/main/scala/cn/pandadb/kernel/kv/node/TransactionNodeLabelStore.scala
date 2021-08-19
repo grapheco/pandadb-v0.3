@@ -3,7 +3,7 @@ package cn.pandadb.kernel.kv.node
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import cn.pandadb.kernel.kv.KeyConverter.{LabelId, NodeId}
 import cn.pandadb.kernel.transaction.{DBNameMap, PandaTransaction}
-import cn.pandadb.kernel.util.log.LogWriter
+import cn.pandadb.kernel.util.log.PandaLog
 import org.grapheco.lynx.LynxTransaction
 import org.rocksdb.{ReadOptions, Transaction, TransactionDB, WriteBatch, WriteOptions}
 
@@ -16,23 +16,23 @@ import org.rocksdb.{ReadOptions, Transaction, TransactionDB, WriteBatch, WriteOp
 class TransactionNodeLabelStore(db: TransactionDB) {
   val readOptions = new ReadOptions()
 
-  def set(nodeId: NodeId, labelId: LabelId, tx: LynxTransaction, logWriter: LogWriter): Unit = {
+  def set(nodeId: NodeId, labelId: LabelId, tx: LynxTransaction, logWriter: PandaLog): Unit = {
     val key = KeyConverter.toNodeLabelKey(nodeId, labelId)
     val ptx = tx.asInstanceOf[PandaTransaction]
     logWriter.writeUndoLog(ptx.id, DBNameMap.nodeLabelDB, key, null)
     ptx.rocksTxMap(DBNameMap.nodeLabelDB).put(key, Array.emptyByteArray)
   }
 
-  def set(nodeId: NodeId, labels: Array[LabelId], tx: LynxTransaction, logWriter: LogWriter): Unit = labels.foreach(set(nodeId, _, tx, logWriter))
+  def set(nodeId: NodeId, labels: Array[LabelId], tx: LynxTransaction, logWriter: PandaLog): Unit = labels.foreach(set(nodeId, _, tx, logWriter))
 
-  def delete(nodeId: NodeId, labelId: LabelId, tx: LynxTransaction, logWriter: LogWriter): Unit = {
+  def delete(nodeId: NodeId, labelId: LabelId, tx: LynxTransaction, logWriter: PandaLog): Unit = {
     val key = KeyConverter.toNodeLabelKey(nodeId, labelId)
     val ptx = tx.asInstanceOf[PandaTransaction]
     logWriter.writeUndoLog(ptx.id, DBNameMap.nodeLabelDB, key, db.get(key))
     ptx.rocksTxMap(DBNameMap.nodeLabelDB).delete(key)
     }
 
-  def delete(nodeId: NodeId, tx: LynxTransaction, logWriter: LogWriter): Unit ={
+  def delete(nodeId: NodeId, tx: LynxTransaction, logWriter: PandaLog): Unit ={
     this.synchronized{
       val ptx = tx.asInstanceOf[PandaTransaction]
       getAllForLog(nodeId, ptx.rocksTxMap(DBNameMap.nodeLabelDB)).foreach(key => {

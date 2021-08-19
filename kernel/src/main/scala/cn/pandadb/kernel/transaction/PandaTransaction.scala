@@ -36,11 +36,14 @@ class PandaTransaction(val id: String, val rocksTxMap: Map[String, Transaction],
   }
 
   def commit(): Unit = {
-    graphFacade.getLogWriter().flush()
-    // check all the status
+    val writeTxId = graphFacade.getLogWriter().flushUndoLog()
+
     rocksTxMap.foreach(f => {
       f._2.commit()
     })
+
+    graphFacade.getLogWriter().writeGuardLog(writeTxId)
+    graphFacade.getLogWriter().flushGuardLog()
   }
 
 
