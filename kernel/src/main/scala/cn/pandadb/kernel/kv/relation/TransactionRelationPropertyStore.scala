@@ -14,17 +14,17 @@ import org.rocksdb.{ReadOptions, Transaction, TransactionDB}
  * @Date: Created at 11:14 上午 2021/8/9
  * @Modified By:
  */
-class TransactionRelationPropertyStore(db: TransactionDB) {
+class TransactionRelationPropertyStore(db: TransactionDB, logWriter: PandaLog) {
   val readOptions = new ReadOptions()
 
-  def set(relation: StoredRelationWithProperty, tx: LynxTransaction, logWriter: PandaLog): Unit = {
+  def set(relation: StoredRelationWithProperty, tx: LynxTransaction): Unit = {
     val ptx = tx.asInstanceOf[PandaTransaction]
     val keyBytes = KeyConverter.toRelationKey(relation.id)
     logWriter.writeUndoLog(ptx.id, DBNameMap.relationDB, keyBytes, db.get(keyBytes))
     ptx.rocksTxMap(DBNameMap.relationDB).put(keyBytes, RelationSerializer.serialize(relation))
   }
 
-  def set(relation: StoredRelation, tx: LynxTransaction, logWriter: PandaLog): Unit = {
+  def set(relation: StoredRelation, tx: LynxTransaction): Unit = {
     val ptx = tx.asInstanceOf[PandaTransaction]
     val keyBytes = KeyConverter.toRelationKey(relation.id)
     logWriter.writeUndoLog(ptx.id, DBNameMap.relationDB, keyBytes, db.get(keyBytes))
@@ -32,7 +32,7 @@ class TransactionRelationPropertyStore(db: TransactionDB) {
       new StoredRelationWithProperty(relation.id, relation.from, relation.to, relation.typeId, Map())))
   }
 
-  def delete(relationId: Long, tx: LynxTransaction, logWriter: PandaLog): Unit = {
+  def delete(relationId: Long, tx: LynxTransaction): Unit = {
     val ptx = tx.asInstanceOf[PandaTransaction]
     val keyBytes = KeyConverter.toRelationKey(relationId)
     logWriter.writeUndoLog(ptx.id, DBNameMap.relationDB, keyBytes, db.get(keyBytes))

@@ -154,7 +154,7 @@ trait TransactionNodeStoreSPI {
 
   def getLabelId(labelName: String): Option[Int];
 
-  def addLabel(labelName: String, tx: LynxTransaction, logWriter: PandaLog): Int;
+  def addLabel(labelName: String, tx: LynxTransaction): Int;
 
   def allPropertyKeys(): Array[String];
 
@@ -164,7 +164,7 @@ trait TransactionNodeStoreSPI {
 
   def getPropertyKeyId(keyName: String): Option[Int];
 
-  def addPropertyKey(keyName: String, tx: LynxTransaction, logWriter: PandaLog): Int;
+  def addPropertyKey(keyName: String, tx: LynxTransaction): Int;
 
   def getNodeById(nodeId: Long, tx: LynxTransaction): Option[StoredNodeWithProperty]
 
@@ -182,15 +182,15 @@ trait TransactionNodeStoreSPI {
 
   def newNodeId(): Long;
 
-  def nodeAddLabel(nodeId: Long, labelId: Int, tx: LynxTransaction, logWriter: PandaLog): Unit;
+  def nodeAddLabel(nodeId: Long, labelId: Int, tx: LynxTransaction): Unit;
 
-  def nodeRemoveLabel(nodeId: Long, labelId: Int, tx: LynxTransaction, logWriter: PandaLog): Unit;
+  def nodeRemoveLabel(nodeId: Long, labelId: Int, tx: LynxTransaction): Unit;
 
-  def nodeSetProperty(nodeId: Long, propertyKeyId: Int, propertyValue: Any, tx: LynxTransaction, logWriter: PandaLog): Unit;
+  def nodeSetProperty(nodeId: Long, propertyKeyId: Int, propertyValue: Any, tx: LynxTransaction): Unit;
 
-  def nodeRemoveProperty(nodeId: Long, propertyKeyId: Int, tx: LynxTransaction, logWriter: PandaLog): Any;
+  def nodeRemoveProperty(nodeId: Long, propertyKeyId: Int, tx: LynxTransaction): Any;
 
-  def deleteNode(nodeId: Long, tx: LynxTransaction, logWriter: PandaLog): Unit;
+  def deleteNode(nodeId: Long, tx: LynxTransaction): Unit;
 
   def deleteNodes(nodeIDs: Iterator[Long], tx: LynxTransaction, logWriter: PandaLog): Unit;
 
@@ -214,11 +214,11 @@ trait TransactionNodeStoreSPI {
 
   def nodesCount(tx: LynxTransaction): Long
 
-  def deleteNodesByLabel(labelId: Int, tx: LynxTransaction, logWriter: PandaLog): Unit
+  def deleteNodesByLabel(labelId: Int, tx: LynxTransaction): Unit
 
-  def addNode(node: StoredNodeWithProperty, tx: LynxTransaction, logWriter: PandaLog): Unit
+  def addNode(node: StoredNodeWithProperty, tx: LynxTransaction): Unit
 
-  def getLabelIds(labelNames: Set[String], tx: LynxTransaction, logWriter: PandaLog): Set[Int]
+  def getLabelIds(labelNames: Set[String], tx: LynxTransaction): Set[Int]
 
   def close(): Unit
 

@@ -3,20 +3,21 @@ package cn.pandadb.kernel.kv.index
 import cn.pandadb.kernel.kv.meta.{IdGenerator, TransactionIdGenerator}
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter, RocksDBStorage}
 import cn.pandadb.kernel.transaction.{DBNameMap, PandaTransaction}
+import cn.pandadb.kernel.util.log.PandaLog
 import org.grapheco.lynx.LynxTransaction
 import org.rocksdb.{Transaction, TransactionDB, WriteOptions}
 
 import scala.collection.mutable
 
 
-class TransactionIndexStoreAPI(metaDB: TransactionDB, indexDB: TransactionDB, fulltextIndexPath: String) {
+class TransactionIndexStoreAPI(metaDB: TransactionDB, indexDB: TransactionDB, fulltextIndexPath: String, logWriter: PandaLog) {
 
   type IndexId   = Int
 //  type Long    = Long
 
-  private val meta = new TransactionIndexMetaData(metaDB)
-  private val index = new TransactionIndexStore(indexDB)
-  private val indexIdGenerator = new TransactionIdGenerator(metaDB, 200)
+  private val meta = new TransactionIndexMetaData(metaDB, logWriter)
+  private val index = new TransactionIndexStore(indexDB, logWriter)
+  private val indexIdGenerator = new TransactionIdGenerator(metaDB, 200, logWriter)
 
   //indexId->([name, address], Store)
   private val fulltextIndexMap = new mutable.HashMap[Int, (Array[Int], FulltextIndexStore)]()
@@ -31,7 +32,7 @@ class TransactionIndexStoreAPI(metaDB: TransactionDB, indexDB: TransactionDB, fu
   def createIndex(label: Int, props: Array[Int], fulltext: Boolean = false, tx: LynxTransaction): IndexId =
     meta.getIndexId(label, props).getOrElse{
       val id = indexIdGenerator.nextId().toInt
-      meta.addIndexMeta(label, props, fulltext, id, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.indexMetaDB))
+      meta.addIndexMeta(label, props, fulltext, id, tx)
       id
     }
 
@@ -53,12 +54,12 @@ class TransactionIndexStoreAPI(metaDB: TransactionDB, indexDB: TransactionDB, fu
   def allIndexId: Iterator[IndexMeta] = meta.all()
 
   def insertIndexRecord(indexId: IndexId, data: Any, id: Long, tx: LynxTransaction): Unit = {
-    index.set(indexId, IndexEncoder.typeCode(data), IndexEncoder.encode(data), id, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.indexDB))
+    index.set(indexId, IndexEncoder.typeCode(data), IndexEncoder.encode(data), id, tx)
   }
 
   // todo: transaction
   def insertIndexRecordBatch(indexId: IndexId, data: Iterator[(Any, Long)], tx: LynxTransaction): Unit =
-    index.set(indexId, data, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.indexDB))
+    index.set(indexId, data, tx)
 
   //data: (prop1Value, Prop2Value)
   def insertFulltextIndexRecord(indexId: IndexId, data: Array[Any], id: Long, tx: LynxTransaction): Unit = {
@@ -78,7 +79,7 @@ class TransactionIndexStoreAPI(metaDB: TransactionDB, indexDB: TransactionDB, fu
 
   def updateIndexRecord(indexId: IndexId, value: Any, id: Long, newValue: Any, tx: LynxTransaction): Unit = {
     index.update(indexId, IndexEncoder.typeCode(value), IndexEncoder.encode(value),
-      id, IndexEncoder.typeCode(newValue), IndexEncoder.encode(newValue), tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.indexDB))
+      id, IndexEncoder.typeCode(newValue), IndexEncoder.encode(newValue), tx)
   }
 
   // todo: transaction
@@ -89,7 +90,7 @@ class TransactionIndexStoreAPI(metaDB: TransactionDB, indexDB: TransactionDB, fu
   }
 
   def deleteIndexRecord(indexId: IndexId, value: Any, id: Long, tx: LynxTransaction): Unit ={
-    index.delete(indexId, IndexEncoder.typeCode(value), IndexEncoder.encode(value), id, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.indexDB))
+    index.delete(indexId, IndexEncoder.typeCode(value), IndexEncoder.encode(value), id, tx)
   }
 
   // todo: transaction
@@ -99,8 +100,8 @@ class TransactionIndexStoreAPI(metaDB: TransactionDB, indexDB: TransactionDB, fu
   def dropIndex(label: Int, props: Array[Int], tx: LynxTransaction): Unit = {
     meta.getIndexId(label, props).foreach{
       id=>
-        index.deleteRange(id, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.indexDB))
-        meta.deleteIndexMeta(label, props, false, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.indexMetaDB))
+        index.deleteRange(id, tx)
+        meta.deleteIndexMeta(label, props, false, tx)
     }
   }
 
@@ -108,7 +109,7 @@ class TransactionIndexStoreAPI(metaDB: TransactionDB, indexDB: TransactionDB, fu
   def dropFulltextIndex(label: Int, props: Array[Int], tx: LynxTransaction): Unit = {
     meta.getIndexId(label, props, true).foreach{
       id=>
-        meta.deleteIndexMeta(label, props, true, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.indexMetaDB))
+        meta.deleteIndexMeta(label, props, true, tx)
         new FulltextIndexStore(s"$fulltextIndexPathPrefix/$id").dropAndClose()
         fulltextIndexMap -= id
     }

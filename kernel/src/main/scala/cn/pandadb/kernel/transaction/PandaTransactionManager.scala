@@ -35,7 +35,7 @@ class PandaTransactionManager(nodeMetaDBPath: String,
                               indexDBPath: String,
                               fulltextIndexPath: String,
                               statisticsDBPath: String,
-                              undoLogFilePath: String,
+                              pandaLogFilePath: String,
                               rocksDBConfigPath: String = "default") extends TransactionManager with LazyLogging {
 
   CommonUtils.checkDir(nodeMetaDBPath)
@@ -50,30 +50,32 @@ class PandaTransactionManager(nodeMetaDBPath: String,
   CommonUtils.checkDir(indexDBPath)
   CommonUtils.checkDir(fulltextIndexPath)
   CommonUtils.checkDir(statisticsDBPath)
-  CommonUtils.checkDir(undoLogFilePath)
+  CommonUtils.checkDir(pandaLogFilePath)
 
+
+  private val pandaLog = new PandaLog(pandaLogFilePath)
 
   private val nodeDB = TransactionRocksDBStorage.getDB(nodeDBPath)
   private val nodeLabelDB = TransactionRocksDBStorage.getDB(nodeLabelDBPath)
   private val nodeMetaDB = TransactionRocksDBStorage.getDB(nodeMetaDBPath)
-  private val nodeStore = new TransactionNodeStoreAPI(nodeDB, nodeLabelDB, nodeMetaDB)
+  private val nodeStore = new TransactionNodeStoreAPI(nodeDB, nodeLabelDB, nodeMetaDB, pandaLog)
 
   private val relationDB = TransactionRocksDBStorage.getDB(relationDBPath)
   private val inRelationDB = TransactionRocksDBStorage.getDB(inRelationDBPath)
   private val outRelationDB = TransactionRocksDBStorage.getDB(outRelationDBPath)
   private val relationLabelDB = TransactionRocksDBStorage.getDB(relationLabelDBPath)
   private val relationMetaDB = TransactionRocksDBStorage.getDB(relationMetaDBPath)
-  private val relationStore = new TransactionRelationStoreAPI(relationDB, inRelationDB, outRelationDB, relationLabelDB, relationMetaDB)
+  private val relationStore = new TransactionRelationStoreAPI(relationDB, inRelationDB, outRelationDB, relationLabelDB, relationMetaDB, pandaLog)
 
   private val indexDB = TransactionRocksDBStorage.getDB(indexDBPath)
   private val indexMetaDB = TransactionRocksDBStorage.getDB(indexMetaDBPath)
-  private val indexStore = new TransactionIndexStoreAPI(indexMetaDB, indexDB, fulltextIndexPath)
+  private val indexStore = new TransactionIndexStoreAPI(indexMetaDB, indexDB, fulltextIndexPath, pandaLog)
 
-  private val statistics = new TransactionStatistics(TransactionRocksDBStorage.getDB(statisticsDBPath))
-
-  private val pandaLog = new PandaLog(undoLogFilePath)
+  private val statistics = new TransactionStatistics(TransactionRocksDBStorage.getDB(statisticsDBPath), pandaLog)
 
   private val globalTransactionId = new AtomicLong(pandaLog.recoverDB(getTransactions()))
+
+  statistics.init()
 
   override def begin(): PandaTransaction = {
     val id = globalTransactionId.getAndIncrement()

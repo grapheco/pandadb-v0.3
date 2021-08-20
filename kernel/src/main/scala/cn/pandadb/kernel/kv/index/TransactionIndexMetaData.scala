@@ -3,12 +3,15 @@ package cn.pandadb.kernel.kv.index
 import cn.pandadb.kernel.kv.KeyConverter.{IndexId, KeyType, LabelId, PropertyId}
 import cn.pandadb.kernel.kv.db.KeyValueDB
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
+import cn.pandadb.kernel.transaction.{DBNameMap, PandaTransaction}
+import cn.pandadb.kernel.util.log.PandaLog
+import org.grapheco.lynx.LynxTransaction
 import org.rocksdb.{RocksDB, Transaction, TransactionDB}
 
 import scala.collection.mutable
 
 
-class TransactionIndexMetaData(db: TransactionDB) {
+class TransactionIndexMetaData(db: TransactionDB, logWriter: PandaLog) {
 
   val idMap: mutable.Map[IndexId, IndexMeta] = mutable.Map[IndexId, IndexMeta]()
   val labelMap: mutable.Map[LabelId, Set[IndexMeta]] = mutable.Map[IndexId, Set[IndexMeta]]()
@@ -44,15 +47,26 @@ class TransactionIndexMetaData(db: TransactionDB) {
     labelMap.put(meta.labelId, labelMap.getOrElse(meta.labelId, Set.empty) - meta)
   }
 
-  def addIndexMeta(label: Int, props: Array[Int], fulltext:Boolean = false, id: IndexId, tx: Transaction): Unit = {
+  def addIndexMeta(label: Int, props: Array[Int], fulltext:Boolean = false, id: IndexId, tx: LynxTransaction): Unit = {
     val key = KeyConverter.toIndexMetaKey(label, props, fulltext)
+
+    val ptx = tx.asInstanceOf[PandaTransaction]
+    val _tx = ptx.rocksTxMap(DBNameMap.indexMetaDB)
+    logWriter.writeUndoLog(ptx.id, DBNameMap.indexMetaDB, key, db.get(key))
+
     addMap(IndexMeta(id, label,fulltext,props.sorted.toSeq:_*))
-    tx.put(key, ByteUtils.intToBytes(id))
+    _tx.put(key, ByteUtils.intToBytes(id))
   }
 
-  def deleteIndexMeta(label: Int, props: Array[Int], fulltext:Boolean = false, tx: Transaction): Unit = {
+  def deleteIndexMeta(label: Int, props: Array[Int], fulltext:Boolean = false, tx: LynxTransaction): Unit = {
     deleteMap(IndexMeta(getIndexId(label, props, fulltext).getOrElse(-1), label,fulltext,props.sorted.toSeq:_*))
-    tx.delete(KeyConverter.toIndexMetaKey(label, props, fulltext))
+
+    val key = KeyConverter.toIndexMetaKey(label, props, fulltext)
+    val ptx = tx.asInstanceOf[PandaTransaction]
+    val _tx = ptx.rocksTxMap(DBNameMap.indexMetaDB)
+    logWriter.writeUndoLog(ptx.id, DBNameMap.indexMetaDB, key, db.get(key))
+
+    _tx.delete(KeyConverter.toIndexMetaKey(label, props, fulltext))
   }
 
   def getIndexId(label: Int, props: Array[Int], fulltext:Boolean = false): Option[IndexId] =

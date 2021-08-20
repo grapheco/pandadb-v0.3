@@ -3,13 +3,15 @@ package cn.pandadb.kernel.kv.meta
 import cn.pandadb.kernel.kv.db.KeyValueDB
 import cn.pandadb.kernel.kv.meta.Statistics._
 import cn.pandadb.kernel.kv.{ByteUtils, RocksDBStorage, TransactionRocksDBStorage}
-import cn.pandadb.kernel.transaction.DBNameMap
+import cn.pandadb.kernel.transaction.{DBNameMap, PandaTransaction}
+import cn.pandadb.kernel.util.log.PandaLog
+import org.grapheco.lynx.LynxTransaction
 import org.rocksdb.{Transaction, TransactionDB, WriteOptions}
 
 import scala.collection.mutable
 
 
-class TransactionStatistics(db: TransactionDB) {
+class TransactionStatistics(db: TransactionDB, logWriter: PandaLog) {
 
   private var _allNodesCount: Long = -1
   private var _allRelationCount: Long = -1
@@ -36,7 +38,7 @@ class TransactionStatistics(db: TransactionDB) {
     val res = mutable.Map[Int, Long]()
     val iter = db.newIterator()
     iter.seek(prefix)
-    while (iter.isValid && iter.key().startsWith(prefix)){
+    while (iter.isValid && iter.key().startsWith(prefix)) {
       res += ByteUtils.getInt(iter.key(), prefix.length) -> ByteUtils.getLong(iter.value(), 0)
       iter.next()
     }
@@ -54,20 +56,35 @@ class TransactionStatistics(db: TransactionDB) {
     _propertyCountByIndex = getMap(Array(NODECOUNTBYLABEL))
   }
 
-  def flush(tx: Transaction): Unit = {
-    tx.put(Array(NODESCOUNT), ByteUtils.longToBytes(_allNodesCount))
-    tx.put(Array(RELATIONSCOUNT), ByteUtils.longToBytes(_allRelationCount))
-    _nodeCountByLabel.foreach{
-      kv=>
-        tx.put(getKey(NODECOUNTBYLABEL, kv._1), ByteUtils.longToBytes(kv._2))
+  def flush(tx: LynxTransaction): Unit = {
+    val ptx = tx.asInstanceOf[PandaTransaction]
+    val _tx = ptx.rocksTxMap(DBNameMap.statisticsDB)
+
+    logWriter.writeUndoLog(ptx.id, DBNameMap.statisticsDB, Array(NODESCOUNT), db.get(Array(NODESCOUNT)))
+    logWriter.writeUndoLog(ptx.id, DBNameMap.statisticsDB, Array(RELATIONSCOUNT), db.get(Array(RELATIONSCOUNT)))
+    _tx.put(Array(NODESCOUNT), ByteUtils.longToBytes(_allNodesCount))
+    _tx.put(Array(RELATIONSCOUNT), ByteUtils.longToBytes(_allRelationCount))
+
+    _nodeCountByLabel.foreach {
+      kv => {
+        val key = getKey(NODECOUNTBYLABEL, kv._1)
+        logWriter.writeUndoLog(ptx.id, DBNameMap.statisticsDB, key, db.get(key))
+        _tx.put(key, ByteUtils.longToBytes(kv._2))
+      }
     }
-    _relationCountByType.foreach{
-      kv=>
-        tx.put(getKey(RELATIONCOUNTBYTYPE, kv._1), ByteUtils.longToBytes(kv._2))
+    _relationCountByType.foreach {
+      kv => {
+        val key = getKey(RELATIONCOUNTBYTYPE, kv._1)
+        logWriter.writeUndoLog(ptx.id, DBNameMap.statisticsDB, key, db.get(key))
+        _tx.put(getKey(RELATIONCOUNTBYTYPE, kv._1), ByteUtils.longToBytes(kv._2))
+      }
     }
-    _propertyCountByIndex.foreach{
-      kv=>
-        tx.put(getKey(PROPERTYCOUNTBYINDEX, kv._1), ByteUtils.longToBytes(kv._2))
+    _propertyCountByIndex.foreach {
+      kv => {
+        val key = getKey(PROPERTYCOUNTBYINDEX, kv._1)
+        logWriter.writeUndoLog(ptx.id, DBNameMap.statisticsDB, key, db.get(key))
+        _tx.put(key, ByteUtils.longToBytes(kv._2))
+      }
     }
   }
 

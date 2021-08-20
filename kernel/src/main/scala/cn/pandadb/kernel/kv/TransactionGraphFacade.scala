@@ -65,9 +65,9 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
 
   private def addNode(tx: Option[LynxTransaction], id: Option[Long], labels: Seq[String], nodeProps: Map[String, Any]): Id = {
     val nodeId = id.getOrElse(nodeStore.newNodeId())
-    val labelIds = labels.map(nodeStore.addLabel(_, tx.get, logWriter)).toArray
-    val props = nodeProps.map(v => (nodeStore.addPropertyKey(v._1, tx.get, logWriter), v._2))
-    nodeStore.addNode(new StoredNodeWithProperty(nodeId, labelIds, props), tx.get, logWriter)
+    val labelIds = labels.map(nodeStore.addLabel(_, tx.get)).toArray
+    val props = nodeProps.map(v => (nodeStore.addPropertyKey(v._1, tx.get), v._2))
+    nodeStore.addNode(new StoredNodeWithProperty(nodeId, labelIds, props), tx.get)
     statistics.increaseNodeCount(1) // TODO batch
     labelIds.foreach(statistics.increaseNodeLabelCount(_, 1))
     // index
@@ -94,11 +94,11 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
 
   private def addRelation(tx: Option[LynxTransaction], id: Option[Long], label: String, from: Long, to: Long, relProps: Map[String, Any]): Id = {
     val rid = id.getOrElse(relationStore.newRelationId())
-    val labelId = relationStore.addRelationType(label, tx.get, logWriter)
-    val props = relProps.map(v => (relationStore.addPropertyKey(v._1, tx.get, logWriter), v._2))
+    val labelId = relationStore.addRelationType(label, tx.get)
+    val props = relProps.map(v => (relationStore.addPropertyKey(v._1, tx.get), v._2))
     val rel = new StoredRelationWithProperty(rid, from, to, labelId, props)
     //TODO: transaction safe
-    relationStore.addRelation(rel, tx.get, logWriter)
+    relationStore.addRelation(rel, tx.get)
     statistics.increaseRelationCount(1) // TODO batch , index statistic
     statistics.increaseRelationTypeCount(labelId, 1)
     rid
@@ -107,7 +107,7 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
   override def deleteNode(tx: Option[LynxTransaction], id: Id): Unit = {
     nodeStore.getNodeById(id, tx.get).foreach {
       node =>
-        nodeStore.deleteNode(node.id, tx.get, logWriter)
+        nodeStore.deleteNode(node.id, tx.get)
         statistics.decreaseNodes(1)
         node.labelIds.foreach(statistics.decreaseNodeLabelCount(_, 1))
         node.labelIds.map(indexStore.getIndexIdByLabel).foreach(
@@ -133,8 +133,8 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
   override def deleteRelationsOfNodes(nodesIDs: Seq[LynxId], tx: Option[LynxTransaction]): Unit = { //TODO opt perf.
     nodesIDs.foreach(nid => {
       val nidL = nid.asInstanceOf[NodeId].value
-      relationStore.findOutRelations(nidL, tx.get).foreach(rel => relationStore.deleteRelation(rel.id, tx.get, logWriter))
-      relationStore.findInRelations(nidL, tx.get).foreach(rel => relationStore.deleteRelation(rel.id, tx.get, logWriter))
+      relationStore.findOutRelations(nidL, tx.get).foreach(rel => relationStore.deleteRelation(rel.id, tx.get))
+      relationStore.findInRelations(nidL, tx.get).foreach(rel => relationStore.deleteRelation(rel.id, tx.get))
     })
   }
 
@@ -145,7 +145,7 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
   override def deleteRelation(tx: Option[LynxTransaction], id: Id): Unit = {
     relationStore.getRelationById(id, tx.get).foreach {
       rel =>
-        relationStore.deleteRelation(rel.id, tx.get, logWriter)
+        relationStore.deleteRelation(rel.id, tx.get)
         statistics.decreaseRelations(1)
         statistics.setRelationTypeCount(rel.typeId, 1)
     }
@@ -164,31 +164,31 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
   }
 
   override def nodeSetProperty(tx: Option[LynxTransaction], id: Id, key: String, value: Any): Unit =
-    nodeStore.nodeSetProperty(id, nodeStore.addPropertyKey(key, tx.get, logWriter), value, tx.get, logWriter)
+    nodeStore.nodeSetProperty(id, nodeStore.addPropertyKey(key, tx.get), value, tx.get)
 
 
   override def nodeRemoveProperty(tx: Option[LynxTransaction], id: Id, key: String): Unit =
-    nodePropNameMap(key).foreach(nodeStore.nodeRemoveProperty(id, _, tx.get, logWriter))
+    nodePropNameMap(key).foreach(nodeStore.nodeRemoveProperty(id, _, tx.get))
 
   override def nodeAddLabel(tx: Option[LynxTransaction], id: Id, label: String): Unit =
-    nodeStore.nodeAddLabel(id, nodeStore.addLabel(label, tx.get, logWriter), tx.get, logWriter)
+    nodeStore.nodeAddLabel(id, nodeStore.addLabel(label, tx.get), tx.get)
 
   override def nodeRemoveLabel(tx: Option[LynxTransaction], id: Id, label: String): Unit =
-    nodeLabelNameMap(label).foreach(nodeStore.nodeRemoveLabel(id, _, tx.get, logWriter))
+    nodeLabelNameMap(label).foreach(nodeStore.nodeRemoveLabel(id, _, tx.get))
 
   override def relationSetProperty(tx: Option[LynxTransaction], id: Id, key: String, value: Any): Unit =
-    relationStore.relationSetProperty(id, relationStore.addPropertyKey(key, tx.get, logWriter), value, tx.get, logWriter)
+    relationStore.relationSetProperty(id, relationStore.addPropertyKey(key, tx.get), value, tx.get)
 
   override def relationRemoveProperty(tx: Option[LynxTransaction], id: Id, key: String): Unit =
-    relPropNameMap(key).foreach(relationStore.relationRemoveProperty(id, _, tx.get, logWriter))
+    relPropNameMap(key).foreach(relationStore.relationRemoveProperty(id, _, tx.get))
 
   override def relationAddLabel(tx: Option[LynxTransaction], id: Id, label: String): Unit = ???
 
   override def relationRemoveLabel(tx: Option[LynxTransaction], id: Id, label: String): Unit = ???
 
   override def createIndexOnNode(tx: Option[LynxTransaction], label: String, props: Set[String]): Unit = {
-    val labelId = nodeStore.addLabel(label, tx.get, logWriter)
-    val propsId = props.map(nodeStore.addPropertyKey(_, tx.get, logWriter)).toArray.sorted
+    val labelId = nodeStore.addLabel(label, tx.get)
+    val propsId = props.map(nodeStore.addPropertyKey(_, tx.get)).toArray.sorted
     val indexId = indexStore.createIndex(labelId, propsId, false, tx.get)
     if (propsId.length == 1) {
       indexStore.insertIndexRecordBatch(
@@ -205,8 +205,8 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
   }
 
   override def createIndexOnRelation(tx: Option[LynxTransaction], typeName: String, props: Set[String]): Unit = {
-    val typeId = relationStore.addRelationType(typeName, tx.get, logWriter)
-    val propsId = props.map(relationStore.addPropertyKey(_, tx.get, logWriter)).toArray.sorted
+    val typeId = relationStore.addRelationType(typeName, tx.get)
+    val propsId = props.map(relationStore.addPropertyKey(_, tx.get)).toArray.sorted
     val indexId = indexStore.createIndex(typeId, propsId, false, tx.get)
     if (propsId.length == 1) {
       indexStore.insertIndexRecordBatch(
@@ -253,7 +253,7 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
           indexStore.findByPrefix(ByteUtils.intToBytes(meta.indexId)).length)
         logger.info(s"index ${meta.indexId} count: ${statistics.getIndexPropertyCount(meta.indexId)}")
     }
-    statistics.flush(tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.statisticsDB))
+    statistics.flush(tx.get)
   }
 
 //  //FIXME: expensive time cost

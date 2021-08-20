@@ -12,7 +12,8 @@ import scala.util.control.Breaks
 
 /**
  * @program: pandadb-v0.3
- * @description: txIdLog: log the id, when db restart, set tx's start id as txIdLog's
+ * @description: undo log: log the value before update
+ *               guard log: ensure transaction success, other wise, recover db.
  * @author: LiamGao
  * @create: 2021-08-19 09:12
  */

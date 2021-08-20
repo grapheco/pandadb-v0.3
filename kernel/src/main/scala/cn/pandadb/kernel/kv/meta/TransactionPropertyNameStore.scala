@@ -3,6 +3,7 @@ package cn.pandadb.kernel.kv.meta
 import cn.pandadb.kernel.kv.KeyConverter
 import cn.pandadb.kernel.kv.db.KeyValueDB
 import cn.pandadb.kernel.transaction.DBNameMap
+import cn.pandadb.kernel.util.log.PandaLog
 import org.rocksdb.TransactionDB
 
 /**
@@ -11,9 +12,10 @@ import org.rocksdb.TransactionDB
  * @author: LiamGao
  * @create: 2021-08-09 17:31
  */
-class TransactionPropertyNameStore(tdb: TransactionDB) extends TransactionNameStore {
+class TransactionPropertyNameStore(tdb: TransactionDB, _logWriter: PandaLog) extends TransactionNameStore {
   override val db: TransactionDB = tdb
   override val dbName: String = DBNameMap.nodeMetaDB
+  override val logWriter: PandaLog = _logWriter
   override val key2ByteArrayFunc: Int => Array[Byte] = KeyConverter.propertyNameKeyToBytes
   override val keyPrefixFunc: () => Array[Byte] = KeyConverter.propertyNameKeyPrefixToBytes
   override val initInt: Int = 200000

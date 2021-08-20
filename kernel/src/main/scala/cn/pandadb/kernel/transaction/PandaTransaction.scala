@@ -2,6 +2,7 @@ package cn.pandadb.kernel.transaction
 
 import cn.pandadb.kernel.kv.TransactionGraphFacade
 import cn.pandadb.kernel.util.PandaDBException.PandaDBException
+import com.typesafe.scalalogging.LazyLogging
 import org.grapheco.lynx.{LynxResult, LynxTransaction}
 import org.rocksdb.Transaction
 
@@ -14,7 +15,8 @@ import scala.collection.mutable.ArrayBuffer
  * @Modified By:
  */
 
-class PandaTransaction(val id: String, val rocksTxMap: Map[String, Transaction], private val graphFacade: TransactionGraphFacade) extends LynxTransaction{
+class PandaTransaction(val id: String, val rocksTxMap: Map[String, Transaction], private val graphFacade: TransactionGraphFacade)
+  extends LynxTransaction with LazyLogging{
 
   val queryStates: ArrayBuffer[QueryStat] = new ArrayBuffer[QueryStat]()
   def execute(cypherStat: String, parameters: Map[String, Any]): LynxResult = {
@@ -30,12 +32,14 @@ class PandaTransaction(val id: String, val rocksTxMap: Map[String, Transaction],
     } catch {
       case e : Exception => {
         queryStats.status = QUERYSTATUS.FAILED
-        throw new PandaDBException(s"execute cypher failed...")
+        rollback()
+        throw new PandaDBException(s"${e.getMessage}")
       }
     }
   }
 
   def commit(): Unit = {
+    graphFacade.refresh(Option(this))
     val writeTxId = graphFacade.getLogWriter().flushUndoLog()
 
     rocksTxMap.foreach(f => {
@@ -48,6 +52,7 @@ class PandaTransaction(val id: String, val rocksTxMap: Map[String, Transaction],
 
 
   def rollback(): Unit = {
+    logger.info("......roll back transaction......")
     rocksTxMap.values.foreach(_.rollback())
   }
 

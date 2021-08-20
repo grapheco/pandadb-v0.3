@@ -12,17 +12,17 @@ import org.rocksdb.{ReadOptions, Transaction, TransactionDB}
  * @Date: Created at 11:14 上午 2021/8/9
  * @Modified By:
  */
-class TransactionRelationLabelIndex(db: TransactionDB) {
+class TransactionRelationLabelIndex(db: TransactionDB, logWriter: PandaLog) {
   val readOptions = new ReadOptions()
 
-  def set(labelId: Int, relId: Long, tx: LynxTransaction, logWriter: PandaLog): Unit ={
+  def set(labelId: Int, relId: Long, tx: LynxTransaction): Unit ={
     val keyBytes = KeyConverter.toRelationTypeKey(labelId, relId)
     val ptx = tx.asInstanceOf[PandaTransaction]
     logWriter.writeUndoLog(ptx.id, DBNameMap.relationLabelDB, keyBytes, db.get(keyBytes))
     ptx.rocksTxMap(DBNameMap.relationLabelDB).put(keyBytes, Array.emptyByteArray)
   }
 
-  def delete(labelId: Int, relId: Long, tx: LynxTransaction, logWriter: PandaLog): Unit = {
+  def delete(labelId: Int, relId: Long, tx: LynxTransaction): Unit = {
     val keyBytes = KeyConverter.toRelationTypeKey(labelId, relId)
     val ptx = tx.asInstanceOf[PandaTransaction]
     logWriter.writeUndoLog(ptx.id, DBNameMap.relationLabelDB, keyBytes, db.get(keyBytes))

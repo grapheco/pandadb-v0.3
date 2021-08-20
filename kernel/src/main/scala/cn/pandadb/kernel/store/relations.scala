@@ -107,7 +107,7 @@ trait TransactionRelationStoreSPI {
 
   def getRelationTypeId(relationTypeName: String): Option[Int];
 
-  def addRelationType(relationTypeName: String, tx: LynxTransaction, logWriter: PandaLog): Int;
+  def addRelationType(relationTypeName: String, tx: LynxTransaction): Int;
 
   def allPropertyKeys(): Array[String];
 
@@ -117,17 +117,17 @@ trait TransactionRelationStoreSPI {
 
   def getPropertyKeyId(keyName: String): Option[Int];
 
-  def addPropertyKey(keyName: String, tx: LynxTransaction, logWriter: PandaLog): Int;
+  def addPropertyKey(keyName: String, tx: LynxTransaction): Int;
 
   def getRelationById(relId: Long, tx: LynxTransaction): Option[StoredRelationWithProperty];
 
   def getRelationIdsByRelationType(relationTypeId: Int, tx: LynxTransaction): Iterator[Long];
 
-  def relationSetProperty(relationId: Long, propertyKeyId: Int, propertyValue: Any, tx: LynxTransaction, logWriter: PandaLog): Unit;
+  def relationSetProperty(relationId: Long, propertyKeyId: Int, propertyValue: Any, tx: LynxTransaction): Unit;
 
-  def relationRemoveProperty(relationId: Long, propertyKeyId: Int, tx: LynxTransaction, logWriter: PandaLog): Any;
+  def relationRemoveProperty(relationId: Long, propertyKeyId: Int, tx: LynxTransaction): Any;
 
-  def deleteRelation(relationId: Long, tx: LynxTransaction, logWriter: PandaLog): Unit;
+  def deleteRelation(relationId: Long, tx: LynxTransaction): Unit;
 
   def findToNodeIds(fromNodeId: Long, tx: LynxTransaction): Iterator[Long];
 
@@ -139,9 +139,9 @@ trait TransactionRelationStoreSPI {
 
   def newRelationId(): Long;
 
-  def addRelation(relation: StoredRelation, tx: LynxTransaction, logWriter: PandaLog): Unit
+  def addRelation(relation: StoredRelation, tx: LynxTransaction): Unit
 
-  def addRelation(relation: StoredRelationWithProperty, tx: LynxTransaction, logWriter: PandaLog): Unit
+  def addRelation(relation: StoredRelationWithProperty, tx: LynxTransaction): Unit
 
   def allRelations(withProperty: Boolean = false, tx: LynxTransaction): Iterator[StoredRelation]
 

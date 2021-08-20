@@ -21,7 +21,7 @@ object TransactionRelationDirection extends Enumeration {
   val OUT = Value (1)
 }
 
-class TransactionRelationDirectionStore(db: TransactionDB, DIRECTION: Direction) {
+class TransactionRelationDirectionStore(db: TransactionDB, DIRECTION: Direction, logWriter: PandaLog) {
   val dbName = {
     DIRECTION match {
       case TransactionRelationDirection.IN => DBNameMap.inRelationDB
@@ -40,21 +40,21 @@ class TransactionRelationDirectionStore(db: TransactionDB, DIRECTION: Direction)
     if (DIRECTION == IN) KeyConverter.edgeKeyToBytes(relation.to, relation.typeId, relation.from)
     else                 KeyConverter.edgeKeyToBytes(relation.from, relation.typeId, relation.to)
 
-  def set(relation: StoredRelation, tx: LynxTransaction, logWriter: PandaLog): Unit = {
+  def set(relation: StoredRelation, tx: LynxTransaction): Unit = {
     val ptx = tx.asInstanceOf[PandaTransaction]
     val keyBytes = getKey(relation)
     logWriter.writeUndoLog(ptx.id, dbName, keyBytes, db.get(keyBytes))
     ptx.rocksTxMap(dbName).put(keyBytes, ByteUtils.longToBytes(relation.id))
   }
 
-  def delete(relation: StoredRelation, tx: LynxTransaction, logWriter: PandaLog): Unit = {
+  def delete(relation: StoredRelation, tx: LynxTransaction): Unit = {
     val ptx = tx.asInstanceOf[PandaTransaction]
     val keyBytes = getKey(relation)
     logWriter.writeUndoLog(ptx.id, dbName, keyBytes, db.get(keyBytes))
     ptx.rocksTxMap(dbName).delete(keyBytes)
   }
 
-  def deleteRange(firstId: Long, tx: LynxTransaction, logWriter: PandaLog): Unit = {
+  def deleteRange(firstId: Long, tx: LynxTransaction): Unit = {
     this.synchronized{
       val ptx = tx.asInstanceOf[PandaTransaction]
       val thisTx = ptx.rocksTxMap(dbName)
@@ -67,7 +67,7 @@ class TransactionRelationDirectionStore(db: TransactionDB, DIRECTION: Direction)
     }
   }
 
-  def deleteRange(firstId: Long, typeId: Int, tx: LynxTransaction, logWriter: PandaLog): Unit = {
+  def deleteRange(firstId: Long, typeId: Int, tx: LynxTransaction): Unit = {
     this.synchronized{
       val ptx = tx.asInstanceOf[PandaTransaction]
       val thisTx = ptx.rocksTxMap(dbName)

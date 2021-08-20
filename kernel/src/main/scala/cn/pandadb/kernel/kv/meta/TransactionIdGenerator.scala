@@ -3,6 +3,7 @@ package cn.pandadb.kernel.kv.meta
 import java.util.concurrent.atomic.AtomicLong
 
 import cn.pandadb.kernel.kv.ByteUtils
+import cn.pandadb.kernel.util.log.PandaLog
 import org.rocksdb.TransactionDB
 
 /**
@@ -11,7 +12,7 @@ import org.rocksdb.TransactionDB
  * @author: LiamGao
  * @create: 2021-08-09 17:32
  */
-class TransactionIdGenerator(val db: TransactionDB, val sequenceSize: Int) {
+class TransactionIdGenerator(val db: TransactionDB, val sequenceSize: Int, logWriter: PandaLog) {
   private val id: AtomicLong = {
     val iter = db.newIterator()
     iter.seekToLast()

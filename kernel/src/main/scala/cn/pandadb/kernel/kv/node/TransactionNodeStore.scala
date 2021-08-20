@@ -15,12 +15,12 @@ import org.rocksdb.{ReadOptions, Transaction, TransactionDB, WriteBatch, WriteOp
  * @Date: Created at 11:12 上午 2021/8/9
  * @Modified By:
  */
-class TransactionNodeStore(db: TransactionDB) {
+class TransactionNodeStore(db: TransactionDB, logWriter:PandaLog) {
   // [labelId,nodeId]->[Node]
   val NONE_LABEL_ID: Int = 0
   val readOptions = new ReadOptions()
 
-  def set(nodeId: NodeId, labelIds: Array[LabelId], value: Array[Byte], tx: LynxTransaction, logWriter: PandaLog): Unit = {
+  def set(nodeId: NodeId, labelIds: Array[LabelId], value: Array[Byte], tx: LynxTransaction): Unit = {
     val ptx = tx.asInstanceOf[PandaTransaction]
 
     if (labelIds.nonEmpty)
@@ -37,7 +37,7 @@ class TransactionNodeStore(db: TransactionDB) {
     }
   }
 
-  def set(labelId: LabelId, node: StoredNodeWithProperty, tx: LynxTransaction, logWriter: PandaLog): Unit = {
+  def set(labelId: LabelId, node: StoredNodeWithProperty, tx: LynxTransaction): Unit = {
     val ptx = tx.asInstanceOf[PandaTransaction]
     val key = KeyConverter.toNodeKey(labelId, node.id)
     logWriter.writeUndoLog(ptx.id, DBNameMap.nodeDB, key, db.get(key))
@@ -45,8 +45,8 @@ class TransactionNodeStore(db: TransactionDB) {
     ptx.rocksTxMap(DBNameMap.nodeDB).put(key, NodeSerializer.serialize(node))
   }
 
-  def set(node: StoredNodeWithProperty, tx: LynxTransaction, logWriter: PandaLog): Unit =
-    set(node.id, node.labelIds, NodeSerializer.serialize(node), tx, logWriter)
+  def set(node: StoredNodeWithProperty, tx: LynxTransaction): Unit =
+    set(node.id, node.labelIds, NodeSerializer.serialize(node), tx)
 
   def get(nodeId: NodeId, labelId: LabelId, tx: Transaction): Option[StoredNodeWithProperty] = {
     val value = tx.get(readOptions, KeyConverter.toNodeKey(labelId, nodeId))
@@ -131,7 +131,7 @@ class TransactionNodeStore(db: TransactionDB) {
     }
   }
 
-  def deleteByLabel(labelId: LabelId, tx: LynxTransaction, logWriter: PandaLog): Unit = {
+  def deleteByLabel(labelId: LabelId, tx: LynxTransaction): Unit = {
     this.synchronized{
       val ptx = tx.asInstanceOf[PandaTransaction]
       getNodesByLabelForLog(labelId, ptx.rocksTxMap(DBNameMap.nodeDB)).foreach(kv => {
@@ -146,7 +146,7 @@ class TransactionNodeStore(db: TransactionDB) {
   }
 
 
-  def delete(nodeId: NodeId, labelId: LabelId, tx: LynxTransaction, logWriter: PandaLog): Unit = {
+  def delete(nodeId: NodeId, labelId: LabelId, tx: LynxTransaction): Unit = {
     val key = KeyConverter.toNodeKey(labelId, nodeId)
 
     val ptx = tx.asInstanceOf[PandaTransaction]
@@ -156,7 +156,7 @@ class TransactionNodeStore(db: TransactionDB) {
   }
 
 
-  def delete(nodeId:Long, labelIds: Array[LabelId], tx: LynxTransaction, logWriter: PandaLog): Unit = labelIds.foreach(delete(nodeId, _, tx, logWriter))
+  def delete(nodeId:Long, labelIds: Array[LabelId], tx: LynxTransaction): Unit = labelIds.foreach(delete(nodeId, _, tx))
 
-  def delete(node: StoredNodeWithProperty, tx: LynxTransaction, logWriter: PandaLog): Unit = delete(node.id, node.labelIds, tx, logWriter)
+  def delete(node: StoredNodeWithProperty, tx: LynxTransaction): Unit = delete(node.id, node.labelIds, tx)
 }

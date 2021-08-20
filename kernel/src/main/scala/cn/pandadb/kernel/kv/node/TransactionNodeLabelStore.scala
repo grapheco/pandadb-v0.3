@@ -13,26 +13,26 @@ import org.rocksdb.{ReadOptions, Transaction, TransactionDB, WriteBatch, WriteOp
  * @Date: Created at 11:13 上午 2021/8/9
  * @Modified By:
  */
-class TransactionNodeLabelStore(db: TransactionDB) {
+class TransactionNodeLabelStore(db: TransactionDB, logWriter:PandaLog) {
   val readOptions = new ReadOptions()
 
-  def set(nodeId: NodeId, labelId: LabelId, tx: LynxTransaction, logWriter: PandaLog): Unit = {
+  def set(nodeId: NodeId, labelId: LabelId, tx: LynxTransaction): Unit = {
     val key = KeyConverter.toNodeLabelKey(nodeId, labelId)
     val ptx = tx.asInstanceOf[PandaTransaction]
     logWriter.writeUndoLog(ptx.id, DBNameMap.nodeLabelDB, key, null)
     ptx.rocksTxMap(DBNameMap.nodeLabelDB).put(key, Array.emptyByteArray)
   }
 
-  def set(nodeId: NodeId, labels: Array[LabelId], tx: LynxTransaction, logWriter: PandaLog): Unit = labels.foreach(set(nodeId, _, tx, logWriter))
+  def set(nodeId: NodeId, labels: Array[LabelId], tx: LynxTransaction): Unit = labels.foreach(set(nodeId, _, tx))
 
-  def delete(nodeId: NodeId, labelId: LabelId, tx: LynxTransaction, logWriter: PandaLog): Unit = {
+  def delete(nodeId: NodeId, labelId: LabelId, tx: LynxTransaction): Unit = {
     val key = KeyConverter.toNodeLabelKey(nodeId, labelId)
     val ptx = tx.asInstanceOf[PandaTransaction]
     logWriter.writeUndoLog(ptx.id, DBNameMap.nodeLabelDB, key, db.get(key))
     ptx.rocksTxMap(DBNameMap.nodeLabelDB).delete(key)
     }
 
-  def delete(nodeId: NodeId, tx: LynxTransaction, logWriter: PandaLog): Unit ={
+  def delete(nodeId: NodeId, tx: LynxTransaction): Unit ={
     this.synchronized{
       val ptx = tx.asInstanceOf[PandaTransaction]
       getAllForLog(nodeId, ptx.rocksTxMap(DBNameMap.nodeLabelDB)).foreach(key => {
