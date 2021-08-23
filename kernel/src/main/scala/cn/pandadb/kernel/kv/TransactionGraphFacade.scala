@@ -22,14 +22,9 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
                              onClose: => Unit
                  ) extends LazyLogging with TransactionGraphService with GraphModelPlus {
 
-  //  val runner = new CypherRunner(this){
-  //    override protected lazy val procedures: ProcedureRegistry = PandaFunctions.register()
-  //  }
   val runner = new CypherRunnerPlus(this) {
     procedures.asInstanceOf[DefaultProcedureRegistry].registerAnnotatedClass(classOf[DefaultBlobFunctions])
   }
-
-//  init()
 
   def getLogWriter(): PandaLog ={
     logWriter

@@ -5,6 +5,8 @@ import java.io.{File, FileWriter}
 import cn.pandadb.kernel.transaction.DBNameMap
 import com.typesafe.scalalogging.LazyLogging
 
+import scala.util.matching.Regex
+
 /**
  * @program: pandadb-v0.3
  * @description: some utils
@@ -12,6 +14,10 @@ import com.typesafe.scalalogging.LazyLogging
  * @create: 2021-08-19 09:15
  */
 object CommonUtils extends LazyLogging{
+  val r1 = "(explain\\s+)?match\\s*\\(.*\\s*\\{?.*\\}?\\s*\\)\\s*(where)?\\s*.*\\s*(set|remove|delete|merge)\\s*"
+  val r3 = "(explain\\s+)?merge\\s*\\(.*\\s*\\{?.*\\}?\\s*\\)\\s*(where)?\\s*.*\\s*(set|remove|delete|merge)?\\s*"
+  val r2 = "(explain\\s+)?create\\s*\\(.*\\{?.*\\}?\\s*\\)"
+  val pattern = new Regex(s"${r1}|${r2}|${r3}")
 
   def checkDir(dir: String): Unit = {
     val file = new File(dir)
@@ -36,5 +42,10 @@ object CommonUtils extends LazyLogging{
     fileWriter.write("")
     fileWriter.flush()
     fileWriter.close()
+  }
+
+  def isWriteCypher(statement: String): Boolean = {
+    val cypher = statement.toLowerCase().replaceAll("\n", " ").replaceAll("\r", "")
+    pattern.findAllIn(cypher).nonEmpty
   }
 }

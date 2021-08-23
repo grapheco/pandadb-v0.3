@@ -18,7 +18,7 @@ import scala.util.control.Breaks
  * @create: 2021-08-19 09:12
  */
 
-class PandaLog(logPath: String) extends LazyLogging{
+class PandaLog(logPath: String) extends LazyLogging {
   private var writeTxId: String = ""
 
   private val undoLogPath = s"$logPath/${DBNameMap.undoLogName}"
@@ -32,26 +32,30 @@ class PandaLog(logPath: String) extends LazyLogging{
   private val guardLogWriter = new BufferedWriter(new FileWriter(guardLogPath, true))
 
 
-  def writeUndoLog(txId: String, dbName: String, key: Array[Byte], oldValue: Array[Byte]): Unit ={
-    val line = s"$txId~$dbName~${transByteArray(key)}~${transByteArray(oldValue)}"
-    undoLogWriter.write(line)
-    undoLogWriter.newLine()
-    writeTxId = txId
+  def writeUndoLog(txId: String, dbName: String, key: Array[Byte], oldValue: Array[Byte]): Unit = {
+    this.synchronized {
+      val line = s"$txId~$dbName~${transByteArray(key)}~${transByteArray(oldValue)}"
+      undoLogWriter.write(line)
+      undoLogWriter.newLine()
+      writeTxId = txId
+    }
   }
 
-  def writeGuardLog(txId: String): Unit ={
-    guardLogWriter.write(txId)
-    guardLogWriter.newLine()
+  def writeGuardLog(txId: String): Unit = {
+    this.synchronized {
+      guardLogWriter.write(txId)
+      guardLogWriter.newLine()
+    }
   }
 
-  def recoverDB(txMap: Map[String, Transaction]): Long ={
+  def recoverDB(txMap: Map[String, Transaction]): Long = {
     logger.info("............Checking db status............")
     val undoData = parseUndoLogLine().toArray.groupBy(f => f._1)
     val guardData = parseGuardLogLine()
-    val waitToRecoverTxId = undoData.filter(line => !guardData.contains(line._1))
+    val waitToRecoverTxId = undoData.filter(line => !guardData.contains(line._1)).toArray.sortBy(f => f._1.toLong).reverse
 
-    if (waitToRecoverTxId.nonEmpty){
-      waitToRecoverTxId.foreach(kv =>{
+    if (waitToRecoverTxId.nonEmpty) {
+      waitToRecoverTxId.foreach(kv => {
         kv._2.foreach(line => {
           if (line._4 == null) {
             txMap(line._2).delete(line._3)
@@ -93,30 +97,32 @@ class PandaLog(logPath: String) extends LazyLogging{
       }
     }
   }
-  private def parseGuardLogLine(): Array[String] ={
+
+  private def parseGuardLogLine(): Array[String] = {
     val guardFile = Source.fromFile(guardLogPath)
     guardFile.getLines().toArray
   }
 
-  def flushUndoLog(): String ={
+  def flushUndoLog(): String = {
     undoLogWriter.flush()
     writeTxId
   }
 
-  def flushGuardLog(): Unit ={
+  def flushGuardLog(): Unit = {
     guardLogWriter.flush()
   }
 
-  def close(): Unit ={
+  def close(): Unit = {
     guardLogWriter.flush()
     undoLogWriter.flush()
 
     guardLogWriter.close()
     undoLogWriter.close()
   }
-  private def transByteArray(data: Array[Byte]): String ={
+
+  private def transByteArray(data: Array[Byte]): String = {
     if (data == null || (data sameElements Array.emptyByteArray)) return null
-    val res = data.foldLeft("[")((res, byte) =>{
+    val res = data.foldLeft("[")((res, byte) => {
       res + byte.toString + ","
     })
     res.slice(0, res.length - 1) + "]"

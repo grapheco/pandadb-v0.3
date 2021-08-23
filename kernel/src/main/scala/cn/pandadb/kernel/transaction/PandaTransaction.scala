@@ -1,6 +1,7 @@
 package cn.pandadb.kernel.transaction
 
 import cn.pandadb.kernel.kv.TransactionGraphFacade
+import cn.pandadb.kernel.util.CommonUtils
 import cn.pandadb.kernel.util.PandaDBException.PandaDBException
 import com.typesafe.scalalogging.LazyLogging
 import org.grapheco.lynx.{LynxResult, LynxTransaction}
@@ -19,6 +20,8 @@ class PandaTransaction(val id: String, val rocksTxMap: Map[String, Transaction],
   extends LynxTransaction with LazyLogging{
 
   val queryStates: ArrayBuffer[QueryStat] = new ArrayBuffer[QueryStat]()
+  var isWriteCypher = false
+
   def execute(cypherStat: String, parameters: Map[String, Any]): LynxResult = {
 
     val queryStats = QueryStat(cypherStat, QUERYSTATUS.EXECUTING)
@@ -26,6 +29,7 @@ class PandaTransaction(val id: String, val rocksTxMap: Map[String, Transaction],
 
     try {
       //execute the query
+      isWriteCypher = CommonUtils.isWriteCypher(cypherStat)
       val res = graphFacade.cypher(cypherStat, parameters, Option(this))
       queryStats.status = QUERYSTATUS.SUCCEED
       res
@@ -39,15 +43,18 @@ class PandaTransaction(val id: String, val rocksTxMap: Map[String, Transaction],
   }
 
   def commit(): Unit = {
-    graphFacade.refresh(Option(this))
-    val writeTxId = graphFacade.getLogWriter().flushUndoLog()
+    if (isWriteCypher){
+      graphFacade.refresh(Option(this))
 
-    rocksTxMap.foreach(f => {
-      f._2.commit()
-    })
+      val writeTxId = graphFacade.getLogWriter().flushUndoLog()
 
-    graphFacade.getLogWriter().writeGuardLog(writeTxId)
-    graphFacade.getLogWriter().flushGuardLog()
+      rocksTxMap.foreach(f => {
+        f._2.commit()
+      })
+
+      graphFacade.getLogWriter().writeGuardLog(writeTxId)
+      graphFacade.getLogWriter().flushGuardLog()
+    }
   }
 
 

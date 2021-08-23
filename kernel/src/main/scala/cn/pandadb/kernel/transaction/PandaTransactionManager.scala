@@ -52,7 +52,6 @@ class PandaTransactionManager(nodeMetaDBPath: String,
   CommonUtils.checkDir(statisticsDBPath)
   CommonUtils.checkDir(pandaLogFilePath)
 
-
   private val pandaLog = new PandaLog(pandaLogFilePath)
 
   private val nodeDB = TransactionRocksDBStorage.getDB(nodeDBPath)
@@ -78,9 +77,11 @@ class PandaTransactionManager(nodeMetaDBPath: String,
   statistics.init()
 
   override def begin(): PandaTransaction = {
-    val id = globalTransactionId.getAndIncrement()
-    val txMap = getTransactions()
-    new PandaTransaction(s"$id", txMap, new TransactionGraphFacade(nodeStore, relationStore, indexStore, statistics, pandaLog, {}))
+    this.synchronized{
+      val id = globalTransactionId.getAndIncrement()
+      val txMap = getTransactions()
+      new PandaTransaction(s"$id", txMap, new TransactionGraphFacade(nodeStore, relationStore, indexStore, statistics, pandaLog, {}))
+    }
   }
 
   def getTransactions(): Map[String, Transaction] ={
