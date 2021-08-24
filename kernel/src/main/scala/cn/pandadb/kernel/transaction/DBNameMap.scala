@@ -1,19 +1,18 @@
 package cn.pandadb.kernel.transaction
 
 object DBNameMap {
-  val nodeDB = "nodeDB"
-  val nodeLabelDB = "nodeLabelDB"
-  val nodeMetaDB = "nodeMetaDB"
-  val relationDB = "relationDB"
-  val inRelationDB = "inRelationDB"
-  val outRelationDB = "outRelationDB"
-  val relationLabelDB = "relationLabelDB"
-  val relationMetaDB = "relationMetaDB"
-  val statisticsDB = "statisticsDB"
-  val indexDB = "indexDB"
-  val indexMetaDB = "indexMetaDB"
+  val nodeDB = "node"
+  val nodeLabelDB = "nodeLabel"
+  val nodeMetaDB = "nodeMeta"
+  val relationDB = "relation"
+  val inRelationDB = "inRelation"
+  val outRelationDB = "outRelation"
+  val relationLabelDB = "relationLabel"
+  val relationMetaDB = "relationMeta"
+  val statisticsDB = "statistics"
+  val indexDB = "index"
+  val indexMetaDB = "indexMeta"
 
   val undoLogName = "undoLog.txt"
   val guardLogName = "guardLog.txt"
-  val idLogName = "txId.txt"
 }

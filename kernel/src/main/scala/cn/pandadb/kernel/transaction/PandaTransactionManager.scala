@@ -36,7 +36,11 @@ class PandaTransactionManager(nodeMetaDBPath: String,
                               fulltextIndexPath: String,
                               statisticsDBPath: String,
                               pandaLogFilePath: String,
-                              rocksDBConfigPath: String = "default") extends TransactionManager with LazyLogging {
+                              rocksDBConfigPath: String) extends TransactionManager with LazyLogging {
+
+  def this(dbPath: String, rocksdbConfigPath: String = "default"){
+    this(dbPath, dbPath, dbPath, dbPath, dbPath, dbPath, dbPath, dbPath, dbPath, dbPath, dbPath, dbPath, dbPath, rocksdbConfigPath)
+  }
 
   CommonUtils.checkDir(nodeMetaDBPath)
   CommonUtils.checkDir(nodeDBPath)
@@ -54,37 +58,39 @@ class PandaTransactionManager(nodeMetaDBPath: String,
 
   private val pandaLog = new PandaLog(pandaLogFilePath)
 
-  private val nodeDB = TransactionRocksDBStorage.getDB(nodeDBPath)
-  private val nodeLabelDB = TransactionRocksDBStorage.getDB(nodeLabelDBPath)
-  private val nodeMetaDB = TransactionRocksDBStorage.getDB(nodeMetaDBPath)
+  private val nodeDB = TransactionRocksDBStorage.getDB(nodeDBPath + s"/${DBNameMap.nodeDB}")
+  private val nodeLabelDB = TransactionRocksDBStorage.getDB(nodeLabelDBPath + s"/${DBNameMap.nodeLabelDB}")
+  private val nodeMetaDB = TransactionRocksDBStorage.getDB(nodeMetaDBPath + s"/${DBNameMap.nodeMetaDB}")
   private val nodeStore = new TransactionNodeStoreAPI(nodeDB, nodeLabelDB, nodeMetaDB, pandaLog)
 
-  private val relationDB = TransactionRocksDBStorage.getDB(relationDBPath)
-  private val inRelationDB = TransactionRocksDBStorage.getDB(inRelationDBPath)
-  private val outRelationDB = TransactionRocksDBStorage.getDB(outRelationDBPath)
-  private val relationLabelDB = TransactionRocksDBStorage.getDB(relationLabelDBPath)
-  private val relationMetaDB = TransactionRocksDBStorage.getDB(relationMetaDBPath)
+  private val relationDB = TransactionRocksDBStorage.getDB(relationDBPath + s"/${DBNameMap.relationDB}")
+  private val inRelationDB = TransactionRocksDBStorage.getDB(inRelationDBPath + s"/${DBNameMap.inRelationDB}")
+  private val outRelationDB = TransactionRocksDBStorage.getDB(outRelationDBPath + s"/${DBNameMap.outRelationDB}")
+  private val relationLabelDB = TransactionRocksDBStorage.getDB(relationLabelDBPath + s"/${DBNameMap.relationLabelDB}")
+  private val relationMetaDB = TransactionRocksDBStorage.getDB(relationMetaDBPath + s"/${DBNameMap.relationMetaDB}")
   private val relationStore = new TransactionRelationStoreAPI(relationDB, inRelationDB, outRelationDB, relationLabelDB, relationMetaDB, pandaLog)
 
-  private val indexDB = TransactionRocksDBStorage.getDB(indexDBPath)
-  private val indexMetaDB = TransactionRocksDBStorage.getDB(indexMetaDBPath)
+  private val indexDB = TransactionRocksDBStorage.getDB(indexDBPath + s"/${DBNameMap.indexDB}")
+  private val indexMetaDB = TransactionRocksDBStorage.getDB(indexMetaDBPath + s"/${DBNameMap.indexMetaDB}")
   private val indexStore = new TransactionIndexStoreAPI(indexMetaDB, indexDB, fulltextIndexPath, pandaLog)
 
-  private val statistics = new TransactionStatistics(TransactionRocksDBStorage.getDB(statisticsDBPath), pandaLog)
+  private val statistics = new TransactionStatistics(TransactionRocksDBStorage.getDB(statisticsDBPath + s"/${DBNameMap.statisticsDB}"), pandaLog)
 
   private val globalTransactionId = new AtomicLong(pandaLog.recoverDB(getTransactions()))
 
   statistics.init()
 
+  val graphFacade = new TransactionGraphFacade(nodeStore, relationStore, indexStore, statistics, pandaLog, {})
+
   override def begin(): PandaTransaction = {
     this.synchronized{
       val id = globalTransactionId.getAndIncrement()
       val txMap = getTransactions()
-      new PandaTransaction(s"$id", txMap, new TransactionGraphFacade(nodeStore, relationStore, indexStore, statistics, pandaLog, {}))
+      new PandaTransaction(s"$id", txMap, graphFacade)
     }
   }
 
-  def getTransactions(): Map[String, Transaction] ={
+  private def getTransactions(): Map[String, Transaction] ={
     val writeOptions = new WriteOptions()
     nodeStore.generateTransactions(writeOptions) ++ relationStore.generateTransactions(writeOptions) ++
       indexStore.generateTransactions(writeOptions) ++ statistics.generateTransactions(writeOptions)

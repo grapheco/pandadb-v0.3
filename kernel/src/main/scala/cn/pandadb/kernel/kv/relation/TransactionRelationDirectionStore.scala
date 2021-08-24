@@ -55,7 +55,6 @@ class TransactionRelationDirectionStore(db: TransactionDB, DIRECTION: Direction,
   }
 
   def deleteRange(firstId: Long, tx: LynxTransaction): Unit = {
-    this.synchronized{
       val ptx = tx.asInstanceOf[PandaTransaction]
       val thisTx = ptx.rocksTxMap(dbName)
       getRelationIdsForLog(firstId, thisTx).foreach(kv => logWriter.writeUndoLog(ptx.id, dbName, kv._1, kv._2))
@@ -64,11 +63,9 @@ class TransactionRelationDirectionStore(db: TransactionDB, DIRECTION: Direction,
       batch.deleteRange(KeyConverter.edgeKeyPrefixToBytes(firstId,0),
         KeyConverter.edgeKeyPrefixToBytes(firstId, -1))
       thisTx.rebuildFromWriteBatch(batch)
-    }
   }
 
   def deleteRange(firstId: Long, typeId: Int, tx: LynxTransaction): Unit = {
-    this.synchronized{
       val ptx = tx.asInstanceOf[PandaTransaction]
       val thisTx = ptx.rocksTxMap(dbName)
       getRelationIdsForLog(firstId, typeId, thisTx).foreach(kv => logWriter.writeUndoLog(ptx.id, dbName, kv._1, kv._2))
@@ -77,7 +74,6 @@ class TransactionRelationDirectionStore(db: TransactionDB, DIRECTION: Direction,
       batch.deleteRange(KeyConverter.edgeKeyToBytes(firstId, typeId, 0),
         KeyConverter.edgeKeyToBytes(firstId, typeId, -1))
       thisTx.rebuildFromWriteBatch(batch)
-    }
   }
 
   def get(node1: Long, edgeType: Int, node2: Long, tx: Transaction): Option[Long] = {

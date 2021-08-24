@@ -33,7 +33,6 @@ class TransactionNodeLabelStore(db: TransactionDB, logWriter:PandaLog) {
     }
 
   def delete(nodeId: NodeId, tx: LynxTransaction): Unit ={
-    this.synchronized{
       val ptx = tx.asInstanceOf[PandaTransaction]
       getAllForLog(nodeId, ptx.rocksTxMap(DBNameMap.nodeLabelDB)).foreach(key => {
         logWriter.writeUndoLog(ptx.id, DBNameMap.nodeLabelDB, key, null)
@@ -43,7 +42,7 @@ class TransactionNodeLabelStore(db: TransactionDB, logWriter:PandaLog) {
       batch.deleteRange(KeyConverter.toNodeLabelKey(nodeId, 0),
         KeyConverter.toNodeLabelKey(nodeId, -1))
       ptx.rocksTxMap(DBNameMap.nodeLabelDB).rebuildFromWriteBatch(batch)
-    }
+
   }
 
   def get(nodeId: NodeId, tx: Transaction): Option[LabelId] = {

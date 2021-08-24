@@ -18,8 +18,6 @@ class TransactionNodeStoreAPI(nodeDB: TransactionDB,
                               nodeLabelDB: TransactionDB,
                               metaDB: TransactionDB,
                               pandaLog: PandaLog) extends TransactionNodeStoreSPI {
-  // only modify the write relevant funcs
-  // addNode(data, rocksdbTx) = { tx.execute()}
 
   private val nodeStore = new TransactionNodeStore(nodeDB, pandaLog)
   private val nodeLabelStore = new TransactionNodeLabelStore(nodeLabelDB, pandaLog)
