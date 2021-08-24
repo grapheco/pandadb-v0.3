@@ -33,7 +33,7 @@ object SettingKeys {
   val indexMetaDBPath = "db.indexMetaDB.path"
   val fullIndexDBPath = "db.fullIndexDB.path"
   val authDBPath = "db.authDB.path"
-
+  val pandaLogPath = "db.pandaLog.path"
 }
 
 class Config extends LazyLogging {
@@ -54,6 +54,10 @@ class Config extends LazyLogging {
   }
 
   def validate(): Unit = {}
+
+  def getPandaLogPath(): String ={
+    getValueAsString(SettingKeys.pandaLogPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/pandaLog")
+  }
 
   def getNodeMetaDBPath(): String = {
     getValueAsString(SettingKeys.nodeMetaDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/nodeMeta")

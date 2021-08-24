@@ -1,7 +1,8 @@
 package cn.pandadb.kernel.transaction
 
 import java.io.File
-import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.{Executors, TimeUnit}
+import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 
 import cn.pandadb.kernel.kv.index.{TransactionIndexStore, TransactionIndexStoreAPI}
 import cn.pandadb.kernel.kv.meta.TransactionStatistics
@@ -9,7 +10,7 @@ import cn.pandadb.kernel.kv.{TransactionGraphFacade, TransactionRocksDBStorage}
 import cn.pandadb.kernel.kv.node.TransactionNodeStoreAPI
 import cn.pandadb.kernel.kv.relation.TransactionRelationStoreAPI
 import cn.pandadb.kernel.util.CommonUtils
-import cn.pandadb.kernel.util.log.{PandaLog}
+import cn.pandadb.kernel.util.log.PandaLog
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.commons.io.FileUtils
 import org.rocksdb.{ReadOptions, Snapshot, Transaction, WriteOptions}
@@ -38,7 +39,7 @@ class PandaTransactionManager(nodeMetaDBPath: String,
                               pandaLogFilePath: String,
                               rocksDBConfigPath: String) extends TransactionManager with LazyLogging {
 
-  def this(dbPath: String, rocksdbConfigPath: String = "default"){
+  def this(dbPath: String, rocksdbConfigPath: String = "default") {
     this(dbPath, dbPath, dbPath, dbPath, dbPath, dbPath, dbPath, dbPath, dbPath, dbPath, dbPath, dbPath, dbPath, rocksdbConfigPath)
   }
 
@@ -56,7 +57,8 @@ class PandaTransactionManager(nodeMetaDBPath: String,
   CommonUtils.checkDir(statisticsDBPath)
   CommonUtils.checkDir(pandaLogFilePath)
 
-  private val pandaLog = new PandaLog(pandaLogFilePath)
+  private val txWatcher = new TransactionWatcher(pandaLogFilePath)
+  private val pandaLog = new PandaLog(pandaLogFilePath, txWatcher)
 
   private val nodeDB = TransactionRocksDBStorage.getDB(nodeDBPath + s"/${DBNameMap.nodeDB}")
   private val nodeLabelDB = TransactionRocksDBStorage.getDB(nodeLabelDBPath + s"/${DBNameMap.nodeLabelDB}")
@@ -82,21 +84,22 @@ class PandaTransactionManager(nodeMetaDBPath: String,
 
   val graphFacade = new TransactionGraphFacade(nodeStore, relationStore, indexStore, statistics, pandaLog, {})
 
+  val schedule = Executors.newSingleThreadScheduledExecutor()
+  schedule.scheduleAtFixedRate(txWatcher, 60, 60, TimeUnit.SECONDS)
+
   override def begin(): PandaTransaction = {
-    this.synchronized{
-      val id = globalTransactionId.getAndIncrement()
-      val txMap = getTransactions()
-      new PandaTransaction(s"$id", txMap, graphFacade)
-    }
+    val id = globalTransactionId.getAndIncrement()
+    val txMap = getTransactions()
+    new PandaTransaction(s"$id", txMap, graphFacade, txWatcher)
   }
 
-  private def getTransactions(): Map[String, Transaction] ={
+  private def getTransactions(): Map[String, Transaction] = {
     val writeOptions = new WriteOptions()
     nodeStore.generateTransactions(writeOptions) ++ relationStore.generateTransactions(writeOptions) ++
       indexStore.generateTransactions(writeOptions) ++ statistics.generateTransactions(writeOptions)
   }
 
-  def close(): Unit ={
+  def close(): Unit = {
     pandaLog.close()
     statistics.close()
     indexStore.close()

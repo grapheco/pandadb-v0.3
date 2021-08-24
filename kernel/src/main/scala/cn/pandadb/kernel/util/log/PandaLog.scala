@@ -2,7 +2,7 @@ package cn.pandadb.kernel.util.log
 
 import java.io.{BufferedWriter, File, FileWriter, RandomAccessFile}
 
-import cn.pandadb.kernel.transaction.DBNameMap
+import cn.pandadb.kernel.transaction.{DBNameMap, TransactionWatcher}
 import cn.pandadb.kernel.util.CommonUtils
 import com.typesafe.scalalogging.LazyLogging
 import org.rocksdb.Transaction
@@ -18,7 +18,7 @@ import scala.util.control.Breaks
  * @create: 2021-08-19 09:12
  */
 
-class PandaLog(logPath: String) extends LazyLogging {
+class PandaLog(logPath: String, txWatcher: TransactionWatcher) extends LazyLogging {
   private var writeTxId: String = ""
 
   private val undoLogPath = s"$logPath/${DBNameMap.undoLogName}"
@@ -34,6 +34,9 @@ class PandaLog(logPath: String) extends LazyLogging {
 
   def writeUndoLog(txId: String, dbName: String, key: Array[Byte], oldValue: Array[Byte]): Unit = {
     this.synchronized {
+      while (txWatcher.isCleaning){
+        Thread.sleep(100)
+      }
       val line = s"$txId~$dbName~${transByteArray(key)}~${transByteArray(oldValue)}"
       undoLogWriter.write(line)
       undoLogWriter.newLine()
@@ -43,6 +46,9 @@ class PandaLog(logPath: String) extends LazyLogging {
 
   def writeGuardLog(txId: String): Unit = {
     this.synchronized {
+      while (txWatcher.isCleaning){
+        Thread.sleep(100)
+      }
       guardLogWriter.write(txId)
       guardLogWriter.newLine()
     }

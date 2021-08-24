@@ -21,9 +21,9 @@ class PandaDriverFactory(uriAuthority: String, authtoken: java.util.Map[String, 
     val _port = res._2
     val rpcClient = new PandaRpcClient(_address, _port, config.RPC_CLIENT_NAME, config.RPC_SERVER_NAME)
 
-    val publicKey = rpcClient.getPublicKey()
-    val username = authtoken.get(InternalAuthToken.PRINCIPAL_KEY).asString()
-    val password = authtoken.get(InternalAuthToken.CREDENTIALS_KEY).asString()
+//    val publicKey = rpcClient.getPublicKey()
+//    val username = authtoken.get(InternalAuthToken.PRINCIPAL_KEY).asString()
+//    val password = authtoken.get(InternalAuthToken.CREDENTIALS_KEY).asString()
 //    verifyConnectivity(rpcClient, username, password, publicKey)
 
     new PandaDriver(rpcClient, uriAuthority)

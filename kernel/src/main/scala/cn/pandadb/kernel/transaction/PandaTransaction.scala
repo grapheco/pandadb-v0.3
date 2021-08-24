@@ -16,7 +16,9 @@ import scala.collection.mutable.ArrayBuffer
  * @Modified By:
  */
 
-class PandaTransaction(val id: String, val rocksTxMap: Map[String, Transaction], private val graphFacade: TransactionGraphFacade)
+class PandaTransaction(val id: String, val rocksTxMap: Map[String, Transaction],
+                       private val graphFacade: TransactionGraphFacade,
+                       txWatcher: TransactionWatcher)
   extends LynxTransaction with LazyLogging{
 
   val queryStates: ArrayBuffer[QueryStat] = new ArrayBuffer[QueryStat]()
@@ -30,6 +32,9 @@ class PandaTransaction(val id: String, val rocksTxMap: Map[String, Transaction],
     try {
       //execute the query
       isWriteCypher = CommonUtils.isWriteCypher(cypherStat)
+
+      if (isWriteCypher) txWatcher.increase()
+
       val res = graphFacade.cypher(cypherStat, parameters, Option(this))
       queryStats.status = QUERYSTATUS.SUCCEED
       res
@@ -54,6 +59,7 @@ class PandaTransaction(val id: String, val rocksTxMap: Map[String, Transaction],
 
       graphFacade.getLogWriter().writeGuardLog(writeTxId)
       graphFacade.getLogWriter().flushGuardLog()
+      txWatcher.decrease()
     }
   }
 
