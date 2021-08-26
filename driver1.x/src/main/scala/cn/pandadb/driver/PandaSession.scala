@@ -53,7 +53,7 @@ class PandaSession(rpcClient: PandaRpcClient, address: String) extends Statement
 
   override def typeSystem(): TypeSystem = throw new NotImplementMethodException("typeSystem")
 
-  override def beginTransaction(): Transaction = throw new NotImplementMethodException("beginTransactionAsync")
+  override def beginTransaction(): Transaction = new PandaTransaction(rpcClient, address: String)
 
   override def beginTransaction(transactionConfig: TransactionConfig): Transaction = throw new NotImplementMethodException("beginTransactionAsync")
 

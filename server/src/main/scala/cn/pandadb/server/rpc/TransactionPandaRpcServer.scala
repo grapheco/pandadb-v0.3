@@ -1,6 +1,7 @@
 package cn.pandadb.server.rpc
 
 import java.nio.ByteBuffer
+import java.util.concurrent.atomic.AtomicLong
 
 import cn.pandadb.VerifyConnectionMode
 import cn.pandadb.dbms.{GraphDatabaseManager, RsaSecurity, TransactionGraphDatabaseManager}
@@ -9,7 +10,7 @@ import cn.pandadb.hipporpc.utils.DriverValue
 import cn.pandadb.hipporpc.values.Value
 import cn.pandadb.kernel.GraphService
 import cn.pandadb.kernel.kv.meta.Auth
-import cn.pandadb.kernel.transaction.PandaTransactionManager
+import cn.pandadb.kernel.transaction.{PandaTransaction, PandaTransactionManager}
 import cn.pandadb.server.common.configuration.Config
 import cn.pandadb.server.common.modules.LifecycleServerModule
 import cn.pandadb.utils.ValueConverter
@@ -68,13 +69,32 @@ class TransactionPandaEndpoint(override val rpcEnv: HippoRpcEnv) extends RpcEndp
 
 class TransactionPandaStreamHandler(graphFacade: PandaTransactionManager) extends HippoRpcHandler {
   val converter = new ValueConverter
+  val driverTxMap = mutable.Map[String, PandaTransaction]()
 
   override def receiveWithBuffer(extraInput: ByteBuffer, context: ReceiveContext): PartialFunction[Any, Unit] = {
     case SayHelloRequest(msg) =>
       context.reply(SayHelloResponse(msg.toUpperCase()))
+
+    case TransactionCommitRequest(uuid) => {
+      if (driverTxMap.contains(uuid)) {
+        driverTxMap(uuid).commit()
+        driverTxMap -= uuid
+        context.reply(TransactionCommitResponse("tx commit success"))
+      }
+      else context.reply(TransactionCommitResponse("no such transaction"))
+    }
+    case TransactionRollbackRequest(uuid) => {
+      if (driverTxMap.contains(uuid)) {
+        driverTxMap(uuid).rollback()
+        driverTxMap -= uuid
+        context.reply(TransactionRollbackResponse("tx commit rollback"))
+      }
+      else context.reply(TransactionCommitResponse("no such transaction"))
+    }
   }
 
   override def openChunkedStream(): PartialFunction[Any, ChunkedStream] = {
+    // auto commit
     case CypherRequest(cypher, params) => {
       val tx = graphFacade.begin()
       try {
@@ -85,8 +105,28 @@ class TransactionPandaStreamHandler(graphFacade: PandaTransactionManager) extend
         ChunkedStream.grouped(100, pandaIterator.toIterable)
       } catch {
         case e: Exception => ChunkedStream.grouped(1, new ExceptionMessage(e.getMessage).toIterable)
-      }finally {
+      } finally {
         tx.commit()
+      }
+    }
+    //transaction
+    case TransactionCypherRequest(uuid, cypher, params) => {
+      val tx = {
+        if (driverTxMap.contains(uuid)) driverTxMap(uuid)
+        else {
+          val newTx = graphFacade.begin()
+          driverTxMap += uuid -> newTx
+          newTx
+        }
+      }
+      try {
+        val result = tx.execute(cypher, params)
+        val metadata = result.columns().toList
+        val data = result.records()
+        val pandaIterator = new TransactionPandaRecordsIterator(metadata, data)
+        ChunkedStream.grouped(100, pandaIterator.toIterable)
+      } catch {
+        case e: Exception => ChunkedStream.grouped(1, new ExceptionMessage(e.getMessage).toIterable)
       }
     }
   }

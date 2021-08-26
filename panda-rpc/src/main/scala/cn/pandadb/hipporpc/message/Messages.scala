@@ -4,6 +4,14 @@ import cn.pandadb.VerifyConnectionMode
 
 case class CypherRequest(cypher: String, params:Map[String, Any]){}
 
+case class TransactionCypherRequest(uuid: String, cypher: String, params:Map[String, Any]){}
+
+case class TransactionCommitRequest(uuid: String){}
+case class TransactionCommitResponse(msg: String){}
+
+case class TransactionRollbackRequest(uuid: String){}
+case class TransactionRollbackResponse(msg: String){}
+
 case class SayHelloRequest(msg: String){}
 case class SayHelloResponse(msg: String){}
 

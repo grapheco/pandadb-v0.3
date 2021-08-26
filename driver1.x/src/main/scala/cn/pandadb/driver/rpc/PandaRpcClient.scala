@@ -32,6 +32,24 @@ class PandaRpcClient(hostName:String, port: Int, clientName: String, serverName:
     }
   }
 
+  def sendTransactionCypherRequest(uuid: String, cypher: String, params:Map[String, Any]): Stream[DriverValue] ={
+    val res = endpointRef.getChunkedStream[Any](TransactionCypherRequest(uuid, cypher, params), Duration(DURATION_TIME))
+    res.head match {
+      case n: DriverValue => {
+        res.asInstanceOf[Stream[DriverValue]]
+      }
+      case e: String => {
+        throw new CypherErrorException(e)
+      }
+    }
+  }
+  def sendTransactionCommitRequest(uuid: String): String ={
+    Await.result(endpointRef.askWithBuffer[TransactionCommitResponse](TransactionCommitRequest(uuid)), Duration(DURATION_TIME)).msg
+  }
+  def sendTransactionRollbackRequest(uuid: String): String ={
+    Await.result(endpointRef.askWithBuffer[TransactionRollbackResponse](TransactionRollbackRequest(uuid)), Duration(DURATION_TIME)).msg
+  }
+
   def verifyConnectionRequest(username:String, password: String): VerifyConnectionMode.Value = {
     Await.result(endpointRef.askWithBuffer[VerifyConnectionResponse](VerifyConnectionRequest(username, password)), Duration(DURATION_TIME)).result
   }

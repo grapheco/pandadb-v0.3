@@ -22,7 +22,7 @@ class PandaTransaction(val id: String, val rocksTxMap: Map[String, Transaction],
   extends LynxTransaction with LazyLogging{
 
   val queryStates: ArrayBuffer[QueryStat] = new ArrayBuffer[QueryStat]()
-  var isWriteCypher = false
+  var isContainWriteCypher = new ArrayBuffer[Boolean]()
 
   def execute(cypherStat: String, parameters: Map[String, Any]): LynxResult = {
 
@@ -31,7 +31,8 @@ class PandaTransaction(val id: String, val rocksTxMap: Map[String, Transaction],
 
     try {
       //execute the query
-      isWriteCypher = CommonUtils.isWriteCypher(cypherStat)
+      val isWriteCypher = CommonUtils.isWriteCypher(cypherStat)
+      isContainWriteCypher.append(isWriteCypher)
 
       if (isWriteCypher) txWatcher.increase()
 
@@ -48,17 +49,17 @@ class PandaTransaction(val id: String, val rocksTxMap: Map[String, Transaction],
   }
 
   def commit(): Unit = {
-    if (isWriteCypher){
+    if (isContainWriteCypher.contains(true)){
       graphFacade.refresh(Option(this))
-
-      val writeTxId = graphFacade.getLogWriter().flushUndoLog()
+      val logWriter = graphFacade.getLogWriter()
+      val writeTxId = logWriter.flushUndoLog()
 
       rocksTxMap.foreach(f => {
         f._2.commit()
       })
 
-      graphFacade.getLogWriter().writeGuardLog(writeTxId)
-      graphFacade.getLogWriter().flushGuardLog()
+      logWriter.writeGuardLog(writeTxId)
+      logWriter.flushGuardLog()
       txWatcher.decrease()
     }
   }

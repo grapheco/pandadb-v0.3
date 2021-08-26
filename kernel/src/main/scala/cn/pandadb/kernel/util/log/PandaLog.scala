@@ -71,7 +71,10 @@ class PandaLog(logPath: String, txWatcher: TransactionWatcher) extends LazyLoggi
       })
       txMap.values.foreach(_.commit())
       logger.info("............Recover db success............")
-      guardData.map(_.trim.toLong).max + 1
+      CommonUtils.cleanFileContent(undoLogPath)
+      CommonUtils.cleanFileContent(guardLogPath)
+      1L
+//      guardData.map(_.trim.toLong).max + 1
     }
     else {
       // normal start, clean undoLog and guardLog
