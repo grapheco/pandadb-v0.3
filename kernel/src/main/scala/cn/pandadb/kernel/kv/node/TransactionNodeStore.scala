@@ -133,15 +133,17 @@ class TransactionNodeStore(db: TransactionDB, logWriter:PandaLog) {
 
   def deleteByLabel(labelId: LabelId, tx: LynxTransaction): Unit = {
       val ptx = tx.asInstanceOf[PandaTransaction]
-      getNodesByLabelForLog(labelId, ptx.rocksTxMap(DBNameMap.nodeDB)).foreach(kv => {
+      val nTx = ptx.rocksTxMap(DBNameMap.nodeDB)
+      getNodesByLabelForLog(labelId, nTx).foreach(kv => {
         logWriter.writeUndoLog(ptx.id, DBNameMap.nodeDB, kv._1, kv._2)
       })
 
       val batch = new WriteBatch()
-      batch.deleteRange(KeyConverter.toNodeKey(labelId, 0.toLong),
-        KeyConverter.toNodeKey(labelId, -1.toLong))
-      ptx.rocksTxMap(DBNameMap.nodeDB).rebuildFromWriteBatch(batch)
+      getNodesByLabel(labelId, nTx).foreach(f => {
+        batch.delete(KeyConverter.toNodeKey(labelId, f.id))
+      })
 
+      nTx.rebuildFromWriteBatch(batch)
   }
 
 

@@ -13,7 +13,7 @@ import org.rocksdb.{ReadOptions, Transaction, TransactionDB, WriteBatch, WriteOp
  * @Date: Created at 11:13 上午 2021/8/9
  * @Modified By:
  */
-class TransactionNodeLabelStore(db: TransactionDB, logWriter:PandaLog) {
+class TransactionNodeLabelStore(db: TransactionDB, logWriter: PandaLog) {
   val readOptions = new ReadOptions()
 
   def set(nodeId: NodeId, labelId: LabelId, tx: LynxTransaction): Unit = {
@@ -30,19 +30,21 @@ class TransactionNodeLabelStore(db: TransactionDB, logWriter:PandaLog) {
     val ptx = tx.asInstanceOf[PandaTransaction]
     logWriter.writeUndoLog(ptx.id, DBNameMap.nodeLabelDB, key, db.get(key))
     ptx.rocksTxMap(DBNameMap.nodeLabelDB).delete(key)
-    }
+  }
 
-  def delete(nodeId: NodeId, tx: LynxTransaction): Unit ={
-      val ptx = tx.asInstanceOf[PandaTransaction]
-      getAllForLog(nodeId, ptx.rocksTxMap(DBNameMap.nodeLabelDB)).foreach(key => {
-        logWriter.writeUndoLog(ptx.id, DBNameMap.nodeLabelDB, key, null)
-      })
+  def delete(nodeId: NodeId, tx: LynxTransaction): Unit = {
+    val ptx = tx.asInstanceOf[PandaTransaction]
+    val labelTx = ptx.rocksTxMap(DBNameMap.nodeLabelDB)
+    getAllForLog(nodeId, labelTx).foreach(key => {
+      logWriter.writeUndoLog(ptx.id, DBNameMap.nodeLabelDB, key, null)
+    })
 
-      val batch = new WriteBatch()
-      batch.deleteRange(KeyConverter.toNodeLabelKey(nodeId, 0),
-        KeyConverter.toNodeLabelKey(nodeId, -1))
-      ptx.rocksTxMap(DBNameMap.nodeLabelDB).rebuildFromWriteBatch(batch)
+    val batch = new WriteBatch()
+    getAll(nodeId, labelTx).foreach(lid => {
+      batch.delete(KeyConverter.toNodeLabelKey(nodeId, lid))
+    })
 
+    labelTx.rebuildFromWriteBatch(batch)
   }
 
   def get(nodeId: NodeId, tx: Transaction): Option[LabelId] = {
@@ -62,7 +64,7 @@ class TransactionNodeLabelStore(db: TransactionDB, logWriter:PandaLog) {
     val keyPrefix = KeyConverter.toNodeLabelKey(nodeId)
     val iter = tx.getIterator(readOptions)
     iter.seek(keyPrefix)
-    new Iterator[LabelId] (){
+    new Iterator[LabelId]() {
       override def hasNext: Boolean = iter.isValid && iter.key().startsWith(keyPrefix)
 
       override def next(): LabelId = {
@@ -77,7 +79,7 @@ class TransactionNodeLabelStore(db: TransactionDB, logWriter:PandaLog) {
     val keyPrefix = KeyConverter.toNodeLabelKey(nodeId)
     val iter = tx.getIterator(readOptions)
     iter.seek(keyPrefix)
-    new Iterator[Array[Byte]] (){
+    new Iterator[Array[Byte]]() {
       override def hasNext: Boolean = iter.isValid && iter.key().startsWith(keyPrefix)
 
       override def next(): Array[Byte] = {
@@ -92,13 +94,13 @@ class TransactionNodeLabelStore(db: TransactionDB, logWriter:PandaLog) {
   def getNodesCount(tx: Transaction): Long = {
     val iter = tx.getIterator(readOptions)
     iter.seekToFirst()
-    var count:Long = 0
-    var currentNode:Long = 0
-    while (iter.isValid){
+    var count: Long = 0
+    var currentNode: Long = 0
+    while (iter.isValid) {
       val id = ByteUtils.getLong(iter.key(), 0)
-      if (currentNode != id){
+      if (currentNode != id) {
         currentNode = id
-        count +=1
+        count += 1
       }
       iter.next()
     }

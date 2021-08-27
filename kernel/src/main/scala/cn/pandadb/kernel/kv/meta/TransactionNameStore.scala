@@ -41,8 +41,11 @@ trait TransactionNameStore {
 
   def id(labelName: String): Option[Int] = mapString2Int.get(labelName)
 
-  def getOrAddId(labelName: String, tx: LynxTransaction): Int =
-    id(labelName).getOrElse(addToDB(labelName, tx))
+  def getOrAddId(labelName: String, tx: LynxTransaction): Int = {
+    this.synchronized{
+      id(labelName).getOrElse(addToDB(labelName, tx))
+    }
+  }
 
   def ids(keys: Set[String], tx: LynxTransaction): Set[Int] = {
     val newIds = keys.map {

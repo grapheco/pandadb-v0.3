@@ -134,7 +134,7 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
   }
 
   override def deleteFreeNodes(nodesIDs: Seq[LynxId], tx: Option[LynxTransaction]): Unit = {
-    nodeStore.deleteNodes(nodesIDs.map(_.asInstanceOf[NodeId].value).toIterator, tx.get, logWriter)
+    nodeStore.deleteNodes(nodesIDs.map(_.asInstanceOf[NodeId].value).toIterator, tx.get, logWriter, statistics)
   }
 
   override def deleteRelation(tx: Option[LynxTransaction], id: Id): Unit = {

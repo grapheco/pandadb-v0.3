@@ -1,6 +1,7 @@
 package cn.pandadb.kernel.store
 
-import cn.pandadb.kernel.util.log.{PandaLog}
+import cn.pandadb.kernel.kv.meta.TransactionStatistics
+import cn.pandadb.kernel.util.log.PandaLog
 import cn.pandadb.kernel.util.serializer.BaseSerializer
 import org.grapheco.lynx.{LynxId, LynxNode, LynxNull, LynxTransaction, LynxValue}
 import org.rocksdb.{Transaction, WriteOptions}
@@ -192,7 +193,7 @@ trait TransactionNodeStoreSPI {
 
   def deleteNode(nodeId: Long, tx: LynxTransaction): Unit;
 
-  def deleteNodes(nodeIDs: Iterator[Long], tx: LynxTransaction, logWriter: PandaLog): Unit;
+  def deleteNodes(nodeIDs: Iterator[Long], tx: LynxTransaction, logWriter: PandaLog, statistics: TransactionStatistics): Unit;
 
   def serializeLabelIdsToBytes(labelIds: Array[Int]): Array[Byte] = {
     BaseSerializer.array2Bytes(labelIds)

@@ -1,12 +1,14 @@
 package cn.pandadb.kernel.kv.node
 
 import cn.pandadb.kernel.kv.KeyConverter
-import cn.pandadb.kernel.kv.meta.{IdGenerator, NodeLabelNameStore, PropertyNameStore, TransactionIdGenerator, TransactionNodeLabelNameStore, TransactionPropertyNameStore}
+import cn.pandadb.kernel.kv.meta.{IdGenerator, NodeLabelNameStore, PropertyNameStore, TransactionIdGenerator, TransactionNodeLabelNameStore, TransactionPropertyNameStore, TransactionStatistics}
 import cn.pandadb.kernel.store.{StoredNodeWithProperty, TransactionNodeStoreSPI}
 import cn.pandadb.kernel.transaction.{DBNameMap, PandaTransaction}
-import cn.pandadb.kernel.util.log.{PandaLog}
+import cn.pandadb.kernel.util.log.PandaLog
 import org.grapheco.lynx.LynxTransaction
 import org.rocksdb.{Transaction, TransactionDB, WriteBatch, WriteOptions}
+
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * @Author: Airzihao
@@ -156,30 +158,45 @@ class TransactionNodeStoreAPI(nodeDB: TransactionDB,
     nodeLabelStore.delete(nodeId, tx)
   }
 
-  override def deleteNodes(nodeIDs: Iterator[Long], tx: LynxTransaction, logWriter: PandaLog): Unit = {
+  // TransactionDB not support deleteRange, maybe in the future will support.
+  override def deleteNodes(nodeIDs: Iterator[Long], tx: LynxTransaction, logWriter: PandaLog, statistics: TransactionStatistics): Unit = {
     val ptx = tx.asInstanceOf[PandaTransaction]
 
     val nodesWB = new WriteBatch()
     val labelWB = new WriteBatch()
+
+    var nodeCount: Int = 0
+    val nodeLabelCount: ArrayBuffer[(Int, Int)] = ArrayBuffer()
+
+    val nodeTx = ptx.rocksTxMap(DBNameMap.nodeDB)
+    val nodeLabelTx = ptx.rocksTxMap(DBNameMap.nodeLabelDB)
+
     nodeIDs.foreach(nid => {
-      nodeLabelStore.getAllForLog(nid, ptx.rocksTxMap(DBNameMap.nodeLabelDB)).foreach(key => {
+      nodeLabelStore.getAllForLog(nid, nodeLabelTx).foreach(key => {
         logWriter.writeUndoLog(ptx.id, DBNameMap.nodeLabelDB, key, null)
       })
-      nodeLabelStore.getAll(nid, ptx.rocksTxMap(DBNameMap.nodeLabelDB)).foreach(lid => {
-        nodeStore.getNodesByLabelForLog(lid,ptx.rocksTxMap(DBNameMap.nodeDB)).foreach(kv => {
+      nodeLabelStore.getAll(nid, nodeLabelTx).foreach(lid => {
+        nodeStore.getNodesByLabelForLog(lid, nodeTx).foreach(kv => {
           logWriter.writeUndoLog(ptx.id, DBNameMap.nodeDB, kv._1, kv._2)
         })
       })
 
       nodeLabelStore.getAll(nid, tx.asInstanceOf[PandaTransaction].rocksTxMap(DBNameMap.nodeLabelDB)).foreach(lid => {
         nodesWB.delete(KeyConverter.toNodeKey(lid, nid))
+        nodeCount += 1
       })
-      labelWB.deleteRange(KeyConverter.toNodeLabelKey(nid, 0),
-        KeyConverter.toNodeLabelKey(nid, -1))
+
+      getNodeLabelsById(nid, tx).foreach(labelId => {
+        labelWB.delete(KeyConverter.toNodeLabelKey(nid, labelId))
+        nodeLabelCount.append((labelId, 1))
+      })
     })
 
-    ptx.rocksTxMap(DBNameMap.nodeDB).rebuildFromWriteBatch(nodesWB)
-    ptx.rocksTxMap(DBNameMap.nodeLabelDB).rebuildFromWriteBatch(labelWB)
+    nodeTx.rebuildFromWriteBatch(nodesWB)
+    nodeLabelTx.rebuildFromWriteBatch(labelWB)
+    statistics.decreaseNodes(nodeCount)
+    nodeLabelCount.groupBy(f => f._1).map(f => (f._1, f._2.length))
+      .foreach(f => statistics.decreaseNodeLabelCount(f._1, f._2))
   }
 
   override def deleteNodesByLabel(labelId: Int, tx: LynxTransaction): Unit = {
