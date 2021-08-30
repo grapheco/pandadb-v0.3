@@ -1,6 +1,7 @@
 package cn.pandadb.kernel.util.serializer
 
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
+import org.grapheco.lynx.LynxDate
 import org.grapheco.lynx.cypherplus.Blob
 
 import java.io.ByteArrayOutputStream
@@ -174,6 +175,7 @@ trait BaseSerializer {
       case s: Double => _writeDouble(s, byteBuf)
       case s: Float => _writeFloat(s, byteBuf)
       case s: Boolean => _writeBoolean(s, byteBuf)
+      case s: LynxDate => _writeDate(s.value, byteBuf)
     }
   }
 
@@ -186,6 +188,7 @@ trait BaseSerializer {
       case SerialzerDataType.DOUBLE => byteBuf.readDouble()
       case SerialzerDataType.FLOAT => byteBuf.readFloat()
       case SerialzerDataType.BOOLEAN => byteBuf.readBoolean()
+      case SerialzerDataType.DATE => _readDate(byteBuf)
     }
   }
 
@@ -216,15 +219,6 @@ trait BaseSerializer {
     byteBuf.writeInt(nano)
     _writeString(zoneId, byteBuf)
   }
-
-//  protected def _readDateTime(byteBuf: ByteBuf): ZonedDateTime = {
-//    val epochSecondUTC: Long = byteBuf.readLong()
-//    val nano: Int = byteBuf.readInt()
-//    val zoneStoreType = byteBuf.readByte()
-//    val zone: String = _readString(byteBuf)
-//    val zoneId: ZoneId = LynxDateTimeUtil.parseZone(zone)
-//    ZonedDateTime.ofInstant(Instant.ofEpochSecond(epochSecondUTC, nano), zoneId)
-//  }
 
   protected def _writeLocalDateTime(value: LocalDateTime, byteBuf: ByteBuf): Unit = {
     byteBuf.writeByte(SerialzerDataType.LOCAL_DATE_TIME.id.toByte)

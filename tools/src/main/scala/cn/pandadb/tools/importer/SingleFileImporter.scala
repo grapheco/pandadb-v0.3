@@ -1,6 +1,7 @@
 package cn.pandadb.tools.importer
 
 import cn.pandadb.kernel.PDBMetaData
+import cn.pandadb.kernel.kv.value.LynxDateUtil
 
 import java.io.{File, FileInputStream}
 import java.util.concurrent.{Executors, ScheduledExecutorService}
@@ -45,7 +46,8 @@ trait SingleFileImporter extends LazyLogging{
           case "boolean" => lineArr(index).toBoolean
           case "double" => lineArr(index).toDouble
           case "string" => lineArr(index).replace("\"", "")
-          case "date" => lineArr(index).replace("\"", "")
+//          case "date" => LynxDateUtil.parse(lineArr(index).replace("\"", ""))
+          case "date" => LynxDateUtil.parse(lineArr(index))
           case "long[]" => lineArr(index).trim.replace("[","")
             .replace("]","")
             .split(cmd.arrayDelimeter)
