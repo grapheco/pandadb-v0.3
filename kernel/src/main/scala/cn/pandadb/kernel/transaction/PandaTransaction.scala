@@ -31,7 +31,7 @@ class PandaTransaction(val id: String, val rocksTxMap: Map[String, Transaction],
 
     try {
       //execute the query
-      val isWriteCypher = CommonUtils.isWriteCypher(cypherStat)
+      val isWriteCypher = CommonUtils.isWriteCypher(cypherStat.toLowerCase())
       isContainWriteCypher.append(isWriteCypher)
 
       if (isWriteCypher) txWatcher.increase()
