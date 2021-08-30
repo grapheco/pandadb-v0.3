@@ -46,7 +46,6 @@ trait SingleFileImporter extends LazyLogging{
           case "boolean" => lineArr(index).toBoolean
           case "double" => lineArr(index).toDouble
           case "string" => lineArr(index).replace("\"", "")
-//          case "date" => LynxDateUtil.parse(lineArr(index).replace("\"", ""))
           case "date" => LynxDateUtil.parse(lineArr(index))
           case "long[]" => lineArr(index).trim.replace("[","")
             .replace("]","")

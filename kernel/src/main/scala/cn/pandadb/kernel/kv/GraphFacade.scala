@@ -19,9 +19,6 @@ class GraphFacade(nodeStore: NodeStoreSPI,
                   onClose: => Unit
                  ) extends LazyLogging with GraphService with GraphModelPlus {
 
-  //  val runner = new CypherRunner(this){
-  //    override protected lazy val procedures: ProcedureRegistry = PandaFunctions.register()
-  //  }
   val runner = new CypherRunnerPlus(this) {
     procedures.asInstanceOf[DefaultProcedureRegistry].registerAnnotatedClass(classOf[DefaultBlobFunctions])
   }
