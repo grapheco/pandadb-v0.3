@@ -6,13 +6,15 @@ import cn.pandadb.kernel.kv.meta.{Statistics, TransactionStatistics}
 import cn.pandadb.kernel.kv.value.ValueMappings
 import cn.pandadb.kernel.store._
 import cn.pandadb.kernel.transaction.{DBNameMap, PandaTransaction}
-import cn.pandadb.kernel.util.log.{PandaLog}
+import cn.pandadb.kernel.util.log.PandaLog
 import com.typesafe.scalalogging.LazyLogging
 import org.grapheco.lynx._
 import org.grapheco.lynx.cypherplus._
 import org.opencypher.v9_0.expressions
-import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, SemanticDirection}
+import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, Range, SemanticDirection}
 
+import scala.collection.mutable.ArrayBuffer
+import scala.util.control.Breaks.{break, breakable}
 
 class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
                              relationStore: TransactionRelationStoreSPI,
@@ -20,15 +22,16 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
                              statistics: TransactionStatistics,
                              logWriter: PandaLog,
                              onClose: => Unit
-                 ) extends LazyLogging with TransactionGraphService with GraphModelPlus {
+                            ) extends LazyLogging with TransactionGraphService with GraphModelPlus {
 
   val runner = new CypherRunnerPlus(this) {
     procedures.asInstanceOf[DefaultProcedureRegistry].registerAnnotatedClass(classOf[DefaultBlobFunctions])
   }
 
-  def getLogWriter(): PandaLog ={
+  def getLogWriter(): PandaLog = {
     logWriter
   }
+
   override def getIndexes(tx: Option[LynxTransaction]): Array[(LabelName, List[PropertyKeyName])] = {
     ???
   }
@@ -39,7 +42,7 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
   }
 
   override def close(): Unit = {
-//    statistics.flush(null) // todo: flush
+    //    statistics.flush(null) // todo: flush
     statistics.close()
     nodeStore.close()
     relationStore.close()
@@ -251,10 +254,10 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
     statistics.flush(tx.get)
   }
 
-//  //FIXME: expensive time cost
-//  private def init(): Unit = {
-//    statistics.init()
-//  }
+  //  //FIXME: expensive time cost
+  //  private def init(): Unit = {
+  //    statistics.init()
+  //  }
 
   def snapshot(): Unit = {
     //TODO: transaction safe
@@ -498,6 +501,38 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
       .filter(trip => endNodeFilter.matches(trip.endNode))
   }
 
+  def paths(nodeId: LynxId,
+            relationshipFilter: RelationshipFilter,
+            direction: SemanticDirection, tx: Option[LynxTransaction]): Iterator[PathTriple] = {
+    nodeAt(nodeId, tx).map(
+      node => {
+        if (relationshipFilter.types.nonEmpty) {
+          relationshipFilter.types.map(relTypeNameMap).map(
+            _.map(
+              relType =>
+                direction match {
+                  case SemanticDirection.INCOMING => relationStore.findInRelations(node.longId, Some(relType), tx.get).map(r => (node, r, r.from))
+                  case SemanticDirection.OUTGOING => relationStore.findOutRelations(node.longId, Some(relType), tx.get).map(r => (node, r, r.to))
+                  case SemanticDirection.BOTH => relationStore.findInRelations(node.longId, Some(relType), tx.get).map(r => (node, r, r.from)) ++
+                    relationStore.findOutRelations(node.longId, Some(relType), tx.get).map(r => (node, r, r.to))
+                }
+            ).getOrElse(Iterator.empty)
+          )
+        } else {
+          Seq(direction match {
+            case SemanticDirection.INCOMING => relationStore.findInRelations(node.longId, tx.get).map(r => (node, r, r.from))
+            case SemanticDirection.OUTGOING => relationStore.findOutRelations(node.longId, tx.get).map(r => (node, r, r.to))
+            case SemanticDirection.BOTH => relationStore.findInRelations(node.longId, tx.get).map(r => (node, r, r.from)) ++
+              relationStore.findOutRelations(node.longId, tx.get).map(r => (node, r, r.to))
+          })
+        }
+      }
+    )
+      .getOrElse(Iterator.empty)
+      .reduce(_ ++ _)
+      .map(p => PathTriple(p._1, relationAt(p._2.id, tx).orNull, nodeAt(p._3, tx).orNull))
+  }
+
   override def expand(nodeId: LynxId, direction: SemanticDirection, tx: Option[LynxTransaction]): Iterator[PathTriple] = {
     val rels = direction match {
       case SemanticDirection.INCOMING => relationStore.findInRelations(nodeId.value.asInstanceOf[Long], tx.get).map(r => {
@@ -650,7 +685,7 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
 
   override def setNodeProperty(nodeId: LynxId, data: Array[(String, Any)], cleanExistProperties: Boolean = false, tx: Option[LynxTransaction]): Option[LynxNode] = {
     val node = nodeAt(nodeId, tx)
-    if (node.isDefined){
+    if (node.isDefined) {
       if (cleanExistProperties) {
         node.get.properties.keys.foreach(key => nodeRemoveProperty(tx, nodeId.value.asInstanceOf[Long], key))
       }
@@ -725,7 +760,52 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
 
   override def estimateRelationship(relType: String): Id = statistics.getRelationTypeCount(relationStore.getRelationTypeId(relType).get).get
 
-  override def pathsWithLength(startNodeFilter: NodeFilter, relationshipFilter: RelationshipFilter, endNodeFilter: NodeFilter, direction: SemanticDirection, length: Option[Option[expressions.Range]], tx: Option[LynxTransaction]): Iterator[Seq[PathTriple]] = ???
+  override def pathsWithLength(startNodeFilter: NodeFilter, relationshipFilter: RelationshipFilter, endNodeFilter: NodeFilter, direction: SemanticDirection, length: Option[Option[expressions.Range]], tx: Option[LynxTransaction]): Iterator[Seq[PathTriple]] = {
+    def getDegreeRelationship(lower: Int, upper: Int): Iterator[Seq[PathTriple]] = {
+      val searchedPaths = ArrayBuffer[Iterator[Seq[PathTriple]]]()
+
+      for (degree <- lower to upper) {
+        degree match {
+          case 0 => {
+            val res = nodes(startNodeFilter, tx).map(node => Seq(PathTriple(node, null, node)))
+            searchedPaths += res
+          }
+          case 1 => {
+            val res = nodes(startNodeFilter, tx).flatMap(f => paths(f.id, relationshipFilter, endNodeFilter, direction, tx).map(Seq(_)))
+            searchedPaths += res
+          }
+          case n => {
+            val middle = n - 1
+            var left = nodes(startNodeFilter, tx).flatMap(f => paths(f.id, relationshipFilter, direction, tx)).map(Seq(_))
+              for (i <- 1 to middle) {
+                val tmp = left.flatMap(leftTriple => {
+                  val rels = paths(leftTriple.last.endNode.id, relationshipFilter, direction, tx)
+                    .filter(f => !leftTriple.map(l => l.storedRelation).contains(f.storedRelation))
+
+                  rels.map(f => leftTriple ++ Seq(f))
+                })
+                left = tmp
+              }
+            searchedPaths += left.filter(f => endNodeFilter.matches(f.last.endNode))
+          }
+        }
+      }
+      searchedPaths.foldLeft(Iterator[Seq[PathTriple]]())((res, iterator) => res ++ iterator)
+    }
+
+
+    length match {
+      case Some(None) => getDegreeRelationship(1, Int.MaxValue)
+      case Some(Some(range)) => {
+        range match {
+          case Range(None, None) => getDegreeRelationship(1, Int.MaxValue)
+          case Range(lower, None) => getDegreeRelationship(lower.get.value.toInt, Int.MaxValue)
+          case Range(None, upper) => getDegreeRelationship(1, upper.get.value.toInt)
+          case Range(lower, upper) => getDegreeRelationship(lower.get.value.toInt, upper.get.value.toInt)
+        }
+      }
+    }
+  }
 
   override def copyNode(srcNode: LynxNode, maskNode: LynxNode, tx: Option[LynxTransaction]): Seq[LynxValue] = ???
 

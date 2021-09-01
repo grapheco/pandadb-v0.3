@@ -1,3 +1,9 @@
-id:ID,type:LABEL,MDAT:date,LING:string[],DIV
-1,_doc,2018/07/25,Eukaryota|Metazoa|Ecdysozoa,INV
-2,_doc,2017/06/17,Pectinoidea,CON
+pandaId:ID,pandaLabel:LABEL,level,name,TaxID,Rank,Node,parent,children:string[]
+1,Archaea,1,Archaea,2157,superkingdom,9,0,28890|29294|48510|93506|1783275|1783276|1935019|1935183|2283796
+2,Archaea,2,Euryarchaeota,28890,phylum,12,1,33867|68359|115531|171536|183968|183980|183988|1775750|1980645|2283794|2290931|2545688
+3,Archaea,3,Euryarchaeota incertae sedis,33867,no rank,9,2,95864|124423|171539|215777|749710|749852|1052818|1052821|2077315
+4,Archaea,4,candidate division Sediment Archaea-1,95864,clade,1,3,97709
+5,Archaea,5,environmental samples,97709,no rank,7,4,95860|95861|97710|97711|97712|97713|97714
+6,Archaea,6,uncultured archaeon CLEAR-15,95860,species,0,5
+7,Archaea,6,uncultured archaeon CLEAR-24,95861,species,0,5
+8,Archaea,6,uncultured archaeon ACE-6,97710,species,0,5
