@@ -2,8 +2,8 @@ package cn.pandadb.kernel.util.log
 
 import java.io.{BufferedWriter, File, FileWriter, RandomAccessFile}
 
-import cn.pandadb.kernel.transaction.{DBNameMap, TransactionWatcher}
-import cn.pandadb.kernel.util.CommonUtils
+import cn.pandadb.kernel.transaction.TransactionWatcher
+import cn.pandadb.kernel.util.{CommonUtils, DBNameMap}
 import com.typesafe.scalalogging.LazyLogging
 import org.rocksdb.Transaction
 

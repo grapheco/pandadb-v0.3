@@ -4,6 +4,7 @@ import cn.pandadb.kernel.kv.KeyConverter.NodeId
 import cn.pandadb.kernel.kv.{KeyConverter, RocksDBStorage}
 import cn.pandadb.kernel.kv.meta.{IdGenerator, NodeLabelNameStore, PropertyNameStore}
 import cn.pandadb.kernel.store.{NodeStoreSPI, StoredNodeWithProperty}
+import cn.pandadb.kernel.util.DBNameMap
 import org.rocksdb.{WriteBatch, WriteOptions}
 
 
@@ -27,7 +28,7 @@ class NodeStoreAPI(nodeDBPath: String, nodeDBConfigPath: String,
   val NONE_LABEL_ID: Int = 0
 
   def this(dbPath: String, rocksdbCfgPath: String = "default"){
-    this(s"${dbPath}/nodes", rocksdbCfgPath, s"${dbPath}/nodeLabel", rocksdbCfgPath, s"${dbPath}/nodeMeta", rocksdbCfgPath)
+    this(s"${dbPath}/${DBNameMap.nodeDB}", rocksdbCfgPath, s"${dbPath}/${DBNameMap.nodeLabelDB}", rocksdbCfgPath, s"${dbPath}/${DBNameMap.nodeMetaDB}", rocksdbCfgPath)
   }
 
   override def allLabels(): Array[String] = nodeLabelName.mapString2Int.keys.toArray

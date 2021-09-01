@@ -2,7 +2,6 @@ package cn.pandadb.kernel.util
 
 import java.io.{File, FileWriter}
 
-import cn.pandadb.kernel.transaction.DBNameMap
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.util.matching.Regex

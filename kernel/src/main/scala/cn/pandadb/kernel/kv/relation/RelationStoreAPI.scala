@@ -3,6 +3,7 @@ package cn.pandadb.kernel.kv.relation
 import cn.pandadb.kernel.kv.RocksDBStorage
 import cn.pandadb.kernel.kv.meta.{IdGenerator, NodeLabelNameStore, PropertyNameStore, RelationTypeNameStore}
 import cn.pandadb.kernel.store.{RelationStoreSPI, StoredRelation, StoredRelationWithProperty}
+import cn.pandadb.kernel.util.DBNameMap
 
 /**
  * @ClassName RelationStoreAPI
@@ -31,11 +32,11 @@ class RelationStoreAPI(relationDBPath: String, relationConfigPath: String,
   private val relationIdGenerator = new IdGenerator(relationDB, 200)
 
   def this(dbPath: String, rocksdbCfgPath: String = "default"){
-    this(s"${dbPath}/rels", rocksdbCfgPath,
-      s"${dbPath}/inEdge", rocksdbCfgPath,
-      s"${dbPath}/outEdge", rocksdbCfgPath,
-      s"${dbPath}/relLabelIndex", rocksdbCfgPath,
-      s"${dbPath}/relationMeta", rocksdbCfgPath)
+    this(s"${dbPath}/${DBNameMap.relationDB}", rocksdbCfgPath,
+      s"${dbPath}/${DBNameMap.inRelationDB}", rocksdbCfgPath,
+      s"${dbPath}/${DBNameMap.outRelationDB}", rocksdbCfgPath,
+      s"${dbPath}/${DBNameMap.relationLabelDB}", rocksdbCfgPath,
+      s"${dbPath}/${DBNameMap.relationMetaDB}", rocksdbCfgPath)
   }
 
   override def allRelationTypes(): Array[String] = relationTypeNameStore.mapString2Int.keys.toArray

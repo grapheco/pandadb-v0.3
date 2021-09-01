@@ -3,7 +3,7 @@ package cn.pandadb.kernel
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter, RocksDBStorage}
-import cn.pandadb.kernel.transaction.DBNameMap
+import cn.pandadb.kernel.util.DBNameMap
 import cn.pandadb.kernel.util.serializer.BaseSerializer
 import org.rocksdb.FlushOptions
 

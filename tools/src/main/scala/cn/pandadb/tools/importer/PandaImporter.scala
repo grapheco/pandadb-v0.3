@@ -9,7 +9,7 @@ import java.util.Date
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
 
-import cn.pandadb.kernel.transaction.DBNameMap
+import cn.pandadb.kernel.util.DBNameMap
 
 /**
  * @Author: Airzihao

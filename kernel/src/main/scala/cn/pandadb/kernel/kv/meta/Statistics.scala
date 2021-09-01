@@ -1,8 +1,9 @@
 package cn.pandadb.kernel.kv.meta
 
 import cn.pandadb.kernel.kv.db.KeyValueDB
-import cn.pandadb.kernel.kv.meta.Statistics.{PROPERTYCOUNTBYINDEX, NODECOUNTBYLABEL, NODESCOUNT, RELATIONSCOUNT, RELATIONCOUNTBYTYPE, emptyLong}
+import cn.pandadb.kernel.kv.meta.Statistics.{NODECOUNTBYLABEL, NODESCOUNT, PROPERTYCOUNTBYINDEX, RELATIONCOUNTBYTYPE, RELATIONSCOUNT, emptyLong}
 import cn.pandadb.kernel.kv.{ByteUtils, RocksDBStorage}
+import cn.pandadb.kernel.util.DBNameMap
 
 import scala.collection.mutable
 
@@ -19,7 +20,7 @@ object Statistics {
 
 class Statistics(path: String, rocksdbCfgPath: String = "default") {
 
-  val db: KeyValueDB = RocksDBStorage.getDB(s"${path}/statistics", rocksdbConfigPath = rocksdbCfgPath)
+  val db: KeyValueDB = RocksDBStorage.getDB(s"${path}/${DBNameMap.statisticsDB}", rocksdbConfigPath = rocksdbCfgPath)
 
   private var _allNodesCount: Long = -1
   private var _allRelationCount: Long = -1

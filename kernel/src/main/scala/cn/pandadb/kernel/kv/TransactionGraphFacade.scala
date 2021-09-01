@@ -5,7 +5,7 @@ import cn.pandadb.kernel.kv.index.{IndexStoreAPI, TransactionIndexStoreAPI}
 import cn.pandadb.kernel.kv.meta.{Statistics, TransactionStatistics}
 import cn.pandadb.kernel.kv.value.ValueMappings
 import cn.pandadb.kernel.store._
-import cn.pandadb.kernel.transaction.{DBNameMap, PandaTransaction}
+import cn.pandadb.kernel.transaction.PandaTransaction
 import cn.pandadb.kernel.util.log.PandaLog
 import com.typesafe.scalalogging.LazyLogging
 import org.grapheco.lynx._
