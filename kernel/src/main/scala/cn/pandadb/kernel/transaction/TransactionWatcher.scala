@@ -5,7 +5,7 @@ import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
 import java.util.concurrent.atomic.AtomicInteger
 
-import cn.pandadb.kernel.util.CommonUtils
+import cn.pandadb.kernel.util.{CommonUtils, DBNameMap}
 
 /**
  * @program: pandadb-v0.3

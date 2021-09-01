@@ -3,7 +3,8 @@ package cn.pandadb.kernel.kv.meta
 import cn.pandadb.kernel.kv.db.KeyValueDB
 import cn.pandadb.kernel.kv.meta.Statistics._
 import cn.pandadb.kernel.kv.{ByteUtils, RocksDBStorage, TransactionRocksDBStorage}
-import cn.pandadb.kernel.transaction.{DBNameMap, PandaTransaction}
+import cn.pandadb.kernel.transaction.PandaTransaction
+import cn.pandadb.kernel.util.DBNameMap
 import cn.pandadb.kernel.util.log.PandaLog
 import org.grapheco.lynx.LynxTransaction
 import org.rocksdb.{Transaction, TransactionDB, WriteOptions}

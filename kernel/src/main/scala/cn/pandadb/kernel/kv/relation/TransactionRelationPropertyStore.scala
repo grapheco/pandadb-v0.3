@@ -2,7 +2,8 @@ package cn.pandadb.kernel.kv.relation
 
 import cn.pandadb.kernel.kv.KeyConverter
 import cn.pandadb.kernel.store.{StoredRelation, StoredRelationWithProperty}
-import cn.pandadb.kernel.transaction.{DBNameMap, PandaTransaction}
+import cn.pandadb.kernel.transaction.PandaTransaction
+import cn.pandadb.kernel.util.DBNameMap
 import cn.pandadb.kernel.util.log.PandaLog
 import cn.pandadb.kernel.util.serializer.RelationSerializer
 import org.grapheco.lynx.LynxTransaction

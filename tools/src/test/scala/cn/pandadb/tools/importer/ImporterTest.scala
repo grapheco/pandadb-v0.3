@@ -1,8 +1,11 @@
 package cn.pandadb.tools.importer
 
+import java.io.File
+
 import cn.pandadb.kernel.kv.RocksDBStorage
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
+import org.apache.commons.io.FileUtils
 import org.junit.Test
 
 /**
@@ -25,6 +28,7 @@ class ImporterTest {
 
   @Test
   def importData(): Unit = {
+    FileUtils.deleteDirectory(new File("./src/test/output/testDB") )
     val dbPath = "./src/test/output/testDB"
     val importCmd = s"./importer-panda.sh --db-path=$dbPath --nodes=./src/test/input/testdata.csv --delimeter=, --array-delimeter=|".split(" ")
     PandaImporter.main(importCmd)

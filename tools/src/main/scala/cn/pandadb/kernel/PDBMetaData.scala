@@ -3,6 +3,7 @@ package cn.pandadb.kernel
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter, RocksDBStorage}
+import cn.pandadb.kernel.util.DBNameMap
 import cn.pandadb.kernel.util.serializer.BaseSerializer
 import org.rocksdb.FlushOptions
 
@@ -35,8 +36,8 @@ object PDBMetaData {
     rocksDB.put("_typeIdManager".getBytes(), _typeIdManager.serialized)
     rocksDB.put("_labelIdManager".getBytes(), _labelIdManager.serialized)
 
-    val nodeMetaDB = RocksDBStorage.getDB(s"${dbPath}/nodeMeta")
-    val relMetaDB = RocksDBStorage.getDB(s"${dbPath}/relationMeta")
+    val nodeMetaDB = RocksDBStorage.getDB(s"${dbPath}/${DBNameMap.nodeMetaDB}")
+    val relMetaDB = RocksDBStorage.getDB(s"${dbPath}/${DBNameMap.relationMetaDB}")
     nodeMetaDB.put(KeyConverter.nodeIdGeneratorKeyToBytes(), ByteUtils.longToBytes(_nodeIdAllocator.get()))
     relMetaDB.put(KeyConverter.relationIdGeneratorKeyToBytes(), ByteUtils.longToBytes(_relationIdAllocator.get()))
     _labelIdManager.all.foreach{

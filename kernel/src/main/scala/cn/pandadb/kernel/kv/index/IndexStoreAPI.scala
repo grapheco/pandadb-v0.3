@@ -1,7 +1,8 @@
 package cn.pandadb.kernel.kv.index
 
-import cn.pandadb.kernel.kv.meta.{IdGenerator}
+import cn.pandadb.kernel.kv.meta.IdGenerator
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter, RocksDBStorage}
+import cn.pandadb.kernel.util.DBNameMap
 
 import scala.collection.mutable
 
@@ -29,7 +30,7 @@ class IndexStoreAPI(metaDBPath: String, metaDBConfigPath: String,
   private val fulltextIndexPathPrefix = fulltextIndexPath
 
   def this(dbPath: String, rocksdbCfgPath: String = "default") {
-    this(s"${dbPath}/indexMeta", rocksdbCfgPath, s"${dbPath}/index", rocksdbCfgPath, s"${dbPath}/index/fulltextIndex")
+    this(s"${dbPath}/${DBNameMap.indexMetaDB}", rocksdbCfgPath, s"${dbPath}/${DBNameMap.indexDB}", rocksdbCfgPath, s"${dbPath}/${DBNameMap.indexDB}/fulltextIndex")
   }
 
   def createIndex(label: Int, props: Array[Int], fulltext: Boolean = false): IndexId =

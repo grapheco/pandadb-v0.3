@@ -1,4 +1,4 @@
-package cn.pandadb.kernel.transaction
+package cn.pandadb.kernel.util
 
 object DBNameMap {
   val nodeDB = "node"
