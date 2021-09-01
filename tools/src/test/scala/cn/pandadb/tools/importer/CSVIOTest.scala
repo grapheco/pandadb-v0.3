@@ -24,4 +24,12 @@ class CSVIOTest {
     Array("1", "", "3", "[]").zip(csvLine.getAsArray).foreach(pair => Assert.assertEquals(pair._1, pair._2))
   }
 
+  @Test
+  def test3(): Unit = {
+    val line = ",,"
+    val csvLine = new CSVLine(line.split(","))
+    Array("", "", "").zip((csvLine.getAsArray)).foreach(pair => Assert.assertEquals(pair._1, pair._2))
+
+  }
+
 }

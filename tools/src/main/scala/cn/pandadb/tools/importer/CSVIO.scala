@@ -14,7 +14,7 @@ class CSVReader(file: File, spliter: String) {
   val source = Source.fromFile(file)
   val iter = source.getLines()
 
-  def getAsCSVLines: Iterator[CSVLine] = source.getLines().map(line => new CSVLine(line.split(spliter)))
+  def getAsCSVLines: Iterator[CSVLine] = source.getLines().map(line => new CSVLine(line.split(spliter, -1)))
   def close: Unit = source.close()
 }
 
