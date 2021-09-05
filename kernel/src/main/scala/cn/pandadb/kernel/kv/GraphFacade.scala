@@ -9,7 +9,9 @@ import com.typesafe.scalalogging.LazyLogging
 import org.grapheco.lynx._
 import org.grapheco.lynx.cypherplus._
 import org.opencypher.v9_0.expressions
-import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, SemanticDirection}
+import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, Range, SemanticDirection}
+
+import scala.collection.mutable.ArrayBuffer
 
 
 class GraphFacade(nodeStore: NodeStoreSPI,
@@ -494,6 +496,38 @@ class GraphFacade(nodeStore: NodeStoreSPI,
       .filter(trip => endNodeFilter.matches(trip.endNode))
   }
 
+  def middlePaths(nodeId: LynxId,
+            relationshipFilter: RelationshipFilter,
+            direction: SemanticDirection): Iterator[PathTriple] = {
+    nodeAt(nodeId).map(
+      node => {
+        if (relationshipFilter.types.nonEmpty) {
+          relationshipFilter.types.map(relTypeNameMap).map(
+            _.map(
+              relType =>
+                direction match {
+                  case SemanticDirection.INCOMING => relationStore.findInRelations(node.longId, Some(relType)).map(r => (node, r, r.from))
+                  case SemanticDirection.OUTGOING => relationStore.findOutRelations(node.longId, Some(relType)).map(r => (node, r, r.to))
+                  case SemanticDirection.BOTH => relationStore.findInRelations(node.longId, Some(relType)).map(r => (node, r, r.from)) ++
+                    relationStore.findOutRelations(node.longId, Some(relType)).map(r => (node, r, r.to))
+                }
+            ).getOrElse(Iterator.empty)
+          )
+        } else {
+          Seq(direction match {
+            case SemanticDirection.INCOMING => relationStore.findInRelations(node.longId).map(r => (node, r, r.from))
+            case SemanticDirection.OUTGOING => relationStore.findOutRelations(node.longId).map(r => (node, r, r.to))
+            case SemanticDirection.BOTH => relationStore.findInRelations(node.longId).map(r => (node, r, r.from)) ++
+              relationStore.findOutRelations(node.longId).map(r => (node, r, r.to))
+          })
+        }
+      }
+    )
+      .getOrElse(Iterator.empty)
+      .reduce(_ ++ _)
+      .map(p => PathTriple(p._1, relationAt(p._2.id).orNull, nodeAt(p._3).orNull))
+  }
+
   override def expand(nodeId: LynxId, direction: SemanticDirection, tx: Option[LynxTransaction]): Iterator[PathTriple] = {
     val rels = direction match {
       case SemanticDirection.INCOMING => relationStore.findInRelations(nodeId.value.asInstanceOf[Long]).map(r => {
@@ -719,9 +753,53 @@ class GraphFacade(nodeStore: NodeStoreSPI,
 
   override def estimateNodeProperty(propertyName: String, value: AnyRef): Id = 1
 
-  override def estimateRelationship(relType: String): Id = statistics.getRelationTypeCount(relationStore.getRelationTypeId(relType).get).get
+  override def estimateRelationship(relType: String): Id = 1
 
-  override def pathsWithLength(startNodeFilter: NodeFilter, relationshipFilter: RelationshipFilter, endNodeFilter: NodeFilter, direction: SemanticDirection, length: Option[Option[expressions.Range]], tx: Option[LynxTransaction]): Iterator[Seq[PathTriple]] = ???
+  override def pathsWithLength(startNodeFilter: NodeFilter, relationshipFilter: RelationshipFilter, endNodeFilter: NodeFilter, direction: SemanticDirection, length: Option[Option[expressions.Range]], tx: Option[LynxTransaction]): Iterator[Seq[PathTriple]] = {
+    def getDegreeRelationship(lower: Int, upper: Int): Iterator[Seq[PathTriple]] = {
+      val searchedPaths = ArrayBuffer[Iterator[Seq[PathTriple]]]()
+
+      for (degree <- lower to upper) {
+        degree match {
+          case 0 => {
+            val res = nodes(startNodeFilter, tx).map(node => Seq(PathTriple(node, null, node)))
+            searchedPaths += res
+          }
+          case 1 => {
+            val res = nodes(startNodeFilter, tx).flatMap(f => paths(f.id, relationshipFilter, endNodeFilter, direction).map(Seq(_)))
+            searchedPaths += res
+          }
+          case n => {
+            val middle = n - 1
+            var left = nodes(startNodeFilter, tx).flatMap(f => middlePaths(f.id, relationshipFilter, direction)).map(Seq(_))
+            for (i <- 1 to middle) {
+              val tmp = left.flatMap(leftTriple => {
+                val rels = middlePaths(leftTriple.last.endNode.id, relationshipFilter, direction)
+                  .filter(f => !leftTriple.map(l => l.storedRelation).contains(f.storedRelation))
+
+                rels.map(f => leftTriple ++ Seq(f))
+              })
+              left = tmp
+            }
+            searchedPaths += left.filter(f => endNodeFilter.matches(f.last.endNode))
+          }
+        }
+      }
+      searchedPaths.foldLeft(Iterator[Seq[PathTriple]]())((res, iterator) => res ++ iterator)
+    }
+
+    length match {
+      case Some(None) => getDegreeRelationship(1, Int.MaxValue)
+      case Some(Some(range)) => {
+        range match {
+          case Range(None, None) => getDegreeRelationship(1, Int.MaxValue)
+          case Range(lower, None) => getDegreeRelationship(lower.get.value.toInt, Int.MaxValue)
+          case Range(None, upper) => getDegreeRelationship(1, upper.get.value.toInt)
+          case Range(lower, upper) => getDegreeRelationship(lower.get.value.toInt, upper.get.value.toInt)
+        }
+      }
+    }
+  }
 
   override def copyNode(srcNode: LynxNode, maskNode: LynxNode, tx: Option[LynxTransaction]): Seq[LynxValue] = ???
 

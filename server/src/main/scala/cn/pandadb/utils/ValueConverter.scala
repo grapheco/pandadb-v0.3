@@ -3,7 +3,7 @@ package cn.pandadb.utils
 import java.time.LocalDate
 
 import cn.pandadb.hipporpc.values._
-import cn.pandadb.kernel.store.{PandaNode, PandaRelationship}
+import cn.pandadb.kernel.store.{LazyPandaNode, PandaNode, PandaRelationship}
 import org.grapheco.lynx.{LynxBoolean, LynxDouble, LynxInteger, LynxList, LynxString}
 
 import scala.collection.mutable.ArrayBuffer
@@ -15,6 +15,7 @@ class ValueConverter {
   def converterValue(v: Any): Value = {
     v match {
       case pandaNode: PandaNode => convertPandaNode(pandaNode)
+      case lazyPandaNode: LazyPandaNode => convertPandaNode(lazyPandaNode.nodeValue)
       case pandaRelationship: PandaRelationship =>convertPandaRelationship(pandaRelationship)
       case lynxInteger: LynxInteger => IntegerValue(lynxInteger.value)
       case lynxString: LynxString => StringValue(lynxString.value)

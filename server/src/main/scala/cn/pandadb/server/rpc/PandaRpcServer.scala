@@ -24,13 +24,13 @@ class PandaRpcServer(config: Config, dbManager: GraphDatabaseManager)
   extends LifecycleServerModule with LazyLogging {
   var rpcConfig: RpcEnvServerConfig = _
   var rpcEnv: HippoRpcEnv = _
-  var auth: Auth = _
+//  var auth: Auth = _
 
   override def init(): Unit = {
     logger.debug(this.getClass + ": init")
     rpcConfig = RpcEnvServerConfig(new RpcConf(), config.getRpcServerName(), config.getListenHost(), config.getRpcPort())
     rpcEnv = HippoRpcEnvFactory.create(rpcConfig)
-    auth = new Auth(config.getAuthDBPath(), config.getRocksdbConfigFilePath())
+//    auth = new Auth(config.getAuthDBPath(), config.getRocksdbConfigFilePath())
   }
 
   override def start(): Unit = {
@@ -38,7 +38,7 @@ class PandaRpcServer(config: Config, dbManager: GraphDatabaseManager)
 
     val graphService = dbManager.getDatabase()
     val endpoint = new PandaEndpoint(rpcEnv)
-    val handler = new PandaStreamHandler(graphService, auth)
+    val handler = new PandaStreamHandler(graphService)
     rpcEnv.setupEndpoint(config.getRpcServerName(), endpoint)
     rpcEnv.setRpcHandler(handler)
     logger.debug("database: " + graphService.toString)
@@ -65,7 +65,8 @@ class PandaEndpoint(override val rpcEnv: HippoRpcEnv) extends RpcEndpoint with L
   }
 }
 
-class PandaStreamHandler(graphFacade: GraphService, authUtil: Auth) extends HippoRpcHandler {
+//class PandaStreamHandler(graphFacade: GraphService, authUtil: Auth) extends HippoRpcHandler {
+class PandaStreamHandler(graphFacade: GraphService) extends HippoRpcHandler with LazyLogging {
   val converter = new ValueConverter
   RsaSecurity.init()
 
@@ -73,29 +74,29 @@ class PandaStreamHandler(graphFacade: GraphService, authUtil: Auth) extends Hipp
     case SayHelloRequest(msg) =>
       context.reply(SayHelloResponse(msg.toUpperCase()))
 
-    case VerifyConnectionRequest(usernameKey, passwordKey) => {
-      val username = RsaSecurity.rsaDecrypt(usernameKey, RsaSecurity.getPrivateKeyStr())
-      val password = RsaSecurity.rsaDecrypt(passwordKey, RsaSecurity.getPrivateKeyStr())
-      val isLogin = authUtil.check(username, password)
-      if (isLogin) {
-        if (authUtil.isDefault) {
-          context.reply(VerifyConnectionResponse(VerifyConnectionMode.EDIT))
-        }
-        else context.reply(VerifyConnectionResponse(VerifyConnectionMode.CORRECT))
-      }
-      else {
-        context.reply(VerifyConnectionResponse(VerifyConnectionMode.ERROR))
-      }
-    }
-    case ResetAccountRequest(urn, psw) => {
-      val username = RsaSecurity.rsaDecrypt(urn, RsaSecurity.getPrivateKeyStr())
-      val password = RsaSecurity.rsaDecrypt(psw, RsaSecurity.getPrivateKeyStr())
-      authUtil.set(username, password)
-      context.reply(ResetAccountResponse(VerifyConnectionMode.CORRECT))
-    }
-    case SecurityRequest() => {
-      context.reply(RsaSecurity.getPublicKeyStr())
-    }
+//    case VerifyConnectionRequest(usernameKey, passwordKey) => {
+//      val username = RsaSecurity.rsaDecrypt(usernameKey, RsaSecurity.getPrivateKeyStr())
+//      val password = RsaSecurity.rsaDecrypt(passwordKey, RsaSecurity.getPrivateKeyStr())
+//      val isLogin = authUtil.check(username, password)
+//      if (isLogin) {
+//        if (authUtil.isDefault) {
+//          context.reply(VerifyConnectionResponse(VerifyConnectionMode.EDIT))
+//        }
+//        else context.reply(VerifyConnectionResponse(VerifyConnectionMode.CORRECT))
+//      }
+//      else {
+//        context.reply(VerifyConnectionResponse(VerifyConnectionMode.ERROR))
+//      }
+//    }
+//    case ResetAccountRequest(urn, psw) => {
+//      val username = RsaSecurity.rsaDecrypt(urn, RsaSecurity.getPrivateKeyStr())
+//      val password = RsaSecurity.rsaDecrypt(psw, RsaSecurity.getPrivateKeyStr())
+//      authUtil.set(username, password)
+//      context.reply(ResetAccountResponse(VerifyConnectionMode.CORRECT))
+//    }
+//    case SecurityRequest() => {
+//      context.reply(RsaSecurity.getPublicKeyStr())
+//    }
   }
 
   override def openChunkedStream(): PartialFunction[Any, ChunkedStream] = {
@@ -107,7 +108,10 @@ class PandaStreamHandler(graphFacade: GraphService, authUtil: Auth) extends Hipp
         val pandaIterator = new PandaRecordsIterator(metadata, data)
         ChunkedStream.grouped(100, pandaIterator.toIterable)
       } catch {
-        case e: Exception => ChunkedStream.grouped(1, new ExceptionMessage(e.getMessage).toIterable)
+        case e: Exception => {
+          logger.error(e.getMessage)
+          ChunkedStream.grouped(1, new ExceptionMessage(e.getMessage).toIterable)
+        }
       }
     }
   }

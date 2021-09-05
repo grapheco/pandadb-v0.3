@@ -2,6 +2,9 @@ package cn.pandadb.server.common.configuration
 
 import java.io.{File, FileInputStream}
 import java.util.Properties
+
+import cn.pandadb.kernel.util.DBNameMap
+
 import scala.collection.mutable
 import scala.collection.JavaConverters._
 import com.typesafe.scalalogging.LazyLogging
@@ -60,37 +63,37 @@ class Config extends LazyLogging {
   }
 
   def getNodeMetaDBPath(): String = {
-    getValueAsString(SettingKeys.nodeMetaDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/nodeMeta")
+    getValueAsString(SettingKeys.nodeMetaDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/${DBNameMap.nodeMetaDB}")
   }
   def getNodeDBPath(): String = {
-    getValueAsString(SettingKeys.nodeDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/nodes")
+    getValueAsString(SettingKeys.nodeDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/${DBNameMap.nodeDB}")
   }
   def getNodeLabelDBPath(): String = {
-    getValueAsString(SettingKeys.nodeLabelDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/nodeLabel")
+    getValueAsString(SettingKeys.nodeLabelDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/${DBNameMap.nodeLabelDB}")
   }
   def getRelationMetaDBPath(): String = {
-    getValueAsString(SettingKeys.relationMetaDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/relationMeta")
+    getValueAsString(SettingKeys.relationMetaDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/${DBNameMap.relationMetaDB}")
   }
   def getRelationDBPath(): String = {
-    getValueAsString(SettingKeys.relationDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/rels")
+    getValueAsString(SettingKeys.relationDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/${DBNameMap.relationDB}")
   }
   def getInRelationDBPath(): String = {
-    getValueAsString(SettingKeys.inRelationDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/inEdge")
+    getValueAsString(SettingKeys.inRelationDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/${DBNameMap.inRelationDB}")
   }
   def getOutRelationDBPath(): String = {
-    getValueAsString(SettingKeys.outRelationDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/outEdge")
+    getValueAsString(SettingKeys.outRelationDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/${DBNameMap.outRelationDB}")
   }
   def getRelationLabelDBPath(): String = {
-    getValueAsString(SettingKeys.relationLabelDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/relLabelIndex")
+    getValueAsString(SettingKeys.relationLabelDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/${DBNameMap.relationLabelDB}")
   }
   def getStatisticsDBPath(): String = {
-    getValueAsString(SettingKeys.statisticsDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/statistics")
+    getValueAsString(SettingKeys.statisticsDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/${DBNameMap.statisticsDB}")
   }
   def getIndexDBPath(): String = {
-    getValueAsString(SettingKeys.indexDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/index")
+    getValueAsString(SettingKeys.indexDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/${DBNameMap.indexDB}")
   }
   def getIndexMetaDBPath(): String = {
-    getValueAsString(SettingKeys.indexMetaDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/indexMeta")
+    getValueAsString(SettingKeys.indexMetaDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/${DBNameMap.indexMetaDB}")
   }
   def getFullIndexDBPath(): String = {
     getValueAsString(SettingKeys.fullIndexDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/fulltextIndex")
