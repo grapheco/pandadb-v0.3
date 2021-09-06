@@ -48,7 +48,7 @@ do_stop(){
   if [ "$PANDADB_PID" == "" ]
   then echo "pandadb not running..."
   else
-    kill -15 $PANDADB_PID
+    kill -9 $PANDADB_PID
     echo "pandadb server stopped...pid: $PANDADB_PID"
   fi
 }

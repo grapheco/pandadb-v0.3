@@ -13,6 +13,7 @@ import org.grapheco.lynx.cypherplus._
 import org.opencypher.v9_0.expressions
 import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, Range, SemanticDirection}
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks.{break, breakable}
 
@@ -501,7 +502,7 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
       .filter(trip => endNodeFilter.matches(trip.endNode))
   }
 
-  def paths(nodeId: LynxId,
+  def middlePaths(nodeId: LynxId,
             relationshipFilter: RelationshipFilter,
             direction: SemanticDirection, tx: Option[LynxTransaction]): Iterator[PathTriple] = {
     nodeAt(nodeId, tx).map(
@@ -763,6 +764,7 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
   override def pathsWithLength(startNodeFilter: NodeFilter, relationshipFilter: RelationshipFilter, endNodeFilter: NodeFilter, direction: SemanticDirection, length: Option[Option[expressions.Range]], tx: Option[LynxTransaction]): Iterator[Seq[PathTriple]] = {
     def getDegreeRelationship(lower: Int, upper: Int): Iterator[Seq[PathTriple]] = {
       val searchedPaths = ArrayBuffer[Iterator[Seq[PathTriple]]]()
+      val middlePathIterator = mutable.Map[Int, Iterator[Seq[PathTriple]]]()
 
       for (degree <- lower to upper) {
         degree match {
@@ -775,24 +777,29 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
             searchedPaths += res
           }
           case n => {
-            val middle = n - 1
-            var left = nodes(startNodeFilter, tx).flatMap(f => paths(f.id, relationshipFilter, direction, tx)).map(Seq(_))
-              for (i <- 1 to middle) {
-                val tmp = left.flatMap(leftTriple => {
-                  val rels = paths(leftTriple.last.endNode.id, relationshipFilter, direction, tx)
-                    .filter(f => !leftTriple.map(l => l.storedRelation).contains(f.storedRelation))
+            var left = Iterator[Seq[PathTriple]]()
+            if (n == 2) {
+              left = nodes(startNodeFilter, tx).flatMap(f => middlePaths(f.id, relationshipFilter, direction, tx)).map(Seq(_))
+            }
+            else {
+              val dupIter = middlePathIterator(n - 1).duplicate
+              middlePathIterator(n - 1) = dupIter._1
+              left = dupIter._2
+            }
+            left = left.flatMap(leftTriple => {
+              val rels = middlePaths(leftTriple.last.endNode.id, relationshipFilter, direction, tx)
+                .filter(f => !leftTriple.map(l => l.storedRelation).contains(f.storedRelation))
 
-                  rels.map(f => leftTriple ++ Seq(f))
-                })
-                left = tmp
-              }
-            searchedPaths += left.filter(f => endNodeFilter.matches(f.last.endNode))
+              rels.map(f => leftTriple ++ Seq(f))
+            })
+            val dup2 = left.duplicate
+            middlePathIterator += n -> dup2._1
+            searchedPaths += dup2._2.filter(f => endNodeFilter.matches(f.last.endNode))
           }
         }
       }
       searchedPaths.foldLeft(Iterator[Seq[PathTriple]]())((res, iterator) => res ++ iterator)
     }
-
 
     length match {
       case Some(None) => getDegreeRelationship(1, Int.MaxValue)
