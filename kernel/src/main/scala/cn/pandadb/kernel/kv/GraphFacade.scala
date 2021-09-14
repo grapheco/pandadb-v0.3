@@ -752,7 +752,7 @@ class GraphFacade(nodeStore: NodeStoreSPI,
 
   override def estimateNodeLabel(labelName: String): Id = 1
 
-  override def estimateNodeProperty(propertyName: String, value: AnyRef): Id = 1
+  override def estimateNodeProperty(labelName: String, propertyName: String, value: AnyRef): Id = 1
 
   override def estimateRelationship(relType: String): Id = 1
 
