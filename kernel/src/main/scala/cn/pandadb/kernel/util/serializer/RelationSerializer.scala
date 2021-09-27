@@ -43,6 +43,22 @@ object RelationSerializer extends BaseSerializer {
     new StoredRelationWithProperty(relationId, fromId, toId, typeId, props)
   }
 
+  def deserializeRelWithProps(iter: Iterator[Array[Byte]]): Iterator[StoredRelationWithProperty] = {
+    new PandaIteratorForDeSerializer[StoredRelationWithProperty](iter, stepLength = 500000, batchDeserializeRelWithProps)
+  }
+
+  def deserializeRelWithoutProps(iter: Iterator[Array[Byte]]): Iterator[StoredRelation] = {
+    new PandaIteratorForDeSerializer[StoredRelation](iter, stepLength = 500000, batchDeserializeRelWithoutProps)
+  }
+
+  def batchDeserializeRelWithProps(input: Array[Array[Byte]], threadNum: Int = math.max(Runtime.getRuntime.availableProcessors()/4, 2)): Array[StoredRelationWithProperty] = {
+    batchDeserialize[StoredRelationWithProperty](input, threadNum, deserializeRelWithProps)
+  }
+
+  def batchDeserializeRelWithoutProps(input: Array[Array[Byte]], threadNum: Int = math.max(Runtime.getRuntime.availableProcessors()/4, 2)): Array[StoredRelation] = {
+    batchDeserialize[StoredRelation](input, threadNum, deserializeRelWithoutProps)
+  }
+
   def deserializeRelWithoutProps(bytesArray: Array[Byte]): StoredRelation = {
     val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytesArray)
     val relationId: Long = byteBuf.readLong()
@@ -51,4 +67,5 @@ object RelationSerializer extends BaseSerializer {
     val typeId: Int = byteBuf.readInt()
     StoredRelation(relationId, fromId, toId, typeId)
   }
+
 }
