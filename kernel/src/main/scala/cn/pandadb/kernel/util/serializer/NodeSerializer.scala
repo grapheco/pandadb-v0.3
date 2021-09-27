@@ -1,9 +1,7 @@
 package cn.pandadb.kernel.util.serializer
 
-import cn.pandadb.kernel.kv.ByteUtils
 import cn.pandadb.kernel.store.StoredNodeWithProperty
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
-
 /**
  * @Author: Airzihao
  * @Description:
@@ -47,6 +45,23 @@ object NodeSerializer extends BaseSerializer {
     val props: Map[Int, Any] = _readProps(byteBuf)
     byteBuf.release()
     new StoredNodeWithProperty(id, labels, props)
+  }
+
+  def deserializeNodeValue(iter: Iterator[Array[Byte]], stepLength: Int = 500000): Iterator[StoredNodeWithProperty] = {
+    new PandaIteratorForDeSerializer[StoredNodeWithProperty](iter, stepLength , batchDeserializeNodeValue)
+  }
+
+  def deserializeNodeKey(iter: Iterator[Array[Byte]], stepLength: Int = 500000): Iterator[Long] = {
+    new PandaIteratorForDeSerializer[Long](iter, stepLength, batchDeserializeNodeKey)
+  }
+
+
+  def batchDeserializeNodeValue(input: Array[Array[Byte]], threadsNum: Int = math.max(Runtime.getRuntime.availableProcessors()/4, 2)): Array[StoredNodeWithProperty] = {
+    batchDeserialize[StoredNodeWithProperty](input, threadsNum, deserializeNodeValue)
+  }
+
+  def batchDeserializeNodeKey(input: Array[Array[Byte]], threadsNum: Int = math.max(Runtime.getRuntime.availableProcessors()/4, 2)): Array[Long] = {
+    batchDeserialize[Long](input, threadsNum, deserializeNodeKey)
   }
 
   def deserializeNodeKey(byteArr: Array[Byte]): Long = {
