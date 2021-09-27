@@ -12,7 +12,7 @@ object AsyncSerializerTest {
   val dbPath: String = "/data/zzh/testDB2"
   val db: KeyValueDB = RocksDBStorage.getDB(dbPath)
   val nodeCount = 5000000
-
+// Caution: Only enable the following code when you want to init a testdb
 //  (1 to nodeCount).map(i => {
 //    val properties: Map[Int, Any] = Map(1->i, 2-> "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
 //      3-> "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
