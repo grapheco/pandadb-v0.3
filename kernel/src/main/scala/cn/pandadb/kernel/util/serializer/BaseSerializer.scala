@@ -7,6 +7,10 @@ import org.grapheco.lynx.cypherplus.Blob
 import java.io.ByteArrayOutputStream
 import java.time._
 import scala.collection.mutable
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.Duration
+import scala.reflect.ClassTag
 
 /**
  * @Author: Airzihao
@@ -274,6 +278,23 @@ trait BaseSerializer {
     val dst = new Array[Byte](byteBuf.writerIndex())
     byteBuf.readBytes(dst)
     dst
+  }
+
+  def batchDeserialize[T: ClassTag](input: Array[Array[Byte]], threadsNum: Int = math.max(Runtime.getRuntime.availableProcessors()/4, 2),
+                                    deserializeObject: Array[Byte] => T): Array[T] = {
+    val groupSize: Int = input.length / threadsNum
+
+    if (input.length < threadsNum) {
+      input.map(objInBytes => deserializeObject(objInBytes))
+    }
+    else {
+      val iterOfGroup: Array[Array[Array[Byte]]] = input.sliding(groupSize, groupSize).toArray
+
+      val futures = iterOfGroup.map(groupOfNodeBytes => Future{
+        groupOfNodeBytes.map(nodeBytes => deserializeObject(nodeBytes))
+      })
+      futures.map(futureWork => Await.result(futureWork, Duration.Inf)).flatten[T]
+    }
   }
 
 }
