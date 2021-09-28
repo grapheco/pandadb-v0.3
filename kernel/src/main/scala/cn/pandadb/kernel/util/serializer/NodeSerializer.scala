@@ -1,5 +1,6 @@
 package cn.pandadb.kernel.util.serializer
 
+import cn.pandadb.kernel.kv.ByteUtils
 import cn.pandadb.kernel.kv.db.KeyValueIterator
 import cn.pandadb.kernel.store.StoredNodeWithProperty
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
@@ -48,29 +49,38 @@ object NodeSerializer extends BaseSerializer {
     new StoredNodeWithProperty(id, labels, props)
   }
 
-  def deserializeNodeValue(iter: KeyValueIterator): Iterator[StoredNodeWithProperty] = {
-    deserializeNodeValue(iter, stepLength = 1000000)
-  }
-  def deserializeNodeValue(iter: KeyValueIterator, stepLength: Int): Iterator[StoredNodeWithProperty] = {
-    new PandaIteratorForDeSerializer[StoredNodeWithProperty](iter, stepLength , batchDeserializeNodeValue(_, _))
+  def parallelDeserializeNodeKeyValue(iter: KeyValueIterator): Iterator[(Int, StoredNodeWithProperty)] = {
+    new PandaIteratorForKeyValueDeserializer[Int, StoredNodeWithProperty](iter, stepLength = 1000000, _getLabelFromKey(_), deserializeNodeValue(_))
   }
 
-  def deserializeNodeValue(iter: Iterator[Array[Byte]], stepLength: Int): Iterator[StoredNodeWithProperty] = {
-    new PandaIteratorForDeSerializer[StoredNodeWithProperty](iter, stepLength , batchDeserializeNodeValue(_, _))
+  def parallelDeserializeNodeKeyValue(iter: Iterator[(Array[Byte], Array[Byte])]): Iterator[(Int, StoredNodeWithProperty)] = {
+    new PandaIteratorForKeyValueDeserializer[Int, StoredNodeWithProperty](iter, stepLength = 1000000, _getLabelFromKey _, deserializeNodeValue(_))
   }
 
-  def deserializeNodeKey(iter: Iterator[Array[Byte]], stepLength: Int = 1000000): Iterator[Long] = {
-    new PandaIteratorForDeSerializer[Long](iter, stepLength, batchDeserializeNodeKey(_, _))
+  def parallelDeserializeNodeValue(iter: KeyValueIterator): Iterator[StoredNodeWithProperty] = {
+    new PandaIteratorForValueDeSerializer[StoredNodeWithProperty](iter, stepLength = 1000000, deserializeNodeValue(_))
   }
 
-
-  def batchDeserializeNodeValue(input: Array[Array[Byte]], threadsNum: Int = math.max(Runtime.getRuntime.availableProcessors()/4, 2)): Array[StoredNodeWithProperty] = {
-    batchDeserialize[StoredNodeWithProperty](input, threadsNum, deserializeNodeValue)
+  def parallelDeserializeNodeValue(iter: Iterator[Array[Byte]], stepLength: Int): Iterator[StoredNodeWithProperty] = {
+    new PandaIteratorForValueDeSerializer[StoredNodeWithProperty](iter, stepLength , deserializeNodeValue(_))
   }
 
-  def batchDeserializeNodeKey(input: Array[Array[Byte]], threadsNum: Int = math.max(Runtime.getRuntime.availableProcessors()/4, 2)): Array[Long] = {
-    batchDeserialize[Long](input, threadsNum, deserializeNodeKey)
-  }
+//  def deserializeNodeKey(iter: Iterator[Array[Byte]], stepLength: Int = 1000000): Iterator[Long] = {
+//    new PandaIteratorForValueDeSerializer[Long](iter, stepLength, deserializeNodeKey)
+//  }
+
+//  def batchDeserializeNodeValue(input: Array[(Array[Byte], Array[Byte])],
+//                                threadsNum: Int = math.max(Runtime.getRuntime.availableProcessors()/4, 2)): Array[(Int, StoredNodeWithProperty)] = {
+//    batchDeserialize[Int, StoredNodeWithProperty](input, threadsNum, _getLabelFromKey, deserializeNodeValue)
+//  }
+//
+//  def batchDeserializeNodeValue(input: Array[Array[Byte]], threadsNum: Int = math.max(Runtime.getRuntime.availableProcessors()/4, 2)): Array[StoredNodeWithProperty] = {
+//    batchDeserialize[StoredNodeWithProperty](input, threadsNum, deserializeNodeValue)
+//  }
+//
+//  def batchDeserializeNodeKey(input: Array[Array[Byte]], threadsNum: Int = math.max(Runtime.getRuntime.availableProcessors()/4, 2)): Array[Long] = {
+//    batchDeserialize[Long](input, threadsNum, deserializeNodeKey)
+//  }
 
   def deserializeNodeKey(byteArr: Array[Byte]): Long = {
     val byteBuf = Unpooled.wrappedBuffer(byteArr)
@@ -96,5 +106,9 @@ object NodeSerializer extends BaseSerializer {
 
    def _readProps(byteBuf: ByteBuf): Map[Int, Any] = {
     MapSerializer.readMap(byteBuf)
+  }
+
+  private def _getLabelFromKey(keyInBytes: Array[Byte]): Int = {
+    ByteUtils.getInt(keyInBytes, 0)
   }
 }

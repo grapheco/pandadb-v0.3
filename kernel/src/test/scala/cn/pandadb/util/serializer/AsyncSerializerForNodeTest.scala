@@ -63,7 +63,7 @@ class AsyncSerializerForNodeTest {
   @Test
   def correctCheck1: Unit = {
     val iter1 = sourceIter1.map(item => NodeSerializer.deserializeNodeValue(item))
-    val iter2 = NodeSerializer.deserializeNodeValue(sourceIter2)
+    val iter2 = NodeSerializer.parallelDeserializeNodeValue(sourceIter2)
     Assert.assertEquals(nodeCount, iter1.size)
     Assert.assertEquals(nodeCount, iter2.size)
   }
@@ -71,35 +71,29 @@ class AsyncSerializerForNodeTest {
   @Test
   def correctCheck2: Unit = {
     val result1 = sourceIter1.map(item => NodeSerializer.deserializeNodeValue(item)).toArray
-    val result2 = NodeSerializer.deserializeNodeValue(sourceIter2).toArray
+    val result2 = NodeSerializer.parallelDeserializeNodeValue(sourceIter2).toArray
     result1.zip(result2).foreach(pair => Assert.assertEquals(pair._1.id, pair._1.id))
   }
 
   @Test
-  def test0(): Unit = {
-    println(s"iter of the DB, as the bench")
-    timing(getSourceIter.toArray)
-  }
-
-  @Test
   def test1(): Unit = {
-    println("Plain Deserialize")
+    println(s"iter of the DB, as the bench:")
+    timing(getSourceIter.toArray)
+
+    println("Plain Deserialize:")
     timing(sourceIter1.map(item => NodeSerializer.deserializeNodeValue(item)).toArray)
+
+    println(s"parallel iter, iter to Array:")
+    timing(NodeSerializer.parallelDeserializeNodeValue(sourceIter2).toArray)
   }
 
-  @Test
+  //The test2 is only used for developing performance, perserve it please.
   def test2(): Unit = {
-    println(s"parallel iter, iter to Array")
-    timing(NodeSerializer.deserializeNodeValue(sourceIter2).toArray)
-  }
-
-  //The test3 is only used for developing performance, perserve it please.
-  def test3(): Unit = {
     val nodeBytesArray: Array[Array[Byte]] = timing(sourceIter1.toArray)
     val iter: Iterator[Array[Byte]] = timing(nodeBytesArray.toIterator)
     val iter2: Iterator[Array[Byte]] = timing(nodeBytesArray.toIterator)
     timing(iter.map(bytes => NodeSerializer.deserializeNodeValue(bytes)).toArray)
-    timing(NodeSerializer.deserializeNodeValue(iter2, stepLength = 1000000))
+    timing(NodeSerializer.parallelDeserializeNodeValue(iter2, 1000000))
   }
 
   def fakeDeserialize(bytes: Array[Byte]): StoredNodeWithProperty = {

@@ -127,8 +127,8 @@ class NodeStoreAPI(nodeDBPath: String, nodeDBConfigPath: String,
       nodeLabelStore.set(node.id, NONE_LABEL_ID)
     }
   }
-  def all2(stepLength: Int): Iterator[StoredNodeWithProperty]  ={
-    nodeStore.all2(stepLength)
+  def all2(): Iterator[StoredNodeWithProperty]  ={
+    nodeStore.all2()
   }
   override def allNodes(): Iterator[StoredNodeWithProperty] = nodeStore.all()
 

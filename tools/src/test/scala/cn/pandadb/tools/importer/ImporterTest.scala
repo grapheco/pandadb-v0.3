@@ -41,20 +41,19 @@ class ImporterTest {
 
   @Test
   def tmp1(): Unit ={
-    val path = "./src/test/output/bioTestDB"
+    val path = "/data/zzh/small2.db"
 //    val db = GraphDatabaseBuilder.newEmbeddedDatabase(path).asInstanceOf[GraphFacade]
     val nodeAPI = new NodeStoreAPI(path)
 
-    var start = System.currentTimeMillis()
+    val start1 = System.currentTimeMillis()
     val iter = nodeAPI.allNodes()
     println(iter.size)
-    println(s"old way cost ${System.currentTimeMillis() - start} ms") // s
+    println(s"old way cost ${System.currentTimeMillis() - start1} ms") // s
 
-    start = System.currentTimeMillis()
-    val iter2 = nodeAPI.all2(1000000)
+    val start2 = System.currentTimeMillis()
+    val iter2 = nodeAPI.all2()
     println(iter2.size)
-    println(s"new way cost ${System.currentTimeMillis() - start} ms") // s
-
+    println(s"new way cost ${System.currentTimeMillis() - start2} ms") // s
 
   }
 }

@@ -45,28 +45,28 @@ object RelationSerializer extends BaseSerializer {
   }
 
   def deserializeRelWithProps(iter: KeyValueIterator): Iterator[StoredRelationWithProperty] = {
-    new PandaIteratorForDeSerializer[StoredRelationWithProperty](iter, stepLength = 500000, batchDeserializeRelWithProps(_, _))
+    new PandaIteratorForValueDeSerializer[StoredRelationWithProperty](iter, stepLength = 500000, deserializeRelWithProps(_))
   }
 
   def deserializeRelWithProps(iter: Iterator[Array[Byte]]): Iterator[StoredRelationWithProperty] = {
-    new PandaIteratorForDeSerializer[StoredRelationWithProperty](iter, stepLength = 500000, batchDeserializeRelWithProps(_, _))
+    new PandaIteratorForValueDeSerializer[StoredRelationWithProperty](iter, stepLength = 500000, deserializeRelWithProps(_))
   }
 
   def deserializeRelWithoutProps(iter: KeyValueIterator): Iterator[StoredRelation] = {
-    new PandaIteratorForDeSerializer[StoredRelation](iter, stepLength = 500000, batchDeserializeRelWithoutProps(_, _))
+    new PandaIteratorForValueDeSerializer[StoredRelation](iter, stepLength = 500000, deserializeRelWithoutProps(_))
   }
 
   def deserializeRelWithoutProps(iter: Iterator[Array[Byte]]): Iterator[StoredRelation] = {
-    new PandaIteratorForDeSerializer[StoredRelation](iter, stepLength = 500000, batchDeserializeRelWithoutProps(_, _))
+    new PandaIteratorForValueDeSerializer[StoredRelation](iter, stepLength = 500000, deserializeRelWithoutProps(_))
   }
 
-  def batchDeserializeRelWithProps(input: Array[Array[Byte]], threadNum: Int = math.max(Runtime.getRuntime.availableProcessors()/4, 2)): Array[StoredRelationWithProperty] = {
-    batchDeserialize[StoredRelationWithProperty](input, threadNum, deserializeRelWithProps)
-  }
-
-  def batchDeserializeRelWithoutProps(input: Array[Array[Byte]], threadNum: Int = math.max(Runtime.getRuntime.availableProcessors()/4, 2)): Array[StoredRelation] = {
-    batchDeserialize[StoredRelation](input, threadNum, deserializeRelWithoutProps)
-  }
+//  def batchDeserializeRelWithProps(input: Array[Array[Byte]], threadNum: Int = math.max(Runtime.getRuntime.availableProcessors()/4, 2)): Array[StoredRelationWithProperty] = {
+//    batchDeserialize[StoredRelationWithProperty](input, threadNum, deserializeRelWithProps)
+//  }
+//
+//  def batchDeserializeRelWithoutProps(input: Array[Array[Byte]], threadNum: Int = math.max(Runtime.getRuntime.availableProcessors()/4, 2)): Array[StoredRelation] = {
+//    batchDeserialize[StoredRelation](input, threadNum, deserializeRelWithoutProps)
+//  }
 
   def deserializeRelWithoutProps(bytesArray: Array[Byte]): StoredRelation = {
     val byteBuf: ByteBuf = Unpooled.wrappedBuffer(bytesArray)

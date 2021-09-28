@@ -46,9 +46,13 @@ class NodeStore(db: KeyValueDB) {
     }.filter(_!=null)
   }
 
-  def all2(stepLength: Int) : Iterator[StoredNodeWithProperty] = {
+  def all2() : Iterator[StoredNodeWithProperty] = {
     val iter = db.newIterator()
-    NodeSerializer.deserializeNodeValue(iter, stepLength)
+    NodeSerializer.parallelDeserializeNodeKeyValue(iter).filter(kv =>{
+      val label = kv._1
+      val node = kv._2
+      !(node.labelIds.length > 0 && node.labelIds(0) != label)
+    }).map(_._2)
   }
 
   def getNodesByLabel(labelId: LabelId): Iterator[StoredNodeWithProperty] = {
