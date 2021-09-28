@@ -5,7 +5,7 @@ import cn.pandadb.kernel.kv.db.KeyValueDB
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import cn.pandadb.kernel.store.StoredNodeWithProperty
 import cn.pandadb.kernel.util.serializer.{BaseSerializer, NodeSerializer}
-import org.rocksdb.WriteBatch
+import org.rocksdb.{RocksIterator, WriteBatch}
 
 class NodeStore(db: KeyValueDB) {
   // [labelId,nodeId]->[Node]
@@ -44,6 +44,11 @@ class NodeStore(db: KeyValueDB) {
         else node
       }
     }.filter(_!=null)
+  }
+
+  def all2(stepLength: Int) : Iterator[StoredNodeWithProperty] = {
+    val iter = db.newIterator()
+    NodeSerializer.deserializeNodeValue(iter, stepLength)
   }
 
   def getNodesByLabel(labelId: LabelId): Iterator[StoredNodeWithProperty] = {

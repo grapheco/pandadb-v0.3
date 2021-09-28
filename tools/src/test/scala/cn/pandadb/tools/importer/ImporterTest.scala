@@ -2,7 +2,8 @@ package cn.pandadb.tools.importer
 
 import java.io.File
 
-import cn.pandadb.kernel.kv.RocksDBStorage
+import cn.pandadb.kernel.GraphDatabaseBuilder
+import cn.pandadb.kernel.kv.{GraphFacade, RocksDBStorage}
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
 import org.apache.commons.io.FileUtils
@@ -36,5 +37,24 @@ class ImporterTest {
     val node1 = nodeAPI.getNodeById(1L)
     val props = node1.get.properties
     println(props)
+  }
+
+  @Test
+  def tmp1(): Unit ={
+    val path = "./src/test/output/bioTestDB"
+//    val db = GraphDatabaseBuilder.newEmbeddedDatabase(path).asInstanceOf[GraphFacade]
+    val nodeAPI = new NodeStoreAPI(path)
+
+    var start = System.currentTimeMillis()
+    val iter = nodeAPI.allNodes()
+    println(iter.size)
+    println(s"old way cost ${System.currentTimeMillis() - start} ms") // s
+
+    start = System.currentTimeMillis()
+    val iter2 = nodeAPI.all2(1000000)
+    println(iter2.size)
+    println(s"new way cost ${System.currentTimeMillis() - start} ms") // s
+
+
   }
 }
