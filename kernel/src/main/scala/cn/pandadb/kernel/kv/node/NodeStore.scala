@@ -96,9 +96,7 @@ class NodeStore(db: KeyValueDB) {
     db.deleteRange(KeyConverter.toNodeKey(labelId, 0.toLong),
       KeyConverter.toNodeKey(labelId, -1.toLong))
 
-
   def delete(nodeId: NodeId, labelId: LabelId): Unit = db.delete(KeyConverter.toNodeKey(labelId, nodeId))
-
 
   def delete(nodeId:Long, labelIds: Array[LabelId]): Unit = labelIds.foreach(delete(nodeId, _))
 

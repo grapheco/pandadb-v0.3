@@ -1,5 +1,6 @@
 package cn.pandadb.kernel.util.serializer
 
+import cn.pandadb.kernel.kv.db.KeyValueIterator
 import cn.pandadb.kernel.store.StoredNodeWithProperty
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
 /**
@@ -47,12 +48,19 @@ object NodeSerializer extends BaseSerializer {
     new StoredNodeWithProperty(id, labels, props)
   }
 
-  def deserializeNodeValue(iter: Iterator[Array[Byte]], stepLength: Int = 500000): Iterator[StoredNodeWithProperty] = {
-    new PandaIteratorForDeSerializer[StoredNodeWithProperty](iter, stepLength , batchDeserializeNodeValue)
+  def deserializeNodeValue(iter: KeyValueIterator): Iterator[StoredNodeWithProperty] = {
+    deserializeNodeValue(iter, stepLength = 1000000)
+  }
+  def deserializeNodeValue(iter: KeyValueIterator, stepLength: Int): Iterator[StoredNodeWithProperty] = {
+    new PandaIteratorForDeSerializer[StoredNodeWithProperty](iter, stepLength , batchDeserializeNodeValue(_, _))
   }
 
-  def deserializeNodeKey(iter: Iterator[Array[Byte]], stepLength: Int = 500000): Iterator[Long] = {
-    new PandaIteratorForDeSerializer[Long](iter, stepLength, batchDeserializeNodeKey)
+  def deserializeNodeValue(iter: Iterator[Array[Byte]], stepLength: Int): Iterator[StoredNodeWithProperty] = {
+    new PandaIteratorForDeSerializer[StoredNodeWithProperty](iter, stepLength , batchDeserializeNodeValue(_, _))
+  }
+
+  def deserializeNodeKey(iter: Iterator[Array[Byte]], stepLength: Int = 1000000): Iterator[Long] = {
+    new PandaIteratorForDeSerializer[Long](iter, stepLength, batchDeserializeNodeKey(_, _))
   }
 
 

@@ -1,11 +1,11 @@
 package cn.pandadb.util.serializer
 
 import cn.pandadb.kernel.kv.RocksDBStorage
-import cn.pandadb.kernel.kv.db.KeyValueDB
+import cn.pandadb.kernel.kv.db.{KeyValueDB, KeyValueIterator}
 import cn.pandadb.kernel.store.StoredRelationWithProperty
 import cn.pandadb.kernel.util.Profiler.timing
 import cn.pandadb.kernel.util.serializer.RelationSerializer
-import cn.pandadb.util.serializer.AsyncSerializerForRelTest.{getSourceIter, relCount}
+import cn.pandadb.util.serializer.AsyncSerializerForRelTest.{db, getSourceIter, relCount}
 import org.junit.{Assert, Test}
 
 /**
@@ -54,7 +54,11 @@ object AsyncSerializerForRelTest {
 
 class AsyncSerializerForRelTest {
   val sourceIter1: Iterator[Array[Byte]] = getSourceIter
-  val sourceIter2: Iterator[Array[Byte]] = getSourceIter
+  val sourceIter2: KeyValueIterator = {
+    val kvIter = db.newIterator()
+    kvIter.seekToFirst()
+    kvIter
+  }
 
   @Test
   def correctCheck1: Unit = {

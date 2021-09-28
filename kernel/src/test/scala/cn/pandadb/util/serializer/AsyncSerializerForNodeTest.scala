@@ -1,14 +1,14 @@
 package cn.pandadb.util.serializer
 
 import cn.pandadb.kernel.kv.RocksDBStorage
-import cn.pandadb.kernel.kv.db.KeyValueDB
+import cn.pandadb.kernel.kv.db.{KeyValueDB, KeyValueIterator}
 import cn.pandadb.kernel.store.StoredNodeWithProperty
 import cn.pandadb.kernel.util.Profiler.timing
 import cn.pandadb.kernel.util.serializer.NodeSerializer
-import cn.pandadb.util.serializer.AsyncSerializerTest.{getSourceIter, nodeCount}
+import cn.pandadb.util.serializer.AsyncSerializerForNodeTest.{db, getSourceIter, nodeCount}
 import org.junit.{Assert, Test}
 
-object AsyncSerializerTest {
+object AsyncSerializerForNodeTest {
   val dbPath: String = "/data/zzh/testDB2"
   val db: KeyValueDB = RocksDBStorage.getDB(dbPath)
   val nodeCount = 5000000
@@ -52,9 +52,13 @@ object AsyncSerializerTest {
  * @Date: Created at 8:55 下午 2021/9/24
  * @Modified By:
  */
-class AsyncSerializerTest {
+class AsyncSerializerForNodeTest {
   val sourceIter1: Iterator[Array[Byte]] = getSourceIter
-  val sourceIter2: Iterator[Array[Byte]] = getSourceIter
+  val sourceIter2: KeyValueIterator = {
+    val kvIter = db.newIterator()
+    kvIter.seekToFirst()
+    kvIter
+  }
 
   @Test
   def correctCheck1: Unit = {
@@ -95,7 +99,7 @@ class AsyncSerializerTest {
     val iter: Iterator[Array[Byte]] = timing(nodeBytesArray.toIterator)
     val iter2: Iterator[Array[Byte]] = timing(nodeBytesArray.toIterator)
     timing(iter.map(bytes => NodeSerializer.deserializeNodeValue(bytes)).toArray)
-    timing(NodeSerializer.deserializeNodeValue(iter2))
+    timing(NodeSerializer.deserializeNodeValue(iter2, stepLength = 1000000))
   }
 
   def fakeDeserialize(bytes: Array[Byte]): StoredNodeWithProperty = {
