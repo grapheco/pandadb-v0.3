@@ -1,13 +1,12 @@
 package cn.pandadb.tools.importer
 
 import java.io.File
-
 import cn.pandadb.kernel.GraphDatabaseBuilder
 import cn.pandadb.kernel.kv.{GraphFacade, RocksDBStorage}
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
 import org.apache.commons.io.FileUtils
-import org.junit.Test
+import org.junit.{Assert, Test}
 
 /**
   * @Author: Airzihao
@@ -41,19 +40,21 @@ class ImporterTest {
 
   @Test
   def tmp1(): Unit ={
-    val path = "/data/zzh/small2.db"
+    val path = "/data/zzh/small.db"
 //    val db = GraphDatabaseBuilder.newEmbeddedDatabase(path).asInstanceOf[GraphFacade]
     val nodeAPI = new NodeStoreAPI(path)
 
     val start1 = System.currentTimeMillis()
     val iter = nodeAPI.allNodes()
-    println(iter.size)
+    val result1 = iter.toArray
     println(s"old way cost ${System.currentTimeMillis() - start1} ms") // s
 
     val start2 = System.currentTimeMillis()
     val iter2 = nodeAPI.all2()
-    println(iter2.size)
+    val result2 = iter2.toArray
     println(s"new way cost ${System.currentTimeMillis() - start2} ms") // s
+
+    result1.zip(result2).map(pair => Assert.assertEquals(pair._1.id, pair._2.id))
 
   }
 }
