@@ -50,37 +50,20 @@ object NodeSerializer extends BaseSerializer {
   }
 
   def parallelDeserializeNodeKeyValue(iter: KeyValueIterator): Iterator[(Int, StoredNodeWithProperty)] = {
-    new PandaIteratorForKeyValueDeserializer[Int, StoredNodeWithProperty](iter, stepLength = 1000000, _getLabelFromKey(_), deserializeNodeValue(_))
+    new PandaIteratorForKeyValueDeserializer[Int, StoredNodeWithProperty](iter, stepLength = 10000 * Runtime.getRuntime.availableProcessors()/8, _getLabelFromKey(_), deserializeNodeValue(_))
   }
 
   def parallelDeserializeNodeKeyValue(iter: Iterator[(Array[Byte], Array[Byte])]): Iterator[(Int, StoredNodeWithProperty)] = {
-    new PandaIteratorForKeyValueDeserializer[Int, StoredNodeWithProperty](iter, stepLength = 1000000, _getLabelFromKey _, deserializeNodeValue(_))
+    new PandaIteratorForKeyValueDeserializer[Int, StoredNodeWithProperty](iter, stepLength = 10000 * Runtime.getRuntime.availableProcessors()/8, _getLabelFromKey _, deserializeNodeValue(_))
   }
 
   def parallelDeserializeNodeValue(iter: KeyValueIterator): Iterator[StoredNodeWithProperty] = {
-    new PandaIteratorForValueDeSerializer[StoredNodeWithProperty](iter, stepLength = 1000000, deserializeNodeValue(_))
+    new PandaIteratorForValueDeSerializer[StoredNodeWithProperty](iter, stepLength = 10000 * Runtime.getRuntime.availableProcessors()/8, deserializeNodeValue(_))
   }
 
   def parallelDeserializeNodeValue(iter: Iterator[Array[Byte]], stepLength: Int): Iterator[StoredNodeWithProperty] = {
     new PandaIteratorForValueDeSerializer[StoredNodeWithProperty](iter, stepLength , deserializeNodeValue(_))
   }
-
-//  def deserializeNodeKey(iter: Iterator[Array[Byte]], stepLength: Int = 1000000): Iterator[Long] = {
-//    new PandaIteratorForValueDeSerializer[Long](iter, stepLength, deserializeNodeKey)
-//  }
-
-//  def batchDeserializeNodeValue(input: Array[(Array[Byte], Array[Byte])],
-//                                threadsNum: Int = math.max(Runtime.getRuntime.availableProcessors()/4, 2)): Array[(Int, StoredNodeWithProperty)] = {
-//    batchDeserialize[Int, StoredNodeWithProperty](input, threadsNum, _getLabelFromKey, deserializeNodeValue)
-//  }
-//
-//  def batchDeserializeNodeValue(input: Array[Array[Byte]], threadsNum: Int = math.max(Runtime.getRuntime.availableProcessors()/4, 2)): Array[StoredNodeWithProperty] = {
-//    batchDeserialize[StoredNodeWithProperty](input, threadsNum, deserializeNodeValue)
-//  }
-//
-//  def batchDeserializeNodeKey(input: Array[Array[Byte]], threadsNum: Int = math.max(Runtime.getRuntime.availableProcessors()/4, 2)): Array[Long] = {
-//    batchDeserialize[Long](input, threadsNum, deserializeNodeKey)
-//  }
 
   def deserializeNodeKey(byteArr: Array[Byte]): Long = {
     val byteBuf = Unpooled.wrappedBuffer(byteArr)

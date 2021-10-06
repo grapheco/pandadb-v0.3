@@ -20,6 +20,9 @@ import scala.reflect.ClassTag
  */
 
 object BaseSerializer extends BaseSerializer {
+//  The following two arguments are used for parallel deserializing.
+  val maxThreadsNum: Int = math.max(Runtime.getRuntime.availableProcessors()/8, 1)
+  val generalStepLength: Int = maxThreadsNum * 20000
 
   def array2Bytes(array: Array[_]): Array[Byte] = {
     val byteBuf: ByteBuf = allocator.heapBuffer()
@@ -282,30 +285,31 @@ trait BaseSerializer {
 
   def batchDeserialize[T: ClassTag](input: Array[Array[Byte]],
                                     deserializeObject: Array[Byte] => T): Array[T] = {
-    val threadsNum: Int = math.max(Runtime.getRuntime.availableProcessors()/4, 2)
-    val groupSize: Int = input.length / threadsNum
+    val threadsNum: Int = BaseSerializer.maxThreadsNum
 
     if (input.length < threadsNum) {
       input.map(objInBytes => deserializeObject(objInBytes))
     }
     else {
+      val groupSize: Int = input.length / threadsNum
       val iterOfGroup: Array[Array[Array[Byte]]] = input.sliding(groupSize, groupSize).toArray
 
       val futures = iterOfGroup.map(groupOfBytes => Future{
         groupOfBytes.map(nodeBytes => deserializeObject(nodeBytes))
       })
-      futures.map(futureWork => Await.result(futureWork, Duration.Inf)).flatten[T]
+      futures.map(futureWork => {Await.result(futureWork, Duration.Inf)}).flatten[T]
     }
   }
 
   def batchDeserialize[T1: ClassTag, T2:ClassTag](input: Array[(Array[Byte], Array[Byte])],
                                     deserializeKey: Array[Byte] => T1, deserializeValue: Array[Byte] => T2): Array[(T1, T2)] = {
-    val threadsNum: Int = math.max(Runtime.getRuntime.availableProcessors()/4, 2)
-    val groupSize: Int = input.length / threadsNum
+    val threadsNum: Int = BaseSerializer.maxThreadsNum
+
 
     if(input.length < threadsNum) {
       input.map(kv => (deserializeKey(kv._1), deserializeValue(kv._2)))
     } else  {
+      val groupSize: Int = input.length / threadsNum
       val iterOfGroup: Array[Array[(Array[Byte], Array[Byte])]] = input.sliding(groupSize, groupSize).toArray
 
       val futures = iterOfGroup.map(groupOfBytes => Future {
