@@ -157,6 +157,7 @@ class PandaStreamHandler(graphFacade: GraphService) extends HippoRpcHandler with
 
     override def hasNext: Boolean = {
       if (_count == 1) {
+        _count += 1
         true
       } else false
     }
