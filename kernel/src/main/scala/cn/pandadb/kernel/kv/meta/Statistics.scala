@@ -57,18 +57,9 @@ class Statistics(path: String, rocksdbCfgPath: String = "default") {
     _relationCountByType.clear()
     _propertyCountByIndex.clear()
     _nodeCountByLabel = getMap(Array(NODECOUNTBYLABEL))
-    _relationCountByType = getMap(Array(NODECOUNTBYLABEL))
-    _propertyCountByIndex = getMap(Array(NODECOUNTBYLABEL))
+    _relationCountByType = getMap(Array(RELATIONCOUNTBYTYPE))
+    _propertyCountByIndex = getMap(Array(PROPERTYCOUNTBYINDEX))
   }
-
-//  def initFromImporter(allNodeCount: Long, allRelationCount: Long, nodeCountByLabel: mutable.Map[Int, Long],
-//                        relationCoutByType: mutable.Map[Int, Long], propertyCountByIndex: mutable.Map[Int, Long]): Unit = {
-//    nodeCount = allNodeCount
-//    _allRelationCount = allRelationCount
-//    _nodeCountByLabel = nodeCountByLabel
-//    _relationCountByType = relationCoutByType
-//    _propertyCountByIndex = propertyCountByIndex
-//  }
 
   def flush(): Unit = {
     db.put(Array(NODESCOUNT), ByteUtils.longToBytes(_allNodesCount))

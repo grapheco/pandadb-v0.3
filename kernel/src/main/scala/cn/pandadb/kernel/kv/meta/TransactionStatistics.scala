@@ -53,8 +53,8 @@ class TransactionStatistics(db: TransactionDB, logWriter: PandaLog) {
     _relationCountByType.clear()
     _propertyCountByIndex.clear()
     _nodeCountByLabel = getMap(Array(NODECOUNTBYLABEL))
-    _relationCountByType = getMap(Array(NODECOUNTBYLABEL))
-    _propertyCountByIndex = getMap(Array(NODECOUNTBYLABEL))
+    _relationCountByType = getMap(Array(RELATIONCOUNTBYTYPE))
+    _propertyCountByIndex = getMap(Array(PROPERTYCOUNTBYINDEX))
   }
 
   def flush(tx: LynxTransaction): Unit = {
