@@ -8,6 +8,7 @@ import java.util.concurrent.{Executors, ScheduledExecutorService}
 import com.typesafe.scalalogging.LazyLogging
 
 import java.util.concurrent.atomic.AtomicInteger
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
@@ -89,6 +90,13 @@ trait SingleFileImporter extends LazyLogging{
     val taskId: AtomicInteger = new AtomicInteger(0)
     val taskArray: Array[Future[Boolean]] = new Array[Int](taskCount).map(item => Future{_importTask(taskId.getAndIncrement())})
     taskArray.foreach(task => {Await.result(task, Duration.Inf)})
+  }
+
+  protected def _countMapAdd(countMap: mutable.Map[Int, Long], key: Int, addBy: Long): Long = {
+    val countBeforeAdd: Long = countMap.getOrElse(key, 0.toLong)
+    val countAfterAdd: Long = countBeforeAdd + addBy
+    countMap.put(key, countAfterAdd)
+    countAfterAdd
   }
 
 }

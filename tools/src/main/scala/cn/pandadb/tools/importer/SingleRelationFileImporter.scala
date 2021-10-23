@@ -11,6 +11,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
@@ -22,6 +23,7 @@ import scala.concurrent.duration.Duration
   * @Modified By:
   */
 class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: GlobalArgs) extends SingleFileImporter {
+
   override val csvFile: File = file
   override val cmd: ImportCmd = importCmd
   override val importerFileReader: ImporterFileReader = new ImporterFileReader(csvFile, importCmd.delimeter)
@@ -76,8 +78,10 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
   writeOptions.setIgnoreMissingColumnFamilies(true)
   writeOptions.setSync(false)
 
-  val globalCount: AtomicLong = globalArgs.globalRelCount
-  val globalPropCount: AtomicLong = globalArgs.globalRelPropCount
+  val innerFileRelCount: AtomicLong = new AtomicLong()
+  val innerFileRelCountByType: mutable.HashMap[Int, Long] = new mutable.HashMap[Int, Long]()
+//  val globalCount: AtomicLong = globalArgs.globalRelCount
+//  val globalPropCount: AtomicLong = globalArgs.globalRelPropCount
   val estEdgeCount: Long = estLineCount
 
   override protected def _importTask(taskId: Int): Boolean = {
@@ -116,9 +120,12 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
         inBatch.clear()
         outBatch.clear()
         labelBatch.clear()
-        globalCount.addAndGet(batchData.length)
-        globalArgs.statistics.increaseRelationCount(batchData.length)
-        globalPropCount.addAndGet(batchData.length*propHeadMap.size)
+        globalArgs.importerStatics.relCountAddBy(batchData.length)
+        globalArgs.importerStatics.relPropCountAddBy(batchData.length*propHeadMap.size)
+        innerFileRelCountByType.foreach(kv => globalArgs.importerStatics.relTypeCountAdd(kv._1, kv._2))
+//        globalCount.addAndGet(batchData.length)
+//        globalArgs.statistics.increaseRelationCount(batchData.length)
+//        globalPropCount.addAndGet(batchData.length*propHeadMap.size)
       }
     }
 
@@ -142,6 +149,7 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
     globalArgs.statistics.increaseRelationTypeCount(edgeType, 1)
     val propMap: Map[Int, Any] = _getPropMap(lineArr, propHeadMap)
 
+    _countMapAdd(innerFileRelCountByType, edgeType, 1)
     new StoredRelationWithProperty(relId, fromId, toId, edgeType, propMap)
   }
 

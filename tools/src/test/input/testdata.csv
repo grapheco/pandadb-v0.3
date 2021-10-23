@@ -6,4 +6,4 @@ pandaId:ID,pandaLabel:LABEL,level,name,TaxID,Rank,Node,parent,children:string[]
 5,Archaea,5,environmental samples,97709,no rank,7,4,95860|95861|97710|97711|97712|97713|97714
 6,Archaea,6,uncultured archaeon CLEAR-15,95860,species,0,5,null
 7,Archaea,6,uncultured archaeon CLEAR-24,95861,species,0,5,null
-8,Archaea,6,uncultured archaeon ACE-6,97710,species,0,5,null
+8,Archae,6,uncultured archaeon ACE-6,97710,species,0,5,null

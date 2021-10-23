@@ -6,6 +6,8 @@ import cn.pandadb.kernel.util.serializer.NodeSerializer
 import org.rocksdb.{WriteBatch, WriteOptions}
 
 import java.io.File
+import java.util.concurrent.atomic.AtomicLong
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
@@ -17,6 +19,7 @@ import scala.concurrent.{Await, Future}
  * @Modified By:
  */
 class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: GlobalArgs) extends SingleFileImporter {
+
   override val csvFile: File = file
   override val cmd: ImportCmd = importCmd
   override val importerFileReader: ImporterFileReader = new ImporterFileReader(file, importCmd.delimeter)
@@ -57,8 +60,10 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
 
   val nodeDB = globalArgs.nodeDB
   val nodeLabelDB = globalArgs.nodeLabelDB
-  val globalCount = globalArgs.globalNodeCount
-  val globalPropCount = globalArgs.globalNodePropCount
+//  val globalCount = globalArgs.importerStatics.getGlobalNodeCount
+//  val globalPropCount = globalArgs.importerStatics.getGlobalNodePropCount
+  val innerFileNodeCount: AtomicLong = new AtomicLong()
+  val innerFileNodeCountByLabel: mutable.HashMap[Int, Long] = new mutable.HashMap[Int, Long]()
   val estNodeCount = globalArgs.estNodeCount
   val NONE_LABEL_ID = -1
 
@@ -94,9 +99,12 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
 
       nodeBatch.clear()
       labelBatch.clear()
-      globalCount.addAndGet(batchData.length)
-      globalArgs.statistics.increaseNodeCount(batchData.length)
-      globalPropCount.addAndGet(batchData.length*propHeadMap.size)
+//      globalCount.addAndGet(batchData.length)
+      //      globalArgs.statistics.increaseNodeCount(batchData.length)
+      //      globalPropCount.addAndGet(batchData.length*propHeadMap.size)
+      globalArgs.importerStatics.nodeCountAddBy(batchData.length)
+      globalArgs.importerStatics.nodePropCountAddBy(batchData.length*propHeadMap.size)
+      innerFileNodeCountByLabel.foreach(kv => globalArgs.importerStatics.nodeLabelCountAdd(kv._1, kv._2))
     }
 
     val f1: Future[Unit] = Future{nodeDB.flush()}
@@ -118,7 +126,8 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
       }
     }
     val labelIds: Array[Int] = labels.map(label => PDBMetaData.getLabelId(label))
-    labelIds.foreach(id => globalArgs.statistics.increaseNodeLabelCount(id, 1))
+//    labelIds.foreach(id => globalArgs.statistics.increaseNodeLabelCount(id, 1))
+    labelIds.foreach(id => _countMapAdd(innerFileNodeCountByLabel, id, 1.toLong))
     val propMap: Map[Int, Any] = _getPropMap(lineArr, propHeadMap)
     (id, labelIds, propMap)
   }

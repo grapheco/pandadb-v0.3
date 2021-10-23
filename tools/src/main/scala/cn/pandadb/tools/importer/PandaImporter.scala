@@ -3,13 +3,12 @@ package cn.pandadb.tools.importer
 import cn.pandadb.kernel.PDBMetaData
 import cn.pandadb.kernel.kv.RocksDBStorage
 import cn.pandadb.kernel.kv.meta.Statistics
+import cn.pandadb.kernel.util.DBNameMap
 import com.typesafe.scalalogging.LazyLogging
+
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
-
-import cn.pandadb.kernel.util.DBNameMap
 
 /**
  * @Author: Airzihao
@@ -18,10 +17,8 @@ import cn.pandadb.kernel.util.DBNameMap
  * @Modified By:
  */
 object PandaImporter extends LazyLogging {
-  val globalNodeCount = new AtomicLong(0)
-  val globalNodePropCount = new AtomicLong(0)
-  val globalRelCount = new AtomicLong(0)
-  val globalRelPropCount = new AtomicLong(0)
+
+  val importerStatics: ImporterStatics = new ImporterStatics
 
   def time: String = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
 
@@ -29,13 +26,13 @@ object PandaImporter extends LazyLogging {
 
   val nodeCountProgressLogger: Runnable = new Runnable {
     override def run(): Unit = {
-      logger.info(s"$globalNodeCount nodes imported. $time")
+      logger.info(s"${importerStatics.getGlobalNodeCount} nodes imported. $time")
     }
   }
 
   val relCountProgressLogger: Runnable = new Runnable {
     override def run(): Unit = {
-      logger.info(s"$globalRelCount relations imported. $time")
+      logger.info(s"${importerStatics.getGlobalRelCount} relations imported. $time")
     }
   }
 
@@ -67,8 +64,7 @@ object PandaImporter extends LazyLogging {
 
 
     val globalArgs = GlobalArgs(Runtime.getRuntime().availableProcessors(),
-      globalNodeCount, globalNodePropCount,
-      globalRelCount, globalRelPropCount,
+      importerStatics,
       estNodeCount, estRelCount,
       nodeDB, nodeLabelDB = nodeLabelDB,
       relationDB = relationDB, inrelationDB = inRelationDB,
@@ -81,16 +77,16 @@ object PandaImporter extends LazyLogging {
     importCmd.nodeFileList.foreach(file => new SingleNodeFileImporter(file, importCmd, globalArgs).importData())
     nodeDB.close()
     nodeLabelDB.close()
-    logger.info(s"$globalNodeCount nodes imported. $time")
-    logger.info(s"$globalNodePropCount props of node imported. $time")
+    logger.info(s"${importerStatics.getGlobalNodeCount} nodes imported. $time")
+    logger.info(s"${importerStatics.getGlobalNodePropCount} props of node imported. $time")
 
     importCmd.relFileList.foreach(file => new SingleRelationFileImporter(file, importCmd, globalArgs).importData())
     relationDB.close()
     inRelationDB.close()
     outRelationDB.close()
     relationTypeDB.close()
-    logger.info(s"$globalRelCount relations imported. $time")
-    logger.info(s"$globalRelPropCount props of relation imported. $time")
+    logger.info(s"${importerStatics.getGlobalRelCount} relations imported. $time")
+    logger.info(s"${importerStatics.getGlobalRelPropCount} props of relation imported. $time")
 
     PDBMetaData.persist(importCmd.exportDBPath.getAbsolutePath)
     service.shutdown()
@@ -99,10 +95,10 @@ object PandaImporter extends LazyLogging {
 
     globalArgs.statistics.flush()
 
-    logger.info(s"$globalNodeCount nodes imported. $time")
-    logger.info(s"$globalNodePropCount props of node imported. $time")
-    logger.info(s"$globalRelCount relations imported. $time")
-    logger.info(s"$globalRelPropCount props of relation imported. $time")
+    logger.info(s"${importerStatics.getGlobalNodeCount} nodes imported. $time")
+    logger.info(s"${importerStatics.getGlobalNodePropCount} props of node imported. $time")
+    logger.info(s"${importerStatics.getGlobalRelCount} relations imported. $time")
+    logger.info(s"${importerStatics.getGlobalRelPropCount} props of relation imported. $time")
     logger.info(s"Import task finished in $timeUsed")
 
   }

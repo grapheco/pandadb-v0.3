@@ -8,6 +8,8 @@ import cn.pandadb.kernel.kv.relation.RelationStoreAPI
 import org.apache.commons.io.FileUtils
 import org.junit.{Assert, Test}
 
+import scala.collection.mutable
+
 /**
   * @Author: Airzihao
   * @Description:
@@ -35,7 +37,10 @@ class ImporterTest {
     val nodeAPI = new NodeStoreAPI(dbPath)
     val node1 = nodeAPI.getNodeById(1L)
     val props = node1.get.properties
-    println(props)
+//    println(props)
+
+    PandaImporter.importerStatics.getNodeCountByLabel.foreach(kv => println(kv._1, kv._2))
+    PandaImporter.importerStatics.getRelCountByType.foreach(kv => println(kv._1, kv._2))
   }
 
   @Test
