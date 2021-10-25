@@ -5,12 +5,10 @@ import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter, RocksDBStorage}
 import cn.pandadb.kernel.store.StoredRelationWithProperty
 import cn.pandadb.kernel.util.serializer.RelationSerializer
 import org.rocksdb.{WriteBatch, WriteOptions}
+import scala.collection.convert.ImplicitConversions._
 
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
@@ -78,15 +76,12 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
   writeOptions.setIgnoreMissingColumnFamilies(true)
   writeOptions.setSync(false)
 
-  val innerFileRelCount: AtomicLong = new AtomicLong()
-  val innerFileRelCountByType: mutable.HashMap[Int, Long] = new mutable.HashMap[Int, Long]()
-//  val globalCount: AtomicLong = globalArgs.globalRelCount
-//  val globalPropCount: AtomicLong = globalArgs.globalRelPropCount
+  val innerFileRelCountByType: ConcurrentHashMap[Int, Long] = new ConcurrentHashMap[Int, Long]()
   val estEdgeCount: Long = estLineCount
 
   override protected def _importTask(taskId: Int): Boolean = {
+    val innerTaskRelCountByType: mutable.HashMap[Int, Long] = new mutable.HashMap[Int, Long]()
     val serializer = RelationSerializer
-    var innerCount = 0
 
     val inBatch = new WriteBatch()
     val outBatch = new WriteBatch()
@@ -97,10 +92,10 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
       val batchData = importerFileReader.getLines
       if(batchData.nonEmpty) {
         batchData.foreach(line => {
-          innerCount += 1
           val lineArr = line.getAsArray
           val relation = _wrapEdge(lineArr)
           val serializedRel = serializer.serialize(relation)
+          _countMapAdd(innerTaskRelCountByType, relation.typeId, 1L)
           storeBatch.put(KeyConverter.toRelationKey(relation.id), serializedRel)
           inBatch.put(KeyConverter.edgeKeyToBytes(relation.to, relation.typeId, relation.from), ByteUtils.longToBytes(relation.id))
           outBatch.put(KeyConverter.edgeKeyToBytes(relation.from, relation.typeId, relation.to), ByteUtils.longToBytes(relation.id))
@@ -122,13 +117,10 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
         labelBatch.clear()
         globalArgs.importerStatics.relCountAddBy(batchData.length)
         globalArgs.importerStatics.relPropCountAddBy(batchData.length*propHeadMap.size)
-        innerFileRelCountByType.foreach(kv => globalArgs.importerStatics.relTypeCountAdd(kv._1, kv._2))
-//        globalCount.addAndGet(batchData.length)
-//        globalArgs.statistics.increaseRelationCount(batchData.length)
-//        globalPropCount.addAndGet(batchData.length*propHeadMap.size)
       }
     }
 
+    innerTaskRelCountByType.foreach(kv => _countMapAdd(innerFileRelCountByType, kv._1, kv._2))
     val f1: Future[Unit] = Future{relationDB.flush()}
     val f2: Future[Unit] = Future{inRelationDB.flush()}
     val f3: Future[Unit] = Future{outRelationDB.flush()}
@@ -137,7 +129,6 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
     Await.result(f2, Duration.Inf)
     Await.result(f3, Duration.Inf)
     Await.result(f4, Duration.Inf)
-
     true
   }
 
@@ -149,8 +140,12 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
     globalArgs.statistics.increaseRelationTypeCount(edgeType, 1)
     val propMap: Map[Int, Any] = _getPropMap(lineArr, propHeadMap)
 
-    _countMapAdd(innerFileRelCountByType, edgeType, 1)
     new StoredRelationWithProperty(relId, fromId, toId, edgeType, propMap)
+  }
+
+  override protected def _commitInnerFileStatToGlobal(): Boolean = {
+    innerFileRelCountByType.foreach(kv => globalArgs.importerStatics.relTypeCountAdd(kv._1, kv._2))
+    true
   }
 
 }

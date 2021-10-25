@@ -6,7 +6,6 @@ import cn.pandadb.kernel.kv.meta.Statistics
 import java.util.concurrent.{ConcurrentHashMap, ConcurrentMap}
 import java.util.concurrent.atomic.AtomicLong
 import scala.collection.convert.ImplicitConversions._
-import scala.collection.mutable
 
 /**
  * @Author: Airzihao
@@ -65,7 +64,7 @@ case class ImporterStatics() {
       relCountByType.put(typeId, countAfterAdd)
       countAfterAdd
     } else {
-      nodeCountByLabel.put(typeId, count)
+      relCountByType.put(typeId, count)
       count
     }
   }

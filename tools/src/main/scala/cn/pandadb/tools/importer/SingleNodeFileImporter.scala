@@ -6,7 +6,8 @@ import cn.pandadb.kernel.util.serializer.NodeSerializer
 import org.rocksdb.{WriteBatch, WriteOptions}
 
 import java.io.File
-import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.ConcurrentHashMap
+import scala.collection.convert.ImplicitConversions._
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -60,10 +61,8 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
 
   val nodeDB = globalArgs.nodeDB
   val nodeLabelDB = globalArgs.nodeLabelDB
-//  val globalCount = globalArgs.importerStatics.getGlobalNodeCount
-//  val globalPropCount = globalArgs.importerStatics.getGlobalNodePropCount
-  val innerFileNodeCount: AtomicLong = new AtomicLong()
-  val innerFileNodeCountByLabel: mutable.HashMap[Int, Long] = new mutable.HashMap[Int, Long]()
+
+  val innerFileNodeCountByLabel: ConcurrentHashMap[Int, Long] = new ConcurrentHashMap[Int, Long]()
   val estNodeCount = globalArgs.estNodeCount
   val NONE_LABEL_ID = -1
 
@@ -73,19 +72,19 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
   writeOptions.setSync(false)
 
   override protected def _importTask(taskId: Int): Boolean = {
+    val innerTaskNodeCountByLabel: mutable.HashMap[Int, Long] = new mutable.HashMap[Int, Long]()
     val serializer = NodeSerializer
-    var innerCount = 0
     val nodeBatch = new WriteBatch()
     val labelBatch = new WriteBatch()
 
     while (importerFileReader.notFinished) {
       val batchData = importerFileReader.getLines
       batchData.foreach(line => {
-        innerCount += 1
         val lineArr = line.getAsArray
         val node = _wrapNode(lineArr)
         val keys: Array[(Array[Byte], Array[Byte])] = _getNodeKeys(node._1, node._2)
         val serializedNodeValue = serializer.serialize(node._1, node._2, node._3)
+        node._2.foreach(labelId => _countMapAdd(innerTaskNodeCountByLabel, labelId, 1L))
         keys.foreach(pair =>{
           nodeBatch.put(pair._1, serializedNodeValue)
           labelBatch.put(pair._2, Array.emptyByteArray)
@@ -99,19 +98,15 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
 
       nodeBatch.clear()
       labelBatch.clear()
-//      globalCount.addAndGet(batchData.length)
-      //      globalArgs.statistics.increaseNodeCount(batchData.length)
-      //      globalPropCount.addAndGet(batchData.length*propHeadMap.size)
       globalArgs.importerStatics.nodeCountAddBy(batchData.length)
       globalArgs.importerStatics.nodePropCountAddBy(batchData.length*propHeadMap.size)
-      innerFileNodeCountByLabel.foreach(kv => globalArgs.importerStatics.nodeLabelCountAdd(kv._1, kv._2))
     }
 
+    innerTaskNodeCountByLabel.foreach(kv => _countMapAdd(innerFileNodeCountByLabel, kv._1, kv._2))
     val f1: Future[Unit] = Future{nodeDB.flush()}
     val f2: Future[Unit] = Future{nodeLabelDB.flush()}
     Await.result(f1, Duration.Inf)
     Await.result(f2, Duration.Inf)
-
     true
   }
 
@@ -126,10 +121,13 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
       }
     }
     val labelIds: Array[Int] = labels.map(label => PDBMetaData.getLabelId(label))
-//    labelIds.foreach(id => globalArgs.statistics.increaseNodeLabelCount(id, 1))
-    labelIds.foreach(id => _countMapAdd(innerFileNodeCountByLabel, id, 1.toLong))
     val propMap: Map[Int, Any] = _getPropMap(lineArr, propHeadMap)
     (id, labelIds, propMap)
+  }
+
+  override protected def _commitInnerFileStatToGlobal(): Boolean = {
+    innerFileNodeCountByLabel.foreach(kv => globalArgs.importerStatics.nodeLabelCountAdd(kv._1, kv._2))
+    true
   }
 
   private def _getNodeKeys(id: Long, labelIds: Array[Int]): Array[(Array[Byte], Array[Byte])] = {
