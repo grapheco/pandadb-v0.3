@@ -29,17 +29,16 @@ class ImporterTest {
   }
 
   @Test
-  def importData(): Unit = {
+  def importStatsData(): Unit = {
     FileUtils.deleteDirectory(new File("./src/test/output/testDB") )
     val dbPath = "./src/test/output/testDB"
-    val importCmd = s"./importer-panda.sh --db-path=$dbPath --nodes=./src/test/input/testdata.csv --delimeter=, --array-delimeter=|".split(" ")
+    val importCmd = s"./importer-panda.sh --db-path=$dbPath --nodes=/home/airzihao/biology.node.trick.csv --relationships=/home/airzihao/biology.rel.trick.csv --delimeter=☔ --array-delimeter=|".split(" ")
     PandaImporter.main(importCmd)
-    val nodeAPI = new NodeStoreAPI(dbPath)
-    val node1 = nodeAPI.getNodeById(1L)
-    val props = node1.get.properties
-//    println(props)
 
+
+    println("nodes")
     PandaImporter.importerStatics.getNodeCountByLabel.foreach(kv => println(kv._1, kv._2))
+    println("rels")
     PandaImporter.importerStatics.getRelCountByType.foreach(kv => println(kv._1, kv._2))
   }
 
