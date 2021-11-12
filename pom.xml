@@ -34,10 +34,10 @@
         <log4j-slf4j-impl.version>2.14.0</log4j-slf4j-impl.version>
         <junit.version>4.13.1</junit.version>
         <pandadb.version>${project.version}</pandadb.version>
+        <tikv.client.version>3.1.0</tikv.client.version>
     </properties>
 
     <dependencies>
-
         <!-- log -->
         <dependency>
             <groupId>com.typesafe.scala-logging</groupId>
@@ -58,6 +58,11 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.tikv</groupId>
+                <artifactId>tikv-client-java</artifactId>
+                <version>${tikv.client.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.scala-lang</groupId>
                 <artifactId>scala-library</artifactId>

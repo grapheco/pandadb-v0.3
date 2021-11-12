@@ -21,6 +21,10 @@
     </properties>
     <dependencies>
         <dependency>
+            <groupId>org.tikv</groupId>
+            <artifactId>tikv-client-java</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-buffer</artifactId>
         </dependency>
