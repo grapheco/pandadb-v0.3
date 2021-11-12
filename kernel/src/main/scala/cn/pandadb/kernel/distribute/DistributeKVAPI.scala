@@ -1,9 +1,9 @@
-package cn.pandadb.kv.distribute
+package cn.pandadb.kernel.distribute
 
 import org.tikv.common.{TiConfiguration, TiSession}
-import org.tikv.common.util.ScanOption
 import org.tikv.raw.RawKVClient
 import org.tikv.shade.com.google.protobuf.ByteString
+
 import scala.collection.JavaConverters._
 /**
  * @program: pandadb-v0.3
@@ -12,16 +12,16 @@ import scala.collection.JavaConverters._
  * @create: 2021-11-12 11:06
  */
 
-object MethodTest{
+object DistributeKVAPI{
   def main(args: Array[String]): Unit = {
     val conf = TiConfiguration.createRawDefault("10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379")
     val session = TiSession.create(conf)
-    val client = new MethodTest(session.createRawClient())
+    val client = new DistributeKVAPI(session.createRawClient())
 
   }
 }
 
-class MethodTest(client: RawKVClient) {
+class DistributeKVAPI(client: RawKVClient) {
   implicit def arrayByte2TiKv(origin: Array[Byte]): ByteString = ByteString.copyFrom(origin)
   implicit def tiKv2ArrayByte(origin: ByteString): Array[Byte] = origin.toByteArray
 
