@@ -32,7 +32,7 @@ class ImporterTest {
   def importStatsData(): Unit = {
     FileUtils.deleteDirectory(new File("./src/test/output/testDB") )
     val dbPath = "./src/test/output/testDB"
-    val importCmd = s"./importer-panda.sh --db-path=$dbPath --nodes=/home/airzihao/biology.node.trick.csv --relationships=/home/airzihao/biology.rel.trick.csv --delimeter=☔ --array-delimeter=|".split(" ")
+    val importCmd = s"./importer-panda.sh --db-path=$dbPath --nodes=D://data//tag-output.csv --delimeter=| --array-delimeter=; --es-hosts=111:22,222:33,333:44 --node-index-name=a --relation-index-name=sss".split(" ")
     PandaImporter.main(importCmd)
 
 
@@ -60,5 +60,17 @@ class ImporterTest {
 
     result1.zip(result2).map(pair => Assert.assertEquals(pair._1.id, pair._2.id))
 
+  }
+
+  @Test
+  def testCmd(): Unit ={
+    val cmd = ImportCmd(Array(
+      "--db-path=AAAAA",
+      "--nodes=BBBBBB",
+      "--relationships=CCCCC",
+      "--es-hosts=192.168.1.1:9200,192.168.1.2:9200,192.168.1.3:9200",
+      "--node-index-name=node-test",
+      "--relation-index-name=relation-test"
+    ))
   }
 }

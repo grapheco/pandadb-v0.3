@@ -1,7 +1,5 @@
 package cn.pandadb.kernel.store
 
-import cn.pandadb.kernel.kv.meta.TransactionStatistics
-import cn.pandadb.kernel.util.log.PandaLog
 import cn.pandadb.kernel.util.serializer.BaseSerializer
 import org.grapheco.lynx.{LynxId, LynxNode, LynxNull, LynxTransaction, LynxValue}
 import org.rocksdb.{Transaction, WriteOptions}
@@ -47,23 +45,6 @@ case class LazyPandaNode(longId: Long, nodeStoreSPI: NodeStoreSPI) extends LynxN
       node.properties.map(kv=>(nodeStore.getPropertyKeyName(kv._1).getOrElse("unknown"), LynxValue(kv._2))).toSeq:_*)
   }
 }
-
-case class TransactionLazyPandaNode(longId: Long, nodeStoreSPI: TransactionNodeStoreSPI, tx:LynxTransaction) extends LynxNode {
-  lazy val nodeValue: PandaNode = transfer(nodeStoreSPI)
-  override val id: LynxId = NodeId(longId)
-
-  override def labels: Seq[String] = nodeStoreSPI.getNodeLabelsById(longId, tx).map(f=>nodeStoreSPI.getLabelName(f).get).toSeq
-
-  override def property(name: String): Option[LynxValue] = nodeValue.properties.get(name)
-
-  def transfer(nodeStore: TransactionNodeStoreSPI): PandaNode = {
-    val node = nodeStore.getNodeById(longId, tx).get
-    PandaNode(node.id,
-      node.labelIds.map((id: Int) => nodeStore.getLabelName(id).get).toSeq,
-      node.properties.map(kv=>(nodeStore.getPropertyKeyName(kv._1).getOrElse("unknown"), LynxValue(kv._2))).toSeq:_*)
-  }
-}
-
 
 trait NodeStoreSPI {
   def allLabels(): Array[String];
@@ -141,86 +122,4 @@ trait NodeStoreSPI {
   def getLabelIds(labelNames: Set[String]): Set[Int]
 
   def close(): Unit
-
-}
-
-trait TransactionNodeStoreSPI {
-  def generateTransactions(writeOptions: WriteOptions): Map[String, Transaction];
-
-  def allLabels(tx: LynxTransaction): Array[String];
-
-  def allLabelIds(tx: LynxTransaction): Array[Int];
-
-  def getLabelName(labelId: Int): Option[String];
-
-  def getLabelId(labelName: String): Option[Int];
-
-  def addLabel(labelName: String, tx: LynxTransaction): Int;
-
-  def allPropertyKeys(): Array[String];
-
-  def allPropertyKeyIds(): Array[Int];
-
-  def getPropertyKeyName(keyId: Int): Option[String];
-
-  def getPropertyKeyId(keyName: String): Option[Int];
-
-  def addPropertyKey(keyName: String, tx: LynxTransaction): Int;
-
-  def getNodeById(nodeId: Long, tx: LynxTransaction): Option[StoredNodeWithProperty]
-
-  def getNodeById(nodeId: Long, label: Int, tx: LynxTransaction): Option[StoredNodeWithProperty]
-
-  def getNodeById(nodeId: Long, label: Option[Int], tx: LynxTransaction): Option[StoredNodeWithProperty]
-
-  def getNodesByLabel(labelId: Int, tx: LynxTransaction): Iterator[StoredNodeWithProperty];
-
-  def getNodeIdsByLabel(labelId: Int, tx: LynxTransaction): Iterator[Long];
-
-  def getNodeLabelsById(nodeId: Long, tx: LynxTransaction): Array[Int];
-
-  def hasLabel(nodeId: Long, label: Int, tx: LynxTransaction): Boolean;
-
-  def newNodeId(): Long;
-
-  def nodeAddLabel(nodeId: Long, labelId: Int, tx: LynxTransaction): Unit;
-
-  def nodeRemoveLabel(nodeId: Long, labelId: Int, tx: LynxTransaction): Unit;
-
-  def nodeSetProperty(nodeId: Long, propertyKeyId: Int, propertyValue: Any, tx: LynxTransaction): Unit;
-
-  def nodeRemoveProperty(nodeId: Long, propertyKeyId: Int, tx: LynxTransaction): Any;
-
-  def deleteNode(nodeId: Long, tx: LynxTransaction): Unit;
-
-  def deleteNodes(nodeIDs: Iterator[Long], tx: LynxTransaction, logWriter: PandaLog, statistics: TransactionStatistics): Unit;
-
-  def serializeLabelIdsToBytes(labelIds: Array[Int]): Array[Byte] = {
-    BaseSerializer.array2Bytes(labelIds)
-  }
-
-  def deserializeBytesToLabelIds(bytes: Array[Byte]): Array[Int] = {
-    BaseSerializer.bytes2Array(bytes).asInstanceOf[Array[Int]]
-  }
-
-  def serializePropertiesToBytes(properties: Map[Int, Any]): Array[Byte] = {
-    BaseSerializer.map2Bytes(properties)
-  }
-
-  def deserializeBytesToProperties(bytes: Array[Byte]): Map[Int, Any] = {
-    BaseSerializer.bytes2Map(bytes)
-  }
-
-  def allNodes(tx: LynxTransaction): Iterator[StoredNodeWithProperty]
-
-  def nodesCount(tx: LynxTransaction): Long
-
-  def deleteNodesByLabel(labelId: Int, tx: LynxTransaction): Unit
-
-  def addNode(node: StoredNodeWithProperty, tx: LynxTransaction): Unit
-
-  def getLabelIds(labelNames: Set[String], tx: LynxTransaction): Set[Int]
-
-  def close(): Unit
-
 }
