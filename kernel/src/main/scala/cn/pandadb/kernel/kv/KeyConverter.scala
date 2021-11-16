@@ -2,6 +2,8 @@ package cn.pandadb.kernel.kv
 
 import java.nio.charset.{Charset, StandardCharsets}
 
+import org.tikv.common.types.{Charset=>TiKVCharset}
+
 class IllegalKeyException(s: String) extends RuntimeException(s) {
 }
 
@@ -45,6 +47,11 @@ object KeyConverter {
   val PROPERTY_ID_SIZE = 4
   val INDEX_ID_SIZE    = 4
   val IS_FULLTEXT_SIZE = 1
+
+
+  //
+  def nodeMaxIdKey: Array[Byte] = "nodeMaxId".getBytes(TiKVCharset.CharsetUTF8)
+  def relationMaxIdKey: Array[Byte] = "relationMaxId".getBytes(TiKVCharset.CharsetUTF8)
 
 
   /**

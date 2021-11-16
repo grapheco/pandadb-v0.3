@@ -29,12 +29,14 @@
         <scala.compat.version>2.12</scala.compat.version>
         <netty.version>4.1.17.Final</netty.version>
         <rocksdb.version>6.15.2</rocksdb.version>
-        <lucene.version>7.5.0</lucene.version>
         <scala-logging.version>3.8.0</scala-logging.version>
         <log4j-slf4j-impl.version>2.14.0</log4j-slf4j-impl.version>
         <junit.version>4.13.1</junit.version>
         <pandadb.version>${project.version}</pandadb.version>
         <tikv.client.version>3.1.0</tikv.client.version>
+        <elasticserach.version>7.14.1</elasticserach.version>
+        <fastjson.version>1.2.78</fastjson.version>
+        <lucene.version>8.9.0</lucene.version>
     </properties>
 
     <dependencies>
@@ -58,6 +60,16 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>fastjson</artifactId>
+                <version>${fastjson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.elasticsearch.client</groupId>
+                <artifactId>elasticsearch-rest-high-level-client</artifactId>
+                <version>${elasticserach.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.tikv</groupId>
                 <artifactId>tikv-client-java</artifactId>
@@ -89,16 +101,6 @@
                 <version>1.8</version>
             </dependency>
             <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-buffer</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.rocksdb</groupId>
-                <artifactId>rocksdbjni</artifactId>
-                <version>${rocksdb.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.apache.lucene</groupId>
                 <artifactId>lucene-core</artifactId>
                 <version>${lucene.version}</version>
@@ -107,6 +109,16 @@
                 <groupId>org.apache.lucene</groupId>
                 <artifactId>lucene-queryparser</artifactId>
                 <version>${lucene.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-buffer</artifactId>
+                <version>${netty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.rocksdb</groupId>
+                <artifactId>rocksdbjni</artifactId>
+                <version>${rocksdb.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.grapheco</groupId>
