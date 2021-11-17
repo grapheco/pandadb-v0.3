@@ -2,16 +2,16 @@ package cn.pandadb.kernel.distribute.meta
 
 import java.util.concurrent.atomic.AtomicLong
 
-import cn.pandadb.kernel.distribute.DistributedKVAPI
-import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
+import cn.pandadb.kernel.distribute.{DistributedKVAPI, DistributedKeyConverter}
+import cn.pandadb.kernel.kv.ByteUtils
 /**
  * 1. write: first update to tikv, then use it
  */
 class IdGenerator(db: DistributedKVAPI, idType: TypeNameEnum.Value) {
   val key = {
     idType match {
-      case TypeNameEnum.nodeName => KeyConverter.nodeMaxIdKey
-      case TypeNameEnum.relationName => KeyConverter.relationMaxIdKey
+      case TypeNameEnum.nodeName => DistributedKeyConverter.nodeMaxIdKey
+      case TypeNameEnum.relationName => DistributedKeyConverter.relationMaxIdKey
     }
   }
 

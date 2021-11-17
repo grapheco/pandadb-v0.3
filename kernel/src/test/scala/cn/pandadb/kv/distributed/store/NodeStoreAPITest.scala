@@ -1,0 +1,125 @@
+package cn.pandadb.kv.distributed.store
+
+import java.nio.ByteBuffer
+
+import cn.pandadb.kernel.distribute.{DistributedKeyConverter, PandaDistributeKVAPI}
+import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
+import cn.pandadb.kernel.distribute.node.{DistributedNodeStoreSPI, NodeStoreAPI}
+import cn.pandadb.kernel.store.StoredNodeWithProperty
+import org.apache.http.HttpHost
+import org.elasticsearch.client.{RestClient, RestHighLevelClient}
+import org.junit.{Assert, Before, Test}
+import org.tikv.common.types.Charset
+import org.tikv.common.{TiConfiguration, TiSession}
+import org.tikv.raw.RawKVClient
+import org.tikv.shade.com.google.protobuf.ByteString
+
+import scala.collection.JavaConverters
+import scala.collection.JavaConverters._
+
+/**
+ * @program: pandadb-v0.3
+ * @description:
+ * @author: LiamGao
+ * @create: 2021-11-17 09:38
+ */
+class NodeStoreAPITest {
+  var api: DistributedNodeStoreSPI = _
+  var tikv: RawKVClient = _
+
+  val n1 = new StoredNodeWithProperty(1, Array(1), Map(1 -> "glx1", 2 -> 181))
+  val n2 = new StoredNodeWithProperty(2, Array(1, 2), Map(1 -> "glx2", 2 -> 182))
+  val n3 = new StoredNodeWithProperty(3, Array(1, 2, 3), Map(1 -> "glx3", 2 -> 183))
+  val n4 = new StoredNodeWithProperty(4, Array(1, 3), Map(1 -> "glx4", 2 -> 184))
+  val n5 = new StoredNodeWithProperty(5, Array(2, 3), Map(1 -> "glx5", 2 -> 185))
+  val n6 = new StoredNodeWithProperty(6, Array(3), Map(1 -> "glx6", 2 -> 186))
+  val n7 = new StoredNodeWithProperty(7, Array(2), Map(1 -> "glx7", 2 -> 187))
+
+  val nodeArray = Array(n1, n2, n3, n4, n5, n6, n7)
+
+
+  @Before
+  def init(): Unit = {
+    val conf = TiConfiguration.createRawDefault("10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379")
+    val session = TiSession.create(conf)
+    tikv = session.createRawClient()
+    val db = new PandaDistributeKVAPI(tikv)
+
+    val hosts = Array(new HttpHost("10.0.82.144", 9200, "http"),
+      new HttpHost("10.0.82.145", 9200, "http"),
+      new HttpHost("10.0.82.146", 9200, "http"))
+    val indexStore = new PandaDistributedIndexStore(new RestHighLevelClient(RestClient.builder(hosts: _*)))
+
+    api = new NodeStoreAPI(db, indexStore)
+
+
+    api.addNode(n1)
+    api.addNode(n2)
+    api.addNode(n3)
+    api.addNode(n4)
+    api.addNode(n5)
+    api.addNode(n6)
+    api.addNode(n7)
+  }
+
+  @Test
+  def allNodes(): Unit = {
+    api.allNodes().toArray.sortBy(n => n.id).zipWithIndex.foreach(nodeAndIndex => {
+      Assert.assertEquals(nodeArray(nodeAndIndex._2), nodeAndIndex._1)
+    })
+  }
+
+  @Test
+  def deleteNode(): Unit = {
+    val array = nodeArray.tail
+    api.deleteNode(n1.id)
+    api.allNodes().toArray.sortBy(n => n.id).zipWithIndex.foreach(nodeAndIndex => {
+      Assert.assertEquals(array(nodeAndIndex._2), nodeAndIndex._1)
+    })
+
+    Assert.assertEquals(0, api.getNodeLabelsById(n1.id).length)
+  }
+
+  @Test
+  def deleteNodes(): Unit = {
+    val array = Array(n2, n4, n7)
+    val deleteArray = Array(n1, n3, n5, n6)
+
+    api.deleteNodes(deleteArray.map(n => n.id).iterator)
+    api.allNodes().toArray.sortBy(n => n.id).zipWithIndex.foreach(nodeAndIndex => {
+      Assert.assertEquals(array(nodeAndIndex._2), nodeAndIndex._1)
+    })
+
+    deleteArray.foreach(nid => Assert.assertEquals(0, api.getNodeLabelsById(nid.id).length))
+  }
+
+  @Test
+  def deleteNodesByLabel(): Unit = {
+    api.deleteNodesByLabel(3)
+
+    val array = Array(n1, n2, n7)
+    api.allNodes().toArray.sortBy(n => n.id).zipWithIndex.foreach(nodeAndIndex => {
+      Assert.assertEquals(array(nodeAndIndex._2), nodeAndIndex._1)
+    })
+  }
+
+
+  @Test
+  def show(): Unit = {
+    api.allNodes().foreach(println)
+    //    println("========")
+    //    api.getNodeLabelsById(1).foreach(println)
+  }
+
+  @Test
+  def deleteAll(): Unit = {
+    val left = ByteString.copyFrom(ByteBuffer.wrap(Array((0).toByte)))
+    val right = ByteString.copyFrom(ByteBuffer.wrap(Array((-1).toByte)))
+    tikv.deleteRange(left, right)
+  }
+
+  @Test
+  def getNodeCount(): Unit = {
+    Assert.assertEquals(7, api.nodesCount)
+  }
+}

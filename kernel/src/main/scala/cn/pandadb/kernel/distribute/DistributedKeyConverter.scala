@@ -18,6 +18,10 @@ object DistributedKeyConverter {
   val typeRelationPrefix: Byte = 5
   val relationKeyPrefix: Byte = 6
 
+  def nodeMaxIdKey: Array[Byte] = "nodeMaxId".getBytes(Charset.CharsetUTF8)
+  def relationMaxIdKey: Array[Byte] = "relationMaxId".getBytes(Charset.CharsetUTF8)
+
+
   val NODE_ID_SIZE     = 8
   val RELATION_ID_SIZE = 8
   val LABEL_ID_SIZE    = 4

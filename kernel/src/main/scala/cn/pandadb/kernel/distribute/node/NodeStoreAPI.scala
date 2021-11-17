@@ -31,6 +31,10 @@ class NodeStoreAPI(db: DistributedKVAPI, indexStore: PandaDistributedIndexStore)
       nodeStore.set(node)
       nodeLabelStore.set(node.id, node.labelIds)
     }
+    else {
+      nodeStore.set(NONE_LABEL_ID, node)
+      nodeLabelStore.set(node.id, NONE_LABEL_ID)
+    }
   }
 
   override def addLabel(labelName: String): Int = nodeLabelName.getOrAddId(labelName)
@@ -43,28 +47,25 @@ class NodeStoreAPI(db: DistributedKVAPI, indexStore: PandaDistributedIndexStore)
   }
 
   override def deleteNodes(nodeIDs: Iterator[Long]): Unit = {
-    val nodeKeys = ArrayBuffer[Array[Byte]]()
 
     nodeIDs.grouped(1000).foreach(groupIds =>{
       groupIds.foreach(nId => {
-        nodeLabelStore.getAll(nId).foreach(labelId => nodeKeys.append(DistributedKeyConverter.toNodeKey(labelId, nId)))
-        // TODO: check correct
+        nodeLabelStore.getAll(nId).foreach(labelId => {
+          nodeStore.delete(nId, labelId)
+        })
         nodeLabelStore.deleteRange(DistributedKeyConverter.toNodeLabelKey(nId, 0),
           DistributedKeyConverter.toNodeLabelKey(nId, -1))
       })
-
-      nodeStore.batchDelete(nodeKeys.toSeq)
-      nodeKeys.clear()
     })
   }
 
   override def deleteNodesByLabel(labelId: Int): Unit = {
-    nodeStore.getNodeIdsByLabel(labelId).grouped(1000).foreach(groupNodeIds => {
-      groupNodeIds.foreach(nId => {
-        nodeLabelStore.deleteRange(DistributedKeyConverter.toNodeLabelKey(nId, 0),
-          DistributedKeyConverter.toNodeLabelKey(nId, -1))
-      })
-    })
+    nodeStore.getNodeIdsByLabel(labelId).foreach{
+      nodeId => {
+        nodeLabelStore.getAll(nodeId).foreach(labelId => nodeStore.delete(nodeId, labelId))
+        nodeLabelStore.delete(nodeId)
+      }
+    }
     nodeStore.deleteByLabel(labelId)
   }
 
@@ -93,29 +94,57 @@ class NodeStoreAPI(db: DistributedKVAPI, indexStore: PandaDistributedIndexStore)
 
   override def getNodeLabelsById(nodeId: Long): Array[Int] = nodeLabelStore.getAll(nodeId)
 
-  override def allLabels(): Array[String] = ???
+  override def allLabels(): Array[String] = nodeLabelName.mapString2Int.keys.toArray
 
-  override def allLabelIds(): Array[Int] = ???
+  override def allLabelIds(): Array[Int] = nodeLabelName.mapInt2String.keys.toArray
 
-  override def allPropertyKeys(): Array[String] = ???
+  override def allPropertyKeys(): Array[String] = propertyName.mapString2Int.keys.toArray
 
-  override def allPropertyKeyIds(): Array[Int] = ???
+  override def allPropertyKeyIds(): Array[Int] = propertyName.mapInt2String.keys.toArray
 
-  override def allNodes(): Iterator[StoredNodeWithProperty] = ???
+  override def allNodes(): Iterator[StoredNodeWithProperty] = nodeStore.all()
 
-  override def nodesCount: Long = ???
+  override def nodesCount: Long = nodeLabelStore.getNodesCount
 
-  override def close(): Unit = ???
+  override def close(): Unit = {}
 
   override def nodeAddLabel(nodeId: Long, labelId: Int): Unit = {
+    val node = getNodeById(nodeId).get
+    if (!node.labelIds.contains(labelId)){
+      val labels = node.labelIds ++ Array(labelId)
+      nodeLabelStore.set(nodeId, labels)
+      nodeStore.set(new StoredNodeWithProperty(nodeId, labels, node.properties))
 
+      if (node.labelIds.isEmpty){
+        nodeLabelStore.delete(nodeId, NONE_LABEL_ID)
+        nodeStore.delete(nodeId, NONE_LABEL_ID)
+      }
+    }
   }
 
-  override def nodeRemoveLabel(nodeId: Long, labelId: Int): Unit = ???
+  override def nodeRemoveLabel(nodeId: Long, labelId: Int): Unit = {
+    val node = nodeStore.get(nodeId, labelId).get
+    if (node.labelIds.contains(labelId)){
+      val labels = node.labelIds.filter(_ != labelId)
+      val newNode = new StoredNodeWithProperty(nodeId, labels, node.properties)
+      if (labels.length == 0){
+        nodeLabelStore.set(nodeId, NONE_LABEL_ID)
+      }
+      nodeStore.delete(nodeId, labelId)
+      nodeLabelStore.delete(nodeId, labelId)
+      nodeStore.set(newNode)
+    }
+  }
 
-  override def nodeSetProperty(nodeId: Long, propertyKeyId: Int, propertyValue: Any): Unit = ???
+  override def nodeSetProperty(nodeId: Long, propertyKeyId: Int, propertyValue: Any): Unit = {
+    val node = getNodeById(nodeId).get
+    nodeStore.set(new StoredNodeWithProperty(node.id, node.labelIds, node.properties ++ Map(propertyKeyId->propertyValue)))
+  }
 
-  override def nodeRemoveProperty(nodeId: Long, propertyKeyId: Int): Any = ???
+  override def nodeRemoveProperty(nodeId: Long, propertyKeyId: Int): Any = {
+    val node = getNodeById(nodeId).get
+    nodeStore.set(new StoredNodeWithProperty(node.id, node.labelIds, node.properties - propertyKeyId))
+  }
 }
 
 trait DistributedNodeStoreSPI {

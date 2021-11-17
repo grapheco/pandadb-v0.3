@@ -57,7 +57,10 @@ trait DistributedNameStore {
     mapInt2String = mutable.Map(data._2.toSeq:_*)
 
     val maxId: Int = {
-      val tmpId = mapInt2String.keys.toList.maxBy(f => f)
+      val tmpId = {
+        if (mapInt2String.nonEmpty) mapInt2String.keys.toList.maxBy(f => f)
+        else 0
+      }
       math.max(initInt, tmpId)
     }
     idGenerator.set(maxId)

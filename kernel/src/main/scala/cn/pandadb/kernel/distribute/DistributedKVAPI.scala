@@ -112,6 +112,8 @@ class PandaDistributeKVAPI(client: RawKVClient) extends DistributedKVAPI {
 
   override def batchGet(): Iterator[(Array[Byte], Array[Byte])] = ???
   override def batchScan(): Iterator[(Array[Byte], Array[Byte])] = ???
+
+  // tikv bug, don't use it
   override def batchDelete(data: Seq[Array[Byte]]): Unit = {
     val transfer = JavaConverters.seqAsJavaList(data.map(f => ByteString.copyFrom(f)))
     client.batchDelete(transfer)

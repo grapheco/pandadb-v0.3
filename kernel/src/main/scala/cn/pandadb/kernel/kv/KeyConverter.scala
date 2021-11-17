@@ -48,12 +48,6 @@ object KeyConverter {
   val INDEX_ID_SIZE    = 4
   val IS_FULLTEXT_SIZE = 1
 
-
-  //
-  def nodeMaxIdKey: Array[Byte] = "nodeMaxId".getBytes(TiKVCharset.CharsetUTF8)
-  def relationMaxIdKey: Array[Byte] = "relationMaxId".getBytes(TiKVCharset.CharsetUTF8)
-
-
   /**
    * ╔══════════════════╗
    * ║        key       ║

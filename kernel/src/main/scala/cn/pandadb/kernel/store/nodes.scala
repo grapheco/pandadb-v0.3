@@ -18,6 +18,14 @@ class StoredNodeWithProperty(override val id: Long,
                              override val labelIds: Array[Int],
                              override val properties:Map[Int,Any])
   extends StoredNode(id, labelIds){
+
+  override def equals(obj: Any): Boolean = {
+    val other = obj.asInstanceOf[StoredNodeWithProperty]
+    if (id == other.id && labelIds.sameElements(other.labelIds) && properties.sameElements(other.properties)) true
+    else false
+  }
+
+  override def toString: String = s"{<id>:${id}, labels:[${labelIds.mkString(",")}], properties:{${properties.map(kv=>kv._1+": "+kv._2.toString).mkString(",")}}"
 }
 
 case class NodeId(value: Long) extends LynxId {}

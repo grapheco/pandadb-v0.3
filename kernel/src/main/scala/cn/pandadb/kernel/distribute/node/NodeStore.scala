@@ -35,7 +35,7 @@ class NodeStore(db: DistributedKVAPI) {
   }
 
   def all() : Iterator[StoredNodeWithProperty] = {
-    val iter = db.scanPrefix(Array(DistributedKeyConverter.nodeLabelKeyPrefix))
+    val iter = db.scanPrefix(Array(DistributedKeyConverter.nodeKeyPrefix))
 
     new Iterator[StoredNodeWithProperty]{
       override def hasNext: Boolean = iter.hasNext
@@ -47,7 +47,7 @@ class NodeStore(db: DistributedKVAPI) {
         if (node.labelIds.length > 0 && node.labelIds.head != label) null
         else node
       }
-    }
+    }.filter(_ != null)
   }
 
   def getNodesByLabel(labelId: LabelId): Iterator[StoredNodeWithProperty] = {
@@ -84,7 +84,7 @@ class NodeStore(db: DistributedKVAPI) {
 
   def delete(node: StoredNodeWithProperty): Unit = delete(node.id, node.labelIds)
 
-  def batchDelete(keys: Seq[Array[Byte]]): Unit ={
-    db.batchDelete(keys)
-  }
+//  def batchDelete(keys: Seq[Array[Byte]]): Unit ={
+//    db.batchDelete(keys)
+//  }
 }
