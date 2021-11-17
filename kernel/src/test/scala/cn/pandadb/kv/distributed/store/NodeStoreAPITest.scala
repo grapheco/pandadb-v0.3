@@ -103,6 +103,27 @@ class NodeStoreAPITest {
     })
   }
 
+  @Test
+  def nodeAddLabel(): Unit ={
+    api.nodeAddLabel(n1.id, 233)
+    Assert.assertArrayEquals(n1.labelIds ++ Array(233), api.getNodeById(n1.id).get.labelIds)
+  }
+  @Test
+  def nodeRemoveLabel(): Unit ={
+    api.nodeRemoveLabel(n3.id, 3)
+    Assert.assertArrayEquals(Array(1,2), api.getNodeById(n1.id).get.labelIds)
+  }
+
+  @Test
+  def nodeSetProperty(): Unit ={
+    api.nodeSetProperty(n1.id, 233, "China")
+    Assert.assertEquals((n1.properties ++ Map(233 -> "China")), api.getNodeById(n1.id).get.properties)
+  }
+  @Test
+  def nodeRemoveProperty(): Unit ={
+    api.nodeRemoveProperty(n1.id, 1)
+    Assert.assertEquals(n1.properties -- Array(1), api.getNodeById(n1.id).get.properties)
+  }
 
   @Test
   def show(): Unit = {

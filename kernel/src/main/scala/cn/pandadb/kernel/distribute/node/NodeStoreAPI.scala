@@ -106,7 +106,9 @@ class NodeStoreAPI(db: DistributedKVAPI, indexStore: PandaDistributedIndexStore)
 
   override def nodesCount: Long = nodeLabelStore.getNodesCount
 
-  override def close(): Unit = {}
+  override def close(): Unit = {
+    idGenerator.flushId()
+  }
 
   override def nodeAddLabel(nodeId: Long, labelId: Int): Unit = {
     val node = getNodeById(nodeId).get
