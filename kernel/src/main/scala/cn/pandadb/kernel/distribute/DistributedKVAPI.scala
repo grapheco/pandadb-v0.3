@@ -4,6 +4,7 @@ import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import cn.pandadb.kernel.util.serializer.NodeSerializer
 import org.tikv.common.types.Charset
 import org.tikv.common.{TiConfiguration, TiSession}
+import org.tikv.kvproto.Kvrpcpb
 import org.tikv.raw.RawKVClient
 import org.tikv.shade.com.google.protobuf.ByteString
 
@@ -23,15 +24,15 @@ trait DistributedKVAPI {
   def deletePrefix(key: Array[Byte]): Unit
   def deleteRange(startKey: Array[Byte], endKey: Array[Byte]): Unit
 
-  def scan(startKey: Array[Byte], limit: Int): Iterator[(Array[Byte], Array[Byte])]
-  def scan(startKey: Array[Byte], limit: Int, keyOnly: Boolean): Iterator[(Array[Byte], Array[Byte])]
-  def scan(startKey: Array[Byte], endKey: Array[Byte]): Iterator[(Array[Byte], Array[Byte])]
-  def scan(startKey: Array[Byte], endKey: Array[Byte], limit: Int): Iterator[(Array[Byte], Array[Byte])]
-  def scan(startKey: Array[Byte], endKey: Array[Byte], keyOnly: Boolean): Iterator[(Array[Byte], Array[Byte])]
-  def scan(startKey: Array[Byte], endKey: Array[Byte], limit: Int, keyOnly: Boolean): Iterator[(Array[Byte], Array[Byte])]
-  def scanPrefix(startKey: Array[Byte]): Iterator[(Array[Byte], Array[Byte])]
-  def scanPrefix(startKey: Array[Byte], keyOnly: Boolean): Iterator[(Array[Byte], Array[Byte])]
-  def scanPrefix(startKey: Array[Byte], limit: Int, keyOnly: Boolean): Iterator[(Array[Byte], Array[Byte])]
+  def scan(startKey: Array[Byte], limit: Int): Iterator[Kvrpcpb.KvPair]
+  def scan(startKey: Array[Byte], limit: Int, keyOnly: Boolean): Iterator[Kvrpcpb.KvPair]
+  def scan(startKey: Array[Byte], endKey: Array[Byte]): Iterator[Kvrpcpb.KvPair]
+  def scan(startKey: Array[Byte], endKey: Array[Byte], limit: Int): Iterator[Kvrpcpb.KvPair]
+  def scan(startKey: Array[Byte], endKey: Array[Byte], keyOnly: Boolean): Iterator[Kvrpcpb.KvPair]
+  def scan(startKey: Array[Byte], endKey: Array[Byte], limit: Int, keyOnly: Boolean): Iterator[Kvrpcpb.KvPair]
+  def scanPrefix(startKey: Array[Byte]): Iterator[Kvrpcpb.KvPair]
+  def scanPrefix(startKey: Array[Byte], keyOnly: Boolean): Iterator[Kvrpcpb.KvPair]
+  def scanPrefix(startKey: Array[Byte], limit: Int, keyOnly: Boolean): Iterator[Kvrpcpb.KvPair]
 
   def batchGet(): Iterator[(Array[Byte], Array[Byte])]
   def batchScan(): Iterator[(Array[Byte], Array[Byte])]
@@ -72,42 +73,42 @@ class PandaDistributeKVAPI(client: RawKVClient) extends DistributedKVAPI {
   override def deleteRange(startKey: Array[Byte], endKey: Array[Byte]): Unit = client.deleteRange(startKey, endKey)
 
   // scan.....
-  override def scan(startKey: Array[Byte], limit: Int): Iterator[(Array[Byte], Array[Byte])] ={
+  override def scan(startKey: Array[Byte], limit: Int): Iterator[Kvrpcpb.KvPair] ={
     val iter = client.scan(startKey, limit)
-    iter.iterator().asScala.map(kv => (kv.getKey, kv.getValue))
+    iter.iterator().asScala
   }
-  override def scan(startKey: Array[Byte], limit: Int, keyOnly: Boolean): Iterator[(Array[Byte], Array[Byte])] ={
+  override def scan(startKey: Array[Byte], limit: Int, keyOnly: Boolean): Iterator[Kvrpcpb.KvPair] ={
     val iter = client.scan(startKey, limit, keyOnly)
-    iter.iterator().asScala.map(kv => (kv.getKey, kv.getValue))
+    iter.iterator().asScala
   }
-  override def scan(startKey: Array[Byte], endKey: Array[Byte]): Iterator[(Array[Byte], Array[Byte])] ={
+  override def scan(startKey: Array[Byte], endKey: Array[Byte]): Iterator[Kvrpcpb.KvPair] ={
     val iter = client.scan(startKey, endKey)
-    iter.iterator().asScala.map(kv => (kv.getKey, kv.getValue))
+    iter.iterator().asScala
   }
-  override def scan(startKey: Array[Byte], endKey: Array[Byte], keyOnly: Boolean): Iterator[(Array[Byte], Array[Byte])] ={
+  override def scan(startKey: Array[Byte], endKey: Array[Byte], keyOnly: Boolean): Iterator[Kvrpcpb.KvPair] ={
     val iter = client.scan(startKey, endKey, keyOnly)
-    iter.iterator().asScala.map(kv => (kv.getKey, kv.getValue))
+    iter.iterator().asScala
   }
-  override def scan(startKey: Array[Byte], endKey: Array[Byte], limit: Int): Iterator[(Array[Byte], Array[Byte])] ={
+  override def scan(startKey: Array[Byte], endKey: Array[Byte], limit: Int): Iterator[Kvrpcpb.KvPair] ={
     val iter = client.scan(startKey, endKey, limit)
-    iter.iterator().asScala.map(kv => (kv.getKey, kv.getValue))
+    iter.iterator().asScala
   }
-  override def scan(startKey: Array[Byte], endKey: Array[Byte], limit: Int, keyOnly: Boolean): Iterator[(Array[Byte], Array[Byte])] ={
+  override def scan(startKey: Array[Byte], endKey: Array[Byte], limit: Int, keyOnly: Boolean): Iterator[Kvrpcpb.KvPair] ={
     val iter = client.scan(startKey, endKey, limit, keyOnly)
-    iter.iterator().asScala.map(kv => (kv.getKey, kv.getValue))
+    iter.iterator().asScala
   }
   // prefix...
-  override def scanPrefix(startKey: Array[Byte]): Iterator[(Array[Byte], Array[Byte])] ={
+  override def scanPrefix(startKey: Array[Byte]): Iterator[Kvrpcpb.KvPair] ={
     val iter = client.scanPrefix(startKey)
-    iter.iterator().asScala.map(kv => (kv.getKey, kv.getValue))
+    iter.iterator().asScala
   }
-  override def scanPrefix(startKey: Array[Byte], keyOnly: Boolean): Iterator[(Array[Byte], Array[Byte])] ={
+  override def scanPrefix(startKey: Array[Byte], keyOnly: Boolean): Iterator[Kvrpcpb.KvPair] ={
     val iter = client.scanPrefix(startKey, keyOnly)
-    iter.iterator().asScala.map(kv => (kv.getKey, kv.getValue))
+    iter.iterator().asScala
   }
-  override def scanPrefix(startKey: Array[Byte], limit: Int, keyOnly: Boolean): Iterator[(Array[Byte], Array[Byte])] ={
+  override def scanPrefix(startKey: Array[Byte], limit: Int, keyOnly: Boolean): Iterator[Kvrpcpb.KvPair] ={
     val iter = client.scanPrefix(startKey, limit, keyOnly)
-    iter.iterator().asScala.map(kv => (kv.getKey, kv.getValue))
+    iter.iterator().asScala
   }
 
   override def batchGet(): Iterator[(Array[Byte], Array[Byte])] = ???

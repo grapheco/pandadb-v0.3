@@ -5,6 +5,7 @@ import cn.pandadb.kernel.distribute.{DistributedKVAPI, DistributedKeyConverter}
 import cn.pandadb.kernel.kv.ByteUtils
 import cn.pandadb.kernel.store.StoredNodeWithProperty
 import cn.pandadb.kernel.util.serializer.NodeSerializer
+import org.tikv.shade.com.google.protobuf.ByteString
 
 /**
  * @program: pandadb-v0.3
@@ -13,6 +14,8 @@ import cn.pandadb.kernel.util.serializer.NodeSerializer
  * @create: 2021-11-16 14:28
  */
 class NodeStore(db: DistributedKVAPI) {
+  implicit def ByteString2ArrayByte(data: ByteString) = data.toByteArray
+
   val NONE_LABEL_ID: Int = 0
 
   def set(nodeId: NodeId, labelIds: Array[LabelId], value: Array[Byte]): Unit = {
@@ -42,8 +45,8 @@ class NodeStore(db: DistributedKVAPI) {
 
       override def next(): StoredNodeWithProperty = {
         val data = iter.next()
-        val node = NodeSerializer.deserializeNodeValue(data._2)
-        val label = ByteUtils.getInt(data._1, DistributedKeyConverter.KEY_PREFIX_SIZE)
+        val node = NodeSerializer.deserializeNodeValue(data.getValue)
+        val label = ByteUtils.getInt(data.getKey, DistributedKeyConverter.KEY_PREFIX_SIZE)
         if (node.labelIds.length > 0 && node.labelIds.head != label) null
         else node
       }
@@ -57,7 +60,7 @@ class NodeStore(db: DistributedKVAPI) {
     new Iterator[StoredNodeWithProperty] (){
       override def hasNext: Boolean = iter.hasNext
       override def next(): StoredNodeWithProperty = {
-        NodeSerializer.deserializeNodeValue(iter.next()._2)
+        NodeSerializer.deserializeNodeValue(iter.next().getValue)
       }
     }
   }
@@ -69,7 +72,7 @@ class NodeStore(db: DistributedKVAPI) {
     new Iterator[NodeId] (){
       override def hasNext: Boolean = iter.hasNext
       override def next(): NodeId = {
-        ByteUtils.getLong(iter.next()._1, prefix.length)
+        ByteUtils.getLong(iter.next().getValue, prefix.length)
       }
     }
   }

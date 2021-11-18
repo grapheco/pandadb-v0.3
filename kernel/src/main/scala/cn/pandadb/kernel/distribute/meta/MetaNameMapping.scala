@@ -16,7 +16,8 @@ object MetaNameMapping {
   // index name
   val nodeMetaName = "node-meta"
   val relationMetaName = "relation-meta"
-  val propertyMetaName = "property-meta"
+  val nodePropertyMetaName = "node-property-meta"
+  val relationPropertyMetaName = "relation-property-meta"
 
   // id index name
   val idGeneratorName = "id-meta"

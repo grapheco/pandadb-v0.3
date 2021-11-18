@@ -2,7 +2,7 @@ package cn.pandadb.kernel.distribute.node
 
 import cn.pandadb.kernel.distribute.{DistributedKVAPI, DistributedKeyConverter}
 import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
-import cn.pandadb.kernel.distribute.meta.{IdGenerator, NodeLabelNameStore, PropertyNameStore, TypeNameEnum}
+import cn.pandadb.kernel.distribute.meta.{IdGenerator, NodeLabelNameStore, NodePropertyNameStore, TypeNameEnum}
 import cn.pandadb.kernel.store.StoredNodeWithProperty
 import cn.pandadb.kernel.util.serializer.BaseSerializer
 
@@ -15,7 +15,7 @@ import scala.collection.mutable.ArrayBuffer
  */
 class NodeStoreAPI(db: DistributedKVAPI, indexStore: PandaDistributedIndexStore) extends DistributedNodeStoreSPI{
   private val nodeLabelName = new NodeLabelNameStore(indexStore)
-  private val propertyName = new PropertyNameStore(indexStore)
+  private val propertyName = new NodePropertyNameStore(indexStore)
   private val idGenerator =new IdGenerator(db, TypeNameEnum.nodeName)
 
   val nodeStore = new NodeStore(db)

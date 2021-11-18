@@ -1,5 +1,7 @@
 package cn.pandadb.kernel.distribute
 
+import cn.pandadb.kernel.distribute.relationship.RelationDirection
+import cn.pandadb.kernel.distribute.relationship.RelationDirection.RelationDirection
 import cn.pandadb.kernel.kv.ByteUtils
 import org.tikv.common.types.Charset
 
@@ -89,5 +91,71 @@ object DistributedKeyConverter {
   def getNodeIdInNodeLabelKey(array: Array[Byte]):NodeId = ByteUtils.getLong(array, 1)
 
   def getLabelIdInNodeLabelKey(array: Array[Byte]):LabelId = ByteUtils.getInt(array, KEY_PREFIX_SIZE + NODE_ID_SIZE)
+
+
+  /**
+   * ╔═════════════╗
+   * ║     key     ║
+   * ╠═════════════╣
+   * ║ prefix ║ relationId  ║
+   * ╚═════════════╝
+   */
+  def toRelationKey(relationId: RelationId): Array[Byte] = {
+    val bytes = new Array[Byte](KEY_PREFIX_SIZE + RELATION_ID_SIZE)
+    ByteUtils.setByte(bytes, 0, relationKeyPrefix)
+    ByteUtils.setLong(bytes, KEY_PREFIX_SIZE, relationId)
+    bytes
+  }
+  /**
+   * ╔═════════════════════╗
+   * ║         key         ║
+   * ╠════════╦════════════╣
+   * ║ prefix ║ typeId ║ relationId ║
+   * ╚════════╩════════════╝
+   */
+  def toRelationTypeKey(typeId: TypeId, relationId: RelationId): Array[Byte] = {
+    val bytes = new Array[Byte](KEY_PREFIX_SIZE + TYPE_ID_SIZE + RELATION_ID_SIZE)
+    ByteUtils.setByte(bytes, 0, typeRelationPrefix)
+    ByteUtils.setInt(bytes, KEY_PREFIX_SIZE, typeId)
+    ByteUtils.setLong(bytes, KEY_PREFIX_SIZE + TYPE_ID_SIZE, relationId)
+    bytes
+  }
+  def toRelationTypeKey(typeId: TypeId): Array[Byte] = {
+    val bytes = new Array[Byte](KEY_PREFIX_SIZE + TYPE_ID_SIZE)
+    ByteUtils.setByte(bytes, 0, typeRelationPrefix)
+    ByteUtils.setInt(bytes, KEY_PREFIX_SIZE, typeId)
+    bytes
+  }
+
+  def edgeKeyToBytes(startId: Long, typeId: Int, endNodeId: Long, direction: RelationDirection): Array[Byte] = {
+    val bytes = new Array[Byte](KEY_PREFIX_SIZE + NODE_ID_SIZE + TYPE_ID_SIZE + NODE_ID_SIZE)
+    direction match {
+      case RelationDirection.OUT =>ByteUtils.setByte(bytes, 0, outRelationPrefix)
+      case RelationDirection.IN => ByteUtils.setByte(bytes, 0, inRelationPrefix)
+    }
+    ByteUtils.setLong(bytes, KEY_PREFIX_SIZE, startId)
+    ByteUtils.setInt(bytes, KEY_PREFIX_SIZE + NODE_ID_SIZE, typeId)
+    ByteUtils.setLong(bytes, KEY_PREFIX_SIZE + NODE_ID_SIZE + TYPE_ID_SIZE, endNodeId)
+    bytes
+  }
+  def edgeKeyPrefixToBytes(startId: Long, direction: RelationDirection): Array[Byte] = {
+    val bytes = new Array[Byte](KEY_PREFIX_SIZE + NODE_ID_SIZE)
+    direction match {
+      case RelationDirection.OUT =>ByteUtils.setByte(bytes, 0, outRelationPrefix)
+      case RelationDirection.IN => ByteUtils.setByte(bytes, 0, inRelationPrefix)
+    }
+    ByteUtils.setLong(bytes, KEY_PREFIX_SIZE, startId)
+    bytes
+  }
+  def edgeKeyPrefixToBytes(startId: Long, typeId: Int, direction: RelationDirection): Array[Byte] = {
+    val bytes = new Array[Byte](KEY_PREFIX_SIZE + NODE_ID_SIZE + TYPE_ID_SIZE)
+    direction match {
+      case RelationDirection.OUT =>ByteUtils.setByte(bytes, 0, outRelationPrefix)
+      case RelationDirection.IN => ByteUtils.setByte(bytes, 0, inRelationPrefix)
+    }
+    ByteUtils.setLong(bytes, KEY_PREFIX_SIZE, startId)
+    ByteUtils.setInt(bytes, KEY_PREFIX_SIZE + NODE_ID_SIZE, typeId)
+    bytes
+  }
 
 }

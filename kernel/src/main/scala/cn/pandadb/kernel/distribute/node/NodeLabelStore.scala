@@ -3,6 +3,7 @@ package cn.pandadb.kernel.distribute.node
 import cn.pandadb.kernel.distribute.DistributedKeyConverter.{LabelId, NodeId}
 import cn.pandadb.kernel.distribute.{DistributedKVAPI, DistributedKeyConverter}
 import cn.pandadb.kernel.kv.ByteUtils
+import org.tikv.shade.com.google.protobuf.ByteString
 
 /**
  * @program: pandadb-v0.3
@@ -11,6 +12,8 @@ import cn.pandadb.kernel.kv.ByteUtils
  * @create: 2021-11-16 13:47
  */
 class NodeLabelStore(db: DistributedKVAPI) {
+  implicit def ByteString2ArrayByte(data: ByteString) = data.toByteArray
+
   def set(nodeId: NodeId, labelId: LabelId): Unit =
     db.put(DistributedKeyConverter.toNodeLabelKey(nodeId, labelId), Array.emptyByteArray)
 
@@ -36,7 +39,7 @@ class NodeLabelStore(db: DistributedKVAPI) {
     val keyPrefix = DistributedKeyConverter.toNodeLabelKey(nodeId)
     val iter = db.scanPrefix(keyPrefix, true)
     if (iter.nonEmpty){
-      Option(DistributedKeyConverter.getLabelIdInNodeLabelKey(iter.next()._1))
+      Option(DistributedKeyConverter.getLabelIdInNodeLabelKey(iter.next().getKey))
     }
     else None
   }
@@ -49,7 +52,7 @@ class NodeLabelStore(db: DistributedKVAPI) {
   def getAll(nodeId: NodeId): Array[LabelId] = {
     val keyPrefix = DistributedKeyConverter.toNodeLabelKey(nodeId)
     val iter = db.scanPrefix(keyPrefix, true)
-    iter.map(f => DistributedKeyConverter.getLabelIdInNodeLabelKey(f._1)).toArray
+    iter.map(f => DistributedKeyConverter.getLabelIdInNodeLabelKey(f.getKey)).toArray
   }
 
 
@@ -59,7 +62,7 @@ class NodeLabelStore(db: DistributedKVAPI) {
     var currentNode:Long = 0
     while (iter.hasNext){
       val data = iter.next()
-      val id = ByteUtils.getLong(data._1, DistributedKeyConverter.KEY_PREFIX_SIZE)
+      val id = ByteUtils.getLong(data.getKey, DistributedKeyConverter.KEY_PREFIX_SIZE)
       if (currentNode != id){
         currentNode = id
         count += 1
