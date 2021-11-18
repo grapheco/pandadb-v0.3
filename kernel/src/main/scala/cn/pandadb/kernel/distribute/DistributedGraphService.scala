@@ -1,5 +1,6 @@
 package cn.pandadb.kernel.distribute
 
+import cn.pandadb.kernel.store.{PandaNode, PandaRelationship}
 import org.grapheco.lynx.{LynxResult, LynxTransaction}
 
 /**
@@ -13,6 +14,14 @@ trait DistributedGraphService {
 
   def addNode(nodeProps: Map[String, Any], labels: String*): Id
 
+  def getNode(id: Id): Option[PandaNode]
+
+  def getNode(id: Id, labelName: String): Option[PandaNode]
+
+  def scanAllNode(): Iterator[PandaNode]
+
+  def deleteNode(id: Id): Unit
+
   def nodeSetProperty(id: Id, key: String, value: Any): Unit
 
   def nodeRemoveProperty(id: Id, key: String): Unit
@@ -21,9 +30,13 @@ trait DistributedGraphService {
 
   def nodeRemoveLabel(id: Id, label: String): Unit
 
-  def deleteNode(id: Id): Unit
-
   def addRelation(label: String, from: Long, to: Long, relProps: Map[String, Any]): Id
+
+  def getRelation(id: Id): Option[PandaRelationship]
+
+  def getRelation(id: Id, typeName: String): Option[PandaRelationship]
+
+  def deleteRelation(id: Id): Unit
 
   def relationSetProperty(id: Id, key: String, value: Any): Unit
 
@@ -32,8 +45,6 @@ trait DistributedGraphService {
   def relationAddLabel(id: Id, label: String): Unit
 
   def relationRemoveLabel(id: Id, label: String): Unit
-
-  def deleteRelation(id: Id): Unit
 
   def createIndexOnNode(label: String, props: Set[String]): Unit
 

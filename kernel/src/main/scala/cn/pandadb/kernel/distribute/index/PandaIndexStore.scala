@@ -1,6 +1,6 @@
 package cn.pandadb.kernel.distribute.index
 
-import cn.pandadb.kernel.distribute.meta.MetaNameMap
+import cn.pandadb.kernel.distribute.meta.MetaNameMapping
 import cn.pandadb.kernel.util.PandaDBException.PandaDBException
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.serializer.SerializerFeature
@@ -93,7 +93,7 @@ class PandaDistributedIndexStore(client: RestHighLevelClient) extends Distribute
   }
 
   override def addMetaDoc(indexName: String, name: String, id: Int): Int = {
-    val data = Map(MetaNameMap.metaName-> name, MetaNameMap.metaId -> id).asInstanceOf[Map[String, Object]].asJava
+    val data = Map(MetaNameMapping.metaName-> name, MetaNameMapping.metaId -> id).asInstanceOf[Map[String, Object]].asJava
     val jsonString = JSON.toJSONString(data, SerializerFeature.QuoteFieldNames)
 
     val request = new IndexRequest(indexName).id(id.toString).source(jsonString, XContentType.JSON)
@@ -110,7 +110,7 @@ class PandaDistributedIndexStore(client: RestHighLevelClient) extends Distribute
   override def searchDoc(indexName: String, key: String): Option[Map[String, Int]] = {
     val request = new SearchRequest().indices(indexName)
     val builder = new SearchSourceBuilder()
-    builder.query(QueryBuilders.termQuery(s"${MetaNameMap.metaName}.keyword", key))
+    builder.query(QueryBuilders.termQuery(s"${MetaNameMapping.metaName}.keyword", key))
     request.source(builder)
     val res = client.search(request, RequestOptions.DEFAULT)
     res.getHits.getHits.headOption.map(f => f.getSourceAsMap.asScala.toMap.asInstanceOf[Map[String, Int]])
@@ -119,7 +119,7 @@ class PandaDistributedIndexStore(client: RestHighLevelClient) extends Distribute
   override def searchDoc(indexName: String, id: Int): Option[Map[String, Int]] = {
     val request = new SearchRequest().indices(indexName)
     val builder = new SearchSourceBuilder()
-    builder.query(QueryBuilders.termQuery(s"${MetaNameMap.metaId}.keyword", id))
+    builder.query(QueryBuilders.termQuery(s"${MetaNameMapping.metaId}.keyword", id))
     request.source(builder)
     val res = client.search(request, RequestOptions.DEFAULT)
     res.getHits.getHits.headOption.map(f => f.getSourceAsMap.asScala.toMap.asInstanceOf[Map[String, Int]])
@@ -158,7 +158,7 @@ class MetaDataIterator(indexName: String, client:RestHighLevelClient) extends It
     val data = response.getHits.iterator().asScala.map(f => f.getSourceAsMap.asScala.toMap)
     page += 1
     if (data.isEmpty) flag = false
-    data.map(kv => (kv(MetaNameMap.metaName).toString, kv(MetaNameMap.metaId).asInstanceOf[Int])).toSeq
+    data.map(kv => (kv(MetaNameMapping.metaName).toString, kv(MetaNameMapping.metaId).asInstanceOf[Int])).toSeq
   }
 }
 

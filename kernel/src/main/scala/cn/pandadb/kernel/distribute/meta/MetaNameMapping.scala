@@ -8,7 +8,7 @@ import org.tikv.common.types.Charset
  * @author: LiamGao
  * @create: 2021-11-15 16:53
  */
-object MetaNameMap {
+object MetaNameMapping {
   // doc column name
   val metaName = "name"
   val metaId = "id"
@@ -17,4 +17,7 @@ object MetaNameMap {
   val nodeMetaName = "node-meta"
   val relationMetaName = "relation-meta"
   val propertyMetaName = "property-meta"
+
+  // id index name
+  val idGeneratorName = "id-meta"
 }

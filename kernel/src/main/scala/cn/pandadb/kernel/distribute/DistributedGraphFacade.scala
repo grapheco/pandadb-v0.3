@@ -1,10 +1,10 @@
 package cn.pandadb.kernel.distribute
 import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
 import cn.pandadb.kernel.distribute.node.NodeStoreAPI
-import cn.pandadb.kernel.store.StoredNodeWithProperty
+import cn.pandadb.kernel.store.{PandaNode, PandaRelationship, StoredNode, StoredNodeWithProperty}
 import org.apache.http.HttpHost
 import org.elasticsearch.client.{RestClient, RestHighLevelClient}
-import org.grapheco.lynx.{LynxResult, LynxTransaction}
+import org.grapheco.lynx.{LynxResult, LynxTransaction, LynxValue}
 import org.tikv.common.{TiConfiguration, TiSession}
 
 /**
@@ -46,6 +46,28 @@ class DistributedGraphFacade extends DistributedGraphService{
     nodeId
   }
 
+  override def getNode(id: Id): Option[PandaNode] = {
+    nodeStore.getNodeById(id).map(mapNode(_))
+  }
+
+  override def getNode(id: Id, labelName: String): Option[PandaNode] = {
+    nodeStore.getNodeById(id, nodeStore.getLabelId(labelName)).map(mapNode(_))
+  }
+
+  override def scanAllNode(): Iterator[PandaNode] = {
+    nodeStore.allNodes().map(mapNode(_))
+  }
+
+  override def deleteNode(id: Id): Unit = {
+    nodeStore.deleteNode(id)
+  }
+
+  protected def mapNode(node: StoredNode): PandaNode = {
+    PandaNode(node.id,
+      node.labelIds.map((id: Int) => nodeStore.getLabelName(id).get).toSeq,
+      node.properties.map(kv => (nodeStore.getPropertyKeyName(kv._1).getOrElse("unknown"), LynxValue(kv._2))).toSeq: _*)
+  }
+
   override def nodeSetProperty(id: Id, key: String, value: Any): Unit = {
     nodeStore.nodeSetProperty(id, nodeStore.addPropertyKey(key), value)
   }
@@ -62,11 +84,14 @@ class DistributedGraphFacade extends DistributedGraphService{
     nodeStore.getLabelId(label).foreach(lid => nodeStore.nodeRemoveLabel(id, lid))
   }
 
-  override def deleteNode(id: Id): Unit = {
-    nodeStore.deleteNode(id)
-  }
 
   override def addRelation(label: String, from: Id, to: Id, relProps: Map[String, Any]): Id = ???
+
+  override def getRelation(id: Id): Option[PandaRelationship] = ???
+
+  override def getRelation(id: Id, typeName: String): Option[PandaRelationship] = ???
+
+  override def deleteRelation(id: Id): Unit = ???
 
   override def relationSetProperty(id: Id, key: String, value: Any): Unit = ???
 
@@ -75,8 +100,6 @@ class DistributedGraphFacade extends DistributedGraphService{
   override def relationAddLabel(id: Id, label: String): Unit = ???
 
   override def relationRemoveLabel(id: Id, label: String): Unit = ???
-
-  override def deleteRelation(id: Id): Unit = ???
 
   override def createIndexOnNode(label: String, props: Set[String]): Unit = ???
 

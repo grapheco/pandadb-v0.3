@@ -9,8 +9,8 @@ import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
  * @create: 2021-11-15 16:52
  */
 class RelationTypeNameStore(store: PandaDistributedIndexStore) extends DistributedNameStore {
-  override val initInt: Int = 1
+  override val initInt: Int = 0
   override val indexStore: PandaDistributedIndexStore = store
-  override val indexName: String = MetaNameMap.relationMetaName
+  override val indexName: String = MetaNameMapping.relationMetaName
   loadAll()
 }

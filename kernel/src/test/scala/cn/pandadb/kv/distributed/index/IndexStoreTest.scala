@@ -30,6 +30,11 @@ class IndexStoreTest {
   }
 
   @Test
+  def cleanIndex(): Unit ={
+    indexStore.cleanIndexes(nodeIndex, relationIndex, propertyIndex)
+  }
+
+  @Test
   def createIndexTest(): Unit ={
     indexStore.createIndex(nodeIndex, Map("refresh_interval" -> "1s"))
     indexStore.createIndex(relationIndex, Map("refresh_interval" -> "1s"))
