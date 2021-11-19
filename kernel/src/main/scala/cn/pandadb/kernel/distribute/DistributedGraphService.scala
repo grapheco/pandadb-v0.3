@@ -34,7 +34,7 @@ trait DistributedGraphService {
 
   def getRelation(id: Id): Option[PandaRelationship]
 
-  def getRelation(id: Id, typeName: String): Option[PandaRelationship]
+  def scanAllRelations(): Iterator[PandaRelationship]
 
   def deleteRelation(id: Id): Unit
 
@@ -42,9 +42,9 @@ trait DistributedGraphService {
 
   def relationRemoveProperty(id: Id, key: String): Unit
 
-  def relationAddLabel(id: Id, label: String): Unit
+  def relationAddType(id: Id, label: String): Unit
 
-  def relationRemoveLabel(id: Id, label: String): Unit
+  def relationRemoveType(id: Id, label: String): Unit
 
   def createIndexOnNode(label: String, props: Set[String]): Unit
 

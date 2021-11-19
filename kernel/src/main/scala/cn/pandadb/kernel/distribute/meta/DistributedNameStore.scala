@@ -50,6 +50,7 @@ trait DistributedNameStore {
   }
 
   def loadAll(): Unit = {
+    if (!indexStore.indexIsExist(indexName)) indexStore.createIndex(indexName)
     idGenerator = new AtomicInteger(initInt)
 
     val data = indexStore.loadAllMeta(indexName)

@@ -51,7 +51,7 @@ class NodeStoreAPITest {
       new HttpHost("10.0.82.146", 9200, "http"))
     val indexStore = new PandaDistributedIndexStore(new RestHighLevelClient(RestClient.builder(hosts: _*)))
 
-    indexStore.cleanIndexes(MetaNameMapping.nodePropertyMetaName, MetaNameMapping.nodeMetaName)
+//    indexStore.cleanIndexes(MetaNameMapping.nodePropertyMetaName, MetaNameMapping.nodeMetaName)
 
     api = new NodeStoreAPI(db, indexStore)
 

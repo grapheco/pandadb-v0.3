@@ -1,7 +1,8 @@
 package cn.pandadb.kernel.distribute
 import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
 import cn.pandadb.kernel.distribute.node.NodeStoreAPI
-import cn.pandadb.kernel.store.{PandaNode, PandaRelationship, StoredNode, StoredNodeWithProperty}
+import cn.pandadb.kernel.distribute.relationship.RelationStoreAPI
+import cn.pandadb.kernel.store.{PandaNode, PandaRelationship, StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
 import org.apache.http.HttpHost
 import org.elasticsearch.client.{RestClient, RestHighLevelClient}
 import org.grapheco.lynx.{LynxResult, LynxTransaction, LynxValue}
@@ -14,9 +15,6 @@ import org.tikv.common.{TiConfiguration, TiSession}
  * @create: 2021-11-17 16:45
  */
 class DistributedGraphFacade extends DistributedGraphService{
-  val nodeIndex = "node-meta"
-  val relationIndex = "relation-meta"
-  val propertyIndex = "property-meta"
 
   val indexStore = {
     val hosts = Array(new HttpHost("10.0.82.144", 9200, "http"),
@@ -31,6 +29,7 @@ class DistributedGraphFacade extends DistributedGraphService{
     new PandaDistributeKVAPI(session.createRawClient())
   }
   val nodeStore = new NodeStoreAPI(db, indexStore)
+  val relationStore = new RelationStoreAPI(db, indexStore)
 
   override def addNode(nodeProps: Map[String, Any], labels: String*): Id = {
     addNode(None, labels, nodeProps)
@@ -85,21 +84,51 @@ class DistributedGraphFacade extends DistributedGraphService{
   }
 
 
-  override def addRelation(label: String, from: Id, to: Id, relProps: Map[String, Any]): Id = ???
+  override def addRelation(label: String, from: Id, to: Id, relProps: Map[String, Any]): Id = {
+    addRelation(None, label, from, to, relProps)
+  }
+  private def addRelation(id: Option[Long], label: String, from: Long, to: Long, relProps: Map[String, Any]): Id = {
+    val rid = id.getOrElse(relationStore.newRelationId())
+    val labelId = relationStore.addRelationType(label)
+    val props = relProps.map(v => (relationStore.addPropertyKey(v._1), v._2))
+    val rel = new StoredRelationWithProperty(rid, from, to, labelId, props)
+    relationStore.addRelation(rel)
+    rid
+  }
 
-  override def getRelation(id: Id): Option[PandaRelationship] = ???
+  override def scanAllRelations(): Iterator[PandaRelationship] = {
+    relationStore.allRelations().map(mapRelation(_))
+  }
+  override def getRelation(id: Id): Option[PandaRelationship] = {
+    relationStore.getRelationById(id).map(mapRelation(_))
+  }
 
-  override def getRelation(id: Id, typeName: String): Option[PandaRelationship] = ???
+  protected def mapRelation(rel: StoredRelation): PandaRelationship = {
+    PandaRelationship(rel.id,
+      rel.from, rel.to,
+      relationStore.getRelationTypeName(rel.typeId),
+      rel.properties.map(kv => (relationStore.getPropertyKeyName(kv._1).getOrElse("unknown"), LynxValue(kv._2))).toSeq: _*)
+  }
 
-  override def deleteRelation(id: Id): Unit = ???
+  override def deleteRelation(id: Id): Unit = {
+    val relation = relationStore.getRelationById(id)
+    if (relation.isDefined){
+      relationStore.deleteRelation(id)
+      // TODO: other operations below like statistics
+    }
+  }
 
-  override def relationSetProperty(id: Id, key: String, value: Any): Unit = ???
+  override def relationSetProperty(id: Id, key: String, value: Any): Unit = {
+    relationStore.relationSetProperty(id, relationStore.addPropertyKey(key), value)
+  }
 
-  override def relationRemoveProperty(id: Id, key: String): Unit = ???
+  override def relationRemoveProperty(id: Id, key: String): Unit = {
+    relationStore.getPropertyKeyId(key).foreach(kid => relationStore.relationRemoveProperty(id, kid))
+  }
 
-  override def relationAddLabel(id: Id, label: String): Unit = ???
+  override def relationAddType(id: Id, label: String): Unit = ???
 
-  override def relationRemoveLabel(id: Id, label: String): Unit = ???
+  override def relationRemoveType(id: Id, label: String): Unit = ???
 
   override def createIndexOnNode(label: String, props: Set[String]): Unit = ???
 
