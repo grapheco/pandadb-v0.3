@@ -55,7 +55,7 @@ class PandaDistributedIndexStore(client: RestHighLevelClient) extends Distribute
 
   override def cleanIndexes(indexNames: String*): Unit = {
     indexNames.foreach(name => {
-      deleteIndex(name)
+      if (indexIsExist(name)) deleteIndex(name)
       createIndex(name)
     })
   }

@@ -14,6 +14,8 @@ class StoredRelationWithProperty(override val id: Long,
                                  override val typeId: Int,
                                  override val properties:Map[Int,Any])
   extends StoredRelation(id, from, to, typeId) {
+
+  def invert() = new StoredRelationWithProperty(id, to, from, typeId, properties)
 }
 
 case class RelationId(value: Long) extends LynxId {}

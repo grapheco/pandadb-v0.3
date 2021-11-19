@@ -120,7 +120,7 @@ class RelationStoreAPI(db: DistributedKVAPI, indexStore: PandaDistributedIndexSt
 
   override def relationCount: Long = relationStore.count
 
-  override def close(): Unit = {}
+  override def close(): Unit = {idGenerator.flushId()}
 }
 
 trait DistributedRelationStoreSPI {

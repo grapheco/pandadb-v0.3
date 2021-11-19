@@ -4,6 +4,7 @@ import java.nio.ByteBuffer
 
 import cn.pandadb.kernel.distribute.{DistributedKeyConverter, PandaDistributeKVAPI}
 import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
+import cn.pandadb.kernel.distribute.meta.MetaNameMapping
 import cn.pandadb.kernel.distribute.node.{DistributedNodeStoreSPI, NodeStoreAPI}
 import cn.pandadb.kernel.store.StoredNodeWithProperty
 import org.apache.http.HttpHost
@@ -49,6 +50,8 @@ class NodeStoreAPITest {
       new HttpHost("10.0.82.145", 9200, "http"),
       new HttpHost("10.0.82.146", 9200, "http"))
     val indexStore = new PandaDistributedIndexStore(new RestHighLevelClient(RestClient.builder(hosts: _*)))
+
+    indexStore.cleanIndexes(MetaNameMapping.nodePropertyMetaName, MetaNameMapping.nodeMetaName)
 
     api = new NodeStoreAPI(db, indexStore)
 
