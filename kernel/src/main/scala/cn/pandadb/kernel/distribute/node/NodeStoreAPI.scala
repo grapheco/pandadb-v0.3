@@ -47,12 +47,16 @@ class NodeStoreAPI(db: DistributedKVAPI, indexStore: PandaDistributedIndexStore)
   }
 
   override def deleteNodes(nodeIDs: Iterator[Long]): Unit = {
-
+    val batchDelete = ArrayBuffer[Array[Byte]]()
     nodeIDs.grouped(1000).foreach(groupIds =>{
       groupIds.foreach(nId => {
         nodeLabelStore.getAll(nId).foreach(labelId => {
-          nodeStore.delete(nId, labelId)
+          batchDelete.append(DistributedKeyConverter.toNodeKey(labelId, nId))
         })
+
+        nodeStore.batchDelete(batchDelete.toSeq)
+        batchDelete.clear()
+
         nodeLabelStore.deleteRange(DistributedKeyConverter.toNodeLabelKey(nId, 0),
           DistributedKeyConverter.toNodeLabelKey(nId, -1))
       })

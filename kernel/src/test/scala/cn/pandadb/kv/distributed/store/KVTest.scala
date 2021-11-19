@@ -1,5 +1,7 @@
 package cn.pandadb.kv.distributed.store
 
+import java.util
+
 import cn.pandadb.kernel.distribute.DistributedKeyConverter
 import cn.pandadb.kernel.kv.ByteUtils
 import org.junit.Test
@@ -47,8 +49,7 @@ class Test1 {
       DistributedKeyConverter.toNodeLabelKey(100, 1),
       DistributedKeyConverter.toNodeLabelKey(100, 2)
     ).map(f => ByteString.copyFrom(f))
-
-    tikv.batchDelete(JavaConverters.seqAsJavaList(keys))
+    tikv.batchDelete(new util.ArrayList[ByteString](JavaConverters.seqAsJavaList(keys))) // transfer list to ArrayList
   }
 
   @Test

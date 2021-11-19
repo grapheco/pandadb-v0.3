@@ -83,6 +83,15 @@ class DistributedGraphFacadeTest {
     Assert.assertEquals(Map.empty, api.getRelation(1).get.properties)
   }
 
+  @Test
+  def cypher1(): Unit ={
+    api.cypher("match (n) return n").show()
+  }
+  @Test
+  def cypher2(): Unit ={
+    api.cypher("match (n)-[r]-(m) return r").show()
+  }
+
   @After
   def close(): Unit ={
     api.close() // flush id to db

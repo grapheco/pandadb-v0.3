@@ -30,10 +30,10 @@ class NodeLabelStore(db: DistributedKVAPI) {
     db.deleteRange(startKey, endKey)
   }
 
-//  def batchDelete(nodeIds: Seq[Long]): Unit ={
-//    val keys = nodeIds.map(id => DistributedKeyConverter.toNodeLabelKey(id))
-//    db.batchDelete(keys)
-//  }
+  def batchDelete(nodeIds: Seq[Long]): Unit ={
+    val keys = nodeIds.map(id => DistributedKeyConverter.toNodeLabelKey(id))
+    db.batchDelete(keys)
+  }
 
   def get(nodeId: NodeId): Option[LabelId] = {
     val keyPrefix = DistributedKeyConverter.toNodeLabelKey(nodeId)

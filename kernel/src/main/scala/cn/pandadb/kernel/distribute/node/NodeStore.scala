@@ -87,7 +87,7 @@ class NodeStore(db: DistributedKVAPI) {
 
   def delete(node: StoredNodeWithProperty): Unit = delete(node.id, node.labelIds)
 
-//  def batchDelete(keys: Seq[Array[Byte]]): Unit ={
-//    db.batchDelete(keys)
-//  }
+  def batchDelete(keys: Seq[Array[Byte]]): Unit ={
+    db.batchDelete(keys)
+  }
 }

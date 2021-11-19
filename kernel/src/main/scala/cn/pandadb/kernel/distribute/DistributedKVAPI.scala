@@ -1,5 +1,7 @@
 package cn.pandadb.kernel.distribute
 
+import java.util
+
 import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import cn.pandadb.kernel.util.serializer.NodeSerializer
 import org.tikv.common.types.Charset
@@ -114,9 +116,8 @@ class PandaDistributeKVAPI(client: RawKVClient) extends DistributedKVAPI {
   override def batchGet(): Iterator[(Array[Byte], Array[Byte])] = ???
   override def batchScan(): Iterator[(Array[Byte], Array[Byte])] = ???
 
-  // tikv bug, don't use it
   override def batchDelete(data: Seq[Array[Byte]]): Unit = {
-    val transfer = JavaConverters.seqAsJavaList(data.map(f => ByteString.copyFrom(f)))
+    val transfer = new util.ArrayList[ByteString](JavaConverters.seqAsJavaList(data.map(f => ByteString.copyFrom(f))))
     client.batchDelete(transfer)
   }
   override def batchPut(): Unit = ???
