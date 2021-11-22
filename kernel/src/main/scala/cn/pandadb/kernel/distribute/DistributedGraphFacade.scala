@@ -88,6 +88,12 @@ class DistributedGraphFacade extends DistributedGraphService{
     }
   }
 
+  override def getNodeLabelId(labelName: String): Option[Int] = {
+    nodeStore.getLabelId(labelName)
+  }
+
+  override def transferInnerNode(n: StoredNode): PandaNode = mapNode(n)
+
   override def scanAllNode(): Iterator[PandaNode] = {
     nodeStore.allNodes().map(mapNode(_))
   }
@@ -145,6 +151,10 @@ class DistributedGraphFacade extends DistributedGraphService{
   override def getRelation(id: Id): Option[PandaRelationship] = {
     relationStore.getRelationById(id).map(mapRelation(_))
   }
+
+  override def getRelationTypeId(typeName: String): Option[Int] = relationStore.getRelationTypeId(typeName)
+
+  override def transferInnerRelation(r: StoredRelation): PandaRelationship = mapRelation(r)
 
   protected def mapRelation(rel: StoredRelation): PandaRelationship = {
     PandaRelationship(rel.id,

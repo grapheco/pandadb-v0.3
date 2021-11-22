@@ -29,16 +29,22 @@ class DistributedGraphFacadeTest {
     api.addNode(Map("name"->"glx5", "age"->15), "person", "man")
 
     api.addRelation("friend1", 1, 2, Map.empty)
-    api.addRelation("friend2", 1, 3, Map.empty)
-    api.addRelation("friend3", 1, 4, Map.empty)
-    api.addRelation("friend4", 4, 5, Map("Year"->2020))
+    api.addRelation("friend1", 2, 3, Map.empty)
+    api.addRelation("friend2", 4, 5, Map.empty)
+    api.addRelation("friend3", 4, 2, Map("Year"->2020))
   }
 
   @Test
   def scanAllNodes(): Unit ={
     api.scanAllNode().foreach(println)
   }
-
+  @Test
+  def scanPath(): Unit ={
+    api.cypher("match (n:person)-[r1]->(m:person)-[r2]->(q:person) return n,m,q")
+    val start = System.currentTimeMillis()
+    api.cypher("match (n:person)-[r1]->(m:person)-[r2]->(q:person) return n,m,q").show()
+    println(s"total: ${System.currentTimeMillis() - start} ms")
+  }
   @Test
   def deleteNode(): Unit ={
     api.deleteNode(2)

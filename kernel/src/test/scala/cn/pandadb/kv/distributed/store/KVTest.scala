@@ -1,5 +1,6 @@
 package cn.pandadb.kv.distributed.store
 
+import java.nio.ByteBuffer
 import java.util
 
 import cn.pandadb.kernel.distribute.DistributedKeyConverter
@@ -29,6 +30,14 @@ class Test1 {
     tikv.put(ByteString.copyFrom(DistributedKeyConverter.toNodeLabelKey(100, 2)), ByteString.copyFrom(Array.emptyByteArray))
     tikv.put(ByteString.copyFrom(DistributedKeyConverter.toNodeLabelKey(100, 3)), ByteString.copyFrom(Array.emptyByteArray))
   }
+
+  @Test
+  def deleteAll(): Unit = {
+    val left = ByteString.copyFrom(ByteBuffer.wrap(Array((0).toByte)))
+    val right = ByteString.copyFrom(ByteBuffer.wrap(Array((-1).toByte)))
+    tikv.deleteRange(left, right)
+  }
+
 
   @Test
   def search(): Unit ={

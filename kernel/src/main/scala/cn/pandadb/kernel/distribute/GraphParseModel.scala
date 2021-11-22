@@ -122,7 +122,10 @@ class GraphParseModel(db: DistributedGraphService) extends GraphModelPlus{
 
   override def removeRelationshipType(triple: Seq[LynxValue], labels: Array[String], tx: Option[LynxTransaction]): Option[Seq[LynxValue]] = ???
 
-  override def createElements[T](nodesInput: Seq[(String, NodeInput)], relsInput: Seq[(String, RelationshipInput)], onCreated: (Seq[(String, LynxNode)], Seq[(String, LynxRelationship)]) => T, tx: Option[LynxTransaction]): T = {
+  override def createElements[T](nodesInput: Seq[(String, NodeInput)],
+                                 relsInput: Seq[(String, RelationshipInput)],
+                                 onCreated: (Seq[(String, LynxNode)], Seq[(String, LynxRelationship)]) => T,
+                                 tx: Option[LynxTransaction]): T = {
     val nodesMap: Seq[(String, PandaNode)] = nodesInput.map(x => {
       val (varname, input) = x
       val id = db.newNodeId()
@@ -184,11 +187,101 @@ class GraphParseModel(db: DistributedGraphService) extends GraphModelPlus{
     super.relationships(relationshipFilter, tx)
   }
 
-  override def paths(startNodeFilter: NodeFilter, relationshipFilter: RelationshipFilter, endNodeFilter: NodeFilter, direction: SemanticDirection, tx: Option[LynxTransaction]): Iterator[PathTriple] = super.paths(startNodeFilter, relationshipFilter, endNodeFilter, direction, tx)
+  override def paths(startNodeFilter: NodeFilter,
+                     relationshipFilter: RelationshipFilter,
+                     endNodeFilter: NodeFilter,
+                     direction: SemanticDirection, tx: Option[LynxTransaction]): Iterator[PathTriple] = {
+    nodes(startNodeFilter, tx).flatMap(node => paths(node.id, relationshipFilter, endNodeFilter, direction))
+  }
 
-  override def expand(nodeId: LynxId, direction: SemanticDirection, tx: Option[LynxTransaction]): Iterator[PathTriple] = super.expand(nodeId, direction, tx)
+  override def expand(nodeId: LynxId, direction: SemanticDirection, tx: Option[LynxTransaction]): Iterator[PathTriple] = {
+    direction match {
+      case SemanticDirection.INCOMING => db.findInRelations(nodeId.value.asInstanceOf[Long]).map(r => {
+        val toNode = db.getNode(r.to).get
+        val rel = db.transferInnerRelation(r)
+        val fromNode = db.getNode(r.from).get
+        PathTriple(toNode, rel, fromNode)
+      })
+      case SemanticDirection.OUTGOING => db.findOutRelations(nodeId.value.asInstanceOf[Long]).map(r => {
+        val toNode = db.getNode(r.to).get
+        val rel = db.transferInnerRelation(r)
+        val fromNode = db.getNode(r.from).get
+        PathTriple(fromNode, rel, toNode)
+      })
+      case SemanticDirection.BOTH => db.findInRelations(nodeId.value.asInstanceOf[Long]).map(r => {
+        val toNode = db.getNode(r.to).get
+        val rel = db.transferInnerRelation(r)
+        val fromNode = db.getNode(r.from).get
+        PathTriple(toNode, rel, fromNode)
+      }) ++
+        db.findOutRelations(nodeId.value.asInstanceOf[Long]).map(r => {
+          val toNode = db.getNode(r.to).get
+          val rel = db.transferInnerRelation(r)
+          val fromNode = db.getNode(r.from).get
+          PathTriple(fromNode, rel, toNode)
+        })
+    }
+  }
 
-  override def expand(nodeId: LynxId, relationshipFilter: RelationshipFilter, endNodeFilter: NodeFilter, direction: SemanticDirection, tx: Option[LynxTransaction]): Iterator[PathTriple] = super.expand(nodeId, relationshipFilter, endNodeFilter, direction, tx)
+  override def expand(nodeId: LynxId, relationshipFilter: RelationshipFilter, endNodeFilter: NodeFilter,
+                      direction: SemanticDirection, tx: Option[LynxTransaction]): Iterator[PathTriple] = {
+    // has properties?
+    endNodeFilter.properties.toSeq match {
+      case Seq() => expand(nodeId, direction, relationshipFilter).filter(
+        item => {
+          val PathTriple(_, rel, endNode, _) = item
+          relationshipFilter.matches(rel) && endNodeFilter.labels.forall(endNode.labels.contains(_))
+        }
+      )
+      case _ => expand(nodeId, direction, relationshipFilter).filter(
+        item => {
+          val PathTriple(_, rel, endNode, _) = item
+          relationshipFilter.matches(rel) && endNodeFilter.matches(endNode)
+        }
+      )
+    }
+  }
+
+  def expand(nodeId: LynxId, direction: SemanticDirection, relationshipFilter: RelationshipFilter): Iterator[PathTriple] = {
+    val typeId = {
+      relationshipFilter.types match {
+        case Seq() => None
+        case _ => db.getRelationTypeId(relationshipFilter.types.head)
+      }
+    }
+    if (typeId.isEmpty && relationshipFilter.types.nonEmpty) {
+      Iterator.empty
+    } else {
+      direction match {
+        case SemanticDirection.INCOMING => db.findInRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
+          val toNode = db.getNode(r.to).get
+          val rel = db.transferInnerRelation(r)
+          val fromNode = db.getNode(r.from).get
+          PathTriple(toNode, rel, fromNode)
+        })
+
+        case SemanticDirection.OUTGOING => db.findOutRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
+          val toNode = db.getNode(r.to).get
+          val rel = db.transferInnerRelation(r)
+          val fromNode = db.getNode(r.from).get
+          PathTriple(fromNode, rel, toNode)
+        })
+        case SemanticDirection.BOTH => db.findInRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
+          val toNode = db.getNode(r.to).get
+          val rel = db.transferInnerRelation(r)
+          val fromNode = db.getNode(r.from).get
+          PathTriple(toNode, rel, fromNode)
+        }) ++
+          db.findOutRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
+            val toNode = db.getNode(r.to).get
+            val rel = db.transferInnerRelation(r)
+            val fromNode = db.getNode(r.from).get
+            PathTriple(fromNode, rel, toNode)
+          })
+      }
+    }
+  }
+
 
   override def nodes(nodeFilter: NodeFilter, tx: Option[LynxTransaction]): Iterator[PandaNode] = {
     (nodeFilter.labels.nonEmpty, nodeFilter.properties.nonEmpty) match {
@@ -199,5 +292,38 @@ class GraphParseModel(db: DistributedGraphService) extends GraphModelPlus{
         ???
       }
     }
+  }
+  def paths(nodeId: LynxId,
+            relationshipFilter: RelationshipFilter,
+            endNodeFilter: NodeFilter,
+            direction: SemanticDirection): Iterator[PathTriple] = {
+    db.getNode(nodeId).map(
+      node => {
+        if (relationshipFilter.types.nonEmpty) {
+          relationshipFilter.types.map(db.getRelationTypeId).map(
+            _.map(
+              relType =>
+                direction match {
+                  case SemanticDirection.INCOMING => db.findInRelations(node.longId, Some(relType)).map(r => (node, r, r.from))
+                  case SemanticDirection.OUTGOING => db.findOutRelations(node.longId, Some(relType)).map(r => (node, r, r.to))
+                  case SemanticDirection.BOTH => db.findInRelations(node.longId, Some(relType)).map(r => (node, r, r.from)) ++
+                    db.findOutRelations(node.longId, Some(relType)).map(r => (node, r, r.to))
+                }
+            ).getOrElse(Iterator.empty)
+          )
+        } else {
+          Seq(direction match {
+            case SemanticDirection.INCOMING => db.findInRelations(node.longId).map(r => (node, r, r.from))
+            case SemanticDirection.OUTGOING => db.findOutRelations(node.longId).map(r => (node, r, r.to))
+            case SemanticDirection.BOTH => db.findInRelations(node.longId).map(r => (node, r, r.from)) ++
+              db.findOutRelations(node.longId).map(r => (node, r, r.to))
+          })
+        }
+      }
+    )
+      .getOrElse(Iterator.empty)
+      .reduce(_ ++ _)
+      .map(p => PathTriple(p._1, db.getRelation(p._2.id).orNull, db.getNode(p._3).orNull))
+      .filter(trip => endNodeFilter.matches(trip.endNode))
   }
 }

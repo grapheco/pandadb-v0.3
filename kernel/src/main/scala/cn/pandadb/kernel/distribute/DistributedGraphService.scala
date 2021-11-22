@@ -1,6 +1,6 @@
 package cn.pandadb.kernel.distribute
 
-import cn.pandadb.kernel.store.{PandaNode, PandaRelationship, StoredRelation}
+import cn.pandadb.kernel.store.{PandaNode, PandaRelationship, StoredNode, StoredRelation}
 import org.grapheco.lynx.{LynxResult, LynxTransaction}
 
 /**
@@ -13,6 +13,7 @@ trait DistributedGraphService {
   type Id = Long
 
   def newNodeId(): Id
+
   def newRelationshipId(): Id
 
   def addNode(nodeProps: Map[String, Any], labels: String*): Id
@@ -24,6 +25,10 @@ trait DistributedGraphService {
   def getNode(id: Id, labelName: String): Option[PandaNode]
 
   def getNodesByLabel(labelNames: Seq[String], exact: Boolean): Iterator[PandaNode]
+
+  def getNodeLabelId(labelName: String): Option[Int]
+
+  def transferInnerNode(n: StoredNode): PandaNode
 
   def scanAllNode(): Iterator[PandaNode]
 
@@ -44,6 +49,10 @@ trait DistributedGraphService {
   def addRelation(relId: Long, label: String, from: Long, to: Long, relProps: Map[String, Any]): Id
 
   def getRelation(id: Id): Option[PandaRelationship]
+
+  def getRelationTypeId(typeName: String): Option[Int]
+
+  def transferInnerRelation(r: StoredRelation): PandaRelationship
 
   def scanAllRelations(): Iterator[PandaRelationship]
 
