@@ -17,7 +17,7 @@ trait DistributedNameStore {
     val id = idGenerator.incrementAndGet()
     mapString2Int += labelName -> id
     mapInt2String += id -> labelName
-    indexStore.addMetaDoc(indexName, labelName, id)
+    indexStore.addDoc(indexName, labelName, id)
     id
   }
 
@@ -46,7 +46,7 @@ trait DistributedNameStore {
     val id = mapString2Int(labelName)
     mapString2Int -= labelName
     mapInt2String -= id
-    indexStore.deleteMetaDoc(indexName, id)
+    indexStore.deleteDoc(indexName, id)
   }
 
   def loadAll(): Unit = {

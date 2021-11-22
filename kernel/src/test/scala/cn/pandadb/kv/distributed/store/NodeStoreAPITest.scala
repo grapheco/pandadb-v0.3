@@ -4,7 +4,7 @@ import java.nio.ByteBuffer
 
 import cn.pandadb.kernel.distribute.{DistributedKeyConverter, PandaDistributeKVAPI}
 import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
-import cn.pandadb.kernel.distribute.meta.MetaNameMapping
+import cn.pandadb.kernel.distribute.meta.NameMapping
 import cn.pandadb.kernel.distribute.node.{DistributedNodeStoreSPI, NodeStoreAPI}
 import cn.pandadb.kernel.store.StoredNodeWithProperty
 import org.apache.http.HttpHost

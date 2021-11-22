@@ -10,6 +10,6 @@ import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
 class NodeLabelNameStore(store: PandaDistributedIndexStore) extends DistributedNameStore {
   override val initInt: Int = 0
   override val indexStore: PandaDistributedIndexStore = store
-  override val indexName: String = MetaNameMapping.nodeMetaName
+  override val indexName: String = NameMapping.nodeLabelMetaName
   loadAll()
 }
