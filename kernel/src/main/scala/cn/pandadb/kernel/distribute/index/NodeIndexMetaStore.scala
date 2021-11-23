@@ -8,9 +8,8 @@ import cn.pandadb.kernel.distribute.meta.{DistributedNameStore, NameMapping}
  * @author: LiamGao
  * @create: 2021-11-22 14:28
  */
-class NodeIndexNameStore(store: PandaDistributedIndexStore) extends DistributedNameStore {
-  override val initInt: Int = 0
-  override val indexStore: PandaDistributedIndexStore = store
+class NodeIndexMetaStore(store: PandaDistributedIndexStore) extends DistributedIndexMetaStore {
+  override val indexStore: DistributedIndexStore = store
   override val indexName: String = NameMapping.nodeIndexMeta
   loadAll()
 }

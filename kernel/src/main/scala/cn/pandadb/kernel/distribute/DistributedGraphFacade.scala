@@ -1,4 +1,5 @@
 package cn.pandadb.kernel.distribute
+
 import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
 import cn.pandadb.kernel.distribute.node.NodeStoreAPI
 import cn.pandadb.kernel.distribute.relationship.RelationStoreAPI
@@ -15,7 +16,7 @@ import org.tikv.common.{TiConfiguration, TiSession}
  * @author: LiamGao
  * @create: 2021-11-17 16:45
  */
-class DistributedGraphFacade extends DistributedGraphService{
+class DistributedGraphFacade extends DistributedGraphService {
 
   val indexStore = {
     val hosts = Array(new HttpHost("10.0.82.144", 9200, "http"),
@@ -50,7 +51,7 @@ class DistributedGraphFacade extends DistributedGraphService{
   private def addNode(id: Option[Long], labels: Seq[String], nodeProps: Map[String, Any]): Id = {
     val nodeId = id.getOrElse(nodeStore.newNodeId())
     val labelIds = labels.map(label => nodeStore.addLabel(label)).toArray
-    val properties =  nodeProps.map(kv => (nodeStore.addPropertyKey(kv._1), kv._2))
+    val properties = nodeProps.map(kv => (nodeStore.addPropertyKey(kv._1), kv._2))
     nodeStore.addNode(new StoredNodeWithProperty(nodeId, labelIds, properties))
 
     //TODO: if label && property has index?
@@ -69,7 +70,7 @@ class DistributedGraphFacade extends DistributedGraphService{
   override def getNodesByLabel(labelNames: Seq[String], exact: Boolean): Iterator[PandaNode] = {
     // todo: choose min
     if (labelNames.isEmpty) scanAllNode()
-    else if (labelNames.length == 1){
+    else if (labelNames.length == 1) {
       val lid = nodeStore.getLabelId(labelNames.head)
       if (lid.isDefined) nodeStore.getNodesByLabel(lid.get).map(mapNode(_))
       else Iterator.empty
@@ -136,6 +137,7 @@ class DistributedGraphFacade extends DistributedGraphService{
   override def addRelation(relId: Id, label: String, from: Id, to: Id, relProps: Map[String, Any]): Id = {
     addRelation(Option(relId), label, from, to, relProps)
   }
+
   private def addRelation(id: Option[Long], label: String, from: Long, to: Long, relProps: Map[String, Any]): Id = {
     val rid = id.getOrElse(relationStore.newRelationId())
     val labelId = relationStore.addRelationType(label)
@@ -148,6 +150,7 @@ class DistributedGraphFacade extends DistributedGraphService{
   override def scanAllRelations(): Iterator[PandaRelationship] = {
     relationStore.allRelations().map(mapRelation(_))
   }
+
   override def getRelation(id: Id): Option[PandaRelationship] = {
     relationStore.getRelationById(id).map(mapRelation(_))
   }
@@ -165,7 +168,7 @@ class DistributedGraphFacade extends DistributedGraphService{
 
   override def deleteRelation(id: Id): Unit = {
     val relation = relationStore.getRelationById(id)
-    if (relation.isDefined){
+    if (relation.isDefined) {
       relationStore.deleteRelation(id)
       // TODO: other operations below like statistics
     }
@@ -214,11 +217,24 @@ class DistributedGraphFacade extends DistributedGraphService{
   override def findInRelations(toNodeId: Id): Iterator[StoredRelation] = {
     relationStore.findInRelations(toNodeId)
   }
+
   override def findInRelations(toNodeId: Id, edgeType: Option[Int]): Iterator[StoredRelation] = {
     relationStore.findInRelations(toNodeId, edgeType)
   }
 
-  override def createIndexOnNode(label: String, props: Set[String]): Unit = ???
+  override def createIndexOnNode(label: String, props: Set[String]): Unit = {
+//    indexStore.addIndexMeta()
+    getNodesByLabel(Seq(label), false).foreach(
+      node => {
+        val res = props.intersect(node.properties.keySet)
+        if (res.nonEmpty){
+          val headPropName = res.head
+          val tailPropNames = res.tail
+
+        }
+      }
+    )
+  }
 
   override def cypher(query: String, parameters: Map[String, Any], tx: Option[LynxTransaction]): LynxResult = {
     runner.compile(query)

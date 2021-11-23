@@ -53,56 +53,41 @@ class IndexStoreTest {
   }
 
   @Test
-  def deleteIndexes(): Unit ={
-    indexStore.deleteIndex(nodeMeta)
-    indexStore.deleteIndex(relationMeta)
-    indexStore.deleteIndex(nodePropertyMeta)
-    indexStore.deleteIndex(relationPropertyMeta)
+  def addNameStoreMeta(): Unit ={
+    indexStore.addNameMetaDoc(NameMapping.nodeLabelMetaName, "Teacher", 233) // code: 201 accept
+    indexStore.addNameMetaDoc(NameMapping.nodeLabelMetaName, "Musician", 234)
+    indexStore.addNameMetaDoc(NameMapping.nodeLabelMetaName, "People", 235)
   }
 
   @Test
-  def addMeta(): Unit ={
-    indexStore.addDoc(nodeMeta, "person1", 233) // code: 201 accept
-    indexStore.addDoc(nodeMeta, "person2", 234)
-    indexStore.addDoc(nodeMeta, "person3", 235)
-  }
-  @Test
-  def deleteMeta(): Unit ={
-    indexStore.deleteDoc(nodeMeta, 234)
+  def searchNameMeta(): Unit ={
+    println(indexStore.searchNameMetaDoc(NameMapping.nodeLabelMetaName, "People"))
+    println(indexStore.searchNameMetaDoc(NameMapping.nodeLabelMetaName, 233))
   }
 
   @Test
-  def searchMeta(): Unit ={
-    val res = indexStore.searchDoc(nodeMeta, "person2")
-    if (res.isDefined) println(res.get.toSeq)
+  def loadAllNameMeta(): Unit ={
+    println(indexStore.loadAllMeta(NameMapping.nodeLabelMetaName))
   }
 
   @Test
-  def loadALl(): Unit ={
-    val res = indexStore.loadAllMeta(nodeMeta)
-    println(res._1.toList)
-    println(res._2.toList)
+  def addIndexField(): Unit ={
+    indexStore.addIndexField(1, "Information", "Name", "glx", NameMapping.nodeIndex)
+    indexStore.addIndexField(2, "Information", "Name", "bob", NameMapping.nodeIndex)
+    indexStore.addIndexField(3, "Information", "Name", "Alice", NameMapping.nodeIndex)
   }
+  @Test
+  def updateField(): Unit ={
+    indexStore.updateIndexField(1, "Information", "Age", 18, NameMapping.nodeIndex)
+//    indexStore.updateIndexField(2, "Information", "Age", 19, NameMapping.nodeIndex)
+    indexStore.updateIndexField(3, "Information", "Age", 20, NameMapping.nodeIndex)
 
-  @Test
-  def addIndexField: Unit ={
-    val data = Iterator((1L, "China"), (2L, "USA"), (3L,"Canada"), (4L, "Japan"))
-    indexStore.addIndexField("Country", data, nodeIndex)
+    indexStore.updateIndexField(1, "Information", "Year", 1888, NameMapping.nodeIndex)
+    indexStore.updateIndexField(2, "Information", "Year", 1999, NameMapping.nodeIndex)
+    indexStore.updateIndexField(3, "Information", "Year", 2000, NameMapping.nodeIndex)
   }
   @Test
-  def updateIndexField: Unit ={
-    val data = Iterator((1L, 5000), (2L, 200), (3L, 100), (4L, 100))
-    indexStore.updateIndexField("History", data)
-
-    val data2 = Iterator((1L, true), (2L, false), (3L, false), (4L, false))
-    indexStore.updateIndexField("isStrong", data2)
-  }
-  @Test
-  def deleteIndexField(): Unit ={
-    indexStore.deleteIndexField("History")
-  }
-  @Test
-  def addSingle(): Unit ={
-    indexStore.addSingleIndexField(5.toString, "Country", "Korea")
+  def deleteField(): Unit ={
+    indexStore.deleteIndexField("Information", "Age", NameMapping.nodeIndex)
   }
 }

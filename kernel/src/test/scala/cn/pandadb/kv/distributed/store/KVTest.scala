@@ -6,12 +6,14 @@ import java.util
 import cn.pandadb.kernel.distribute.DistributedKeyConverter
 import cn.pandadb.kernel.kv.ByteUtils
 import org.junit.Test
+import org.tikv.common.types.Charset
 import org.tikv.common.{TiConfiguration, TiSession}
 import org.tikv.raw.RawKVClient
 import org.tikv.shade.com.google.protobuf.ByteString
 
 import scala.collection.JavaConverters
 import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * @program: pandadb-v0.3
@@ -63,7 +65,27 @@ class Test1 {
 
   @Test
   def t(): Unit ={
+    val lst = ArrayBuffer[(ByteString, ByteString)]()
+    var count = 0
+    for (i <- 1 to 500000){
+      val kv = ByteString.copyFrom(ByteUtils.longToBytes(i))
+      lst.append((kv, kv))
+      count += 1
+      if (count % 10000 == 0){
+        println(s"data size: $count")
+        val map = lst.toMap.asJava
+        tikv.batchPut(map)
+        lst.clear()
+      }
+    }
+    tikv.close()
+  }
+  @Test
+  def getALl(): Unit ={
 
-    println("")
+//    println(iter.size())
+    val start = ByteString.copyFrom(ByteUtils.longToBytes(0))
+    val end = ByteString.copyFrom(ByteUtils.longToBytes(-1))
+    println(tikv.scan(start, end).size())
   }
 }

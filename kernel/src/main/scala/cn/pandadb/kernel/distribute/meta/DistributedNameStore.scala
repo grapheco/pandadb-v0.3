@@ -17,7 +17,7 @@ trait DistributedNameStore {
     val id = idGenerator.incrementAndGet()
     mapString2Int += labelName -> id
     mapInt2String += id -> labelName
-    indexStore.addDoc(indexName, labelName, id)
+    indexStore.addNameMetaDoc(indexName, labelName, id)
     id
   }
 
@@ -46,7 +46,7 @@ trait DistributedNameStore {
     val id = mapString2Int(labelName)
     mapString2Int -= labelName
     mapInt2String -= id
-    indexStore.deleteDoc(indexName, id)
+    indexStore.deleteDoc(indexName, id.toString)
   }
 
   def loadAll(): Unit = {
@@ -54,8 +54,14 @@ trait DistributedNameStore {
     idGenerator = new AtomicInteger(initInt)
 
     val data = indexStore.loadAllMeta(indexName)
-    mapString2Int = mutable.Map(data._1.toSeq:_*)
-    mapInt2String = mutable.Map(data._2.toSeq:_*)
+
+    while (data.hasNext){
+      val res = data.next().map(kv => (kv(NameMapping.metaName).toString, kv(NameMapping.metaId).asInstanceOf[Int]))
+      res.foreach(ll => {
+        mapString2Int += ll._1 -> ll._2
+        mapInt2String += ll._2 -> ll._1
+      })
+    }
 
     val maxId: Int = {
       val tmpId = {

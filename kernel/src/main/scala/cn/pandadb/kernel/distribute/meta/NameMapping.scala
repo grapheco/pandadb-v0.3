@@ -12,6 +12,9 @@ object NameMapping {
   // doc column name
   val metaName = "name"
   val metaId = "id"
+  val indexMetaLabelName = "label"
+  val indexMetaPropertyName = "property"
+
 
   // index name
   val nodeLabelMetaName = "node-label-meta"
