@@ -30,4 +30,7 @@ object NameMapping {
   val relationIndex = "relation-index"
   val nodeIndexMeta = "node-index-meta"
   val relationIndexMeta = "relation-index-meta"
+
+  // statistics
+  val indexStatistics = "index-statistics"
 }

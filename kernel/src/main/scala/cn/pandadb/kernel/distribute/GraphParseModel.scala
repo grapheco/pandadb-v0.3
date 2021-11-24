@@ -162,7 +162,9 @@ class GraphParseModel(db: DistributedGraphService) extends GraphModelPlus{
     onCreated(nodesMap, relsMap)
   }
 
-  override def createIndex(labelName: LabelName, properties: List[PropertyKeyName], tx: Option[LynxTransaction]): Unit = ???
+  override def createIndex(labelName: LabelName, properties: List[PropertyKeyName], tx: Option[LynxTransaction]): Unit = {
+    db.createIndexOnNode(labelName.name, properties.map(p => p.name).toSet)
+  }
 
   override def getIndexes(tx: Option[LynxTransaction]): Array[(LabelName, List[PropertyKeyName])] = ???
 

@@ -25,7 +25,7 @@ class DistributedGraphFacadeTest {
     api.addNode(Map("name"->"glx1", "age"->11), "person", "worker")
     api.addNode(Map("name"->"glx2", "age"->12, "country"->"China"), "person", "human")
     api.addNode(Map("name"->"glx3", "age"->13), "person", "CNIC")
-    api.addNode(Map("name"->"glx4", "age"->14), "person", "bass player")
+    api.addNode(Map("name"->"glx4", "age"->12), "person", "bass player")
     api.addNode(Map("name"->"glx5", "age"->15), "person", "man")
 
     api.addRelation("friend1", 1, 2, Map.empty)
@@ -91,7 +91,7 @@ class DistributedGraphFacadeTest {
 
   @Test
   def cypher1(): Unit ={
-    api.cypher("match (n) return n").show()
+    api.cypher("create index on:person(age)").show()
   }
   @Test
   def cypher2(): Unit ={

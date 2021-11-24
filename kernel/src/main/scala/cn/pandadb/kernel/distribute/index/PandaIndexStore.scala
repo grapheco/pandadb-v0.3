@@ -105,6 +105,29 @@ class PandaDistributedIndexStore(client: RestHighLevelClient) extends Distribute
     new IndexSearchHitIds(indexName, client, boolBuilder)
   }
 
+  override def addDoc(indexName: String, docId: Option[String], dataMap: Map[String, Any]): Unit ={
+    val data = dataMap.asInstanceOf[Map[String, Object]].asJava
+    val jsonString = JSON.toJSONString(data, SerializerFeature.QuoteFieldNames)
+    val request = {
+      if (docId.isDefined) new IndexRequest(indexName).id(docId.get).source(jsonString, XContentType.JSON)
+      else new IndexRequest(indexName).source(jsonString, XContentType.JSON)
+    }
+    client.index(request, RequestOptions.DEFAULT)
+  }
+
+  override def getHits(filter: Seq[(String, Any)], indexName: String): Long ={
+    val boolBuilder = new BoolQueryBuilder()
+    filter.foreach(kv => {
+      val value = IndexConverter.transferType2Java(kv._2)
+      IndexConverter.value2TermQuery(boolBuilder, kv._1, value)
+    })
+    val request = new SearchRequest().indices(indexName)
+    val builder = new SearchSourceBuilder()
+    builder.query(boolBuilder).trackTotalHits(true)
+    request.source(builder)
+    client.search(request, RequestOptions.DEFAULT).getHits.getTotalHits.value
+  }
+
   override def docExist(indexName: String, docId: String): Boolean ={
     val request = new GetRequest().index(indexName).id(docId)
     client.exists(request, RequestOptions.DEFAULT)

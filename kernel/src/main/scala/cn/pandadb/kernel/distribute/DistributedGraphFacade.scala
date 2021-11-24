@@ -55,7 +55,18 @@ class DistributedGraphFacade extends DistributedGraphService {
     val properties = nodeProps.map(kv => (nodeStore.addPropertyKey(kv._1), kv._2))
     nodeStore.addNode(new StoredNodeWithProperty(nodeId, labelIds, properties))
 
-    //TODO: if label && property has index?
+    // if property has index
+    val indexMetaMap = indexStore.nodeIndexMetaStore.dataMap
+    val intersectLabels = indexMetaMap.keySet.intersect(labels.toSet)
+    if (intersectLabels.nonEmpty){
+      intersectLabels.foreach(_label => {
+        nodeProps.foreach(kv => {
+          if (indexMetaMap(_label).contains(kv._1)){
+            indexStore.addIndexField(nodeId, _label, kv._1, kv._2, NameMapping.nodeIndex)
+          }
+        })
+      })
+    }
 
     nodeId
   }
@@ -224,6 +235,10 @@ class DistributedGraphFacade extends DistributedGraphService {
   }
 
   override def createIndexOnNode(label: String, props: Set[String]): Unit = {
+
+    // index meta
+    props.foreach(indexStore.addIndexMetaDoc(NameMapping.nodeIndexMeta, label, _))
+
     indexStore.setIndexToBatchMode(NameMapping.nodeIndex)
     val processor = indexStore.getBulkProcessor(1000, 5)
 

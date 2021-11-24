@@ -2,21 +2,22 @@ package cn.pandadb.kernel.distribute.node
 
 import cn.pandadb.kernel.distribute.{DistributedKVAPI, DistributedKeyConverter}
 import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
-import cn.pandadb.kernel.distribute.meta.{IdGenerator, NodeLabelNameStore, NodePropertyNameStore, TypeNameEnum}
+import cn.pandadb.kernel.distribute.meta.{IdGenerator, NameMapping, NodeLabelNameStore, NodePropertyNameStore, TypeNameEnum}
 import cn.pandadb.kernel.store.StoredNodeWithProperty
 import cn.pandadb.kernel.util.serializer.BaseSerializer
 
 import scala.collection.mutable.ArrayBuffer
+
 /**
  * @program: pandadb-v0.3
  * @description:
  * @author: LiamGao
  * @create: 2021-11-16 15:12
  */
-class NodeStoreAPI(db: DistributedKVAPI, indexStore: PandaDistributedIndexStore) extends DistributedNodeStoreSPI{
+class NodeStoreAPI(db: DistributedKVAPI, indexStore: PandaDistributedIndexStore) extends DistributedNodeStoreSPI {
   private val nodeLabelName = new NodeLabelNameStore(indexStore)
   private val propertyName = new NodePropertyNameStore(indexStore)
-  private val idGenerator =new IdGenerator(db, TypeNameEnum.nodeName)
+  private val idGenerator = new IdGenerator(db, TypeNameEnum.nodeName)
 
   val nodeStore = new NodeStore(db)
   val nodeLabelStore = new NodeLabelStore(db)
@@ -26,8 +27,8 @@ class NodeStoreAPI(db: DistributedKVAPI, indexStore: PandaDistributedIndexStore)
 
   override def hasLabel(nodeId: Long, label: Int): Boolean = nodeLabelStore.exist(nodeId, label)
 
-  override def addNode(node: StoredNodeWithProperty): Unit ={
-    if (node.labelIds.nonEmpty){
+  override def addNode(node: StoredNodeWithProperty): Unit = {
+    if (node.labelIds.nonEmpty) {
       nodeStore.set(node)
       nodeLabelStore.set(node.id, node.labelIds)
     }
@@ -42,29 +43,37 @@ class NodeStoreAPI(db: DistributedKVAPI, indexStore: PandaDistributedIndexStore)
   override def addPropertyKey(keyName: String): Int = propertyName.getOrAddId(keyName)
 
   override def deleteNode(nodeId: Long): Unit = {
-    nodeLabelStore.getAll(nodeId).foreach(labelId => nodeStore.delete(nodeId, labelId))
+    nodeLabelStore.getAll(nodeId).foreach(labelId => {
+      nodeStore.delete(nodeId, labelId)
+    })
     nodeLabelStore.delete(nodeId)
+
+    // TODO: statistic, index meta delete or not
   }
 
   override def deleteNodes(nodeIDs: Iterator[Long]): Unit = {
     val batchDelete = ArrayBuffer[Array[Byte]]()
-    nodeIDs.grouped(1000).foreach(groupIds =>{
-      groupIds.foreach(nId => {
-        nodeLabelStore.getAll(nId).foreach(labelId => {
-          batchDelete.append(DistributedKeyConverter.toNodeKey(labelId, nId))
+    nodeIDs.grouped(1000).foreach(
+      groupIds => {
+        groupIds.foreach(nId => {
+          nodeLabelStore.getAll(nId).foreach(labelId => {
+            batchDelete.append(DistributedKeyConverter.toNodeKey(labelId, nId))
+          })
+
+          nodeStore.batchDelete(batchDelete.toSeq)
+          batchDelete.clear()
+
+          nodeLabelStore.deleteRange(DistributedKeyConverter.toNodeLabelKey(nId, 0),
+            DistributedKeyConverter.toNodeLabelKey(nId, -1))
+
+          // todo: index
         })
-
-        nodeStore.batchDelete(batchDelete.toSeq)
-        batchDelete.clear()
-
-        nodeLabelStore.deleteRange(DistributedKeyConverter.toNodeLabelKey(nId, 0),
-          DistributedKeyConverter.toNodeLabelKey(nId, -1))
-      })
-    })
+      }
+    )
   }
 
   override def deleteNodesByLabel(labelId: Int): Unit = {
-    nodeStore.getNodeIdsByLabel(labelId).foreach{
+    nodeStore.getNodeIdsByLabel(labelId).foreach {
       nodeId => {
         nodeLabelStore.getAll(nodeId).foreach(labelId => nodeStore.delete(nodeId, labelId))
         nodeLabelStore.delete(nodeId)
@@ -84,7 +93,7 @@ class NodeStoreAPI(db: DistributedKVAPI, indexStore: PandaDistributedIndexStore)
   override def getPropertyKeyId(keyName: String): Option[Int] = propertyName.id(keyName)
 
   override def getNodeById(nodeId: Long): Option[StoredNodeWithProperty] = {
-    nodeLabelStore.get(nodeId).map(labelId=>nodeStore.get(nodeId, labelId).get)
+    nodeLabelStore.get(nodeId).map(labelId => nodeStore.get(nodeId, labelId).get)
   }
 
   override def getNodeById(nodeId: Long, label: Int): Option[StoredNodeWithProperty] = nodeStore.get(nodeId, label)
@@ -116,12 +125,12 @@ class NodeStoreAPI(db: DistributedKVAPI, indexStore: PandaDistributedIndexStore)
 
   override def nodeAddLabel(nodeId: Long, labelId: Int): Unit = {
     val node = getNodeById(nodeId).get
-    if (!node.labelIds.contains(labelId)){
+    if (!node.labelIds.contains(labelId)) {
       val labels = node.labelIds ++ Array(labelId)
       nodeLabelStore.set(nodeId, labels)
       nodeStore.set(new StoredNodeWithProperty(nodeId, labels, node.properties))
 
-      if (node.labelIds.isEmpty){
+      if (node.labelIds.isEmpty) {
         nodeLabelStore.delete(nodeId, NONE_LABEL_ID)
         nodeStore.delete(nodeId, NONE_LABEL_ID)
       }
@@ -130,10 +139,10 @@ class NodeStoreAPI(db: DistributedKVAPI, indexStore: PandaDistributedIndexStore)
 
   override def nodeRemoveLabel(nodeId: Long, labelId: Int): Unit = {
     val node = nodeStore.get(nodeId, labelId).get
-    if (node.labelIds.contains(labelId)){
+    if (node.labelIds.contains(labelId)) {
       val labels = node.labelIds.filter(_ != labelId)
       val newNode = new StoredNodeWithProperty(nodeId, labels, node.properties)
-      if (labels.length == 0){
+      if (labels.length == 0) {
         nodeLabelStore.set(nodeId, NONE_LABEL_ID)
       }
       nodeStore.delete(nodeId, labelId)
@@ -144,7 +153,7 @@ class NodeStoreAPI(db: DistributedKVAPI, indexStore: PandaDistributedIndexStore)
 
   override def nodeSetProperty(nodeId: Long, propertyKeyId: Int, propertyValue: Any): Unit = {
     val node = getNodeById(nodeId).get
-    nodeStore.set(new StoredNodeWithProperty(node.id, node.labelIds, node.properties ++ Map(propertyKeyId->propertyValue)))
+    nodeStore.set(new StoredNodeWithProperty(node.id, node.labelIds, node.properties ++ Map(propertyKeyId -> propertyValue)))
   }
 
   override def nodeRemoveProperty(nodeId: Long, propertyKeyId: Int): Any = {

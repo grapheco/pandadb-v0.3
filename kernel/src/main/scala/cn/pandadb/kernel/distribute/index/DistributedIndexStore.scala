@@ -25,6 +25,8 @@ trait DistributedIndexStore {
 
   def docExist(indexName: String, docId: String): Boolean
 
+  def addDoc(indexName: String, docId: Option[String], dataMap: Map[String, Any]): Unit
+
   // ============================doc for name store=========================================
   def addNameMetaDoc(indexName: String, key: String, value: Int): StatusResponse
 
@@ -49,4 +51,7 @@ trait DistributedIndexStore {
 
   def deleteIndexField(label: String, propertyName: String, indexName: String)
   // ======================================================================================================================
+
+  // statistics
+  def getHits(filter: Seq[(String, Any)], indexName: String): Long
 }
