@@ -25,6 +25,10 @@ trait DistributedNameStore {
 
   def id(labelName: String): Option[Int] = mapString2Int.get(labelName)
 
+  def existKey(labelName: String): Boolean = mapString2Int.contains(labelName)
+
+  def existId(id: Int): Boolean = mapInt2String.contains(id)
+
   def getOrAddId(labelName: String): Int =
     id(labelName).getOrElse(addToDB(labelName))
 

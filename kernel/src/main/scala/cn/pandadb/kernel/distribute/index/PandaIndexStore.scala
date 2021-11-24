@@ -10,6 +10,7 @@ import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest
 import org.elasticsearch.action.bulk.{BackoffPolicy, BulkProcessor, BulkRequest, BulkResponse}
 import org.elasticsearch.action.delete.DeleteRequest
+import org.elasticsearch.action.get.GetRequest
 import org.elasticsearch.action.index.IndexRequest
 import org.elasticsearch.action.search.SearchRequest
 import org.elasticsearch.action.update.UpdateRequest
@@ -20,11 +21,12 @@ import org.elasticsearch.common.unit.{ByteSizeUnit, ByteSizeValue}
 import org.elasticsearch.common.xcontent.XContentType
 import org.elasticsearch.core.TimeValue
 import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilders}
+import org.elasticsearch.ingest.Processor
 import org.elasticsearch.script.Script
 import org.elasticsearch.search.builder.SearchSourceBuilder
 
 import scala.collection.JavaConverters._
-import scala.collection.{mutable}
+import scala.collection.mutable
 
 /**
  * @program: pandadb-v0.3
@@ -33,8 +35,8 @@ import scala.collection.{mutable}
  * @create: 2021-11-15 11:17
  */
 class PandaDistributedIndexStore(client: RestHighLevelClient) extends DistributedIndexStore {
-  private val nodeIndexMetaStore = new NodeIndexMetaStore(this)
-  private val relationIndexMetaStore = new RelationIndexMetaStore(this)
+   val nodeIndexMetaStore = new NodeIndexMetaStore(this)
+   val relationIndexMetaStore = new RelationIndexMetaStore(this)
 
   val indexes = Array(NameMapping.nodeIndex, NameMapping.relationIndex)
   indexes.foreach(name => {
@@ -103,6 +105,11 @@ class PandaDistributedIndexStore(client: RestHighLevelClient) extends Distribute
     new IndexSearchHitIds(indexName, client, boolBuilder)
   }
 
+  override def docExist(indexName: String, docId: String): Boolean ={
+    val request = new GetRequest().index(indexName).id(docId)
+    client.exists(request, RequestOptions.DEFAULT)
+  }
+
   override def deleteDoc(indexName: String, docId: String): Unit = {
     val request = new DeleteRequest().index(indexName).id(docId)
     client.delete(request, RequestOptions.DEFAULT)
@@ -143,20 +150,24 @@ class PandaDistributedIndexStore(client: RestHighLevelClient) extends Distribute
   // db index meta
   override def addIndexField(_id: Long, label: String, propertyName: String, propValue: Any, indexName: String): Unit = {
     _addIndexMetaDoc(indexName, label, propertyName)
-    val data = Map(NameMapping.indexMetaLabelName -> label, propertyName -> propValue).asInstanceOf[Map[String, Object]].asJava
-    val jsonString = JSON.toJSONString(data, SerializerFeature.QuoteFieldNames)
-    val request = new IndexRequest(indexName).id(_id.toString).source(jsonString, XContentType.JSON)
+    val request = _generateIndexRequest(_id, label, propertyName, propValue, indexName)
     client.index(request, RequestOptions.DEFAULT)
+  }
+
+  override def batchAddIndexField(processor: BulkProcessor, _id: Long, label: String, propertyName: String, propValue: Any, indexName: String): Unit = {
+    val request = _generateIndexRequest(_id, label, propertyName, propValue, indexName)
+    processor.add(request)
   }
 
   override def updateIndexField(_id: Long, label: String, propertyName: String, propValue: Any, indexName: String): Unit = {
     _addIndexMetaDoc(indexName, label, propertyName)
-    val request = new UpdateRequest()
-    val _data = Map(propertyName -> propValue).asInstanceOf[Map[String, Object]].asJava
-    val jsonString = JSON.toJSONString(_data, SerializerFeature.QuoteFieldNames)
-    request.index(indexName).id(_id.toString)
-    request.doc(jsonString, XContentType.JSON)
+    val request = _generateUpdateRequest(_id, label, propertyName, propValue, indexName)
     client.update(request, RequestOptions.DEFAULT)
+  }
+
+  override def batchUpdateIndexField(processor: BulkProcessor, _id: Long, label: String, propertyName: String, propValue: Any, indexName: String): Unit = {
+    val request = _generateUpdateRequest(_id, label, propertyName, propValue, indexName)
+    processor.add(request)
   }
 
   override def deleteIndexField(label: String, propertyName: String, indexName: String): Unit = {
@@ -189,6 +200,19 @@ class PandaDistributedIndexStore(client: RestHighLevelClient) extends Distribute
       case NameMapping.nodeIndex => nodeIndexMetaStore.delete(label, propertyName)
       case NameMapping.relationIndex => relationIndexMetaStore.delete(label, propertyName)
     }
+  }
+  private def _generateUpdateRequest( _id: Long, label: String, propertyName: String, propValue: Any, indexName: String): UpdateRequest = {
+    val request = new UpdateRequest()
+    val _data = Map(propertyName -> propValue).asInstanceOf[Map[String, Object]].asJava
+    val jsonString = JSON.toJSONString(_data, SerializerFeature.QuoteFieldNames)
+    request.index(indexName).id(_id.toString)
+    request.doc(jsonString, XContentType.JSON)
+    request
+  }
+  private def _generateIndexRequest(_id: Long, label: String, propertyName: String, propValue: Any, indexName: String): IndexRequest ={
+    val data = Map(NameMapping.indexMetaLabelName -> label, propertyName -> propValue).asInstanceOf[Map[String, Object]].asJava
+    val jsonString = JSON.toJSONString(data, SerializerFeature.QuoteFieldNames)
+    new IndexRequest(indexName).id(_id.toString).source(jsonString, XContentType.JSON)
   }
 
 

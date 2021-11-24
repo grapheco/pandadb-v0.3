@@ -1,6 +1,8 @@
 package cn.pandadb.kernel.distribute.index
 
 import cn.pandadb.kernel.distribute.meta.NameMapping
+import org.elasticsearch.action.bulk.BulkProcessor
+import org.elasticsearch.ingest.Processor
 
 trait DistributedIndexStore {
   type StatusResponse = Int
@@ -21,6 +23,8 @@ trait DistributedIndexStore {
 
   def searchDoc(filter: Seq[(String, Any)], indexName: String = NameMapping.nodeIndex): Iterator[Seq[String]]
 
+  def docExist(indexName: String, docId: String): Boolean
+
   // ============================doc for name store=========================================
   def addNameMetaDoc(indexName: String, key: String, value: Int): StatusResponse
 
@@ -35,10 +39,14 @@ trait DistributedIndexStore {
 
   def deleteIndexMetaDoc(indexName: String, label: String, propertyName: String): Unit
 
-  def addIndexField(_id: Long, label: String, propertyName: String, propValue: Any, indexName: String = NameMapping.nodeIndex)
+  def addIndexField(_id: Long, label: String, propertyName: String, propValue: Any, indexName: String)
 
-  def updateIndexField(_id: Long, label: String,  propertyName: String, propValue: Any, indexName: String = NameMapping.nodeIndex)
+  def batchAddIndexField(processor: BulkProcessor, _id: Long, label: String, propertyName: String, propValue: Any, indexName: String)
 
-  def deleteIndexField(label: String, propertyName: String, indexName: String = NameMapping.nodeIndex)
+  def updateIndexField(_id: Long, label: String,  propertyName: String, propValue: Any, indexName: String)
+
+  def batchUpdateIndexField(processor: BulkProcessor, _id: Long, label: String, propertyName: String, propValue: Any, indexName: String)
+
+  def deleteIndexField(label: String, propertyName: String, indexName: String)
   // ======================================================================================================================
 }

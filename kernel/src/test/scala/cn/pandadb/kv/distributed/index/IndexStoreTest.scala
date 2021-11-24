@@ -3,7 +3,9 @@ package cn.pandadb.kv.distributed.index
 import cn.pandadb.kernel.distribute.index.{DistributedIndexStore, PandaDistributedIndexStore}
 import cn.pandadb.kernel.distribute.meta.NameMapping
 import org.apache.http.HttpHost
-import org.elasticsearch.client.{RestClient, RestHighLevelClient}
+import org.elasticsearch.action.update.UpdateRequest
+import org.elasticsearch.client.{RequestOptions, RestClient, RestHighLevelClient}
+import org.elasticsearch.script.Script
 import org.junit.{Before, Test}
 
 /**
@@ -64,6 +66,10 @@ class IndexStoreTest {
     println(indexStore.searchNameMetaDoc(NameMapping.nodeLabelMetaName, "People"))
     println(indexStore.searchNameMetaDoc(NameMapping.nodeLabelMetaName, 233))
   }
+@Test
+  def searchDoc(): Unit ={
+  println(indexStore.docExist(NameMapping.nodeIndex, 233.toString))
+}
 
   @Test
   def loadAllNameMeta(): Unit ={
@@ -79,7 +85,7 @@ class IndexStoreTest {
   @Test
   def updateField(): Unit ={
     indexStore.updateIndexField(1, "Information", "Age", 18, NameMapping.nodeIndex)
-//    indexStore.updateIndexField(2, "Information", "Age", 19, NameMapping.nodeIndex)
+    indexStore.updateIndexField(2, "Information", "Age", 19, NameMapping.nodeIndex)
     indexStore.updateIndexField(3, "Information", "Age", 20, NameMapping.nodeIndex)
 
     indexStore.updateIndexField(1, "Information", "Year", 1888, NameMapping.nodeIndex)
@@ -88,6 +94,12 @@ class IndexStoreTest {
   }
   @Test
   def deleteField(): Unit ={
-    indexStore.deleteIndexField("Information", "Age", NameMapping.nodeIndex)
+    indexStore.deleteIndexField("Information", "Name", NameMapping.nodeIndex)
+  }
+  @Test
+  def d(): Unit ={
+    val script = s"ctx._source.remove('label')"
+    val request = new UpdateRequest().index(NameMapping.nodeIndex).id(1.toString).script(new Script(script))
+    client.update(request, RequestOptions.DEFAULT)
   }
 }

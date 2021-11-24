@@ -1,6 +1,7 @@
 package cn.pandadb.kernel.distribute
 
 import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
+import cn.pandadb.kernel.distribute.meta.NameMapping
 import cn.pandadb.kernel.distribute.node.NodeStoreAPI
 import cn.pandadb.kernel.distribute.relationship.RelationStoreAPI
 import cn.pandadb.kernel.store.{PandaNode, PandaRelationship, StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
@@ -223,17 +224,25 @@ class DistributedGraphFacade extends DistributedGraphService {
   }
 
   override def createIndexOnNode(label: String, props: Set[String]): Unit = {
-//    indexStore.addIndexMeta()
+    indexStore.setIndexToBatchMode(NameMapping.nodeIndex)
+    val processor = indexStore.getBulkProcessor(1000, 5)
+
     getNodesByLabel(Seq(label), false).foreach(
       node => {
-        val res = props.intersect(node.properties.keySet)
+        val nId = node.id.value.asInstanceOf[Long]
+        val nProperties = node.properties
+        val res = props.intersect(nProperties.keySet) // searched node has target props
         if (res.nonEmpty){
           val headPropName = res.head
           val tailPropNames = res.tail
-
+          indexStore.batchAddIndexField(processor, nId, label, headPropName, nProperties(headPropName).value, NameMapping.nodeIndex)
+          tailPropNames.foreach(propName => indexStore.batchUpdateIndexField(processor, nId, label, propName, nProperties(propName), NameMapping.nodeIndex))
         }
       }
     )
+    processor.flush()
+    processor.close()
+    indexStore.setIndexToNormalMode(NameMapping.nodeIndex)
   }
 
   override def cypher(query: String, parameters: Map[String, Any], tx: Option[LynxTransaction]): LynxResult = {
