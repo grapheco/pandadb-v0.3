@@ -1,6 +1,7 @@
 package cn.pandadb.kernel.distribute
 
 import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
+import cn.pandadb.kernel.distribute.index.utils.SearchConfig
 import cn.pandadb.kernel.distribute.meta.NameMapping
 import cn.pandadb.kernel.distribute.node.NodeStoreAPI
 import cn.pandadb.kernel.distribute.relationship.RelationStoreAPI
@@ -8,7 +9,7 @@ import cn.pandadb.kernel.store.{PandaNode, PandaRelationship, StoredNode, Stored
 import org.apache.http.HttpHost
 import org.elasticsearch.client.{RestClient, RestHighLevelClient}
 import org.grapheco.lynx.cypherplus.CypherRunnerPlus
-import org.grapheco.lynx.{LynxResult, LynxTransaction, LynxValue}
+import org.grapheco.lynx.{LynxResult, LynxTransaction, LynxValue, NodeFilter}
 import org.tikv.common.{TiConfiguration, TiSession}
 
 /**
@@ -58,10 +59,10 @@ class DistributedGraphFacade extends DistributedGraphService {
     // if property has index
     val indexMetaMap = indexStore.nodeIndexMetaStore.dataMap
     val intersectLabels = indexMetaMap.keySet.intersect(labels.toSet)
-    if (intersectLabels.nonEmpty){
+    if (intersectLabels.nonEmpty) {
       intersectLabels.foreach(_label => {
         nodeProps.foreach(kv => {
-          if (indexMetaMap(_label).contains(kv._1)){
+          if (indexMetaMap(_label).contains(kv._1)) {
             indexStore.addIndexField(nodeId, _label, kv._1, kv._2, NameMapping.nodeIndex)
           }
         })
@@ -235,29 +236,69 @@ class DistributedGraphFacade extends DistributedGraphService {
   }
 
   override def createIndexOnNode(label: String, props: Set[String]): Unit = {
+    val toCreateIndex = props.filter(name => {
+      !indexStore.nodeIndexMetaStore.hasMeta(label, name)
+    })
+    val isFirst: Boolean = {
+      if (!indexStore.nodeIndexMetaStore.dataMap.contains(label)) true
+      else false
+    }
+    if (toCreateIndex.nonEmpty) {
+      // add meta
+      toCreateIndex.foreach(indexStore.nodeIndexMetaStore.addToIndex(label, _))
 
-    // index meta
-    props.foreach(indexStore.addIndexMetaDoc(NameMapping.nodeIndexMeta, label, _))
+      // import
+      indexStore.setIndexToBatchMode(NameMapping.nodeIndex)
+      val processor = indexStore.getBulkProcessor(1000, 5)
 
-    indexStore.setIndexToBatchMode(NameMapping.nodeIndex)
-    val processor = indexStore.getBulkProcessor(1000, 5)
-
-    getNodesByLabel(Seq(label), false).foreach(
-      node => {
-        val nId = node.id.value.asInstanceOf[Long]
-        val nProperties = node.properties
-        val res = props.intersect(nProperties.keySet) // searched node has target props
-        if (res.nonEmpty){
-          val headPropName = res.head
-          val tailPropNames = res.tail
-          indexStore.batchAddIndexField(processor, nId, label, headPropName, nProperties(headPropName).value, NameMapping.nodeIndex)
-          tailPropNames.foreach(propName => indexStore.batchUpdateIndexField(processor, nId, label, propName, nProperties(propName), NameMapping.nodeIndex))
+      getNodesByLabel(Seq(label), false).foreach(
+        node => {
+          val nId = node.id.value.asInstanceOf[Long]
+          val nProperties = node.properties
+          val res = toCreateIndex.intersect(nProperties.keySet) // searched node has target props
+          if (res.nonEmpty) {
+            if (isFirst) {
+              val headPropName = res.head
+              val tailPropNames = res.tail
+              indexStore.batchAddIndexField(processor, nId, label, headPropName, nProperties(headPropName).value, NameMapping.nodeIndex)
+              tailPropNames.foreach(propName => indexStore.batchUpdateIndexField(processor, nId, label, propName, nProperties(propName), NameMapping.nodeIndex))
+            }
+            else {
+              res.foreach(propName => indexStore.batchUpdateIndexField(processor, nId, label, propName, nProperties(propName), NameMapping.nodeIndex))
+            }
+          }
         }
-      }
-    )
-    processor.flush()
-    processor.close()
-    indexStore.setIndexToNormalMode(NameMapping.nodeIndex)
+      )
+      processor.flush()
+      processor.close()
+      indexStore.setIndexToNormalMode(NameMapping.nodeIndex)
+    }
+  }
+
+
+  override def getDBIndexNames: Seq[(String, String)] = {
+    indexStore.nodeIndexMetaStore.dataMap.map(kv => {
+      kv._2.map(name => kv._1 -> name).toSeq
+    }).flatten.toSeq
+  }
+
+  override def getNodeIndex(nodeFilter: NodeFilter): Seq[(String, String)] = {
+    val indexes = getDBIndexNames
+    val labels = nodeFilter.labels
+    val propertyNames = nodeFilter.properties.keySet
+    val check = labels.flatMap(label => propertyNames.map(p => (label, p)))
+    check.filter(ni => indexes.contains(ni))
+  }
+
+
+  override def getNodesByIndex(label: String, propertyName: String, propertyValue: Any): Iterator[PandaNode] = {
+    val ids = indexStore.searchDoc(
+      Seq(NameMapping.indexMetaLabelName -> label, propertyName -> propertyValue),
+      NameMapping.nodeIndex).flatten.map(f => f.toLong)
+
+    ids.grouped(SearchConfig.batchSize).flatMap(idBatch => {
+       nodeStore.getNodesByIds(nodeStore.getLabelId(label).get, idBatch).map(mapNode(_))
+    })
   }
 
   override def cypher(query: String, parameters: Map[String, Any], tx: Option[LynxTransaction]): LynxResult = {

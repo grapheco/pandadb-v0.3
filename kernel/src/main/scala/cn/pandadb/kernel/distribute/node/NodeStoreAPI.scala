@@ -103,6 +103,10 @@ class NodeStoreAPI(db: DistributedKVAPI, indexStore: PandaDistributedIndexStore)
 
   override def getNodesByLabel(labelId: Int): Iterator[StoredNodeWithProperty] = nodeStore.getNodesByLabel(labelId)
 
+  override def getNodesByIds(labelId: Int, ids: Seq[Long]): Iterator[StoredNodeWithProperty] = {
+    nodeStore.getNodesByIds(labelId, ids)
+  }
+
   override def getNodeIdsByLabel(labelId: Int): Iterator[Long] = nodeStore.getNodeIdsByLabel(labelId)
 
   override def getNodeLabelsById(nodeId: Long): Array[Int] = nodeLabelStore.getAll(nodeId)
@@ -204,6 +208,8 @@ trait DistributedNodeStoreSPI {
   def getNodeById(nodeId: Long, label: Option[Int]): Option[StoredNodeWithProperty]
 
   def getNodesByLabel(labelId: Int): Iterator[StoredNodeWithProperty];
+
+  def getNodesByIds(labelId: Int, ids: Seq[Long]): Iterator[StoredNodeWithProperty]
 
   def getNodeIdsByLabel(labelId: Int): Iterator[Long];
 

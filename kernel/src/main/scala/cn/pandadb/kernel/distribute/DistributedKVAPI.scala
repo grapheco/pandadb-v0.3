@@ -36,7 +36,7 @@ trait DistributedKVAPI {
   def scanPrefix(startKey: Array[Byte], keyOnly: Boolean): Iterator[Kvrpcpb.KvPair]
   def scanPrefix(startKey: Array[Byte], limit: Int, keyOnly: Boolean): Iterator[Kvrpcpb.KvPair]
 
-  def batchGet(): Iterator[(Array[Byte], Array[Byte])]
+  def batchGetValue(keys: Seq[Array[Byte]]): Iterator[Array[Byte]]
   def batchScan(): Iterator[(Array[Byte], Array[Byte])]
   def batchDelete(data: Seq[Array[Byte]]): Unit
   def batchPut(): Unit
@@ -113,7 +113,10 @@ class PandaDistributeKVAPI(client: RawKVClient) extends DistributedKVAPI {
     iter.iterator().asScala
   }
 
-  override def batchGet(): Iterator[(Array[Byte], Array[Byte])] = ???
+  override def batchGetValue(keys: Seq[Array[Byte]]): Iterator[Array[Byte]] = {
+    val _keys = JavaConverters.seqAsJavaList(keys.map(ByteString.copyFrom(_)))
+    client.batchGet(new util.ArrayList[ByteString](_keys)).iterator().asScala.map(kv => kv.getValue)
+  }
   override def batchScan(): Iterator[(Array[Byte], Array[Byte])] = ???
 
   override def batchDelete(data: Seq[Array[Byte]]): Unit = {

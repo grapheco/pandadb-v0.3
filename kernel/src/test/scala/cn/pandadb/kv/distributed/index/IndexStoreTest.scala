@@ -43,7 +43,9 @@ class IndexStoreTest {
 
   @Test
   def cleanIndex(): Unit ={
-    indexStore.cleanIndexes(indexNames:_*)
+//    indexStore.cleanIndexes(indexNames:_*)
+    indexStore.cleanIndexes(nodeIndex, nodeIndexMeta)
+
   }
 
   @Test

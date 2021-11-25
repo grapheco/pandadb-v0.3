@@ -91,11 +91,20 @@ class DistributedGraphFacadeTest {
 
   @Test
   def cypher1(): Unit ={
-    api.cypher("create index on:person(age)").show()
+    api.cypher("create index on:person(name)").show()
   }
   @Test
   def cypher2(): Unit ={
-    api.cypher("match (n)-[r]-(m) return r").show()
+    api.cypher("create (n:person{name:'test', age: 2333}) return n").show()
+  }
+  @Test
+  def cypher3(){
+    api.cypher("match (n:person) where n.age=12 return n").show()
+  }
+
+  @Test
+  def index(): Unit ={
+    api.getDBIndexNames.foreach(println)
   }
 
   @After

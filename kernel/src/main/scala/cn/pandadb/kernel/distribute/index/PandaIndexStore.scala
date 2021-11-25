@@ -1,6 +1,6 @@
 package cn.pandadb.kernel.distribute.index
 
-import cn.pandadb.kernel.distribute.index.utils.IndexConverter
+import cn.pandadb.kernel.distribute.index.utils.{IndexConverter, SearchConfig}
 import cn.pandadb.kernel.distribute.meta.NameMapping
 import cn.pandadb.kernel.util.PandaDBException.PandaDBException
 import com.alibaba.fastjson.JSON
@@ -271,7 +271,7 @@ class PandaDistributedIndexStore(client: RestHighLevelClient) extends Distribute
   def setIndexToNormalMode(indexName: String): Boolean = {
     val request = new UpdateSettingsRequest(indexName)
     val settings = Settings.builder()
-      .put("refresh_interval", "30s")
+      .put("refresh_interval", "1s") // 1s for test
       .put("translog.durability", "request")
       .build()
     request.settings(settings)
@@ -354,7 +354,7 @@ class IndexAllDataIds(indexName: String, client: RestHighLevelClient) extends It
 class IndexSearchHitIds(indexName: String, client: RestHighLevelClient, boolQueryBuilder: BoolQueryBuilder) extends Iterator[Seq[String]] {
   var flag = true
   var page = 0
-  val batch = 1000
+  val batch = SearchConfig.batchSize * 5
   val request = new SearchRequest().indices(indexName)
   val builder = new SearchSourceBuilder()
 

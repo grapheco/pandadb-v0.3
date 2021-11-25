@@ -1,7 +1,7 @@
 package cn.pandadb.kernel.distribute
 
 import cn.pandadb.kernel.store.{PandaNode, PandaRelationship, StoredNode, StoredRelation}
-import org.grapheco.lynx.{LynxResult, LynxTransaction}
+import org.grapheco.lynx.{LynxResult, LynxTransaction, NodeFilter}
 
 /**
  * @program: pandadb-v0.3
@@ -85,6 +85,12 @@ trait DistributedGraphService {
   def findInRelations(toNodeId: Long, edgeType: Option[Int] = None): Iterator[StoredRelation]
 
   def createIndexOnNode(label: String, props: Set[String]): Unit
+
+  def getDBIndexNames: Seq[(String, String)]
+
+  def getNodeIndex(nodeFilter: NodeFilter): Seq[(String, String)]
+
+  def getNodesByIndex(label: String, propertyName: String, propertyValue: Any): Iterator[PandaNode]
 
   def cypher(query: String, parameters: Map[String, Any] = Map.empty, tx: Option[LynxTransaction] = None): LynxResult
 

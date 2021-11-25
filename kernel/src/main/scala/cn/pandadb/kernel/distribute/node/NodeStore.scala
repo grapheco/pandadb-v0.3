@@ -65,6 +65,12 @@ class NodeStore(db: DistributedKVAPI) {
     }
   }
 
+  def getNodesByIds(labelId: LabelId, ids: Seq[Long]): Iterator[StoredNodeWithProperty] = {
+    val keys = ids.map(id => DistributedKeyConverter.toNodeKey(labelId, id))
+    val nodes = db.batchGetValue(keys)
+    nodes.map(NodeSerializer.deserializeNodeValue(_))
+  }
+
   def getNodeIdsByLabel(labelId: LabelId): Iterator[NodeId] = {
     val prefix = DistributedKeyConverter.toNodeKey(labelId)
     val iter = db.scanPrefix(prefix)

@@ -166,7 +166,10 @@ class GraphParseModel(db: DistributedGraphService) extends GraphModelPlus{
     db.createIndexOnNode(labelName.name, properties.map(p => p.name).toSet)
   }
 
-  override def getIndexes(tx: Option[LynxTransaction]): Array[(LabelName, List[PropertyKeyName])] = ???
+  override def getIndexes(tx: Option[LynxTransaction]): Array[(LabelName, List[PropertyKeyName])] = {
+//    db.getIndexes()
+    ???
+  }
 
   override def getSubProperty(value: LynxValue, propertyKey: String): LynxValue = ???
 
@@ -289,9 +292,16 @@ class GraphParseModel(db: DistributedGraphService) extends GraphModelPlus{
     (nodeFilter.labels.nonEmpty, nodeFilter.properties.nonEmpty) match {
       case (false, false) => db.scanAllNode()
       case (true, false) => db.getNodesByLabel(nodeFilter.labels, false)
+      case (false, true) => db.scanAllNode().filter(node => nodeFilter.matches(node))
       case _ => {
         // TODO: check is exists index, then go index or not
-        ???
+        val indexSeq = db.getNodeIndex(nodeFilter)
+        if (indexSeq.nonEmpty){
+          println("go index...")
+          val choose = indexSeq.head // todo: choose min
+          db.getNodesByIndex(choose._1, choose._2, nodeFilter.properties(choose._2))
+        }
+        else db.getNodesByLabel(nodeFilter.labels, false).filter(nodeFilter.matches(_))
       }
     }
   }

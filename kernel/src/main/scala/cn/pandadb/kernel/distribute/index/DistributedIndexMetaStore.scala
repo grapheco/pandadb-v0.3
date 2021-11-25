@@ -17,7 +17,7 @@ trait DistributedIndexMetaStore {
 
   var dataMap: mutable.Map[String, ArrayBuffer[String]] = mutable.Map[String, ArrayBuffer[String]]()
 
-  private def addToIndex(label: String, property: String): Unit = {
+  def addToIndex(label: String, property: String): Unit = {
     if (dataMap.contains(label)) dataMap(label).append(property)
     else dataMap += label -> ArrayBuffer(property)
 
