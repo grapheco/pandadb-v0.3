@@ -40,6 +40,8 @@ trait DistributedKVAPI {
   def batchScan(): Iterator[(Array[Byte], Array[Byte])]
   def batchDelete(data: Seq[Array[Byte]]): Unit
   def batchPut(kvParis: Seq[(Array[Byte], Array[Byte])]): Unit
+
+  def close(): Unit
 }
 
 object DistributedKVAPI{
@@ -127,4 +129,6 @@ class PandaDistributeKVAPI(client: RawKVClient) extends DistributedKVAPI {
     val map = kvParis.map(kv => (ByteString.copyFrom(kv._1), ByteString.copyFrom(kv._2))).toMap.asJava
     client.batchPut(map)
   }
+
+  override def close(): Unit = client.close()
 }

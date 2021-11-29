@@ -34,6 +34,7 @@ class DistributedGraphFacade extends DistributedGraphService {
     new PandaDistributeKVAPI(session.createRawClient())
   }
   val nodeStore = new NodeStoreAPI(db, indexStore)
+
   val relationStore = new RelationStoreAPI(db, indexStore)
 
   val runner = new CypherRunnerPlus(new GraphParseModel(this))
