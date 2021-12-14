@@ -1,6 +1,6 @@
 package cn.pandadb.kernel.distribute.index
 
-import cn.pandadb.kernel.distribute.meta.{DistributedNameStore, NameMapping}
+import cn.pandadb.kernel.distribute.meta.{ NameMapping}
 
 /**
  * @program: pandadb-v0.3

@@ -13,6 +13,7 @@ import org.tikv.shade.com.google.protobuf.ByteString
  */
 class RelationPropertyStore(db: DistributedKVAPI) {
   implicit def ByteString2ArrayByte(data: ByteString) = data.toByteArray
+  val BATCH_SIZE = 10000
 
   def set(relation: StoredRelationWithProperty): Unit = {
     val keyBytes = DistributedKeyConverter.toRelationKey(relation.id)
@@ -38,7 +39,7 @@ class RelationPropertyStore(db: DistributedKVAPI) {
 
   def all(): Iterator[StoredRelationWithProperty] = {
     new Iterator[StoredRelationWithProperty]{
-      val iter = db.scanPrefix(Array(DistributedKeyConverter.relationKeyPrefix))
+      val iter = db.scanPrefix(Array(DistributedKeyConverter.relationKeyPrefix), BATCH_SIZE, false)
 
       override def hasNext: Boolean = iter.hasNext
 
@@ -46,7 +47,7 @@ class RelationPropertyStore(db: DistributedKVAPI) {
     }
   }
   def count: Long = {
-    val iter = db.scanPrefix(Array(DistributedKeyConverter.relationKeyPrefix), true)
+    val iter = db.scanPrefix(Array(DistributedKeyConverter.relationKeyPrefix), BATCH_SIZE, true)
     var count:Long = 0
     while (iter.hasNext){
       count+=1

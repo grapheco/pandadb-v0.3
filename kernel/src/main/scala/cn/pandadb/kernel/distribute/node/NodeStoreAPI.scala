@@ -14,9 +14,9 @@ import scala.collection.mutable.ArrayBuffer
  * @author: LiamGao
  * @create: 2021-11-16 15:12
  */
-class NodeStoreAPI(db: DistributedKVAPI, indexStore: PandaDistributedIndexStore) extends DistributedNodeStoreSPI {
-  private val nodeLabelName = new NodeLabelNameStore(indexStore)
-  private val propertyName = new NodePropertyNameStore(indexStore)
+class NodeStoreAPI(db: DistributedKVAPI) extends DistributedNodeStoreSPI {
+  private val nodeLabelName = new NodeLabelNameStore(db)
+  private val propertyName = new NodePropertyNameStore(db)
   private val idGenerator = new IdGenerator(db, TypeNameEnum.nodeName)
 
   val nodeStore = new NodeStore(db)

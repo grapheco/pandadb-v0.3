@@ -20,6 +20,8 @@ object RelationDirection extends Enumeration {
 class RelationDirectionStore(db: DistributedKVAPI, direction: RelationDirection.Value) {
   implicit def ByteString2ArrayByte(data: ByteString) = data.toByteArray
 
+  val BATCH_SIZE = 10000
+
   def getKey(relation: StoredRelation): Array[Byte] =
     DistributedKeyConverter.edgeKeyToBytes(relation.from, relation.typeId, relation.to, direction)
 
@@ -57,7 +59,7 @@ class RelationDirectionStore(db: DistributedKVAPI, direction: RelationDirection.
   }
 
   class RightIdIterator(db: DistributedKVAPI, prefix: Array[Byte]) extends Iterator[Long] {
-    val iter = db.scanPrefix(prefix, true)
+    val iter = db.scanPrefix(prefix, BATCH_SIZE, true)
     val offset = DistributedKeyConverter.KEY_PREFIX_SIZE + DistributedKeyConverter.NODE_ID_SIZE + DistributedKeyConverter.TYPE_ID_SIZE
 
     override def hasNext: Boolean = iter.hasNext
@@ -83,7 +85,7 @@ class RelationDirectionStore(db: DistributedKVAPI, direction: RelationDirection.
   }
 
   class RelationIdIterator(db: DistributedKVAPI, prefix: Array[Byte]) extends Iterator[Long] {
-    val iter = db.scanPrefix(prefix)
+    val iter = db.scanPrefix(prefix, BATCH_SIZE, false)
 
     override def hasNext: Boolean = iter.hasNext
 
@@ -112,7 +114,7 @@ class RelationDirectionStore(db: DistributedKVAPI, direction: RelationDirection.
   }
 
   class RelationIterator(db: DistributedKVAPI, prefix: Array[Byte]) extends Iterator[StoredRelation] {
-    val iter = db.scanPrefix(prefix)
+    val iter = db.scanPrefix(prefix, BATCH_SIZE, false)
 
     override def hasNext: Boolean = iter.hasNext
 

@@ -13,6 +13,7 @@ import org.tikv.shade.com.google.protobuf.ByteString
 
 class RelationTypeStore(db: DistributedKVAPI) {
   implicit def ByteString2ArrayByte(data: ByteString) = data.toByteArray
+  val BATCH_SIZE = 10000
 
   def set(labelId: Int, relId: Long): Unit = {
     val keyBytes = DistributedKeyConverter.toRelationTypeKey(labelId, relId)
@@ -27,7 +28,7 @@ class RelationTypeStore(db: DistributedKVAPI) {
   def getRelationIds(labelId: Int): Iterator[Long] = {
     val keyPrefix = DistributedKeyConverter.toRelationTypeKey(labelId)
     val prefixLength = keyPrefix.length
-    val iter = db.scanPrefix(keyPrefix, true)
+    val iter = db.scanPrefix(keyPrefix, BATCH_SIZE, true)
 
     new Iterator[Long]() {
       override def hasNext: Boolean = iter.hasNext

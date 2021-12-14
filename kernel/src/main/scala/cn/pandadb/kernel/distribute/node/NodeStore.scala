@@ -17,6 +17,7 @@ class NodeStore(db: DistributedKVAPI) {
   implicit def ByteString2ArrayByte(data: ByteString) = data.toByteArray
 
   val NONE_LABEL_ID: Int = 0
+  val BATCH_SIZE = 10000
 
   def set(nodeId: NodeId, labelIds: Array[LabelId], value: Array[Byte]): Unit = {
     if (labelIds.nonEmpty)
@@ -38,7 +39,7 @@ class NodeStore(db: DistributedKVAPI) {
   }
 
   def all() : Iterator[StoredNodeWithProperty] = {
-    val iter = db.scanPrefix(Array(DistributedKeyConverter.nodeKeyPrefix))
+    val iter = db.scanPrefix(Array(DistributedKeyConverter.nodeKeyPrefix), BATCH_SIZE, false)
 
     new Iterator[StoredNodeWithProperty]{
       override def hasNext: Boolean = iter.hasNext
@@ -55,7 +56,7 @@ class NodeStore(db: DistributedKVAPI) {
 
   def getNodesByLabel(labelId: LabelId): Iterator[StoredNodeWithProperty] = {
     val prefix = DistributedKeyConverter.toNodeKey(labelId)
-    val iter = db.scanPrefix(prefix)
+    val iter = db.scanPrefix(prefix, BATCH_SIZE, false)
 
     new Iterator[StoredNodeWithProperty] (){
       override def hasNext: Boolean = iter.hasNext
@@ -73,7 +74,7 @@ class NodeStore(db: DistributedKVAPI) {
 
   def getNodeIdsByLabel(labelId: LabelId): Iterator[NodeId] = {
     val prefix = DistributedKeyConverter.toNodeKey(labelId)
-    val iter = db.scanPrefix(prefix)
+    val iter = db.scanPrefix(prefix, BATCH_SIZE, false)
 
     new Iterator[NodeId] (){
       override def hasNext: Boolean = iter.hasNext

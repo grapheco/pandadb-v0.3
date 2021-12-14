@@ -1,13 +1,17 @@
 package cn.pandadb.kernel.distribute.meta
 
 import java.util.concurrent.atomic.AtomicInteger
-import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
+
+import cn.pandadb.kernel.distribute.DistributedKVAPI
+import cn.pandadb.kernel.kv.ByteUtils
+
 import scala.collection.mutable
 
 trait DistributedNameStore {
+  val db: DistributedKVAPI
   val initInt: Int
-  val indexStore: PandaDistributedIndexStore
-  val indexName: String
+  val key2ByteArrayFunc: (Int) => Array[Byte]
+  val keyPrefixFunc: () => Array[Byte]
 
   var idGenerator: AtomicInteger = new AtomicInteger(initInt)
   var mapString2Int: mutable.Map[String, Int] = mutable.Map[String, Int]()
@@ -17,7 +21,8 @@ trait DistributedNameStore {
     val id = idGenerator.incrementAndGet()
     mapString2Int += labelName -> id
     mapInt2String += id -> labelName
-    indexStore.addNameMetaDoc(indexName, labelName, id)
+    val key = key2ByteArrayFunc(id)
+    db.put(key, ByteUtils.stringToBytes(labelName))
     id
   }
 
@@ -50,29 +55,25 @@ trait DistributedNameStore {
     val id = mapString2Int(labelName)
     mapString2Int -= labelName
     mapInt2String -= id
-    indexStore.deleteDoc(indexName, id.toString)
+    val key = key2ByteArrayFunc(id)
+    db.delete(key)
   }
 
   def loadAll(): Unit = {
-    if (!indexStore.indexIsExist(indexName)) indexStore.createIndex(indexName)
     idGenerator = new AtomicInteger(initInt)
+    mapString2Int = mutable.Map[String, Int]()
+    mapInt2String = mutable.Map[Int, String]()
+    var maxId: Int = initInt
+    val prefix = keyPrefixFunc()
 
-    val data = indexStore.loadAllMeta(indexName)
-
-    while (data.hasNext){
-      val res = data.next().map(kv => (kv(NameMapping.metaName).toString, kv(NameMapping.metaId).asInstanceOf[Int]))
-      res.foreach(ll => {
-        mapString2Int += ll._1 -> ll._2
-        mapInt2String += ll._2 -> ll._1
-      })
-    }
-
-    val maxId: Int = {
-      val tmpId = {
-        if (mapInt2String.nonEmpty) mapInt2String.keys.toList.maxBy(f => f)
-        else 0
-      }
-      math.max(initInt, tmpId)
+    val iter = db.scanPrefix(prefix, 10000, false)
+    while (iter.hasNext){
+      val key = iter.next().getKey.toByteArray
+      val id = ByteUtils.getInt(key, 1)
+      if (maxId < id) maxId = id
+      val name = ByteUtils.stringFromBytes(db.get(key))
+      mapString2Int += name -> id
+      mapInt2String += id -> name
     }
     idGenerator.set(maxId)
   }

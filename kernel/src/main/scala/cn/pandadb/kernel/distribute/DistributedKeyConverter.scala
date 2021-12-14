@@ -13,15 +13,19 @@ import org.tikv.common.types.Charset
  */
 object DistributedKeyConverter {
 
-  val nodeKeyPrefix: Byte = 1
-  val nodeLabelKeyPrefix: Byte = 2
-  val outRelationPrefix: Byte = 3
-  val inRelationPrefix: Byte = 4
-  val typeRelationPrefix: Byte = 5
-  val relationKeyPrefix: Byte = 6
+  val nodeKeyPrefix: Byte = 10
+  val nodeLabelKeyPrefix: Byte = 11
+  val outRelationPrefix: Byte = 12
+  val inRelationPrefix: Byte = 13
+  val typeRelationPrefix: Byte = 14
+  val relationKeyPrefix: Byte = 15
 
-  def nodeMaxIdKey: Array[Byte] = "nodeMaxId".getBytes(Charset.CharsetUTF8)
-  def relationMaxIdKey: Array[Byte] = "relationMaxId".getBytes(Charset.CharsetUTF8)
+  val nodeLabelMetaPrefix: Byte = 16
+  val relationTypeMetaPrefix: Byte = 17
+  val propertyMetaPrefix: Byte = 18
+
+  def nodeMaxIdKey: Array[Byte] = Array(19.toByte)
+  def relationMaxIdKey: Array[Byte] = Array(20.toByte)
 
 
   val NODE_ID_SIZE     = 8
@@ -158,4 +162,49 @@ object DistributedKeyConverter {
     bytes
   }
 
+  // meta
+  // [keyPrefix(1byte), id(4Bytes)]
+  def nodeLabelKeyToBytes(labelId: Int): Array[Byte] ={
+    val bytes = new Array[Byte](5)
+    ByteUtils.setByte(bytes, 0, nodeLabelMetaPrefix)
+    ByteUtils.setInt(bytes, 1, labelId)
+    bytes
+  }
+
+  // [keyType(1Bytes),--]
+  def nodeLabelKeyPrefixToBytes(): Array[Byte] ={
+    val bytes = new Array[Byte](1)
+    ByteUtils.setByte(bytes, 0, nodeLabelMetaPrefix)
+    bytes
+  }
+
+  // [keyPrefix(1Bytes),id(4Bytes)]
+  def relationTypeKeyToBytes(labelId: Int): Array[Byte] ={
+    val bytes = new Array[Byte](5)
+    ByteUtils.setByte(bytes, 0, relationTypeMetaPrefix)
+    ByteUtils.setInt(bytes, 1, labelId)
+    bytes
+  }
+
+  // [keyPrefix(1Bytes),--]
+  def relationTypeKeyPrefixToBytes(): Array[Byte] ={
+    val bytes = new Array[Byte](1)
+    ByteUtils.setByte(bytes, 0, relationTypeMetaPrefix)
+    bytes
+  }
+
+  // [keyPrefix(1Bytes),id(4Bytes)]
+  def propertyNameKeyToBytes(labelId: Int): Array[Byte] ={
+    val bytes = new Array[Byte](5)
+    ByteUtils.setByte(bytes, 0, propertyMetaPrefix)
+    ByteUtils.setInt(bytes, 1, labelId)
+    bytes
+  }
+
+  // [keyPrefix(1Bytes),--]
+  def propertyNameKeyPrefixToBytes(): Array[Byte] ={
+    val bytes = new Array[Byte](1)
+    ByteUtils.setByte(bytes, 0, propertyMetaPrefix)
+    bytes
+  }
 }

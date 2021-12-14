@@ -45,16 +45,7 @@ class NodeStoreAPITest {
     val session = TiSession.create(conf)
     tikv = session.createRawClient()
     val db = new PandaDistributeKVAPI(tikv)
-
-    val hosts = Array(new HttpHost("10.0.82.144", 9200, "http"),
-      new HttpHost("10.0.82.145", 9200, "http"),
-      new HttpHost("10.0.82.146", 9200, "http"))
-    val indexStore = new PandaDistributedIndexStore(new RestHighLevelClient(RestClient.builder(hosts: _*)))
-
-//    indexStore.cleanIndexes(MetaNameMapping.nodePropertyMetaName, MetaNameMapping.nodeMetaName)
-
-    api = new NodeStoreAPI(db, indexStore)
-
+    api = new NodeStoreAPI(db)
 
     api.addNode(n1)
     api.addNode(n2)
@@ -131,8 +122,6 @@ class NodeStoreAPITest {
   @Test
   def show(): Unit = {
     api.allNodes().foreach(println)
-    //    println("========")
-    //    api.getNodeLabelsById(1).foreach(println)
   }
 
   @Test

@@ -14,6 +14,8 @@ import org.tikv.shade.com.google.protobuf.ByteString
 class NodeLabelStore(db: DistributedKVAPI) {
   implicit def ByteString2ArrayByte(data: ByteString) = data.toByteArray
 
+  val BATCH_SIZE = 10000
+
   def set(nodeId: NodeId, labelId: LabelId): Unit =
     db.put(DistributedKeyConverter.toNodeLabelKey(nodeId, labelId), Array.emptyByteArray)
 
@@ -37,7 +39,7 @@ class NodeLabelStore(db: DistributedKVAPI) {
 
   def get(nodeId: NodeId): Option[LabelId] = {
     val keyPrefix = DistributedKeyConverter.toNodeLabelKey(nodeId)
-    val iter = db.scanPrefix(keyPrefix, true)
+    val iter = db.scanPrefix(keyPrefix, BATCH_SIZE, true)
     if (iter.nonEmpty){
       Option(DistributedKeyConverter.getLabelIdInNodeLabelKey(iter.next().getKey))
     }
@@ -51,13 +53,13 @@ class NodeLabelStore(db: DistributedKVAPI) {
 
   def getAll(nodeId: NodeId): Array[LabelId] = {
     val keyPrefix = DistributedKeyConverter.toNodeLabelKey(nodeId)
-    val iter = db.scanPrefix(keyPrefix, true)
+    val iter = db.scanPrefix(keyPrefix, BATCH_SIZE, true)
     iter.map(f => DistributedKeyConverter.getLabelIdInNodeLabelKey(f.getKey)).toArray
   }
 
 
   def getNodesCount: Long = {
-    val iter = db.scanPrefix(Array(DistributedKeyConverter.nodeLabelKeyPrefix), true)
+    val iter = db.scanPrefix(Array(DistributedKeyConverter.nodeLabelKeyPrefix), BATCH_SIZE, true)
     var count:Long = 0
     var currentNode:Long = 0
     while (iter.hasNext){
