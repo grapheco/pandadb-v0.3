@@ -33,8 +33,6 @@ class TransactionGraphFacade(nodeStore: TransactionNodeStoreSPI,
     logWriter
   }
 
-  override def estimateNodeProperty(propertyName: String, value: AnyRef): Id = ???
-
   override def getIndexes(tx: Option[LynxTransaction]): Array[(LabelName, List[PropertyKeyName])] = {
     ???
   }
