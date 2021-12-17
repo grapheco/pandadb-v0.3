@@ -20,12 +20,6 @@ import org.tikv.common.{TiConfiguration, TiSession}
  */
 class DistributedGraphFacade extends DistributedGraphService {
 
-  val indexStore = {
-    val hosts = Array(new HttpHost("10.0.82.144", 9200, "http"),
-      new HttpHost("10.0.82.145", 9200, "http"),
-      new HttpHost("10.0.82.146", 9200, "http"))
-    new PandaDistributedIndexStore(new RestHighLevelClient(RestClient.builder(hosts: _*)))
-  }
 
   val db = {
     val conf = TiConfiguration.createRawDefault("10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379")
@@ -36,6 +30,14 @@ class DistributedGraphFacade extends DistributedGraphService {
   val nodeStore = new NodeStoreAPI(db)
 
   val relationStore = new RelationStoreAPI(db)
+
+  val indexStore = {
+    val hosts = Array(new HttpHost("10.0.82.144", 9200, "http"),
+      new HttpHost("10.0.82.145", 9200, "http"),
+      new HttpHost("10.0.82.146", 9200, "http"))
+    new PandaDistributedIndexStore(new RestHighLevelClient(RestClient.builder(hosts: _*)), db, nodeStore)
+  }
+
 
   val runner = new CypherRunnerPlus(new GraphParseModel(this))
 
@@ -58,26 +60,16 @@ class DistributedGraphFacade extends DistributedGraphService {
     nodeStore.addNode(new StoredNodeWithProperty(nodeId, labelIds, properties))
 
     // if property has index
-    val indexMetaMap = indexStore.nodeIndexMetaStore.dataMap
-    val intersectLabels = indexMetaMap.keySet.intersect(labels.toSet)
-    if (intersectLabels.nonEmpty) {
-      intersectLabels.foreach(_label => {
-        nodeProps.foreach(kv => {
-          if (indexMetaMap(_label).contains(kv._1)) {
-            indexStore.addIndexField(nodeId, _label, kv._1, kv._2, NameMapping.nodeIndex)
-          }
-        })
-      })
-    }
+    indexStore.addIndexOnSingleNode(nodeId, labels, nodeProps)
 
     nodeId
   }
 
-  override def getNode(id: Id): Option[PandaNode] = {
+  override def getNodeById(id: Id): Option[PandaNode] = {
     nodeStore.getNodeById(id).map(mapNode(_))
   }
 
-  override def getNode(id: Id, labelName: String): Option[PandaNode] = {
+  override def getNodeById(id: Id, labelName: String): Option[PandaNode] = {
     nodeStore.getNodeById(id, nodeStore.getLabelId(labelName)).map(mapNode(_))
   }
 
@@ -115,10 +107,15 @@ class DistributedGraphFacade extends DistributedGraphService {
 
   override def deleteNode(id: Id): Unit = {
     nodeStore.deleteNode(id)
+    if (indexStore.isDocExist(id.toString)) indexStore.deleteDoc(id.toString)
   }
 
   override def deleteNodes(ids: Iterator[Id]): Unit = {
-    nodeStore.deleteNodes(ids)
+    val iter = ids.duplicate
+    nodeStore.deleteNodes(iter._1)
+    iter._2.foreach(id => {
+      if (indexStore.isDocExist(id.toString)) indexStore.deleteDoc(id.toString)
+    })
   }
 
   protected def mapNode(node: StoredNode): PandaNode = {
@@ -129,18 +126,28 @@ class DistributedGraphFacade extends DistributedGraphService {
 
   override def nodeSetProperty(id: Id, key: String, value: Any): Unit = {
     nodeStore.nodeSetProperty(id, nodeStore.addPropertyKey(key), value)
+    val node = getNodeById(id).get
+    indexStore.addIndexOnSingleNode(node.longId, node.labels, node.properties.map(p => p._1->p._2.value))
   }
 
   override def nodeRemoveProperty(id: Id, key: String): Unit = {
     nodeStore.getPropertyKeyId(key).foreach(pid => nodeStore.nodeRemoveProperty(id, pid))
+    val node = getNodeById(id).get
+    if (node.properties.nonEmpty) indexStore.addIndexOnSingleNode(node.longId, node.labels, node.properties.map(p => p._1->p._2.value))
+    else indexStore.deleteDoc(node.longId.toString)
   }
 
   override def nodeAddLabel(id: Id, label: String): Unit = {
     nodeStore.nodeAddLabel(id, nodeStore.addLabel(label))
+    val node = getNodeById(id).get
+    indexStore.addIndexOnSingleNode(node.longId, node.labels, node.properties.map(p => p._1->p._2.value))
   }
 
   override def nodeRemoveLabel(id: Id, label: String): Unit = {
     nodeStore.getLabelId(label).foreach(lid => nodeStore.nodeRemoveLabel(id, lid))
+    val node = getNodeById(id).get
+    if (node.labels.nonEmpty) indexStore.addIndexOnSingleNode(node.longId, node.labels, node.properties.map(p => p._1->p._2.value))
+    else indexStore.deleteDoc(node.longId.toString)
   }
 
 
@@ -189,7 +196,7 @@ class DistributedGraphFacade extends DistributedGraphService {
   }
 
   override def deleteRelations(ids: Iterator[Id]): Unit = {
-    ???
+    ids.foreach(id => deleteRelation(id))
   }
 
   override def relationSetProperty(id: Id, key: String, value: Any): Unit = {
@@ -236,70 +243,17 @@ class DistributedGraphFacade extends DistributedGraphService {
     relationStore.findInRelations(toNodeId, edgeType)
   }
 
-  override def createIndexOnNode(label: String, props: Set[String]): Unit = {
-    val toCreateIndex = props.filter(name => {
-      !indexStore.nodeIndexMetaStore.hasMeta(label, name)
-    })
-    val isFirst: Boolean = {
-      if (!indexStore.nodeIndexMetaStore.dataMap.contains(label)) true
-      else false
-    }
-    if (toCreateIndex.nonEmpty) {
-      // add meta
-      toCreateIndex.foreach(indexStore.nodeIndexMetaStore.addToIndex(label, _))
-
-      // import
-      indexStore.setIndexToBatchMode(NameMapping.nodeIndex)
-      val processor = indexStore.getBulkProcessor(1000, 5)
-
-      getNodesByLabel(Seq(label), false).foreach(
-        node => {
-          val nId = node.id.value.asInstanceOf[Long]
-          val nProperties = node.properties
-          val res = toCreateIndex.intersect(nProperties.keySet) // searched node has target props
-          if (res.nonEmpty) {
-            if (isFirst) {
-              val headPropName = res.head
-              val tailPropNames = res.tail
-              indexStore.batchAddIndexField(processor, nId, label, headPropName, nProperties(headPropName).value, NameMapping.nodeIndex)
-              tailPropNames.foreach(propName => indexStore.batchUpdateIndexField(processor, nId, label, propName, nProperties(propName), NameMapping.nodeIndex))
-            }
-            else {
-              res.foreach(propName => indexStore.batchUpdateIndexField(processor, nId, label, propName, nProperties(propName), NameMapping.nodeIndex))
-            }
-          }
-        }
-      )
-      processor.flush()
-      processor.close()
-      indexStore.setIndexToNormalMode(NameMapping.nodeIndex)
-    }
+  override def createIndexOnNode(label: String, propNames: Set[String]): Unit = {
+    val iter = getNodesByLabel(Seq(label), false)
+    indexStore.batchCreateIndexOnNodes(label, propNames.toSeq, iter)
   }
 
-
-  override def getDBIndexNames: Seq[(String, String)] = {
-    indexStore.nodeIndexMetaStore.dataMap.map(kv => {
-      kv._2.map(name => kv._1 -> name).toSeq
-    }).flatten.toSeq
+  override def isNodeHasIndex(filter: NodeFilter): Boolean = {
+    indexStore.isNodeHasIndex(filter)
   }
 
-  override def getNodeIndex(nodeFilter: NodeFilter): Seq[(String, String)] = {
-    val indexes = getDBIndexNames
-    val labels = nodeFilter.labels
-    val propertyNames = nodeFilter.properties.keySet
-    val check = labels.flatMap(label => propertyNames.map(p => (label, p)))
-    check.filter(ni => indexes.contains(ni))
-  }
-
-
-  override def getNodesByIndex(label: String, propertyName: String, propertyValue: Any): Iterator[PandaNode] = {
-    val ids = indexStore.searchDoc(
-      Seq(NameMapping.indexMetaLabelName -> label, propertyName -> propertyValue),
-      NameMapping.nodeIndex).flatten.map(f => f.toLong)
-
-    ids.grouped(SearchConfig.batchSize).flatMap(idBatch => {
-       nodeStore.getNodesByIds(nodeStore.getLabelId(label).get, idBatch).map(mapNode(_))
-    })
+  override def getNodesByIndex(nodeFilter: NodeFilter): Iterator[PandaNode] ={
+    indexStore.searchNodes(nodeFilter.labels, nodeFilter.properties.map(p => p._1->p._2.value)).flatten
   }
 
   override def cypher(query: String, parameters: Map[String, Any], tx: Option[LynxTransaction]): LynxResult = {

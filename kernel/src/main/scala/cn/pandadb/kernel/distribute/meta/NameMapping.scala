@@ -9,28 +9,6 @@ import org.tikv.common.types.Charset
  * @create: 2021-11-15 16:53
  */
 object NameMapping {
-  // doc column name
-  val metaName = "name"
-  val metaId = "id"
-  val indexMetaLabelName = "label"
-  val indexMetaPropertyName = "property"
-
-
-  // index name
-  val nodeLabelMetaName = "node-label-meta"
-  val relationTypeMetaName = "relation-type-meta"
-  val nodePropertyMetaName = "node-property-meta"
-  val relationPropertyMetaName = "relation-property-meta"
-
-  // id index name
-  val idGeneratorName = "id-meta"
-
-  // data index meta
-  val nodeIndex = "node-index"
-  val relationIndex = "relation-index"
-  val nodeIndexMeta = "node-index-meta"
-  val relationIndexMeta = "relation-index-meta"
-
-  // statistics
-  val indexStatistics = "index-statistics"
+  val indexName = "panda-index"
+  val indexNodeLabelColumnName = "labels"
 }

@@ -65,33 +65,33 @@ class DistributedGraphFacadeTest {
   @Test
   def deleteNode(): Unit = {
     api.deleteNode(2)
-    Assert.assertEquals(None, api.getNode(2))
+    Assert.assertEquals(None, api.getNodeById(2))
   }
 
   @Test
   def nodeAddLabel(): Unit = {
     api.nodeAddLabel(1, "test")
-    Assert.assertEquals(Seq("person", "worker", "test"), api.getNode(1).get.labels)
+    Assert.assertEquals(Seq("person", "worker", "test"), api.getNodeById(1).get.labels)
   }
 
   @Test
   def nodeRemoveLabel(): Unit = {
     api.nodeRemoveLabel(1, "test")
-    Assert.assertEquals(Seq("person", "worker"), api.getNode(1).get.labels)
+    Assert.assertEquals(Seq("person", "worker"), api.getNodeById(1).get.labels)
   }
 
   @Test
   def nodeSetProperty(): Unit = {
     api.nodeSetProperty(1, "TestKey", "testValue")
     Assert.assertEquals(Seq(("name", LynxString("glx1")), ("age", LynxInteger(11)), ("TestKey", LynxString("testValue"))),
-      api.getNode(1).get.properties.toSeq)
+      api.getNodeById(1).get.properties.toSeq)
   }
 
   @Test
   def nodeRemoveProperty(): Unit = {
     api.nodeRemoveProperty(1, "TestKey")
     Assert.assertEquals(Seq(("name", LynxString("glx1")), ("age", LynxInteger(11))),
-      api.getNode(1).get.properties.toSeq)
+      api.getNodeById(1).get.properties.toSeq)
   }
 
   @Test
@@ -124,11 +124,6 @@ class DistributedGraphFacadeTest {
   @Test
   def cypher3() {
     api.cypher("match (n:person) where n.age=12 return n").show()
-  }
-
-  @Test
-  def index(): Unit = {
-    api.getDBIndexNames.foreach(println)
   }
 
   @After

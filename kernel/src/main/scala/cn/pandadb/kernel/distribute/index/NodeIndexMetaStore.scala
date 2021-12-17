@@ -1,6 +1,8 @@
 package cn.pandadb.kernel.distribute.index
 
-import cn.pandadb.kernel.distribute.meta.{NameMapping}
+import cn.pandadb.kernel.distribute.meta.{NodeLabelNameStore, PropertyNameStore}
+import cn.pandadb.kernel.distribute.node.DistributedNodeStoreSPI
+import cn.pandadb.kernel.distribute.{DistributedKVAPI, DistributedKeyConverter}
 
 /**
  * @program: pandadb-v0.3
@@ -8,8 +10,11 @@ import cn.pandadb.kernel.distribute.meta.{NameMapping}
  * @author: LiamGao
  * @create: 2021-11-22 14:28
  */
-class NodeIndexMetaStore(store: PandaDistributedIndexStore) extends DistributedIndexMetaStore {
-  override val indexStore: DistributedIndexStore = store
-  override val indexName: String = NameMapping.nodeIndexMeta
+class NodeIndexMetaStore(_db: DistributedKVAPI, nls: DistributedNodeStoreSPI) extends IndexNameStore {
+  override val db: DistributedKVAPI = _db
+  override val keyPrefixFunc: () => Array[Byte] = DistributedKeyConverter.indexMetaPrefixToBytes
+  override val keyWithLabelPrefixFunc: Int => Array[Byte] = DistributedKeyConverter.indexMetaWithLabelPrefixToBytes
+  override val keyWithIndexFunc: (Int, Int) => Array[Byte] = DistributedKeyConverter.indexMetaToBytes
+  override val nodeStore: DistributedNodeStoreSPI = nls
   loadAll()
 }

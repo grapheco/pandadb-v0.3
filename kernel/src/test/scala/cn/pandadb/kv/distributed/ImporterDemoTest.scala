@@ -39,7 +39,7 @@ class ImporterDemoTest {
 //      println(i.next().getKey.toString)
 //    }
     val db = new DistributedGraphFacade()
-    println(db.getNode(1))
+    println(db.getNodeById(1))
   }
   @Test
   def put(): Unit ={

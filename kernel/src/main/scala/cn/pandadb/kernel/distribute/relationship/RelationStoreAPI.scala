@@ -1,8 +1,7 @@
 package cn.pandadb.kernel.distribute.relationship
 
 import cn.pandadb.kernel.distribute.DistributedKVAPI
-import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
-import cn.pandadb.kernel.distribute.meta.{IdGenerator, NodePropertyNameStore, RelationPropertyNameStore, RelationTypeNameStore, TypeNameEnum}
+import cn.pandadb.kernel.distribute.meta.{IdGenerator, PropertyNameStore, RelationTypeNameStore, TypeNameEnum}
 import cn.pandadb.kernel.store.{StoredRelation, StoredRelationWithProperty}
 
 /**
@@ -13,7 +12,7 @@ import cn.pandadb.kernel.store.{StoredRelation, StoredRelationWithProperty}
  */
 class RelationStoreAPI(db: DistributedKVAPI) extends DistributedRelationStoreSPI {
   private val relationTypeNameStore = new RelationTypeNameStore(db)
-  private val propertyNameStore = new RelationPropertyNameStore(db)
+  private val propertyNameStore = new PropertyNameStore(db)
   private val idGenerator =new IdGenerator(db, TypeNameEnum.relationName)
 
   val inRelationStore = new RelationDirectionStore(db, RelationDirection.IN)

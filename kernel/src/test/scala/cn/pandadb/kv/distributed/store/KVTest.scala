@@ -26,6 +26,12 @@ class Test1 {
   val session = TiSession.create(conf)
   val tikv: RawKVClient = session.createRawClient()
 
+
+  @Test
+  def deleteByPrefix(): Unit ={
+    // todo
+  }
+
   @Test
   def addData(): Unit ={
     tikv.put(ByteString.copyFrom(DistributedKeyConverter.toNodeLabelKey(100, 1)), ByteString.copyFrom(Array.emptyByteArray))

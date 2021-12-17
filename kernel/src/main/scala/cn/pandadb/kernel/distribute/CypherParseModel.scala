@@ -19,26 +19,26 @@ class GraphParseModel(db: DistributedGraphService) extends GraphModelPlus{
   override def nodes(tx: Option[LynxTransaction]): Iterator[LynxNode] = db.scanAllNode()
 
   override def setNodeProperty(nodeId: LynxId, data: Array[(String, Any)], cleanExistProperties: Boolean, tx: Option[LynxTransaction]): Option[LynxNode] = {
-    db.getNode(nodeId).map(node => {
+    db.getNodeById(nodeId).map(node => {
       if (cleanExistProperties) node.properties.foreach(kv => db.nodeRemoveProperty(nodeId, kv._1)) // TODO: optimize
       data.foreach(kv => db.nodeSetProperty(nodeId, kv._1, kv._2))
-      db.getNode(nodeId, node.labels.head).get
+      db.getNodeById(nodeId, node.labels.head).get
     })
   }
 
   override def addNodeLabels(nodeId: LynxId, labels: Array[String], tx: Option[LynxTransaction]): Option[LynxNode] = {
     labels.foreach(label => db.nodeAddLabel(nodeId, label))
-    db.getNode(nodeId)
+    db.getNodeById(nodeId)
   }
 
   override def removeNodeProperty(nodeId: LynxId, propertyKeyNames: Array[String], tx: Option[LynxTransaction]): Option[LynxNode] = {
     propertyKeyNames.foreach(key => db.nodeRemoveProperty(nodeId, key))
-    db.getNode(nodeId)
+    db.getNodeById(nodeId)
   }
 
   override def removeNodeLabels(nodeId: LynxId, labels: Array[String], tx: Option[LynxTransaction]): Option[LynxNode] = {
     labels.foreach(label => db.nodeRemoveLabel(nodeId, label))
-    db.getNode(nodeId)
+    db.getNodeById(nodeId)
   }
 
   override def copyNode(srcNode: LynxNode, maskNode: LynxNode, tx: Option[LynxTransaction]): Seq[LynxValue] = {
@@ -46,19 +46,19 @@ class GraphParseModel(db: DistributedGraphService) extends GraphModelPlus{
     val property = maskNode.asInstanceOf[PandaNode].properties.map(kv => (kv._1, kv._2.value))
     db.deleteNode(nodeId)
     db.addNode(nodeId, property, maskNode.labels:_*)
-    Seq(db.getNode(nodeId).get)
+    Seq(db.getNodeById(nodeId).get)
   }
 
   override def mergeNode(nodeFilter: NodeFilter, forceToCreate: Boolean, tx: Option[LynxTransaction]): LynxNode = {
     val props = nodeFilter.properties.map(kv => (kv._1, kv._2.value))
     if (forceToCreate){
       val id = db.addNode(props, nodeFilter.labels:_*)
-      db.getNode(id).get
+      db.getNodeById(id).get
     }
     else {
       val n = nodes(nodeFilter, tx)
       if (n.nonEmpty) n.next()
-      else db.getNode(db.addNode(props, nodeFilter.labels:_*)).get
+      else db.getNodeById(db.addNode(props, nodeFilter.labels:_*)).get
     }
   }
 
@@ -67,7 +67,7 @@ class GraphParseModel(db: DistributedGraphService) extends GraphModelPlus{
   }
 
   override def relationships(tx: Option[LynxTransaction]): Iterator[PathTriple] = {
-    db.scanAllRelations().map(relation => PathTriple(db.getNode(relation.startId).get, relation, db.getNode(relation.endId).get))
+    db.scanAllRelations().map(relation => PathTriple(db.getNodeById(relation.startId).get, relation, db.getNodeById(relation.endId).get))
   }
 
   override def deleteRelation(id: LynxId, tx: Option[LynxTransaction]): Unit = {
@@ -202,27 +202,27 @@ class GraphParseModel(db: DistributedGraphService) extends GraphModelPlus{
   override def expand(nodeId: LynxId, direction: SemanticDirection, tx: Option[LynxTransaction]): Iterator[PathTriple] = {
     direction match {
       case SemanticDirection.INCOMING => db.findInRelations(nodeId.value.asInstanceOf[Long]).map(r => {
-        val toNode = db.getNode(r.to).get
+        val toNode = db.getNodeById(r.to).get
         val rel = db.transferInnerRelation(r)
-        val fromNode = db.getNode(r.from).get
+        val fromNode = db.getNodeById(r.from).get
         PathTriple(toNode, rel, fromNode)
       })
       case SemanticDirection.OUTGOING => db.findOutRelations(nodeId.value.asInstanceOf[Long]).map(r => {
-        val toNode = db.getNode(r.to).get
+        val toNode = db.getNodeById(r.to).get
         val rel = db.transferInnerRelation(r)
-        val fromNode = db.getNode(r.from).get
+        val fromNode = db.getNodeById(r.from).get
         PathTriple(fromNode, rel, toNode)
       })
       case SemanticDirection.BOTH => db.findInRelations(nodeId.value.asInstanceOf[Long]).map(r => {
-        val toNode = db.getNode(r.to).get
+        val toNode = db.getNodeById(r.to).get
         val rel = db.transferInnerRelation(r)
-        val fromNode = db.getNode(r.from).get
+        val fromNode = db.getNodeById(r.from).get
         PathTriple(toNode, rel, fromNode)
       }) ++
         db.findOutRelations(nodeId.value.asInstanceOf[Long]).map(r => {
-          val toNode = db.getNode(r.to).get
+          val toNode = db.getNodeById(r.to).get
           val rel = db.transferInnerRelation(r)
-          val fromNode = db.getNode(r.from).get
+          val fromNode = db.getNodeById(r.from).get
           PathTriple(fromNode, rel, toNode)
         })
     }
@@ -259,28 +259,28 @@ class GraphParseModel(db: DistributedGraphService) extends GraphModelPlus{
     } else {
       direction match {
         case SemanticDirection.INCOMING => db.findInRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
-          val toNode = db.getNode(r.to).get
+          val toNode = db.getNodeById(r.to).get
           val rel = db.transferInnerRelation(r)
-          val fromNode = db.getNode(r.from).get
+          val fromNode = db.getNodeById(r.from).get
           PathTriple(toNode, rel, fromNode)
         })
 
         case SemanticDirection.OUTGOING => db.findOutRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
-          val toNode = db.getNode(r.to).get
+          val toNode = db.getNodeById(r.to).get
           val rel = db.transferInnerRelation(r)
-          val fromNode = db.getNode(r.from).get
+          val fromNode = db.getNodeById(r.from).get
           PathTriple(fromNode, rel, toNode)
         })
         case SemanticDirection.BOTH => db.findInRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
-          val toNode = db.getNode(r.to).get
+          val toNode = db.getNodeById(r.to).get
           val rel = db.transferInnerRelation(r)
-          val fromNode = db.getNode(r.from).get
+          val fromNode = db.getNodeById(r.from).get
           PathTriple(toNode, rel, fromNode)
         }) ++
           db.findOutRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
-            val toNode = db.getNode(r.to).get
+            val toNode = db.getNodeById(r.to).get
             val rel = db.transferInnerRelation(r)
-            val fromNode = db.getNode(r.from).get
+            val fromNode = db.getNodeById(r.from).get
             PathTriple(fromNode, rel, toNode)
           })
       }
@@ -295,11 +295,10 @@ class GraphParseModel(db: DistributedGraphService) extends GraphModelPlus{
       case (false, true) => db.scanAllNode().filter(node => nodeFilter.matches(node))
       case _ => {
         // TODO: check is exists index, then go index or not
-        val indexSeq = db.getNodeIndex(nodeFilter)
-        if (indexSeq.nonEmpty){
-          println("go index...")
-          val choose = indexSeq.head // todo: choose min
-          db.getNodesByIndex(choose._1, choose._2, nodeFilter.properties(choose._2))
+        val nodeHasIndex = db.isNodeHasIndex(nodeFilter)
+        if (nodeHasIndex){
+          // todo: choose label which with min nodes
+          db.getNodesByIndex(nodeFilter)
         }
         else db.getNodesByLabel(nodeFilter.labels, false).filter(nodeFilter.matches(_))
       }
@@ -309,7 +308,7 @@ class GraphParseModel(db: DistributedGraphService) extends GraphModelPlus{
             relationshipFilter: RelationshipFilter,
             endNodeFilter: NodeFilter,
             direction: SemanticDirection): Iterator[PathTriple] = {
-    db.getNode(nodeId).map(
+    db.getNodeById(nodeId).map(
       node => {
         if (relationshipFilter.types.nonEmpty) {
           relationshipFilter.types.map(db.getRelationTypeId).map(
@@ -335,7 +334,7 @@ class GraphParseModel(db: DistributedGraphService) extends GraphModelPlus{
     )
       .getOrElse(Iterator.empty)
       .reduce(_ ++ _)
-      .map(p => PathTriple(p._1, db.getRelation(p._2.id).orNull, db.getNode(p._3).orNull))
+      .map(p => PathTriple(p._1, db.getRelation(p._2.id).orNull, db.getNodeById(p._3).orNull))
       .filter(trip => endNodeFilter.matches(trip.endNode))
   }
 }

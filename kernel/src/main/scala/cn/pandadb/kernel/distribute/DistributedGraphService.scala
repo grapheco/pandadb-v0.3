@@ -20,9 +20,9 @@ trait DistributedGraphService {
 
   def addNode(nodeId: Long, nodeProps: Map[String, Any], labels: String*): Id
 
-  def getNode(id: Id): Option[PandaNode]
+  def getNodeById(id: Id): Option[PandaNode]
 
-  def getNode(id: Id, labelName: String): Option[PandaNode]
+  def getNodeById(id: Id, labelName: String): Option[PandaNode]
 
   def getNodesByLabel(labelNames: Seq[String], exact: Boolean): Iterator[PandaNode]
 
@@ -86,11 +86,9 @@ trait DistributedGraphService {
 
   def createIndexOnNode(label: String, props: Set[String]): Unit
 
-  def getDBIndexNames: Seq[(String, String)]
+  def isNodeHasIndex(filter: NodeFilter): Boolean
 
-  def getNodeIndex(nodeFilter: NodeFilter): Seq[(String, String)]
-
-  def getNodesByIndex(label: String, propertyName: String, propertyValue: Any): Iterator[PandaNode]
+  def getNodesByIndex(nodeFilter: NodeFilter): Iterator[PandaNode]
 
   def cypher(query: String, parameters: Map[String, Any] = Map.empty, tx: Option[LynxTransaction] = None): LynxResult
 

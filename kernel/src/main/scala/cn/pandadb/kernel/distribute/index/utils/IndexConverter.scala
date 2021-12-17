@@ -7,6 +7,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.grapheco.lynx.{LynxBoolean, LynxDate, LynxDateTime, LynxDouble, LynxDuration, LynxInteger, LynxList, LynxLocalDateTime, LynxLocalTime, LynxNumber, LynxString, LynxTime}
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 /**
  * @program: pandadb-v0.3
  * @description:
@@ -38,5 +39,13 @@ object IndexConverter {
       case n: String => boolQueryBuilder.must(QueryBuilders.termQuery(s"$key.keyword", n).caseInsensitive(true))
       case n => boolQueryBuilder.must(QueryBuilders.termQuery(s"$key", n))
     }
+  }
+
+  def transferNode2Doc(indexMetaMap:mutable.Map[String, mutable.Set[String]], indexedLabels: Seq[String], nodeProps: Map[String, Any]): Seq[(String, Any)] ={
+    val labelAndPropName = indexedLabels.map(label => label->indexMetaMap(label))
+    val data = labelAndPropName.flatMap(lp => {
+      lp._2.map(propName => (s"${lp._1}.$propName", nodeProps.getOrElse(propName, null)))
+    }).filter(p => p._2 != null)
+    data
   }
 }

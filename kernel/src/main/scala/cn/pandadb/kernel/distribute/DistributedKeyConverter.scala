@@ -27,6 +27,8 @@ object DistributedKeyConverter {
   def nodeMaxIdKey: Array[Byte] = Array(19.toByte)
   def relationMaxIdKey: Array[Byte] = Array(20.toByte)
 
+  val indexMetaPrefix: Byte = 21
+
 
   val NODE_ID_SIZE     = 8
   val RELATION_ID_SIZE = 8
@@ -205,6 +207,29 @@ object DistributedKeyConverter {
   def propertyNameKeyPrefixToBytes(): Array[Byte] ={
     val bytes = new Array[Byte](1)
     ByteUtils.setByte(bytes, 0, propertyMetaPrefix)
+    bytes
+  }
+
+  // [keyPrefix(1Bytes),id(4Bytes),id(4Bytes)]
+  def indexMetaToBytes(labelId: Int, propertyId: Int): Array[Byte] ={
+    val bytes = new Array[Byte](9)
+    ByteUtils.setByte(bytes, 0, indexMetaPrefix)
+    ByteUtils.setInt(bytes, 1, labelId)
+    ByteUtils.setInt(bytes, 5, propertyId)
+    bytes
+  }
+
+  // [keyPrefix(1Bytes),--]
+  def indexMetaPrefixToBytes(): Array[Byte] ={
+    val bytes = new Array[Byte](1)
+    ByteUtils.setByte(bytes, 0, indexMetaPrefix)
+    bytes
+  }
+  // [keyPrefix(1Bytes),--]
+  def indexMetaWithLabelPrefixToBytes(labelId: Int): Array[Byte] ={
+    val bytes = new Array[Byte](5)
+    ByteUtils.setByte(bytes, 0, indexMetaPrefix)
+    ByteUtils.setInt(bytes, 1, labelId)
     bytes
   }
 }
