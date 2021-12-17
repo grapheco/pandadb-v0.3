@@ -20,7 +20,6 @@ import org.tikv.common.{TiConfiguration, TiSession}
  */
 class DistributedGraphFacade extends DistributedGraphService {
 
-
   val db = {
     val conf = TiConfiguration.createRawDefault("10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379")
 
@@ -244,8 +243,11 @@ class DistributedGraphFacade extends DistributedGraphService {
   }
 
   override def createIndexOnNode(label: String, propNames: Set[String]): Unit = {
-    val iter = getNodesByLabel(Seq(label), false)
-    indexStore.batchCreateIndexOnNodes(label, propNames.toSeq, iter)
+    val created = indexStore.isIndexCreated(label, propNames.toSeq)
+    if (!created){
+      val iter = getNodesByLabel(Seq(label), false)
+      indexStore.batchAddIndexOnNodes(label, propNames.toSeq, iter)
+    }
   }
 
   override def isNodeHasIndex(filter: NodeFilter): Boolean = {

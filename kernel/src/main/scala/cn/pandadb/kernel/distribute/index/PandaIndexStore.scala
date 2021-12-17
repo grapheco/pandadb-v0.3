@@ -120,8 +120,8 @@ class PandaDistributedIndexStore(client: RestHighLevelClient, _db: DistributedKV
       val data = IndexConverter.transferNode2Doc(nodeIndexMetaStore.indexMetaMap, indexedLabels, filter)
 
       val queryBuilder = new BoolQueryBuilder()
-      indexedLabels.foreach(labelName => queryBuilder.must(QueryBuilders.termQuery(s"${NameMapping.indexNodeLabelColumnName}.keyword", labelName)))
-      data.foreach(propNameAndValue => queryBuilder.must(QueryBuilders.termQuery(s"${propNameAndValue._1}.keyword", propNameAndValue._2)))
+      indexedLabels.foreach(labelName => queryBuilder.must(QueryBuilders.termQuery(s"${NameMapping.indexNodeLabelColumnName}", labelName)))
+      data.foreach(propNameAndValue => queryBuilder.must(QueryBuilders.termQuery(s"${propNameAndValue._1}", propNameAndValue._2)))
 
       new SearchNodeIterator(queryBuilder)
     }
@@ -144,7 +144,7 @@ class PandaDistributedIndexStore(client: RestHighLevelClient, _db: DistributedKV
         val nodeId = doc._1.toLong
         val labels = doc._2(NameMapping.indexNodeLabelColumnName).asInstanceOf[util.ArrayList[String]].asScala.toSeq
         val props = doc._2 - NameMapping.indexNodeLabelColumnName
-        val cleanProps = props.map(pv => pv._1.split(s"\\.")(1)->LynxValue(pv._2))
+        val cleanProps = props.map(pv => pv._1.split("\\.")(1)->LynxValue(pv._2))
         PandaNode(nodeId, labels, cleanProps.toSeq:_*)
       }).toSeq
 
@@ -156,6 +156,14 @@ class PandaDistributedIndexStore(client: RestHighLevelClient, _db: DistributedKV
     override def next(): Seq[PandaNode] = dataBatch
   }
 
+
+  def isIndexCreated(targetLabel: String, propNames: Seq[String]): Boolean ={
+    val indexMetaMap = nodeIndexMetaStore.indexMetaMap
+    if (indexMetaMap.contains(targetLabel)){
+      propNames.intersect(indexMetaMap(targetLabel).toSeq).size == propNames.size
+    }
+    else false
+  }
 
   def isNodeHasIndex(filter: NodeFilter): Boolean ={
     val labels = filter.labels
@@ -179,14 +187,16 @@ class PandaDistributedIndexStore(client: RestHighLevelClient, _db: DistributedKV
   }
 
 
-  def batchCreateIndexOnNodes(targetLabel: String, targetPropNames: Seq[String], nodes: Iterator[PandaNode]): Unit ={
+  def batchAddIndexOnNodes(targetLabel: String, targetPropNames: Seq[String], nodes: Iterator[PandaNode]): Unit ={
+    val indexMetaMap = nodeIndexMetaStore.indexMetaMap
     val processor = getBulkProcessor(2000, 3)
     setIndexToBatchMode(NameMapping.indexName)
     while (nodes.hasNext){
       val node = nodes.next()
+      val nodeHasIndex = node.labels.intersect(indexMetaMap.keySet.toSeq).nonEmpty
       val data = targetPropNames.map(propName => (s"$targetLabel.$propName", node.property(propName).get.value)).toMap
-      val request = addNewNodeRequest(NameMapping.indexName, node.longId, node.labels, data)
-      processor.add(request)
+      if (indexMetaMap.contains(targetLabel) || nodeHasIndex) processor.add(updatePropertyRequest(NameMapping.indexName, node.longId, data))
+      else processor.add(addNewNodeRequest(NameMapping.indexName, node.longId, node.labels, data))
     }
     processor.flush()
     processor.close()
@@ -194,20 +204,7 @@ class PandaDistributedIndexStore(client: RestHighLevelClient, _db: DistributedKV
 
     targetPropNames.foreach(name => nodeIndexMetaStore.addToDB(targetLabel, name))
   }
-  def batchUpdateIndexLabelWithNewProperty(indexLabel: String, targetPropName: String, nodes: Iterator[PandaNode]): Unit ={
-    val processor = getBulkProcessor(2000, 3)
-    setIndexToBatchMode(NameMapping.indexName)
-    while (nodes.hasNext){
-      val node = nodes.next()
-      val request = updatePropertyRequest(NameMapping.indexName, node.longId, indexLabel, targetPropName, node.property(targetPropName).get.value)
-      processor.add(request)
-    }
-    processor.flush()
-    processor.close()
-    setIndexToNormalMode(NameMapping.indexName)
 
-    nodeIndexMetaStore.addToDB(indexLabel, targetPropName)
-  }
   def batchDeleteIndexLabelWithProperty(indexLabel: String, targetPropName: String, nodes: Iterator[PandaNode]): Unit ={
     val processor = getBulkProcessor(2000, 3)
     setIndexToBatchMode(NameMapping.indexName)
@@ -229,29 +226,10 @@ class PandaDistributedIndexStore(client: RestHighLevelClient, _db: DistributedKV
     new IndexRequest(indexName).id(nodeId.toString).source(jsonString, XContentType.JSON)
   }
 
-  // add label, label no index
-  private def updateLabelRequest(indexName: String, nodeId: Long, labels: List[String]): UpdateRequest = {
+  private def updatePropertyRequest(indexName: String, nodeId: Long, transferProps: Map[String, Any]): UpdateRequest = {
     val request = new UpdateRequest()
-    val _data = Map(NameMapping.indexNodeLabelColumnName -> labels.asJava).asInstanceOf[Map[String, Object]].asJava
+    val _data = transferProps.asInstanceOf[Map[String, Object]].asJava
     val jsonString = JSON.toJSONString(_data, SerializerFeature.QuoteFieldNames)
-    request.index(indexName).id(nodeId.toString)
-    request.doc(jsonString, XContentType.JSON)
-    request
-  }
-
-  private def updatePropertyRequest(indexName: String, nodeId: Long, label: String, propertyName: String, propValue: Any): UpdateRequest = {
-    val request = new UpdateRequest()
-    val _data = Map(s"$label.$propertyName" -> propValue).asInstanceOf[Map[String, Object]].asJava
-    val jsonString = JSON.toJSONString(_data, SerializerFeature.QuoteFieldNames)
-    request.index(indexName).id(nodeId.toString)
-    request.doc(jsonString, XContentType.JSON)
-    request
-  }
-  private def updateLabelAndPropertyRequest(indexName: String, nodeId: Long, targetLabel: String, labels: List[String], labelProps: Map[NodePropertyName, NodePropertyValue]): UpdateRequest ={
-    val props = labelProps.map(p => s"$targetLabel.${p._1}" -> p._2)
-    val request = new UpdateRequest()
-    val data = (Map(NameMapping.indexNodeLabelColumnName -> labels.asJava) ++ props).asInstanceOf[Map[String, Object]].asJava
-    val jsonString = JSON.toJSONString(data, SerializerFeature.QuoteFieldNames)
     request.index(indexName).id(nodeId.toString)
     request.doc(jsonString, XContentType.JSON)
     request

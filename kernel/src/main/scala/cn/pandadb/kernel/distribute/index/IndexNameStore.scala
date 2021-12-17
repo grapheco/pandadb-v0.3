@@ -57,7 +57,7 @@ trait IndexNameStore {
       val key = iter.next().getKey.toByteArray
       val label = nodeStore.getLabelName(ByteUtils.getInt(key, 1)).get
       val property = nodeStore.getPropertyKeyName(ByteUtils.getInt(key, 5)).get
-      if (indexMetaMap.contains(label)) indexMetaMap(property).add(property)
+      if (indexMetaMap.contains(label)) indexMetaMap(label).add(property)
       else indexMetaMap += label -> mutable.Set(property)
     }
   }
