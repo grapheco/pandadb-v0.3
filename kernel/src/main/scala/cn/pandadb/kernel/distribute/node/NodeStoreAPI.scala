@@ -14,9 +14,8 @@ import scala.collection.mutable.ArrayBuffer
  * @author: LiamGao
  * @create: 2021-11-16 15:12
  */
-class NodeStoreAPI(db: DistributedKVAPI) extends DistributedNodeStoreSPI {
+class NodeStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStore) extends DistributedNodeStoreSPI {
   private val nodeLabelName = new NodeLabelNameStore(db)
-  private val propertyName = new PropertyNameStore(db)
   private val idGenerator = new IdGenerator(db, TypeNameEnum.nodeName)
 
   val nodeStore = new NodeStore(db)
@@ -40,7 +39,7 @@ class NodeStoreAPI(db: DistributedKVAPI) extends DistributedNodeStoreSPI {
 
   override def addLabel(labelName: String): Int = nodeLabelName.getOrAddId(labelName)
 
-  override def addPropertyKey(keyName: String): Int = propertyName.getOrAddId(keyName)
+  override def addPropertyKey(keyName: String): Int = propertyNameStore.getOrAddId(keyName)
 
   override def deleteNode(nodeId: Long): Unit = {
     nodeLabelStore.getAll(nodeId).foreach(labelId => {
@@ -86,9 +85,9 @@ class NodeStoreAPI(db: DistributedKVAPI) extends DistributedNodeStoreSPI {
 
   override def getLabelIds(labelNames: Set[String]): Set[Int] = nodeLabelName.ids(labelNames)
 
-  override def getPropertyKeyName(keyId: Int): Option[String] = propertyName.key(keyId)
+  override def getPropertyKeyName(keyId: Int): Option[String] = propertyNameStore.key(keyId)
 
-  override def getPropertyKeyId(keyName: String): Option[Int] = propertyName.id(keyName)
+  override def getPropertyKeyId(keyName: String): Option[Int] = propertyNameStore.id(keyName)
 
   override def getNodeById(nodeId: Long): Option[StoredNodeWithProperty] = {
     nodeLabelStore.get(nodeId).map(labelId => nodeStore.get(nodeId, labelId).get)
@@ -113,9 +112,9 @@ class NodeStoreAPI(db: DistributedKVAPI) extends DistributedNodeStoreSPI {
 
   override def allLabelIds(): Array[Int] = nodeLabelName.mapInt2String.keys.toArray
 
-  override def allPropertyKeys(): Array[String] = propertyName.mapString2Int.keys.toArray
+  override def allPropertyKeys(): Array[String] = propertyNameStore.mapString2Int.keys.toArray
 
-  override def allPropertyKeyIds(): Array[Int] = propertyName.mapInt2String.keys.toArray
+  override def allPropertyKeyIds(): Array[Int] = propertyNameStore.mapInt2String.keys.toArray
 
   override def allNodes(): Iterator[StoredNodeWithProperty] = nodeStore.all()
 

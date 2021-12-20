@@ -189,20 +189,23 @@ class PandaDistributedIndexStore(client: RestHighLevelClient, _db: DistributedKV
 
   def batchAddIndexOnNodes(targetLabel: String, targetPropNames: Seq[String], nodes: Iterator[PandaNode]): Unit ={
     val indexMetaMap = nodeIndexMetaStore.indexMetaMap
-    val processor = getBulkProcessor(2000, 3)
-    setIndexToBatchMode(NameMapping.indexName)
-    while (nodes.hasNext){
-      val node = nodes.next()
-      val nodeHasIndex = node.labels.intersect(indexMetaMap.keySet.toSeq).nonEmpty
-      val data = targetPropNames.map(propName => (s"$targetLabel.$propName", node.property(propName).get.value)).toMap
-      if (indexMetaMap.contains(targetLabel) || nodeHasIndex) processor.add(updatePropertyRequest(NameMapping.indexName, node.longId, data))
-      else processor.add(addNewNodeRequest(NameMapping.indexName, node.longId, node.labels, data))
-    }
-    processor.flush()
-    processor.close()
-    setIndexToNormalMode(NameMapping.indexName)
+    val noIndexProps = targetPropNames.diff(indexMetaMap(targetLabel).toSeq)
+    if (noIndexProps.nonEmpty){
+      val processor = getBulkProcessor(2000, 3)
+      setIndexToBatchMode(NameMapping.indexName)
+      while (nodes.hasNext){
+        val node = nodes.next()
+        val nodeHasIndex = node.labels.intersect(indexMetaMap.keySet.toSeq).nonEmpty
+        val data = noIndexProps.map(propName => (s"$targetLabel.$propName", node.property(propName).get.value)).toMap
+        if (indexMetaMap.contains(targetLabel) || nodeHasIndex) processor.add(updatePropertyRequest(NameMapping.indexName, node.longId, data))
+        else processor.add(addNewNodeRequest(NameMapping.indexName, node.longId, node.labels, data))
+      }
+      processor.flush()
+      processor.close()
+      setIndexToNormalMode(NameMapping.indexName)
 
-    targetPropNames.foreach(name => nodeIndexMetaStore.addToDB(targetLabel, name))
+      noIndexProps.foreach(name => nodeIndexMetaStore.addToDB(targetLabel, name))
+    }
   }
 
   def batchDeleteIndexLabelWithProperty(indexLabel: String, targetPropName: String, nodes: Iterator[PandaNode]): Unit ={

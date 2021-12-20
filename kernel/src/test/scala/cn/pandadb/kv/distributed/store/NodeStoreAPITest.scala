@@ -4,7 +4,7 @@ import java.nio.ByteBuffer
 
 import cn.pandadb.kernel.distribute.{DistributedKeyConverter, PandaDistributeKVAPI}
 import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
-import cn.pandadb.kernel.distribute.meta.NameMapping
+import cn.pandadb.kernel.distribute.meta.{NameMapping, PropertyNameStore}
 import cn.pandadb.kernel.distribute.node.{DistributedNodeStoreSPI, NodeStoreAPI}
 import cn.pandadb.kernel.store.StoredNodeWithProperty
 import org.apache.http.HttpHost
@@ -45,7 +45,7 @@ class NodeStoreAPITest {
     val session = TiSession.create(conf)
     tikv = session.createRawClient()
     val db = new PandaDistributeKVAPI(tikv)
-    api = new NodeStoreAPI(db)
+    api = new NodeStoreAPI(db, new PropertyNameStore(db))
 
     api.addNode(n1)
     api.addNode(n2)

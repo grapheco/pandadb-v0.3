@@ -28,6 +28,7 @@ object DistributedKeyConverter {
   def relationMaxIdKey: Array[Byte] = Array(20.toByte)
 
   val indexMetaPrefix: Byte = 21
+  val statisticPrefix: Byte = 22
 
 
   val NODE_ID_SIZE     = 8

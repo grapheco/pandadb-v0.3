@@ -2,7 +2,7 @@ package cn.pandadb.kv.distributed.store
 
 import cn.pandadb.kernel.distribute.PandaDistributeKVAPI
 import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
-import cn.pandadb.kernel.distribute.meta.NameMapping
+import cn.pandadb.kernel.distribute.meta.{NameMapping, PropertyNameStore}
 import cn.pandadb.kernel.distribute.node.{DistributedNodeStoreSPI, NodeStoreAPI}
 import cn.pandadb.kernel.distribute.relationship.{DistributedRelationStoreSPI, RelationStoreAPI}
 import cn.pandadb.kernel.store.StoredRelationWithProperty
@@ -36,7 +36,7 @@ class RelationStoreTest {
     tikv = session.createRawClient()
     val db = new PandaDistributeKVAPI(tikv)
 
-    api = new RelationStoreAPI(db)
+    api = new RelationStoreAPI(db, new PropertyNameStore(db))
 
     api.addRelation(r1)
     api.addRelation(r2)

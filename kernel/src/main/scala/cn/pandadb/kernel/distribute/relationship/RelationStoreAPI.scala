@@ -10,9 +10,8 @@ import cn.pandadb.kernel.store.{StoredRelation, StoredRelationWithProperty}
  * @author: LiamGao
  * @create: 2021-11-18 10:53
  */
-class RelationStoreAPI(db: DistributedKVAPI) extends DistributedRelationStoreSPI {
+class RelationStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStore) extends DistributedRelationStoreSPI {
   private val relationTypeNameStore = new RelationTypeNameStore(db)
-  private val propertyNameStore = new PropertyNameStore(db)
   private val idGenerator =new IdGenerator(db, TypeNameEnum.relationName)
 
   val inRelationStore = new RelationDirectionStore(db, RelationDirection.IN)
