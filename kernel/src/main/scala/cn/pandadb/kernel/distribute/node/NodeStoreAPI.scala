@@ -46,8 +46,6 @@ class NodeStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStore) e
       nodeStore.delete(nodeId, labelId)
     })
     nodeLabelStore.delete(nodeId)
-
-    // TODO: statistic, index meta delete or not
   }
 
   override def deleteNodes(nodeIDs: Iterator[Long]): Unit = {

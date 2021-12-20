@@ -6,6 +6,7 @@ import cn.pandadb.kernel.distribute.meta.{DistributedStatistics, NameMapping, Pr
 import cn.pandadb.kernel.distribute.node.NodeStoreAPI
 import cn.pandadb.kernel.distribute.relationship.RelationStoreAPI
 import cn.pandadb.kernel.store.{PandaNode, PandaRelationship, StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
+import cn.pandadb.kernel.util.PandaDBException.PandaDBException
 import org.apache.http.HttpHost
 import org.elasticsearch.client.{RestClient, RestHighLevelClient}
 import org.grapheco.lynx.cypherplus.CypherRunnerPlus
@@ -38,7 +39,7 @@ class DistributedGraphFacade extends DistributedGraphService {
     val hosts = Array(new HttpHost("10.0.82.144", 9200, "http"),
       new HttpHost("10.0.82.145", 9200, "http"),
       new HttpHost("10.0.82.146", 9200, "http"))
-    new PandaDistributedIndexStore(new RestHighLevelClient(RestClient.builder(hosts: _*)), db, nodeStore)
+    new PandaDistributedIndexStore(new RestHighLevelClient(RestClient.builder(hosts: _*)), db, nodeStore, statistics)
   }
 
   val runner = new CypherRunnerPlus(new GraphParseModel(this))
@@ -62,29 +63,13 @@ class DistributedGraphFacade extends DistributedGraphService {
     nodeStore.addNode(new StoredNodeWithProperty(nodeId, labelIds, properties))
 
     // if property has index
-    indexStore.addIndexOnSingleNode(nodeId, labels, nodeProps)
+    indexStore.updateIndexOnSingleNode(nodeId, labels, nodeProps, (false, ""))
 
-    //statistics
-    addNodeStatistics(labelIds, properties.keySet.toSeq, labels, nodeProps.keySet.toSeq)
-
-    nodeId
-  }
-  private def addNodeStatistics(labelIds: Seq[Int], nodePropNameIds: Seq[Int], labelNames: Seq[String], nodePropNames: Seq[String]): Unit ={
     statistics.increaseNodeCount(1)
     labelIds.foreach(lid => statistics.increaseNodeLabelCount(lid, 1))
 
-    val indexMetaMap = indexStore.nodeIndexMetaStore.indexMetaMap
-    val indexedLabels = labelNames.intersect(indexMetaMap.keySet.toSeq)
-
-    if (indexedLabels.nonEmpty){
-      val indexedLP = indexedLabels.map(l => nodePropNames.intersect(indexMetaMap(l).toSeq))
-      indexedLP.foreach(kv => {
-        val propIds = kv.map(p => propertyNameStore.id(p).get)
-        propIds.foreach(pid => statistics.increaseIndexPropertyCount(pid, 1))
-      })
-    }
+    nodeId
   }
-
 
   override def getNodeById(id: Id): Option[PandaNode] = {
     nodeStore.getNodeById(id).map(mapNode(_))
@@ -95,24 +80,31 @@ class DistributedGraphFacade extends DistributedGraphService {
   }
 
   override def getNodesByLabel(labelNames: Seq[String], exact: Boolean): Iterator[PandaNode] = {
-    // todo: choose min
-    if (labelNames.isEmpty) scanAllNode()
-    else if (labelNames.length == 1) {
-      val lid = nodeStore.getLabelId(labelNames.head)
-      if (lid.isDefined) nodeStore.getNodesByLabel(lid.get).map(mapNode(_))
-      else Iterator.empty
+    val labelAllExist = labelNames.forall(labelName => getNodeLabelId(labelName).isDefined)
+
+    if (labelAllExist){
+      labelNames.size match {
+        case 0 => scanAllNode()
+        case 1 => {
+          val lid = nodeStore.getLabelId(labelNames.head).get
+          nodeStore.getNodesByLabel(lid).map(mapNode(_))
+        }
+        case _ =>{
+          val labelIds = labelNames.map(nodeStore.getLabelId(_).get).sorted
+          val minLabel = labelIds.map(lid => lid -> statistics.getNodeLabelCount(lid).get).minBy(f => f._2)
+
+          val res = nodeStore.getNodesByLabel(minLabel._1).filter {
+            if (exact)
+              _.labelIds.sorted.toSeq == labelIds
+            else
+              _.labelIds.sorted.containsSlice(labelIds)
+          }
+          res.map(mapNode(_))
+        }
+      }
     }
     else {
-      //TODO statistics choose one min count
-      val labelIds = labelNames.map(nodeStore.getLabelId(_).get).sorted
-      val res = nodeStore.getNodesByLabel(labelIds.head).filter {
-        if (exact)
-          _.labelIds.sorted.toSeq == labelIds
-        else
-          _.labelIds.sorted.containsSlice(labelIds)
-      }
-      if (res.nonEmpty) res.map(mapNode(_))
-      else Iterator.empty
+      throw new PandaDBException("label not exist...")
     }
   }
 
@@ -131,30 +123,16 @@ class DistributedGraphFacade extends DistributedGraphService {
 
     nodeStore.deleteNode(id)
     if (indexStore.isDocExist(id.toString)) indexStore.deleteDoc(id.toString)
-    deleteNodeStatistics(node)
-  }
 
-  private def deleteNodeStatistics(node: PandaNode): Unit ={
     statistics.decreaseNodes(1)
     node.labels.map(l => nodeStore.getLabelId(l).get).foreach(lid => statistics.decreaseNodeLabelCount(lid, 1))
-
-    val indexMetaMap = indexStore.nodeIndexMetaStore.indexMetaMap
-    val indexedLabels = node.labels.intersect(indexMetaMap.keySet.toSeq)
-    if (indexedLabels.nonEmpty){
-      val indexedLP = indexedLabels.map(l => node.properties.keySet.toSeq.intersect(indexMetaMap(l).toSeq))
-      indexedLP.foreach(prop => {
-        prop.map(f => propertyNameStore.id(f).get).foreach(pid => statistics.decreaseIndexPropertyCount(pid, 1))
-      })
-    }
   }
+
 
   override def deleteNodes(ids: Iterator[Id]): Unit = {
     // todo: batch delete
-    val iter = ids.duplicate
-    nodeStore.deleteNodes(iter._1)
-    iter._2.foreach(id => {
-      if (indexStore.isDocExist(id.toString)) indexStore.deleteDoc(id.toString)
-    })
+    ids.foreach(id => deleteNode(id))
+
   }
 
   protected def mapNode(node: StoredNode): PandaNode = {
@@ -167,45 +145,26 @@ class DistributedGraphFacade extends DistributedGraphService {
     val pid = nodeStore.addPropertyKey(key)
     nodeStore.nodeSetProperty(id, pid, value)
     val node = getNodeById(id).get
-    indexStore.addIndexOnSingleNode(node.longId, node.labels, node.properties.map(p => p._1->p._2.value))
-
-    nodeSetPropStatistics(node.labels, key, pid)
+    indexStore.updateIndexOnSingleNode(node.longId, node.labels, node.properties.map(p => p._1->p._2.value), (false, ""))
   }
-  private def nodeSetPropStatistics(labels: Seq[String], propName: String, propId: Int): Unit ={
-    val indexMetaMap = indexStore.nodeIndexMetaStore.indexMetaMap
-    val indexedLabels = labels.intersect(indexMetaMap.keySet.toSeq)
-    if (indexedLabels.nonEmpty){
-      indexedLabels.foreach(l => if (indexMetaMap(l).contains(propName)) statistics.increaseIndexPropertyCount(propId, 1))
-    }
-  }
-
 
   override def nodeRemoveProperty(id: Id, key: String): Unit = {
     val pid = nodeStore.getPropertyKeyId(key)
     if (pid.isDefined){
       nodeStore.nodeRemoveProperty(id, pid.get)
       val node = getNodeById(id).get
-      if (node.properties.nonEmpty) indexStore.addIndexOnSingleNode(node.longId, node.labels, node.properties.map(p => p._1->p._2.value))
+      if (node.properties.nonEmpty) indexStore.updateIndexOnSingleNode(node.longId, node.labels, node.properties.map(p => p._1->p._2.value), (true, key))
       else indexStore.deleteDoc(node.longId.toString)
-      nodeRemovePropertyStatistics(node.labels, key, pid.get)
     }
   }
-  private def nodeRemovePropertyStatistics(labels: Seq[String], propName: String, propId: Int): Unit ={
-    val indexMetaMap = indexStore.nodeIndexMetaStore.indexMetaMap
-    val indexedLabels = labels.intersect(indexMetaMap.keySet.toSeq)
-    if (indexedLabels.nonEmpty){
-      indexedLabels.foreach(l => {
-        if (indexMetaMap(l).contains(propName)) statistics.decreaseIndexPropertyCount(propId, 1)
-      })
-    }
-  }
+
 
 
   override def nodeAddLabel(id: Id, label: String): Unit = {
     val lid = nodeStore.addLabel(label)
     nodeStore.nodeAddLabel(id, lid)
     val node = getNodeById(id).get
-    indexStore.addIndexOnSingleNode(node.longId, node.labels, node.properties.map(p => p._1->p._2.value))
+    indexStore.updateIndexOnSingleNode(node.longId, node.labels, node.properties.map(p => p._1->p._2.value), (false, ""))
 
     statistics.increaseNodeLabelCount(lid, 1)
   }
@@ -214,7 +173,7 @@ class DistributedGraphFacade extends DistributedGraphService {
     val lid = nodeStore.getLabelId(label)
     lid.foreach(lid => nodeStore.nodeRemoveLabel(id, lid))
     val node = getNodeById(id).get
-    if (node.labels.nonEmpty) indexStore.addIndexOnSingleNode(node.longId, node.labels, node.properties.map(p => p._1->p._2.value))
+    if (node.labels.nonEmpty) indexStore.updateIndexOnSingleNode(node.longId, node.labels, node.properties.map(p => p._1->p._2.value), (false, ""))
     else indexStore.deleteDoc(node.longId.toString)
 
     statistics.decreaseNodeLabelCount(lid.get, 1)

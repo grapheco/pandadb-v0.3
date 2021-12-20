@@ -4,7 +4,7 @@ import java.util
 
 import cn.pandadb.kernel.distribute.DistributedKVAPI
 import cn.pandadb.kernel.distribute.index.utils.{IndexConverter, SearchConfig}
-import cn.pandadb.kernel.distribute.meta.{NameMapping, NodeLabelNameStore, PropertyNameStore}
+import cn.pandadb.kernel.distribute.meta.{DistributedStatistics, NameMapping, NodeLabelNameStore, PropertyNameStore}
 import cn.pandadb.kernel.distribute.node.DistributedNodeStoreSPI
 import cn.pandadb.kernel.store.PandaNode
 import cn.pandadb.kernel.util.PandaDBException.PandaDBException
@@ -42,7 +42,9 @@ import scala.collection.mutable.ArrayBuffer
  * @author: LiamGao
  * @create: 2021-11-15 11:17
  */
-class PandaDistributedIndexStore(client: RestHighLevelClient, _db: DistributedKVAPI, nls: DistributedNodeStoreSPI) {
+class PandaDistributedIndexStore(client: RestHighLevelClient,
+                                 _db: DistributedKVAPI, nls: DistributedNodeStoreSPI,
+                                 statistics: DistributedStatistics) {
   type NodeID = Long
   type NodeLabel = String
   type NodeLabels = List[String]
@@ -105,13 +107,23 @@ class PandaDistributedIndexStore(client: RestHighLevelClient, _db: DistributedKV
     client.indices().delete(new DeleteIndexRequest(indexName), RequestOptions.DEFAULT).isAcknowledged
   }
 
+  def getDocById(docId: String): PandaNode ={
+    val request = new GetRequest().index(NameMapping.indexName).id(docId)
+    val res = client.get(request, RequestOptions.DEFAULT)
+    IndexConverter.transferDoc2Node(res.getId, res.getSourceAsMap.asScala.toMap)
+  }
+
   def isDocExist(docId: String): Boolean = {
     val request = new GetRequest().index(NameMapping.indexName).id(docId)
     client.exists(request, RequestOptions.DEFAULT)
   }
   def deleteDoc(docId: String) = {
+    val node = getDocById(docId)
+
     val request = new DeleteRequest().index(NameMapping.indexName).id(docId)
     client.delete(request, RequestOptions.DEFAULT)
+
+    node.properties.keySet.foreach(pn => statistics.decreaseIndexPropertyCount(nls.getPropertyKeyId(pn).get, 1))
   }
 
   def searchNodes(labels: Seq[String], filter: Map[String, Any]): Iterator[Seq[PandaNode]] = {
@@ -139,17 +151,8 @@ class PandaDistributedIndexStore(client: RestHighLevelClient, _db: DistributedKV
         .from(page * pageSize)
         .size(pageSize)
       request.source(builder)
-      val iter = client.search(request, RequestOptions.DEFAULT).getHits.iterator().asScala.map(f => (f.getId, f.getSourceAsMap.asScala.toMap))
-      dataBatch = iter.map(doc => {
-        val nodeId = doc._1.toLong
-        val labels = doc._2(NameMapping.indexNodeLabelColumnName).asInstanceOf[util.ArrayList[String]].asScala.toSeq
-        val props = doc._2 - NameMapping.indexNodeLabelColumnName
-        val cleanProps = props.map(pv => pv._1.split("\\.")(1)->LynxValue(pv._2))
-        PandaNode(nodeId, labels, cleanProps.toSeq:_*)
-      }).toSeq
-
+      dataBatch = client.search(request, RequestOptions.DEFAULT).getHits.asScala.map(f => IndexConverter.transferDoc2Node(f.getId, f.getSourceAsMap.asScala.toMap)).toSeq
       page += 1
-
       dataBatch.nonEmpty
     }
 
@@ -177,50 +180,68 @@ class PandaDistributedIndexStore(client: RestHighLevelClient, _db: DistributedKV
     else false
   }
 
-  def addIndexOnSingleNode(nodeId: Long, labels: Seq[String], nodeProps: Map[String, Any]): Unit ={
+  def updateIndexOnSingleNode(nodeId: Long, labels: Seq[String], nodeProps: Map[String, Any], isDelete: (Boolean, String)): Unit ={
     val indexMetaMap = nodeIndexMetaStore.indexMetaMap
     val indexedLabel = labels.intersect(indexMetaMap.keySet.toSeq)
     if (indexedLabel.nonEmpty){
-      val data = IndexConverter.transferNode2Doc(indexMetaMap, indexedLabel, nodeProps)
-      client.index(addNewNodeRequest(NameMapping.indexName, nodeId, labels, data.toMap), RequestOptions.DEFAULT)
+      val indexedData = indexedLabel.map(iLabel => iLabel -> indexMetaMap(iLabel).intersect(nodeProps.keySet))
+      indexedData.foreach(labelAndProps => {
+        if (labelAndProps._2.nonEmpty){
+          val data = IndexConverter.transferNode2Doc(indexMetaMap, Seq(labelAndProps._1), labelAndProps._2.map(name => name -> nodeProps(name)).toMap)
+          client.index(addNewNodeRequest(NameMapping.indexName, nodeId, labels, data.toMap), RequestOptions.DEFAULT)
+
+          if (!isDelete._1) labelAndProps._2.foreach(propName => statistics.increaseIndexPropertyCount(nls.getPropertyKeyId(propName).get, 1))
+          else {
+            if (labelAndProps._2.contains(isDelete._2)) statistics.decreaseIndexPropertyCount(nls.getPropertyKeyId(isDelete._2).get, 1)
+          }
+        }
+      })
     }
   }
 
-
   def batchAddIndexOnNodes(targetLabel: String, targetPropNames: Seq[String], nodes: Iterator[PandaNode]): Unit ={
+    var nodeCount = 0
     val indexMetaMap = nodeIndexMetaStore.indexMetaMap
-    val noIndexProps = targetPropNames.diff(indexMetaMap(targetLabel).toSeq)
+    val noIndexProps = targetPropNames.diff(indexMetaMap.getOrElse(targetLabel, Set.empty).toSeq)
     if (noIndexProps.nonEmpty){
       val processor = getBulkProcessor(2000, 3)
       setIndexToBatchMode(NameMapping.indexName)
       while (nodes.hasNext){
         val node = nodes.next()
-        val nodeHasIndex = node.labels.intersect(indexMetaMap.keySet.toSeq).nonEmpty
+        val indexedLabels = node.labels.intersect(indexMetaMap.keySet.toSeq)
+        val nodeHasIndex = indexedLabels.nonEmpty
         val data = noIndexProps.map(propName => (s"$targetLabel.$propName", node.property(propName).get.value)).toMap
         if (indexMetaMap.contains(targetLabel) || nodeHasIndex) processor.add(updatePropertyRequest(NameMapping.indexName, node.longId, data))
         else processor.add(addNewNodeRequest(NameMapping.indexName, node.longId, node.labels, data))
+
+        nodeCount += 1
       }
       processor.flush()
       processor.close()
       setIndexToNormalMode(NameMapping.indexName)
 
       noIndexProps.foreach(name => nodeIndexMetaStore.addToDB(targetLabel, name))
+      noIndexProps.foreach(name => statistics.increaseIndexPropertyCount(nls.getPropertyKeyId(name).get, nodeCount))
     }
   }
 
   def batchDeleteIndexLabelWithProperty(indexLabel: String, targetPropName: String, nodes: Iterator[PandaNode]): Unit ={
     val processor = getBulkProcessor(2000, 3)
     setIndexToBatchMode(NameMapping.indexName)
+    var nodeCount = 0
     while (nodes.hasNext){
       val node = nodes.next()
       if (nodeIndexMetaStore.indexMetaMap(indexLabel).size == 1) processor.add(deleteDocRequest(NameMapping.indexName, node.longId.toString))
       else processor.add(deleteIndexField(NameMapping.indexName, node.longId, indexLabel, targetPropName))
+
+      nodeCount += 1
     }
     processor.flush()
     processor.close()
     setIndexToNormalMode(NameMapping.indexName)
 
     nodeIndexMetaStore.delete(indexLabel, targetPropName)
+    statistics.decreaseIndexPropertyCount(nls.getPropertyKeyId(targetPropName).get, nodeCount)
   }
 
   private def addNewNodeRequest(indexName: String, nodeId: Long, labels: Seq[String], transferProps: Map[NodePropertyName, NodePropertyValue]): IndexRequest = {
