@@ -1,7 +1,6 @@
 package cn.pandadb.kernel.distribute
 
 import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
-import cn.pandadb.kernel.distribute.index.utils.SearchConfig
 import cn.pandadb.kernel.distribute.meta.{DistributedStatistics, NameMapping, PropertyNameStore}
 import cn.pandadb.kernel.distribute.node.NodeStoreAPI
 import cn.pandadb.kernel.distribute.relationship.RelationStoreAPI
@@ -80,9 +79,9 @@ class DistributedGraphFacade extends DistributedGraphService {
   }
 
   override def getNodesByLabel(labelNames: Seq[String], exact: Boolean): Iterator[PandaNode] = {
-    val labelAllExist = labelNames.forall(labelName => getNodeLabelId(labelName).isDefined)
+    val labelNotExist = labelNames.filter(labelName => getNodeLabelId(labelName).isEmpty)
 
-    if (labelAllExist){
+    if (labelNotExist.isEmpty){
       labelNames.size match {
         case 0 => scanAllNode()
         case 1 => {
@@ -104,7 +103,7 @@ class DistributedGraphFacade extends DistributedGraphService {
       }
     }
     else {
-      throw new PandaDBException("label not exist...")
+      throw new PandaDBException(s"label: ${labelNotExist.mkString(",")} not exist...")
     }
   }
 

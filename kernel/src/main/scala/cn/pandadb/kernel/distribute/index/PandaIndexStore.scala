@@ -3,7 +3,7 @@ package cn.pandadb.kernel.distribute.index
 import java.util
 
 import cn.pandadb.kernel.distribute.DistributedKVAPI
-import cn.pandadb.kernel.distribute.index.utils.{IndexConverter, SearchConfig}
+import cn.pandadb.kernel.distribute.index.utils.{IndexConverter}
 import cn.pandadb.kernel.distribute.meta.{DistributedStatistics, NameMapping, NodeLabelNameStore, PropertyNameStore}
 import cn.pandadb.kernel.distribute.node.DistributedNodeStoreSPI
 import cn.pandadb.kernel.store.PandaNode
@@ -132,8 +132,13 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
       val data = IndexConverter.transferNode2Doc(nodeIndexMetaStore.indexMetaMap, indexedLabels, filter)
 
       val queryBuilder = new BoolQueryBuilder()
-      indexedLabels.foreach(labelName => queryBuilder.must(QueryBuilders.termQuery(s"${NameMapping.indexNodeLabelColumnName}", labelName)))
-      data.foreach(propNameAndValue => queryBuilder.must(QueryBuilders.termQuery(s"${propNameAndValue._1}", propNameAndValue._2)))
+      indexedLabels.foreach(labelName => queryBuilder.must(QueryBuilders.termQuery(s"${NameMapping.indexNodeLabelColumnName}", labelName).caseInsensitive(true)))
+      data.foreach(propNameAndValue => {
+        propNameAndValue._2 match {
+          case stringProp: String => queryBuilder.must(QueryBuilders.termQuery(s"${propNameAndValue._1}", propNameAndValue._2).caseInsensitive(true))
+          case _ =>  queryBuilder.must(QueryBuilders.termQuery(s"${propNameAndValue._1}", propNameAndValue._2))
+        }
+      })
 
       new SearchNodeIterator(queryBuilder)
     }
