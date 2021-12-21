@@ -1,9 +1,14 @@
 package cn.pandadb.kv.distributed
 
+import java.nio.ByteBuffer
+
 import cn.pandadb.kernel.distribute.DistributedGraphFacade
 import cn.pandadb.kernel.store.StoredNodeWithProperty
 import org.grapheco.lynx.{LynxInteger, LynxString}
 import org.junit.{After, Assert, Before, Test}
+import org.tikv.common.{TiConfiguration, TiSession}
+import org.tikv.raw.RawKVClient
+import org.tikv.shade.com.google.protobuf.ByteString
 
 /**
  * @program: pandadb-v0.3
@@ -13,20 +18,27 @@ import org.junit.{After, Assert, Before, Test}
  */
 class DistributedGraphFacadeTest {
 
-  val api = new DistributedGraphFacade()
+  var api: DistributedGraphFacade = _
+
+  var tikv: RawKVClient = _
 
   @Before
   def init(): Unit = {
-    //    api.indexStore.cleanIndexes(api.nodeIndex, api.relationIndex, api.propertyIndex)
-//        addData()
+    val conf = TiConfiguration.createRawDefault("10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379")
+    val session = TiSession.create(conf)
+    tikv = session.createRawClient()
+    cleanDB()
+
+    api = new DistributedGraphFacade()
+    addData()
   }
 
   def addData(): Unit = {
-    api.addNode(Map("name" -> "glx1", "age" -> 11), "person", "worker")
-    api.addNode(Map("name" -> "glx2", "age" -> 12, "country" -> "China"), "person", "human")
-    api.addNode(Map("name" -> "glx3", "age" -> 13), "person", "CNIC")
-    api.addNode(Map("name" -> "glx4", "age" -> 12), "person", "bass player")
-    api.addNode(Map("name" -> "glx5", "age" -> 15), "person", "man")
+    api.addNode(Map("name" -> "a1", "age" -> 11), "person", "worker")
+    api.addNode(Map("name" -> "a2", "age" -> 12, "country" -> "China"), "person", "human")
+    api.addNode(Map("name" -> "a3", "age" -> 13), "person", "CNIC")
+    api.addNode(Map("name" -> "a4", "age" -> 12), "person", "worker")
+    api.addNode(Map("name" -> "a5", "age" -> 15), "person", "man")
 
     api.addRelation("friend1", 1, 2, Map.empty)
     api.addRelation("friend2", 2, 3, Map.empty)
@@ -34,32 +46,34 @@ class DistributedGraphFacadeTest {
     api.addRelation("friend4", 4, 2, Map("Year" -> 2020))
   }
 
-  @Test
-  def allNodes(): Unit = {
-    api.scanAllNode().foreach(println)
-//    api.addNode(Map("name" -> "glx5", "age" -> 15)， )
+  def cleanDB(): Unit ={
+    val left = ByteString.copyFrom(ByteBuffer.wrap(Array((0).toByte)))
+    val right = ByteString.copyFrom(ByteBuffer.wrap(Array((-1).toByte)))
+    tikv.deleteRange(left, right)
   }
 
   @Test
-  def getNodes(): Unit ={
-    api.getNodesByLabel(Seq("person"), false).foreach(println)
+  def all(): Unit = {
+    val nodes = api.scanAllNode()
+    val rels = api.scanAllRelations()
+    Assert.assertEquals(5, nodes.size)
+    Assert.assertEquals(4, rels.size)
   }
 
   @Test
-  def scanAllNodes(): Unit = {
-    val iter = api.scanAllNode()
-    var count = 0
-    while (iter.hasNext && count <= 10) {
-      println(iter.next())
-      count += 1
-    }
-    //    api.close()
+  def getNodesByLabel(): Unit ={
+    val iter1 = api.getNodesByLabel(Seq("person"), false)
+    val iter2 = api.getNodesByLabel(Seq("worker"), false)
+
+    Assert.assertEquals(5, iter1.size)
+    Assert.assertEquals(2, iter2.size)
+
   }
 
   @Test
   def cypher(): Unit = {
-//    api.cypher("match (n)-[r]->(m) return n,m limit 10 ").show()
-    api.cypher("match (n:person) return n").show()
+    val iter = api.cypher("match (n:person) return n").records()
+    Assert.assertEquals(5, iter.size)
   }
 
   @Test
@@ -76,6 +90,9 @@ class DistributedGraphFacadeTest {
 
   @Test
   def nodeRemoveLabel(): Unit = {
+    api.nodeAddLabel(1, "test")
+    Assert.assertEquals(Seq("person", "worker", "test"), api.getNodeById(1).get.labels)
+
     api.nodeRemoveLabel(1, "test")
     Assert.assertEquals(Seq("person", "worker"), api.getNodeById(1).get.labels)
   }
@@ -83,20 +100,15 @@ class DistributedGraphFacadeTest {
   @Test
   def nodeSetProperty(): Unit = {
     api.nodeSetProperty(1, "TestKey", "testValue")
-    Assert.assertEquals(Seq(("name", LynxString("glx1")), ("age", LynxInteger(11)), ("TestKey", LynxString("testValue"))),
+    Assert.assertEquals(Seq(("name", LynxString("a1")), ("age", LynxInteger(11)), ("TestKey", LynxString("testValue"))),
       api.getNodeById(1).get.properties.toSeq)
   }
 
   @Test
   def nodeRemoveProperty(): Unit = {
     api.nodeRemoveProperty(1, "TestKey")
-    Assert.assertEquals(Seq(("name", LynxString("glx1")), ("age", LynxInteger(11))),
+    Assert.assertEquals(Seq(("name", LynxString("a1")), ("age", LynxInteger(11))),
       api.getNodeById(1).get.properties.toSeq)
-  }
-
-  @Test
-  def allRelations(): Unit = {
-    api.scanAllRelations().foreach(println)
   }
 
   @Test
@@ -111,23 +123,8 @@ class DistributedGraphFacadeTest {
     Assert.assertEquals(Map.empty, api.getRelation(1).get.properties)
   }
 
-  @Test
-  def cypher1(): Unit = {
-    api.cypher("create index on:person(name)").show()
-  }
-
-  @Test
-  def cypher2(): Unit = {
-    api.cypher("create (n:person{name:'test', age: 2333}) return n").show()
-  }
-
-  @Test
-  def cypher3() {
-    api.cypher("match (n:person) where n.age=12 return n").show()
-  }
-
   @After
   def close(): Unit = {
-    api.close() // flush id to db
+    api.close()
   }
 }

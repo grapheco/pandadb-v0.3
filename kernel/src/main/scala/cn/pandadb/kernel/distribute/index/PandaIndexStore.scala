@@ -135,7 +135,7 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
       indexedLabels.foreach(labelName => queryBuilder.must(QueryBuilders.termQuery(s"${NameMapping.indexNodeLabelColumnName}", labelName).caseInsensitive(true)))
       data.foreach(propNameAndValue => {
         propNameAndValue._2 match {
-          case stringProp: String => queryBuilder.must(QueryBuilders.termQuery(s"${propNameAndValue._1}", propNameAndValue._2).caseInsensitive(true))
+          case stringProp: String => queryBuilder.must(QueryBuilders.termQuery(s"${propNameAndValue._1}.keyword", propNameAndValue._2))
           case _ =>  queryBuilder.must(QueryBuilders.termQuery(s"${propNameAndValue._1}", propNameAndValue._2))
         }
       })

@@ -74,12 +74,13 @@ class NodeStore(db: DistributedKVAPI) {
 
   def getNodeIdsByLabel(labelId: LabelId): Iterator[NodeId] = {
     val prefix = DistributedKeyConverter.toNodeKey(labelId)
-    val iter = db.scanPrefix(prefix, BATCH_SIZE, false)
+    val iter = db.scanPrefix(prefix, BATCH_SIZE, true)
 
     new Iterator[NodeId] (){
       override def hasNext: Boolean = iter.hasNext
       override def next(): NodeId = {
-        ByteUtils.getLong(iter.next().getValue, prefix.length)
+        val data = iter.next()
+        ByteUtils.getLong(data.getKey, prefix.length)
       }
     }
   }

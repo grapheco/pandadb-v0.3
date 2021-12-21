@@ -1,16 +1,15 @@
 package cn.pandadb.kv.distributed.store
 
+import java.nio.ByteBuffer
+
 import cn.pandadb.kernel.distribute.PandaDistributeKVAPI
-import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
-import cn.pandadb.kernel.distribute.meta.{NameMapping, PropertyNameStore}
-import cn.pandadb.kernel.distribute.node.{DistributedNodeStoreSPI, NodeStoreAPI}
+import cn.pandadb.kernel.distribute.meta.PropertyNameStore
 import cn.pandadb.kernel.distribute.relationship.{DistributedRelationStoreSPI, RelationStoreAPI}
 import cn.pandadb.kernel.store.StoredRelationWithProperty
-import org.apache.http.HttpHost
-import org.elasticsearch.client.{RestClient, RestHighLevelClient}
 import org.junit.{After, Assert, Before, Test}
 import org.tikv.common.{TiConfiguration, TiSession}
 import org.tikv.raw.RawKVClient
+import org.tikv.shade.com.google.protobuf.ByteString
 
 /**
  * @program: pandadb-v0.3
@@ -34,6 +33,9 @@ class RelationStoreTest {
     val conf = TiConfiguration.createRawDefault("10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379")
     val session = TiSession.create(conf)
     tikv = session.createRawClient()
+
+    cleanDB()
+
     val db = new PandaDistributeKVAPI(tikv)
 
     api = new RelationStoreAPI(db, new PropertyNameStore(db))
@@ -44,6 +46,12 @@ class RelationStoreTest {
     api.addRelation(r4)
     api.addRelation(r5)
     api.addRelation(r6)
+  }
+
+  def cleanDB(): Unit ={
+    val left = ByteString.copyFrom(ByteBuffer.wrap(Array((0).toByte)))
+    val right = ByteString.copyFrom(ByteBuffer.wrap(Array((-1).toByte)))
+    tikv.deleteRange(left, right)
   }
 
   @Test

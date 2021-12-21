@@ -28,13 +28,13 @@ class NodeStoreAPITest {
   var api: DistributedNodeStoreSPI = _
   var tikv: RawKVClient = _
 
-  val n1 = new StoredNodeWithProperty(1, Array(1), Map(1 -> "glx1", 2 -> 181))
-  val n2 = new StoredNodeWithProperty(2, Array(1, 2), Map(1 -> "glx2", 2 -> 182))
-  val n3 = new StoredNodeWithProperty(3, Array(1, 2, 3), Map(1 -> "glx3", 2 -> 183))
-  val n4 = new StoredNodeWithProperty(4, Array(1, 3), Map(1 -> "glx4", 2 -> 184))
-  val n5 = new StoredNodeWithProperty(5, Array(2, 3), Map(1 -> "glx5", 2 -> 185))
-  val n6 = new StoredNodeWithProperty(6, Array(3), Map(1 -> "glx6", 2 -> 186))
-  val n7 = new StoredNodeWithProperty(7, Array(2), Map(1 -> "glx7", 2 -> 187))
+  val n1 = new StoredNodeWithProperty(1, Array(1), Map(1 -> "a1", 2 -> 181))
+  val n2 = new StoredNodeWithProperty(2, Array(1, 2), Map(1 -> "a2", 2 -> 182))
+  val n3 = new StoredNodeWithProperty(3, Array(1, 2, 3), Map(1 -> "a3", 2 -> 183))
+  val n4 = new StoredNodeWithProperty(4, Array(1, 3), Map(1 -> "a4", 2 -> 184))
+  val n5 = new StoredNodeWithProperty(5, Array(2, 3), Map(1 -> "a5", 2 -> 185))
+  val n6 = new StoredNodeWithProperty(6, Array(3), Map(1 -> "a6", 2 -> 186))
+  val n7 = new StoredNodeWithProperty(7, Array(2), Map(1 -> "a7", 2 -> 187))
 
   val nodeArray = Array(n1, n2, n3, n4, n5, n6, n7)
 
@@ -44,6 +44,9 @@ class NodeStoreAPITest {
     val conf = TiConfiguration.createRawDefault("10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379")
     val session = TiSession.create(conf)
     tikv = session.createRawClient()
+
+    cleanDB()
+
     val db = new PandaDistributeKVAPI(tikv)
     api = new NodeStoreAPI(db, new PropertyNameStore(db))
 
@@ -54,6 +57,12 @@ class NodeStoreAPITest {
     api.addNode(n5)
     api.addNode(n6)
     api.addNode(n7)
+  }
+
+  def cleanDB(): Unit ={
+    val left = ByteString.copyFrom(ByteBuffer.wrap(Array((0).toByte)))
+    val right = ByteString.copyFrom(ByteBuffer.wrap(Array((-1).toByte)))
+    tikv.deleteRange(left, right)
   }
 
   @Test
@@ -105,7 +114,7 @@ class NodeStoreAPITest {
   @Test
   def nodeRemoveLabel(): Unit ={
     api.nodeRemoveLabel(n3.id, 3)
-    Assert.assertArrayEquals(Array(1,2), api.getNodeById(n1.id).get.labelIds)
+    Assert.assertArrayEquals(Array(1,2), api.getNodeById(n3.id).get.labelIds)
   }
 
   @Test
@@ -117,11 +126,6 @@ class NodeStoreAPITest {
   def nodeRemoveProperty(): Unit ={
     api.nodeRemoveProperty(n1.id, 1)
     Assert.assertEquals(n1.properties -- Array(1), api.getNodeById(n1.id).get.properties)
-  }
-
-  @Test
-  def show(): Unit = {
-    api.allNodes().foreach(println)
   }
 
   @Test
