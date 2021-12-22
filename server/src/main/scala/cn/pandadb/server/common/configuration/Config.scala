@@ -14,29 +14,10 @@ object SettingKeys {
   val rpcListenHost = "dbms.server.rpc.listen.host"
   val rpcListenPort = "dbms.server.rpc.listen.port"
   val rpcServerName = "dbms.server.rpc.service.name"
-  val dataRpcEndpointName = "dbms.server.rpc.data.endpoint"
 
-  val localDBHomePath = "db.home.path"
-  val localDBName = "db.name"
-  val defaultLocalDBHome = "db.default.home.path" // set by starter script
+  val indexHosts = "dbms.index.hosts"
+  val kvHosts = "dbms.kv.hosts"
 
-  val rocksdbConfigPath = "db.rocksdb.file.path"
-
-  // db path
-  val nodeMetaDBPath = "db.nodeMetaDB.path"
-  val nodeDBPath = "db.nodeDB.path"
-  val nodeLabelDBPath = "db.nodeLabelDB.path"
-  val relationMetaDBPath = "db.relationMetaDB.path"
-  val relationDBPath = "db.relationDB.path"
-  val inRelationDBPath = "db.inRelationDB.path"
-  val outRelationDBPath = "db.outRelationDB.path"
-  val relationLabelDBPath = "db.relationLabelDB.path"
-  val statisticsDBPath = "db.statisticsDB.path"
-  val indexDBPath = "db.indexDB.path"
-  val indexMetaDBPath = "db.indexMetaDB.path"
-  val fullIndexDBPath = "db.fullIndexDB.path"
-  val authDBPath = "db.authDB.path"
-  val pandaLogPath = "db.pandaLog.path"
 }
 
 class Config extends LazyLogging {
@@ -56,52 +37,6 @@ class Config extends LazyLogging {
     this
   }
 
-  def validate(): Unit = {}
-
-  def getPandaLogPath(): String ={
-    getValueAsString(SettingKeys.pandaLogPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/pandaLog")
-  }
-
-  def getNodeMetaDBPath(): String = {
-    getValueAsString(SettingKeys.nodeMetaDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/${DBNameMap.nodeMetaDB}")
-  }
-  def getNodeDBPath(): String = {
-    getValueAsString(SettingKeys.nodeDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/${DBNameMap.nodeDB}")
-  }
-  def getNodeLabelDBPath(): String = {
-    getValueAsString(SettingKeys.nodeLabelDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/${DBNameMap.nodeLabelDB}")
-  }
-  def getRelationMetaDBPath(): String = {
-    getValueAsString(SettingKeys.relationMetaDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/${DBNameMap.relationMetaDB}")
-  }
-  def getRelationDBPath(): String = {
-    getValueAsString(SettingKeys.relationDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/${DBNameMap.relationDB}")
-  }
-  def getInRelationDBPath(): String = {
-    getValueAsString(SettingKeys.inRelationDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/${DBNameMap.inRelationDB}")
-  }
-  def getOutRelationDBPath(): String = {
-    getValueAsString(SettingKeys.outRelationDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/${DBNameMap.outRelationDB}")
-  }
-  def getRelationLabelDBPath(): String = {
-    getValueAsString(SettingKeys.relationLabelDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/${DBNameMap.relationLabelDB}")
-  }
-  def getStatisticsDBPath(): String = {
-    getValueAsString(SettingKeys.statisticsDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/${DBNameMap.statisticsDB}")
-  }
-  def getIndexDBPath(): String = {
-    getValueAsString(SettingKeys.indexDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/${DBNameMap.indexDB}")
-  }
-  def getIndexMetaDBPath(): String = {
-    getValueAsString(SettingKeys.indexMetaDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/${DBNameMap.indexMetaDB}")
-  }
-  def getFullIndexDBPath(): String = {
-    getValueAsString(SettingKeys.fullIndexDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/fulltextIndex")
-  }
-  def getAuthDBPath(): String = {
-    getValueAsString(SettingKeys.authDBPath, s"${getLocalDataStorePath()}/${getLocalDBName()}/auth")
-  }
-
 
   def getListenHost(): String = {
     getValueAsString(SettingKeys.rpcListenHost, "127.0.0.1")
@@ -114,26 +49,13 @@ class Config extends LazyLogging {
   def getRpcServerName(): String = {
     getValueAsString(SettingKeys.rpcServerName, "pandadb-server")
   }
-
-  def getDataServiceEndpointName(): String = {
-    getValueAsString(SettingKeys.dataRpcEndpointName, "data-endpoint")
+  def getKVHosts(): String = {
+    getValueAsString(SettingKeys.kvHosts, "")
+  }
+  def getIndexHosts(): String = {
+    getValueAsString(SettingKeys.indexHosts, "")
   }
 
-  def getLocalDataStorePath(): String = {
-    getValueAsString(SettingKeys.localDBHomePath, getDefaultDBHome() + "/data")
-  }
-
-  def getLocalDBName(): String ={
-    getValueAsString(SettingKeys.localDBName, defaultValue = "pandadb.db")
-  }
-
-  def getDefaultDBHome(): String ={
-    // startup script will set this value
-    settingsMap(SettingKeys.defaultLocalDBHome)
-  }
-  def getRocksdbConfigFilePath(): String = {
-    getValueAsString(SettingKeys.rocksdbConfigPath, defaultValue = "default")
-  }
 
   private def getValueWithDefault[T](key: String, defaultValue: () => T, convert: (String) => T)(implicit m: Manifest[T]): T = {
     val opt = settingsMap.get(key);

@@ -45,6 +45,7 @@ class RelationStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStor
     inRelationStore.set(relation)
     outRelationStore.set(relation)
     relationTypeStore.set(relation.typeId, relation.id)
+    idGenerator.flushId()
   }
 
   override def addRelationType(relationTypeName: String): Int = {

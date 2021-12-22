@@ -18,10 +18,10 @@ import org.tikv.common.{TiConfiguration, TiSession}
  * @author: LiamGao
  * @create: 2021-11-17 16:45
  */
-class DistributedGraphFacade extends DistributedGraphService {
+class DistributedGraphFacade(kvHosts: String, indexHosts: String) extends DistributedGraphService {
 
   val db = {
-    val conf = TiConfiguration.createRawDefault("10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379")
+    val conf = TiConfiguration.createRawDefault(kvHosts)
 
     val session = TiSession.create(conf)
     new PandaDistributeKVAPI(session.createRawClient())
@@ -35,9 +35,11 @@ class DistributedGraphFacade extends DistributedGraphService {
   statistics.init()
 
   val indexStore = {
-    val hosts = Array(new HttpHost("10.0.82.144", 9200, "http"),
-      new HttpHost("10.0.82.145", 9200, "http"),
-      new HttpHost("10.0.82.146", 9200, "http"))
+    val hosts = indexHosts.split(",").map(ipAndPort => {
+      val ip = ipAndPort.split(":")
+      new HttpHost(ip(0), ip(1).toInt, "http")
+    })
+
     new PandaDistributedIndexStore(new RestHighLevelClient(RestClient.builder(hosts: _*)), db, nodeStore, statistics)
   }
 

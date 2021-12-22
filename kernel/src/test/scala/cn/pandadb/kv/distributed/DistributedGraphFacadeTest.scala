@@ -22,6 +22,9 @@ class DistributedGraphFacadeTest {
 
   var tikv: RawKVClient = _
 
+  val kvHosts = "10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379"
+  val indexHosts = "10.0.82.144:9200,10.0.82.145:9200,10.0.82.146:9200"
+
   @Before
   def init(): Unit = {
     val conf = TiConfiguration.createRawDefault("10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379")
@@ -29,7 +32,7 @@ class DistributedGraphFacadeTest {
     tikv = session.createRawClient()
     cleanDB()
 
-    api = new DistributedGraphFacade()
+    api = new DistributedGraphFacade(kvHosts, indexHosts)
     addData()
   }
 

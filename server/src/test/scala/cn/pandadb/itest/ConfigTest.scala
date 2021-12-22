@@ -19,9 +19,7 @@ class ConfigTest {
     Assert.assertEquals("0.0.0.0", config.getListenHost())
     Assert.assertEquals(9989, config.getRpcPort())
     Assert.assertEquals("pandadb-server", config.getRpcServerName())
-    Assert.assertEquals("default", config.getRocksdbConfigFilePath())
-    Assert.assertEquals("/test/pandadb-v0.3/data/pandadb.db/nodeMeta", config.getNodeMetaDBPath())
-    Assert.assertEquals("/test/pandadb-v0.3/data/pandadb.db/index", config.getIndexDBPath())
-    Assert.assertEquals("/test/data/pandadb.db/nodeLabel", config.getNodeLabelDBPath())
+    Assert.assertEquals("10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379", config.getKVHosts())
+    Assert.assertEquals("10.0.82.144:9200,10.0.82.145:9200,10.0.82.146:9200", config.getIndexHosts())
   }
 }

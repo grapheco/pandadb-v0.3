@@ -35,6 +35,7 @@ class NodeStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStore) e
       nodeStore.set(NONE_LABEL_ID, node)
       nodeLabelStore.set(node.id, NONE_LABEL_ID)
     }
+    idGenerator.flushId()
   }
 
   override def addLabel(labelName: String): Int = nodeLabelName.getOrAddId(labelName)

@@ -19,6 +19,15 @@ class DriverTest {
   }
 
   @Test
+  def c(): Unit ={
+    val res = session.run("match (n) return n")
+    while (res.hasNext){
+      val node = res.next().get("n").asNode()
+      println(node)
+    }
+  }
+
+  @Test
   def testDataStructure(): Unit ={
     val res1 = session.run(
       """

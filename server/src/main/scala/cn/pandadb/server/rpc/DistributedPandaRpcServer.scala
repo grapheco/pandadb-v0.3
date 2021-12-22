@@ -2,12 +2,10 @@ package cn.pandadb.server.rpc
 
 import java.nio.ByteBuffer
 
-import cn.pandadb.dbms.{DistributedGraphDatabaseManager, GraphDatabaseManager, RsaSecurity}
+import cn.pandadb.dbms.{DistributedGraphDatabaseManager}
 import cn.pandadb.hipporpc.message.{CypherRequest, SayHelloRequest, SayHelloResponse}
 import cn.pandadb.hipporpc.utils.DriverValue
 import cn.pandadb.hipporpc.values.Value
-import cn.pandadb.kernel.GraphService
-import cn.pandadb.kernel.distribute.DistributedGraphFacade
 import cn.pandadb.server.common.configuration.Config
 import cn.pandadb.server.common.modules.LifecycleServerModule
 import cn.pandadb.utils.ValueConverter
@@ -24,18 +22,15 @@ class DistributedPandaRpcServer(config: Config, database: DistributedGraphDataba
   extends LifecycleServerModule with LazyLogging {
   var rpcConfig: RpcEnvServerConfig = _
   var rpcEnv: HippoRpcEnv = _
-//  var auth: Auth = _
 
   override def init(): Unit = {
     logger.debug(this.getClass + ": init")
     rpcConfig = RpcEnvServerConfig(new RpcConf(), config.getRpcServerName(), config.getListenHost(), config.getRpcPort())
     rpcEnv = HippoRpcEnvFactory.create(rpcConfig)
-//    auth = new Auth(config.getAuthDBPath(), config.getRocksdbConfigFilePath())
   }
 
   override def start(): Unit = {
     logger.debug(this.getClass + ": start")
-
     val endpoint = new DistributedPandaEndpoint(rpcEnv)
     val handler = new DistributedPandaStreamHandler(database)
     rpcEnv.setupEndpoint(config.getRpcServerName(), endpoint)
@@ -63,10 +58,8 @@ class DistributedPandaEndpoint(override val rpcEnv: HippoRpcEnv) extends RpcEndp
   }
 }
 
-//class PandaStreamHandler(graphFacade: GraphService, authUtil: Auth) extends HippoRpcHandler {
 class DistributedPandaStreamHandler(graphFacade: DistributedGraphDatabaseManager) extends HippoRpcHandler with LazyLogging {
   val converter = new ValueConverter
-  RsaSecurity.init()
 
   override def receiveWithBuffer(extraInput: ByteBuffer, context: ReceiveContext): PartialFunction[Any, Unit] = {
     case SayHelloRequest(msg) =>

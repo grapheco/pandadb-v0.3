@@ -1,18 +1,18 @@
 package cn.pandadb.server
 
-import cn.pandadb.dbms.{DefaultGraphDatabaseManager, DistributedGraphDatabaseManager}
-import cn.pandadb.kernel.distribute.DistributedGraphFacade
+import cn.pandadb.dbms.{DistributedGraphDatabaseManager}
 import cn.pandadb.server.common.configuration.Config
 import cn.pandadb.server.common.lifecycle.LifecycleSupport
-import cn.pandadb.server.rpc.{DistributedPandaRpcServer, PandaRpcServer}
+import cn.pandadb.server.rpc.{DistributedPandaRpcServer}
 import com.typesafe.scalalogging.LazyLogging
 
 
 class DistributedPandaServer(config: Config) extends LazyLogging {
   var pandaRpcServer: DistributedPandaRpcServer = _
+
   val life = new LifecycleSupport
 
-  val database = new DistributedGraphDatabaseManager()
+  val database = new DistributedGraphDatabaseManager(config.getKVHosts(), config.getIndexHosts())
 
   pandaRpcServer = new DistributedPandaRpcServer(config, database)
 

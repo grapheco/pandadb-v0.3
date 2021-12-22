@@ -23,6 +23,10 @@ import org.tikv.shade.com.google.protobuf.ByteString
  * @create: 2021-11-15 14:36
  */
 class IndexStoreTest {
+  val kvHosts = "10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379"
+  val indexHosts = "10.0.82.144:9200,10.0.82.145:9200,10.0.82.146:9200"
+
+
   val hosts = Array(new HttpHost("10.0.82.144", 9200, "http"),
     new HttpHost("10.0.82.145", 9200, "http"),
     new HttpHost("10.0.82.146", 9200, "http"))
@@ -39,7 +43,7 @@ class IndexStoreTest {
   def init(): Unit = {
     cleanDB()
     client = new RestHighLevelClient(RestClient.builder(hosts: _*))
-    graphFacade = new DistributedGraphFacade
+    graphFacade = new DistributedGraphFacade(kvHosts, indexHosts)
     indexStore = new PandaDistributedIndexStore(client, graphFacade.db, graphFacade.nodeStore, new DistributedStatistics(graphFacade.db))
     cleanIndex()
     addData()
