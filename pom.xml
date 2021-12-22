@@ -28,7 +28,7 @@
         <scala.binary.version>2.12</scala.binary.version>
         <scala.compat.version>2.12</scala.compat.version>
         <netty.version>4.1.17.Final</netty.version>
-        <rocksdb.version>6.15.2</rocksdb.version>
+<!--        <rocksdb.version>6.15.2</rocksdb.version>-->
         <scala-logging.version>3.9.4</scala-logging.version>
         <log4j-slf4j-impl.version>2.16.0</log4j-slf4j-impl.version>
         <junit.version>4.13.1</junit.version>
@@ -36,7 +36,7 @@
         <tikv.client.version>3.1.2</tikv.client.version>
         <elasticserach.version>7.14.1</elasticserach.version>
         <fastjson.version>1.2.78</fastjson.version>
-        <lucene.version>8.9.0</lucene.version>
+<!--        <lucene.version>8.9.0</lucene.version>-->
     </properties>
 
     <dependencies>
@@ -101,24 +101,9 @@
                 <version>1.8</version>
             </dependency>
             <dependency>
-                <groupId>org.apache.lucene</groupId>
-                <artifactId>lucene-core</artifactId>
-                <version>${lucene.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.lucene</groupId>
-                <artifactId>lucene-queryparser</artifactId>
-                <version>${lucene.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-buffer</artifactId>
                 <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.rocksdb</groupId>
-                <artifactId>rocksdbjni</artifactId>
-                <version>${rocksdb.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.grapheco</groupId>

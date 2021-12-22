@@ -2,9 +2,9 @@ package cn.pandadb.test.cypher.emb
 
 import java.io.File
 
+import cn.pandadb.kernel.distribute.DistributedGraphFacade
 import cn.pandadb.kernel.store.{PandaNode, PandaRelationship}
-import cn.pandadb.kernel.{GraphDatabaseBuilder, GraphService}
-import org.apache.commons.io.FileUtils
+
 import org.junit.{After, Assert, Before, Test}
 
 /**
@@ -14,15 +14,14 @@ import org.junit.{After, Assert, Before, Test}
  * @create: 2021-05-20 10:52
  */
 class RemoveTest {
-  val dbPath = "./testdata/emb"
-  var db: GraphService = _
+  val kvHosts = "10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379"
+  val indexHosts = "10.0.82.144:9200,10.0.82.145:9200,10.0.82.146:9200"
+  var db: DistributedGraphFacade = _
 
   @Before
   def init(): Unit ={
-    FileUtils.deleteDirectory(new File(dbPath))
-    FileUtils.forceMkdir(new File(dbPath))
-    db = GraphDatabaseBuilder.newEmbeddedDatabase(dbPath)
-
+    db = new DistributedGraphFacade(kvHosts, indexHosts)
+    db.cleanDB()
     val n1 = db.addNode(Map("name"->"Oliver Stone", "sex"->"male", "value1"->1, "value2"->true), "Person","Director")
     val m1 = db.addNode(Map("title"->"Wall Street", "year"->1987), "Movie")
     val directedR1 = db.addRelation("DIRECTED", n1, m1, Map("value1"->1, "value2"->2, "value3"->3))

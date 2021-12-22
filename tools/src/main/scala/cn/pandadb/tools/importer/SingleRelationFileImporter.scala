@@ -1,10 +1,9 @@
 package cn.pandadb.tools.importer
 
 import cn.pandadb.kernel.PDBMetaData
-import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter, RocksDBStorage}
+import cn.pandadb.kernel.kv.{ByteUtils}
 import cn.pandadb.kernel.store.StoredRelationWithProperty
 import cn.pandadb.kernel.util.serializer.RelationSerializer
-import org.rocksdb.{WriteBatch, WriteOptions}
 
 import scala.collection.convert.ImplicitConversions._
 import java.io.File

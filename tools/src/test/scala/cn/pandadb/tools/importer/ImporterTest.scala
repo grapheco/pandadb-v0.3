@@ -1,16 +1,9 @@
 package cn.pandadb.tools.importer
 
-import java.io.File
 
-import cn.pandadb.kernel.GraphDatabaseBuilder
 import cn.pandadb.kernel.distribute.DistributedGraphFacade
-import cn.pandadb.kernel.kv.{GraphFacade, RocksDBStorage}
-import cn.pandadb.kernel.kv.node.NodeStoreAPI
-import cn.pandadb.kernel.kv.relation.RelationStoreAPI
-import org.apache.commons.io.FileUtils
-import org.junit.{Assert, Test}
 
-import scala.collection.mutable
+import org.junit.{Test}
 
 /**
   * @Author: Airzihao

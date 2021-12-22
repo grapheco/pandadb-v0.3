@@ -1,6 +1,6 @@
 package cn.pandadb.kernel.util.serializer
 
-import cn.pandadb.kernel.kv.db.KeyValueIterator
+//import cn.pandadb.kernel.kv.db.KeyValueIterator
 import cn.pandadb.kernel.store.{StoredRelation, StoredRelationWithProperty}
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
 
@@ -44,21 +44,21 @@ object RelationSerializer extends BaseSerializer {
     new StoredRelationWithProperty(relationId, fromId, toId, typeId, props)
   }
 
-  def deserializeRelWithProps(iter: KeyValueIterator): Iterator[StoredRelationWithProperty] = {
-    new PandaIteratorForValueDeSerializer[StoredRelationWithProperty](iter, stepLength = 500000, deserializeRelWithProps(_))
-  }
-
-  def deserializeRelWithProps(iter: Iterator[Array[Byte]]): Iterator[StoredRelationWithProperty] = {
-    new PandaIteratorForValueDeSerializer[StoredRelationWithProperty](iter, stepLength = 500000, deserializeRelWithProps(_))
-  }
-
-  def deserializeRelWithoutProps(iter: KeyValueIterator): Iterator[StoredRelation] = {
-    new PandaIteratorForValueDeSerializer[StoredRelation](iter, stepLength = 500000, deserializeRelWithoutProps(_))
-  }
-
-  def deserializeRelWithoutProps(iter: Iterator[Array[Byte]]): Iterator[StoredRelation] = {
-    new PandaIteratorForValueDeSerializer[StoredRelation](iter, stepLength = 500000, deserializeRelWithoutProps(_))
-  }
+//  def deserializeRelWithProps(iter: KeyValueIterator): Iterator[StoredRelationWithProperty] = {
+//    new PandaIteratorForValueDeSerializer[StoredRelationWithProperty](iter, stepLength = 500000, deserializeRelWithProps(_))
+//  }
+//
+//  def deserializeRelWithProps(iter: Iterator[Array[Byte]]): Iterator[StoredRelationWithProperty] = {
+//    new PandaIteratorForValueDeSerializer[StoredRelationWithProperty](iter, stepLength = 500000, deserializeRelWithProps(_))
+//  }
+//
+//  def deserializeRelWithoutProps(iter: KeyValueIterator): Iterator[StoredRelation] = {
+//    new PandaIteratorForValueDeSerializer[StoredRelation](iter, stepLength = 500000, deserializeRelWithoutProps(_))
+//  }
+//
+//  def deserializeRelWithoutProps(iter: Iterator[Array[Byte]]): Iterator[StoredRelation] = {
+//    new PandaIteratorForValueDeSerializer[StoredRelation](iter, stepLength = 500000, deserializeRelWithoutProps(_))
+//  }
 
 //  def batchDeserializeRelWithProps(input: Array[Array[Byte]], threadNum: Int = math.max(Runtime.getRuntime.availableProcessors()/4, 2)): Array[StoredRelationWithProperty] = {
 //    batchDeserialize[StoredRelationWithProperty](input, threadNum, deserializeRelWithProps)

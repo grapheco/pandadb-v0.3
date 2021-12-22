@@ -2,10 +2,8 @@ package cn.pandadb.test.cypher.emb
 
 import java.io.File
 
-import cn.pandadb.kernel.GraphDatabaseBuilder
-import cn.pandadb.kernel.kv.GraphFacade
-import cn.pandadb.kernel.store.PandaRelationship
-import org.apache.commons.io.FileUtils
+import cn.pandadb.kernel.distribute.DistributedGraphFacade
+
 import org.grapheco.lynx.{LynxNode, LynxRelationship}
 import org.junit.{After, Assert, Before, Test}
 
@@ -22,14 +20,15 @@ CREATE (m)-[r:type]->(n) RETURN r,m,n
  */
 
 class CreateRelationTest {
-  val dbPath = "./testdata/emb"
-  var db: GraphFacade = _
+  val kvHosts = "10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379"
+  val indexHosts = "10.0.82.144:9200,10.0.82.145:9200,10.0.82.146:9200"
+  var db: DistributedGraphFacade = _
+
 
   @Before
   def init(): Unit ={
-    FileUtils.deleteDirectory(new File(dbPath))
-    FileUtils.forceMkdir(new File(dbPath))
-    db = GraphDatabaseBuilder.newEmbeddedDatabase(dbPath).asInstanceOf[GraphFacade]
+    db = new DistributedGraphFacade(kvHosts, indexHosts)
+    db.cleanDB()
   }
 
   @After

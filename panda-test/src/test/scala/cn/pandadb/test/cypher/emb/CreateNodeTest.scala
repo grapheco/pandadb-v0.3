@@ -2,10 +2,8 @@ package cn.pandadb.test.cypher.emb
 
 import java.io.File
 
-import cn.pandadb.kernel.kv.GraphFacade
+import cn.pandadb.kernel.distribute.DistributedGraphFacade
 import cn.pandadb.kernel.store.PandaNode
-import cn.pandadb.kernel.{GraphDatabaseBuilder, GraphService}
-import org.apache.commons.io.FileUtils
 import org.grapheco.lynx.LynxValue
 import org.junit.{After, Assert, Before, Test}
 
@@ -21,14 +19,15 @@ CREATE(n:label{k:[v,v,v])
 */
 
 class CreateNodeTest {
-  val dbPath = "./testdata/emb"
-  var db: GraphFacade = _
+  val kvHosts = "10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379"
+  val indexHosts = "10.0.82.144:9200,10.0.82.145:9200,10.0.82.146:9200"
+  var db: DistributedGraphFacade = _
+
 
   @Before
   def init(): Unit ={
-    FileUtils.deleteDirectory(new File(dbPath))
-    FileUtils.forceMkdir(new File(dbPath))
-    db = GraphDatabaseBuilder.newEmbeddedDatabase(dbPath).asInstanceOf[GraphFacade]
+    db = new DistributedGraphFacade(kvHosts, indexHosts)
+    db.cleanDB()
   }
 
   @After
@@ -39,17 +38,15 @@ class CreateNodeTest {
   @Test
   def createNode(): Unit = {
     val cypher = "CREATE (n)"
-    val res = db.cypher(cypher).records()
-//    Assert.assertEquals(0, res.size)
-    Assert.assertEquals(1, db.allNodes().size)
+    db.cypher(cypher)
+    Assert.assertEquals(1, db.scanAllNode().size)
   }
 
   @Test
   def createNodeWithLabel(): Unit = {
     val cypher = "CREATE (n:Person)"
-    val res = db.cypher(cypher).records()
-//    Assert.assertEquals(0, res.size)
-    val nodes = db.allNodes().toList
+    db.cypher(cypher).records()
+    val nodes = db.scanAllNode().toList
     Assert.assertEquals(1, nodes.size)
   }
 
@@ -116,7 +113,4 @@ class CreateNodeTest {
     Assert.assertEquals(false, arr1(1))
     Assert.assertEquals("Person", n.labels(0))
   }
-
-
-
 }

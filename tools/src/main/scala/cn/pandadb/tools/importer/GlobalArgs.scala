@@ -1,12 +1,10 @@
 package cn.pandadb.tools.importer
 
-import cn.pandadb.kernel.kv.db.KeyValueDB
-import cn.pandadb.kernel.kv.meta.Statistics
-import java.util.concurrent.{ConcurrentHashMap, ConcurrentMap}
+
+import java.util.concurrent.{ConcurrentHashMap}
 import java.util.concurrent.atomic.AtomicLong
 
 import cn.pandadb.kernel.distribute.DistributedKVAPI
-import cn.pandadb.kernel.distribute.meta.DistributedStatistics
 
 import scala.collection.convert.ImplicitConversions._
 

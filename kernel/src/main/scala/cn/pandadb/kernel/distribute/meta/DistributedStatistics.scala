@@ -68,6 +68,14 @@ class DistributedStatistics(db: DistributedKVAPI) {
     _propertyCountByIndex = getMap(Array(PROPERTY_COUNT_BY_INDEX))
   }
 
+  def clean(): Unit ={
+    _allNodesCount = 0
+    _allRelationCount =0
+    _nodeCountByLabel = mutable.Map[Int, Long]()
+    _relationCountByType = mutable.Map[Int, Long]()
+    _propertyCountByIndex = mutable.Map[Int, Long]()
+  }
+
   def flush(): Unit = {
     db.put(Array(DistributedKeyConverter.statisticPrefix) ++ Array(NODES_COUNT), ByteUtils.longToBytes(_allNodesCount))
     db.put(Array(DistributedKeyConverter.statisticPrefix) ++ Array(RELATIONS_COUNT), ByteUtils.longToBytes(_allRelationCount))

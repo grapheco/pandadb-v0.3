@@ -2,10 +2,9 @@ package cn.pandadb.test.cypher.emb
 
 import java.io.File
 
-import cn.pandadb.kernel.{GraphDatabaseBuilder, GraphService}
+import cn.pandadb.kernel.distribute.DistributedGraphFacade
 import cn.pandadb.kernel.store.{PandaNode, PandaRelationship}
-import org.apache.commons.io.FileUtils
-import org.grapheco.lynx.{LynxList, LynxValue}
+import org.grapheco.lynx.{LynxValue}
 import org.junit.{After, Assert, Before, Test}
 
 /**
@@ -15,14 +14,14 @@ import org.junit.{After, Assert, Before, Test}
  * @create: 2021-05-19 11:06
  */
 class SetTest {
-  val dbPath = "./testdata/emb"
-  var db: GraphService = _
+  val kvHosts = "10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379"
+  val indexHosts = "10.0.82.144:9200,10.0.82.145:9200,10.0.82.146:9200"
+  var db: DistributedGraphFacade = _
 
   @Before
   def init(): Unit ={
-    FileUtils.deleteDirectory(new File(dbPath))
-    FileUtils.forceMkdir(new File(dbPath))
-    db = GraphDatabaseBuilder.newEmbeddedDatabase(dbPath)
+    db = new DistributedGraphFacade(kvHosts, indexHosts)
+    db.cleanDB()
   }
 
   @Test

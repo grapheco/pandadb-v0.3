@@ -3,7 +3,6 @@ package cn.pandadb.tools.importer
 import cn.pandadb.kernel.PDBMetaData
 import cn.pandadb.kernel.kv.KeyConverter
 import cn.pandadb.kernel.util.serializer.NodeSerializer
-import org.rocksdb.{WriteBatch, WriteOptions}
 
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap

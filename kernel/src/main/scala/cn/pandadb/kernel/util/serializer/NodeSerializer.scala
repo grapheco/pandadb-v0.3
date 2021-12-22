@@ -1,7 +1,6 @@
 package cn.pandadb.kernel.util.serializer
 
 import cn.pandadb.kernel.kv.ByteUtils
-import cn.pandadb.kernel.kv.db.KeyValueIterator
 import cn.pandadb.kernel.store.StoredNodeWithProperty
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
 /**
@@ -49,21 +48,21 @@ object NodeSerializer extends BaseSerializer {
     new StoredNodeWithProperty(id, labels, props)
   }
 
-  def parallelDeserializeNodeKeyValue(iter: KeyValueIterator): Iterator[(Int, StoredNodeWithProperty)] = {
-    new PandaIteratorForKeyValueDeserializer[Int, StoredNodeWithProperty](iter, stepLength = 10000 * Runtime.getRuntime.availableProcessors()/8, _getLabelFromKey(_), deserializeNodeValue(_))
-  }
+//  def parallelDeserializeNodeKeyValue(iter: KeyValueIterator): Iterator[(Int, StoredNodeWithProperty)] = {
+//    new PandaIteratorForKeyValueDeserializer[Int, StoredNodeWithProperty](iter, stepLength = 10000 * Runtime.getRuntime.availableProcessors()/8, _getLabelFromKey(_), deserializeNodeValue(_))
+//  }
 
-  def parallelDeserializeNodeKeyValue(iter: Iterator[(Array[Byte], Array[Byte])]): Iterator[(Int, StoredNodeWithProperty)] = {
-    new PandaIteratorForKeyValueDeserializer[Int, StoredNodeWithProperty](iter, stepLength = 10000 * Runtime.getRuntime.availableProcessors()/8, _getLabelFromKey _, deserializeNodeValue(_))
-  }
+//  def parallelDeserializeNodeKeyValue(iter: Iterator[(Array[Byte], Array[Byte])]): Iterator[(Int, StoredNodeWithProperty)] = {
+//    new PandaIteratorForKeyValueDeserializer[Int, StoredNodeWithProperty](iter, stepLength = 10000 * Runtime.getRuntime.availableProcessors()/8, _getLabelFromKey _, deserializeNodeValue(_))
+//  }
 
-  def parallelDeserializeNodeValue(iter: KeyValueIterator): Iterator[StoredNodeWithProperty] = {
-    new PandaIteratorForValueDeSerializer[StoredNodeWithProperty](iter, stepLength = 10000 * Runtime.getRuntime.availableProcessors()/8, deserializeNodeValue(_))
-  }
+//  def parallelDeserializeNodeValue(iter: KeyValueIterator): Iterator[StoredNodeWithProperty] = {
+//    new PandaIteratorForValueDeSerializer[StoredNodeWithProperty](iter, stepLength = 10000 * Runtime.getRuntime.availableProcessors()/8, deserializeNodeValue(_))
+//  }
 
-  def parallelDeserializeNodeValue(iter: Iterator[Array[Byte]], stepLength: Int): Iterator[StoredNodeWithProperty] = {
-    new PandaIteratorForValueDeSerializer[StoredNodeWithProperty](iter, stepLength , deserializeNodeValue(_))
-  }
+//  def parallelDeserializeNodeValue(iter: Iterator[Array[Byte]], stepLength: Int): Iterator[StoredNodeWithProperty] = {
+//    new PandaIteratorForValueDeSerializer[StoredNodeWithProperty](iter, stepLength , deserializeNodeValue(_))
+//  }
 
   def deserializeNodeKey(byteArr: Array[Byte]): Long = {
     val byteBuf = Unpooled.wrappedBuffer(byteArr)

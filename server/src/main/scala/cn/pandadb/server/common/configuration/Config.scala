@@ -3,8 +3,6 @@ package cn.pandadb.server.common.configuration
 import java.io.{File, FileInputStream}
 import java.util.Properties
 
-import cn.pandadb.kernel.util.DBNameMap
-
 import scala.collection.mutable
 import scala.collection.JavaConverters._
 import com.typesafe.scalalogging.LazyLogging

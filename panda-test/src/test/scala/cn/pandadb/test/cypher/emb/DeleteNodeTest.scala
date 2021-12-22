@@ -1,16 +1,18 @@
 package cn.pandadb.test.cypher.emb
 
-import cn.pandadb.kernel.{GraphDatabaseBuilder, GraphService}
-import org.apache.commons.io.FileUtils
-import org.grapheco.lynx.{ConstrainViolatedException, LynxValue, WrongNumberOfArgumentsException}
+
+import org.grapheco.lynx.{ConstrainViolatedException, LynxValue}
 import org.junit.function.ThrowingRunnable
 import org.junit.{After, Assert, Before, Test}
-
 import java.io.File
 
+import cn.pandadb.kernel.distribute.DistributedGraphFacade
+
 class DeleteNodeTest {
-  val dbPath = "./testdata/emb"
-  var db: GraphService = _
+  val kvHosts = "10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379"
+  val indexHosts = "10.0.82.144:9200,10.0.82.145:9200,10.0.82.146:9200"
+  var db: DistributedGraphFacade = _
+
 
   var id1: Long = _
   var id2: Long = _
@@ -25,9 +27,8 @@ class DeleteNodeTest {
 
   @Before
   def init(): Unit ={
-    FileUtils.deleteDirectory(new File(dbPath))
-    FileUtils.forceMkdir(new File(dbPath))
-    db = GraphDatabaseBuilder.newEmbeddedDatabase(dbPath)
+    db = new DistributedGraphFacade(kvHosts, indexHosts)
+    db.cleanDB()
 
     id1 = db.addNode(Map("name"->"alex",
       "storage"->1000000,

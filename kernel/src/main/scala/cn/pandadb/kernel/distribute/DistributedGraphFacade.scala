@@ -1,5 +1,7 @@
 package cn.pandadb.kernel.distribute
 
+import java.nio.ByteBuffer
+
 import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
 import cn.pandadb.kernel.distribute.meta.{DistributedStatistics, NameMapping, PropertyNameStore}
 import cn.pandadb.kernel.distribute.node.NodeStoreAPI
@@ -11,6 +13,7 @@ import org.elasticsearch.client.{RestClient, RestHighLevelClient}
 import org.grapheco.lynx.cypherplus.CypherRunnerPlus
 import org.grapheco.lynx.{LynxResult, LynxTransaction, LynxValue, NodeFilter}
 import org.tikv.common.{TiConfiguration, TiSession}
+import org.tikv.shade.com.google.protobuf.ByteString
 
 /**
  * @program: pandadb-v0.3
@@ -44,6 +47,13 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String) extends Distri
   }
 
   val runner = new CypherRunnerPlus(new GraphParseModel(this))
+
+  def cleanDB(): Unit ={
+    statistics.clean()
+    val left = ByteBuffer.wrap(Array((0).toByte)).array()
+    val right = ByteBuffer.wrap(Array((-1).toByte)).array()
+    db.deleteRange(left, right)
+  }
 
   override def newNodeId(): Id = nodeStore.newNodeId()
 

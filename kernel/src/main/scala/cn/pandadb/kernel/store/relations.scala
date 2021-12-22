@@ -1,7 +1,6 @@
 package cn.pandadb.kernel.store
 
 import org.grapheco.lynx.{LynxId, LynxRelationship, LynxTransaction, LynxValue}
-import org.rocksdb.{Transaction, WriteOptions}
 
 
 case class StoredRelation(id: Long, from: Long, to: Long, typeId: Int) extends StoredValue{
