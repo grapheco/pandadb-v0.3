@@ -5,10 +5,13 @@ import cn.pandadb.kernel.kv.RocksDBStorage
 import cn.pandadb.kernel.kv.meta.Statistics
 import cn.pandadb.kernel.util.DBNameMap
 import com.typesafe.scalalogging.LazyLogging
-
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
+
+import cn.pandadb.kernel.distribute.PandaDistributeKVAPI
+import cn.pandadb.kernel.distribute.meta.DistributedStatistics
+import org.tikv.common.{TiConfiguration, TiSession}
 
 /**
  * @Author: Airzihao
@@ -39,7 +42,6 @@ object PandaImporter extends LazyLogging {
   def main(args: Array[String]): Unit = {
     val startTime: Long = new Date().getTime
     val importCmd: ImportCmd = ImportCmd(args)
-    val statistics: Statistics = new Statistics(importCmd.exportDBPath.getAbsolutePath)
 
     val estNodeCount: Long = {
       importCmd.nodeFileList.map(file => {
@@ -55,45 +57,42 @@ object PandaImporter extends LazyLogging {
     logger.info(s"Estimated node count: $estNodeCount.")
     logger.info(s"Estimated relation count: $estRelCount.")
 
-    val nodeDB = RocksDBStorage.getDB(path = {if(importCmd.advancdeMode) importCmd.nodeDBPath else s"${importCmd.database}/${DBNameMap.nodeDB}"}, rocksdbConfigPath = importCmd.rocksDBConfFilePath)
-    val nodeLabelDB = RocksDBStorage.getDB(if(importCmd.advancdeMode) importCmd.nodeLabelDBPath else s"${importCmd.database}/${DBNameMap.nodeLabelDB}", rocksdbConfigPath = importCmd.rocksDBConfFilePath)
-    val relationDB = RocksDBStorage.getDB(if(importCmd.advancdeMode) importCmd.relationDBPath else s"${importCmd.database}/${DBNameMap.relationDB}", rocksdbConfigPath = importCmd.rocksDBConfFilePath)
-    val inRelationDB = RocksDBStorage.getDB(if(importCmd.advancdeMode) importCmd.inRelationDBPath else s"${importCmd.database}/${DBNameMap.inRelationDB}", rocksdbConfigPath = importCmd.rocksDBConfFilePath)
-    val outRelationDB = RocksDBStorage.getDB(if(importCmd.advancdeMode) importCmd.outRelationDBPath else s"${importCmd.database}/${DBNameMap.outRelationDB}", rocksdbConfigPath = importCmd.rocksDBConfFilePath)
-    val relationTypeDB = RocksDBStorage.getDB(if(importCmd.advancdeMode) importCmd.relationTypeDBPath else s"${importCmd.database}/${DBNameMap.relationLabelDB}", rocksdbConfigPath = importCmd.rocksDBConfFilePath)
-
+    val db = {
+      val conf = TiConfiguration.createRawDefault(importCmd.kvHosts)
+      val session = TiSession.create(conf)
+      new PandaDistributeKVAPI(session.createRawClient())
+    }
+    val statistics = new DistributedStatistics(db)
+    statistics.init()
 
     val globalArgs = GlobalArgs(Runtime.getRuntime().availableProcessors(),
       importerStatics,
-      estNodeCount, estRelCount,
-      nodeDB, nodeLabelDB = nodeLabelDB,
-      relationDB = relationDB, inrelationDB = inRelationDB,
-      outRelationDB = outRelationDB, relationTypeDB = relationTypeDB, statistics
-    )
+      estNodeCount, estRelCount, db)
     logger.info(s"Import task started. $time")
     service.scheduleAtFixedRate(nodeCountProgressLogger, 0, 30, TimeUnit.SECONDS)
     service.scheduleAtFixedRate(relCountProgressLogger, 0, 30, TimeUnit.SECONDS)
 
     importCmd.nodeFileList.foreach(file => new SingleNodeFileImporter(file, importCmd, globalArgs).importData())
-    nodeDB.close()
-    nodeLabelDB.close()
+
     logger.info(s"${importerStatics.getGlobalNodeCount} nodes imported. $time")
     logger.info(s"${importerStatics.getGlobalNodePropCount} props of node imported. $time")
 
     importCmd.relFileList.foreach(file => new SingleRelationFileImporter(file, importCmd, globalArgs).importData())
-    relationDB.close()
-    inRelationDB.close()
-    outRelationDB.close()
-    relationTypeDB.close()
+
     logger.info(s"${importerStatics.getGlobalRelCount} relations imported. $time")
     logger.info(s"${importerStatics.getGlobalRelPropCount} props of relation imported. $time")
 
-    PDBMetaData.persist(importCmd.exportDBPath.getAbsolutePath)
+//    PDBMetaData.persist(globalArgs)
+    statistics.increaseNodeCount(importerStatics.getGlobalNodeCount.get())
+    importerStatics.getNodeCountByLabel.foreach(idNums=> statistics.increaseNodeLabelCount(idNums._1, idNums._2))
+    statistics.increaseRelationCount(importerStatics.getGlobalRelCount.get())
+    importerStatics.getRelCountByType.foreach(idNums => statistics.increaseRelationTypeCount(idNums._1, idNums._2))
+    statistics.flush()
+
     service.shutdown()
     val endTime: Long = new Date().getTime
     val timeUsed: String = TimeUtil.millsSecond2Time(endTime - startTime)
 
-    globalArgs.statistics.flush()
 
     logger.info(s"${importerStatics.getGlobalNodeCount} nodes imported. $time")
     logger.info(s"${importerStatics.getGlobalNodePropCount} props of node imported. $time")

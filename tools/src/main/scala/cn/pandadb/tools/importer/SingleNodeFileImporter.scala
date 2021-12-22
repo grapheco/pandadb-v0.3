@@ -59,54 +59,45 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
   }
 
 
-  val nodeDB = globalArgs.nodeDB
-  val nodeLabelDB = globalArgs.nodeLabelDB
+  val db = globalArgs.db
 
   val innerFileNodeCountByLabel: ConcurrentHashMap[Int, Long] = new ConcurrentHashMap[Int, Long]()
   val estNodeCount = globalArgs.estNodeCount
   val NONE_LABEL_ID = -1
 
-  val writeOptions: WriteOptions = new WriteOptions()
-  writeOptions.setDisableWAL(true)
-  writeOptions.setIgnoreMissingColumnFamilies(true)
-  writeOptions.setSync(false)
 
   override protected def _importTask(taskId: Int): Boolean = {
     val innerTaskNodeCountByLabel: mutable.HashMap[Int, Long] = new mutable.HashMap[Int, Long]()
     val serializer = NodeSerializer
-    val nodeBatch = new WriteBatch()
-    val labelBatch = new WriteBatch()
 
     while (importerFileReader.notFinished) {
       val batchData = importerFileReader.getLines
-      batchData.foreach(line => {
-        val lineArr = line.getAsArray
-        val node = _wrapNode(lineArr)
-        val keys: Array[(Array[Byte], Array[Byte])] = _getNodeKeys(node._1, node._2)
-        val serializedNodeValue = serializer.serialize(node._1, node._2, node._3)
-        node._2.foreach(labelId => _countMapAdd(innerTaskNodeCountByLabel, labelId, 1L))
-        keys.foreach(pair =>{
-          nodeBatch.put(pair._1, serializedNodeValue)
-          labelBatch.put(pair._2, Array.emptyByteArray)
+      if (batchData.nonEmpty){
+        val processedData = batchData.flatMap(line => {
+          val lineArr = line.getAsArray
+          val node = _wrapNode(lineArr)
+          val keys: Array[(Array[Byte], Array[Byte])] = _getNodeKeys(node._1, node._2)
+          val serializedNodeValue = serializer.serialize(node._1, node._2, node._3)
+          node._2.foreach(labelId => _countMapAdd(innerTaskNodeCountByLabel, labelId, 1L))
+          keys.map(nodeKeyLabelKey => ((nodeKeyLabelKey._1, serializedNodeValue), (nodeKeyLabelKey._2, Array.emptyByteArray)))
         })
 
-      })
-      val f1: Future[Unit] = Future{nodeDB.write(writeOptions, nodeBatch)}
-      val f2: Future[Unit] = Future{nodeLabelDB.write(writeOptions, labelBatch)}
-      Await.result(f1, Duration.Inf)
-      Await.result(f2, Duration.Inf)
+        val nodeBatch = processedData.map(f => f._1)
+        val labelBatch = processedData.map(f => f._2)
 
-      nodeBatch.clear()
-      labelBatch.clear()
-      globalArgs.importerStatics.nodeCountAddBy(batchData.length)
-      globalArgs.importerStatics.nodePropCountAddBy(batchData.length*propHeadMap.size)
+        val f1: Future[Unit] = Future{nodeBatch.grouped(1000).foreach(batch => db.batchPut(batch))}
+        val f2: Future[Unit] = Future{labelBatch.grouped(1000).foreach(batch => db.batchPut(batch))}
+
+        Await.result(f1, Duration.Inf)
+        Await.result(f2, Duration.Inf)
+
+        globalArgs.importerStatics.nodeCountAddBy(batchData.length)
+        globalArgs.importerStatics.nodePropCountAddBy(batchData.length*propHeadMap.size)
+      }
     }
 
     innerTaskNodeCountByLabel.foreach(kv => _countMapAdd(innerFileNodeCountByLabel, kv._1, kv._2))
-    val f1: Future[Unit] = Future{nodeDB.flush()}
-    val f2: Future[Unit] = Future{nodeLabelDB.flush()}
-    Await.result(f1, Duration.Inf)
-    Await.result(f2, Duration.Inf)
+
     true
   }
 

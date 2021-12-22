@@ -5,10 +5,14 @@ import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter, RocksDBStorage}
 import cn.pandadb.kernel.store.StoredRelationWithProperty
 import cn.pandadb.kernel.util.serializer.RelationSerializer
 import org.rocksdb.{WriteBatch, WriteOptions}
-import scala.collection.convert.ImplicitConversions._
 
+import scala.collection.convert.ImplicitConversions._
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
+
+import cn.pandadb.kernel.distribute.DistributedKeyConverter
+import cn.pandadb.kernel.distribute.relationship.RelationDirection
+
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
@@ -66,15 +70,7 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
     }).toMap.filter(item => item._1 > -1)
   }
 
-  val relationDB = globalArgs.relationDB
-  val inRelationDB = globalArgs.inrelationDB
-  val outRelationDB = globalArgs.outRelationDB
-  val relationTypeDB = globalArgs.relationTypeDB
-
-  val writeOptions: WriteOptions = new WriteOptions()
-  writeOptions.setDisableWAL(true)
-  writeOptions.setIgnoreMissingColumnFamilies(true)
-  writeOptions.setSync(false)
+  val db = globalArgs.db
 
   val innerFileRelCountByType: ConcurrentHashMap[Int, Long] = new ConcurrentHashMap[Int, Long]()
   val estEdgeCount: Long = estLineCount
@@ -83,52 +79,43 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
     val innerTaskRelCountByType: mutable.HashMap[Int, Long] = new mutable.HashMap[Int, Long]()
     val serializer = RelationSerializer
 
-    val inBatch = new WriteBatch()
-    val outBatch = new WriteBatch()
-    val storeBatch = new WriteBatch()
-    val labelBatch = new WriteBatch()
-
     while (importerFileReader.notFinished) {
       val batchData = importerFileReader.getLines
       if(batchData.nonEmpty) {
-        batchData.foreach(line => {
+        val processedData = batchData.map(line => {
           val lineArr = line.getAsArray
           val relation = _wrapEdge(lineArr)
           val serializedRel = serializer.serialize(relation)
           _countMapAdd(innerTaskRelCountByType, relation.typeId, 1L)
-          storeBatch.put(KeyConverter.toRelationKey(relation.id), serializedRel)
-          inBatch.put(KeyConverter.edgeKeyToBytes(relation.to, relation.typeId, relation.from), ByteUtils.longToBytes(relation.id))
-          outBatch.put(KeyConverter.edgeKeyToBytes(relation.from, relation.typeId, relation.to), ByteUtils.longToBytes(relation.id))
-          labelBatch.put(KeyConverter.toRelationTypeKey(relation.typeId, relation.id), Array.emptyByteArray)
 
+          (
+            (DistributedKeyConverter.toRelationKey(relation.id), serializedRel),
+            (DistributedKeyConverter.edgeKeyToBytes(relation.to, relation.typeId, relation.from, RelationDirection.IN), ByteUtils.longToBytes(relation.id)),
+            (DistributedKeyConverter.edgeKeyToBytes(relation.from, relation.typeId, relation.to, RelationDirection.OUT), ByteUtils.longToBytes(relation.id)),
+            (DistributedKeyConverter.toRelationTypeKey(relation.typeId, relation.id), Array.emptyByteArray)
+          )
         })
-        val f1: Future[Unit] = Future{relationDB.write(writeOptions, storeBatch)}
-        val f2: Future[Unit] = Future{inRelationDB.write(writeOptions, inBatch)}
-        val f3: Future[Unit] = Future{outRelationDB.write(writeOptions, outBatch)}
-        val f4: Future[Unit] = Future{relationTypeDB.write(writeOptions,labelBatch)}
+
+        val relationBatch = processedData.map(f => f._1)
+        val inBatch = processedData.map(f => f._2)
+        val outBatch = processedData.map(f => f._3)
+        val typeBatch = processedData.map(f => f._4)
+        val f1: Future[Unit] = Future{relationBatch.grouped(1000).foreach(batch => db.batchPut(batch))}
+        val f2: Future[Unit] = Future{inBatch.grouped(1000).foreach(batch => db.batchPut(batch))}
+        val f3: Future[Unit] = Future{outBatch.grouped(1000).foreach(batch => db.batchPut(batch))}
+        val f4: Future[Unit] = Future{typeBatch.grouped(1000).foreach(batch => db.batchPut(batch))}
         Await.result(f1, Duration.Inf)
         Await.result(f2, Duration.Inf)
         Await.result(f3, Duration.Inf)
         Await.result(f4, Duration.Inf)
 
-        storeBatch.clear()
-        inBatch.clear()
-        outBatch.clear()
-        labelBatch.clear()
         globalArgs.importerStatics.relCountAddBy(batchData.length)
         globalArgs.importerStatics.relPropCountAddBy(batchData.length*propHeadMap.size)
       }
     }
 
     innerTaskRelCountByType.foreach(kv => _countMapAdd(innerFileRelCountByType, kv._1, kv._2))
-    val f1: Future[Unit] = Future{relationDB.flush()}
-    val f2: Future[Unit] = Future{inRelationDB.flush()}
-    val f3: Future[Unit] = Future{outRelationDB.flush()}
-    val f4: Future[Unit] = Future{relationTypeDB.flush()}
-    Await.result(f1, Duration.Inf)
-    Await.result(f2, Duration.Inf)
-    Await.result(f3, Duration.Inf)
-    Await.result(f4, Duration.Inf)
+
     true
   }
 
@@ -137,7 +124,6 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
     val fromId: Long = lineArr(fromIdIndex).toLong
     val toId: Long = lineArr(toIdIndex).toLong
     val edgeType: Int = PDBMetaData.getTypeId(lineArr(labelIndex))
-    globalArgs.statistics.increaseRelationTypeCount(edgeType, 1)
     val propMap: Map[Int, Any] = _getPropMap(lineArr, propHeadMap)
 
     new StoredRelationWithProperty(relId, fromId, toId, edgeType, propMap)

@@ -2,9 +2,12 @@ package cn.pandadb.tools.importer
 
 import cn.pandadb.kernel.kv.db.KeyValueDB
 import cn.pandadb.kernel.kv.meta.Statistics
-
 import java.util.concurrent.{ConcurrentHashMap, ConcurrentMap}
 import java.util.concurrent.atomic.AtomicLong
+
+import cn.pandadb.kernel.distribute.DistributedKVAPI
+import cn.pandadb.kernel.distribute.meta.DistributedStatistics
+
 import scala.collection.convert.ImplicitConversions._
 
 /**
@@ -16,8 +19,7 @@ import scala.collection.convert.ImplicitConversions._
 case class GlobalArgs(coreNum: Int = Runtime.getRuntime().availableProcessors(),
                       importerStatics : ImporterStatics,
                       estNodeCount: Long, estRelCount: Long,
-                      nodeDB: KeyValueDB, nodeLabelDB: KeyValueDB,
-                      relationDB: KeyValueDB, inrelationDB: KeyValueDB, outRelationDB: KeyValueDB, relationTypeDB: KeyValueDB, statistics: Statistics)
+                      db: DistributedKVAPI)
 
 case class ImporterStatics() {
   private val globalNodeCount: AtomicLong = new AtomicLong(0)

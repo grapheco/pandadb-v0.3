@@ -1,7 +1,9 @@
 package cn.pandadb.tools.importer
 
 import java.io.File
+
 import cn.pandadb.kernel.GraphDatabaseBuilder
+import cn.pandadb.kernel.distribute.DistributedGraphFacade
 import cn.pandadb.kernel.kv.{GraphFacade, RocksDBStorage}
 import cn.pandadb.kernel.kv.node.NodeStoreAPI
 import cn.pandadb.kernel.kv.relation.RelationStoreAPI
@@ -17,60 +19,34 @@ import scala.collection.mutable
   * @Modified By:
   */
 class ImporterTest {
-
-  @Test
-  def test1(): Unit ={
-    val dBPath = ""
-    val nodeAPI = new NodeStoreAPI(dBPath)
-    val relationAPI = new RelationStoreAPI(dBPath)
-    val node = nodeAPI.getNodeById(519791209300010L)
-    val relation = relationAPI.getRelationById(15133L)
-    val relation2 = relationAPI.getRelationById(5167L)
-  }
-
   @Test
   def importStatsData(): Unit = {
-    FileUtils.deleteDirectory(new File("./src/test/output/testDB") )
-    val dbPath = "./src/test/output/testDB"
-    val importCmd = s"./importer-panda.sh --db-path=$dbPath --nodes=D://data//tag-output.csv --delimeter=| --array-delimeter=; --es-hosts=111:22,222:33,333:44 --node-index-name=a --relation-index-name=sss".split(" ")
+    val kvHosts = "10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379"
+    val indexHosts = "10.0.82.144:9200,10.0.82.145:9200,10.0.82.146:9200"
+    val importCmd = s"./importer-panda.sh --nodes=src/test/input/testdata.csv --delimeter=, --array-delimeter=| --kv-hosts=$kvHosts --index-hosts=$indexHosts".split(" ")
     PandaImporter.main(importCmd)
-
 
     println("nodes")
     PandaImporter.importerStatics.getNodeCountByLabel.foreach(kv => println(kv._1, kv._2))
+    println(PandaImporter.importerStatics.getGlobalNodeCount)
+    println(PandaImporter.importerStatics.getGlobalNodePropCount)
     println("rels")
     PandaImporter.importerStatics.getRelCountByType.foreach(kv => println(kv._1, kv._2))
+    println(PandaImporter.importerStatics.getGlobalRelCount)
   }
-
   @Test
-  def tmp1(): Unit ={
-    val path = "/data/zzh/small.db"
-//    val db = GraphDatabaseBuilder.newEmbeddedDatabase(path).asInstanceOf[GraphFacade]
-    val nodeAPI = new NodeStoreAPI(path)
+  def statistics(): Unit ={
+    val kvHosts = "10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379"
+    val indexHosts = "10.0.82.144:9200,10.0.82.145:9200,10.0.82.146:9200"
+    val importCmd = s"./importer-panda.sh --nodes=src/test/input/biology.node.trick.csv --relationships=src/test/input/biology.rel.trick.csv --delimeter=☔ --array-delimeter=| --kv-hosts=$kvHosts --index-hosts=$indexHosts".split(" ")
+    PandaImporter.main(importCmd)
 
-    val start1 = System.currentTimeMillis()
-    val iter = nodeAPI.allNodes()
-    val result1 = iter.toArray
-    println(s"old way cost ${System.currentTimeMillis() - start1} ms") // s
+    val db = new DistributedGraphFacade(kvHosts, indexHosts)
+    println(s"all nodes: ${db.statistics._allNodesCount}")
+    db.statistics._nodeCountByLabel.foreach(kv => println(s"node label id: ${kv._1}, count: ${kv._2}"))
+    db.statistics._propertyCountByIndex.foreach(kv => println(s"node index prop id: ${kv._1}, count: ${kv._2}"))
 
-    val start2 = System.currentTimeMillis()
-    val iter2 = nodeAPI.all2()
-    val result2 = iter2.toArray
-    println(s"new way cost ${System.currentTimeMillis() - start2} ms") // s
-
-    result1.zip(result2).map(pair => Assert.assertEquals(pair._1.id, pair._2.id))
-
-  }
-
-  @Test
-  def testCmd(): Unit ={
-    val cmd = ImportCmd(Array(
-      "--db-path=AAAAA",
-      "--nodes=BBBBBB",
-      "--relationships=CCCCC",
-      "--es-hosts=192.168.1.1:9200,192.168.1.2:9200,192.168.1.3:9200",
-      "--node-index-name=node-test",
-      "--relation-index-name=relation-test"
-    ))
+    println(s"all relations: ${db.statistics._allRelationCount}")
+    db.statistics._relationCountByType.foreach(kv => println(s"relation type id: ${kv._1}, count: ${kv._2}"))
   }
 }

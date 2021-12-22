@@ -12,9 +12,17 @@ import java.io.File
  */
 case class ImportCmd(args: Array[String]) {
   val funcName: String = args(0)
-  val database: File = {
-    val path = _getArgByName("db-path")
-    new File(path)
+
+  val kvHosts: String = {
+    val res = _getArgByName("kv-hosts")
+    if (res.isEmpty) throw new PandaDBException("must with 'kv-hosts' keyword")
+    res
+  }
+
+  val indexHosts: String = {
+    val res = _getArgByName("index-hosts")
+    if (res.isEmpty) throw new PandaDBException("must with 'index-hosts' keyword")
+    res
   }
 
   val nodeFileList: List[File] = {
@@ -32,59 +40,6 @@ case class ImportCmd(args: Array[String]) {
     } else {
       relsFilesPath.map(filePath => new File(filePath)).toList
     }
-  }
-  val exportDBPath: File = {
-    val dbFile = new File(_getArgByName("db-path"))
-    if (!dbFile.exists()) dbFile.mkdirs()
-    if (!dbFile.isDirectory || dbFile.listFiles().length != 0) {
-      throw new Exception(s"The export db path ${dbFile.getAbsolutePath} is not an empty directory.")
-    }
-    dbFile
-  }
-  val advancdeMode: Boolean = {
-    val flag = _getArgByName("advanced-mode", "false")
-    if(flag.equals("true")) true
-    else false
-  }
-
-  val nodeDBPath: String = {
-    val path = _getArgByName("nodeDBPath")
-    if (advancdeMode && path == "") throw new PandaDBException("nodeDBPath is blank.")
-    path
-  }
-  val nodeLabelDBPath: String = {
-    val path = _getArgByName("nodeLabelDBPath")
-    if (advancdeMode && path == "") throw new PandaDBException("nodeLabelDBPath is blank.")
-    path
-  }
-  val relationDBPath: String = {
-    val path = _getArgByName("relationDBPath")
-    if (advancdeMode && path == "") throw new PandaDBException("relationDBPath is blank.")
-    path
-  }
-  val inRelationDBPath: String = {
-    val path = _getArgByName("inRelationDBPath")
-    if (advancdeMode && path == "") throw new PandaDBException("inRelationDBPath is blank.")
-    path
-  }
-  val outRelationDBPath: String = {
-    val path = _getArgByName("outRelationDBPath")
-    if (advancdeMode && path == "") throw new PandaDBException("outRelationDBPath is blank.")
-    path
-  }
-  val relationTypeDBPath: String = {
-    val path = _getArgByName("relationTypeDBPath")
-    if (advancdeMode && path == "") throw new PandaDBException("relationTypeDBPath is blank.")
-    path
-  }
-
-  val rocksDBConfFilePath: String = {
-    val confFilePath = _getArgByName("rocksConf")
-    if (confFilePath.equals("")) {
-      println("warning: default rocksConf used.")
-      "default"
-    }
-    else confFilePath
   }
 
   val delimeter: String = {
