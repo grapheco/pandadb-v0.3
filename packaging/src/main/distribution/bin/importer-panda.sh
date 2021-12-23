@@ -8,13 +8,15 @@ ARRAY_DELIMETER="--array-delimeter=|"
 help_func(){
   echo ""
   echo "====================importer need parameters are as follows===================="
-  echo "[--db-path]:           db path, need an empty folder"
   echo "[--nodes]:            your nodes csv files"
   echo "[--relationships]:    your relationship files"
   echo "[--delimeter]:        your separator of csv file, default is ',' "
   echo "[--array-delimeter]:  array's separator in your csv file, default is '|' "
+  echo "[--kv-hosts]:         your tikv hosts"
+  echo "[--index-hosts]:      your elasticSearch hosts"
+
   echo ""
-  echo "example: [./importer-panda.sh --db-path=/pandadb/db --nodes=n1.csv --nodes=n2.csv --delimeter=\"|\" --array-delimeter=\",\"]  "
+  echo "example: [./importer-panda.sh  --nodes=n1.csv --nodes=n2.csv --kv-hosts='127.0.0.1:2379,127.0.0.2:2379,127.0.0.3:2379' --index-hosts='127.0.0.1:9200,127.0.0.2:9200,127.0.0.3:9200' --delimeter=\| --array-delimeter=,]  "
   echo "================================================================================"
   echo ""
 }
@@ -22,10 +24,7 @@ help_func(){
 get_params_func(){
 for arg in $@
 do
-  if [[ $arg == "--db-path"* ]]
-  then
-    DBPATH=$arg
-  elif [[ $arg == "--nodes"* ]]
+  if [[ $arg == "--nodes"* ]]
   then
     NODES[$NODESCOUNT]=$arg
         let NODESCOUNT++
@@ -39,30 +38,12 @@ do
   elif [[ $arg == "--array-delimeter"* ]]
   then
     ARRAY_DELIMETER=$arg
-  elif [[ $arg == "--nodeDBPath"* ]]
+  elif [[ $arg == "--kv-hosts"* ]]
   then
-    NODEDB_PATH=$arg
-  elif [[ $arg == "--relationDBPath"* ]]
+    KV_HOSTS=$arg
+  elif [[ $arg == "--index-hosts"* ]]
   then
-    RELATIONDB_PATH=$arg
-  elif [[ $arg == "--nodeLabelDBPath"* ]]
-  then
-    NODELABELDB_PATH=$arg
-  elif [[ $arg == "--inRelationDBPath"* ]]
-  then
-    INRELATIONDB_PATH=$arg
-  elif [[ $arg == "--outRelationDBPath"* ]]
-  then
-    OUTRELATIONDB_PATH=$arg
-  elif [[ $arg == "--relationTypeDBPath"* ]]
-  then
-    RELATIONTYPEDB_PATH=$arg
-  elif [[ $arg == "--rocksConf"* ]]
-  then
-    ROCKS_CONF=$arg
-  elif [[ $arg == "--advanced-mode"* ]]
-  then
-    ADVANCED_MODE=$arg
+    INDEX_HOSTS=$arg
   fi
 done
 }
@@ -78,7 +59,7 @@ then
 fi
 get_params_func "$@"
 
-java -cp "$PANDADB_LAB""//*" "cn.pandadb.tools.importer.DistributedPandaImporter" "$DBPATH" "${NODES[@]}" "${RELS[@]}" "$DELIMETER" "$ARRAY_DELIMETER" "$NODEDB_PATH" "$NODELABELDB_PATH" "$RELATIONDB_PATH" "$INRELATIONDB_PATH" "$OUTRELATIONDB_PATH" "$RELATIONTYPEDB_PATH" "$ROCKS_CONF" "$ADVANCED_MODE"
+java -cp "$PANDADB_LAB""//*" "cn.pandadb.tools.importer.PandaImporter" "${NODES[@]}" "${RELS[@]}" "$DELIMETER" "$ARRAY_DELIMETER" "$KV_HOSTS" "$INDEX_HOSTS"
 
 }
 

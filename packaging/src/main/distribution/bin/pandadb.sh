@@ -7,7 +7,7 @@ get_pandadb_home(){
   PANDADB_DATA=$PANDADB_HOME"/data/"
   PANDADB_JAR=$PANDADB_HOME"/lib/panda-entry-point.jar"
   PANDADB_LAB=$PANDADB_HOME"/lib"
-  PANDADB_ENTRY="cn.pandadb.server.PandaServerEntryPoint"
+  PANDADB_ENTRY="cn.pandadb.server.DistributedPandaServerEntryPoint"
 }
 check_files() {
   if [ -e $PANDADB_CONF ]
@@ -23,14 +23,14 @@ check_files() {
 }
 
 do_console(){
-  java -cp "$PANDADB_LAB""//*" $PANDADB_ENTRY $PANDADB_CONF $PANDADB_HOME
+  java -cp "$PANDADB_LAB""//*" $PANDADB_ENTRY $PANDADB_CONF
 }
 do_start(){
-  PANDADB_PID=`pgrep -f "PandaServerEntryPoint"`
+  PANDADB_PID=`pgrep -f "DistributedPandaServerEntryPoint"`
   if [ "$PANDADB_PID" != "" ]
   then echo "pandadb is running on pid: $PANDADB_PID"
   else
-    nohup java -cp "$PANDADB_LAB""//*" $PANDADB_ENTRY $PANDADB_CONF $PANDADB_HOME > $PANDADB_LOG 2>&1 &
+    nohup java -cp "$PANDADB_LAB""//*" $PANDADB_ENTRY $PANDADB_CONF > $PANDADB_LOG 2>&1 &
     cat $PANDADB_CONF | while read line
     do
       result1=$(echo $line | grep "rpc.listen.host")
@@ -39,16 +39,16 @@ do_start(){
       then echo $line
       fi
     done
-    PANDADB_PID=`pgrep -f "PandaServerEntryPoint"`
+    PANDADB_PID=`pgrep -f "DistributedPandaServerEntryPoint"`
     echo "pandadb server started...pid: $PANDADB_PID"
   fi
 }
 do_stop(){
-  PANDADB_PID=`pgrep -f "PandaServerEntryPoint"`
+  PANDADB_PID=`pgrep -f "DistributedPandaServerEntryPoint"`
   if [ "$PANDADB_PID" == "" ]
   then echo "pandadb not running..."
   else
-    kill -9 $PANDADB_PID
+    kill -15 $PANDADB_PID
     echo "pandadb server stopped...pid: $PANDADB_PID"
   fi
 }

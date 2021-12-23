@@ -5,11 +5,8 @@ import java.nio.ByteBuffer
 import cn.pandadb.kernel.distribute.DistributedGraphFacade
 import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
 import cn.pandadb.kernel.distribute.meta.{DistributedStatistics, NameMapping}
-import cn.pandadb.kernel.kv.ByteUtils
 import org.apache.http.HttpHost
-import org.elasticsearch.action.update.UpdateRequest
-import org.elasticsearch.client.{RequestOptions, RestClient, RestHighLevelClient}
-import org.elasticsearch.script.Script
+import org.elasticsearch.client.{RestClient, RestHighLevelClient}
 import org.grapheco.lynx.{LynxInteger, LynxString, NodeFilter}
 import org.junit.{After, Assert, Before, Test}
 import org.tikv.common.{TiConfiguration, TiSession}
@@ -57,6 +54,7 @@ class IndexStoreTest {
   def cleanIndex(): Unit ={
     indexStore.cleanIndexes(NameMapping.indexName)
   }
+
   def addData(): Unit ={
     graphFacade.addNode(Map("age"->18, "name"->"A1", "country"->"China"), "person", "man", "coder")
     graphFacade.addNode(Map("age"->19, "name"->"A2", "country"->"USA"), "person")

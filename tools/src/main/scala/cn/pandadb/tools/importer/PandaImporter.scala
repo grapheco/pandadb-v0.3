@@ -96,5 +96,6 @@ object PandaImporter extends LazyLogging {
     logger.info(s"${importerStatics.getGlobalRelPropCount} props of relation imported. $time")
     logger.info(s"Import task finished in $timeUsed")
 
+    db.close()
   }
 }
