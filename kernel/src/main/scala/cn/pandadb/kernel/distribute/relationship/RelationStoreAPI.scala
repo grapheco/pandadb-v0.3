@@ -21,6 +21,8 @@ class RelationStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStor
 
   override def newRelationId(): Long = idGenerator.nextId()
 
+  override def cleanData(): Unit = idGenerator.resetId()
+
   override def getRelationTypeName(relationTypeId: Int): Option[String] = relationTypeNameStore.key(relationTypeId)
 
   override def getRelationTypeId(relationTypeName: String): Option[Int] = relationTypeNameStore.id(relationTypeName)
@@ -124,6 +126,8 @@ class RelationStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStor
 
 trait DistributedRelationStoreSPI {
   def newRelationId(): Long;
+
+  def cleanData(): Unit
 
   def getRelationTypeName(relationTypeId: Int): Option[String];
 

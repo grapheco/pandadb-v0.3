@@ -24,6 +24,8 @@ class NodeStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStore) e
 
   override def newNodeId(): Long = idGenerator.nextId()
 
+  override def cleanData(): Unit = idGenerator.resetId()
+
   override def hasLabel(nodeId: Long, label: Int): Boolean = nodeLabelStore.exist(nodeId, label)
 
   override def addNode(node: StoredNodeWithProperty): Unit = {
@@ -164,6 +166,8 @@ class NodeStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStore) e
 
 trait DistributedNodeStoreSPI {
   def newNodeId(): Long;
+
+  def cleanData(): Unit
 
   def hasLabel(nodeId: Long, label: Int): Boolean;
 

@@ -50,6 +50,9 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String) extends Distri
 
   def cleanDB(): Unit ={
     statistics.clean()
+    propertyNameStore.cleanData()
+    nodeStore.cleanData()
+    relationStore.cleanData()
     val left = ByteBuffer.wrap(Array((0).toByte)).array()
     val right = ByteBuffer.wrap(Array((-1).toByte)).array()
     db.deleteRange(left, right)

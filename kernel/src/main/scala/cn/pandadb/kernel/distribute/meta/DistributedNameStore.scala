@@ -59,6 +59,12 @@ trait DistributedNameStore {
     db.delete(key)
   }
 
+  def cleanData(): Unit ={
+    idGenerator = new AtomicInteger(initInt)
+    mapString2Int = mutable.Map[String, Int]()
+    mapInt2String = mutable.Map[Int, String]()
+  }
+
   def loadAll(): Unit = {
     idGenerator = new AtomicInteger(initInt)
     mapString2Int = mutable.Map[String, Int]()

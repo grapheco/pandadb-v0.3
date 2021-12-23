@@ -25,6 +25,10 @@ class IdGenerator(db: DistributedKVAPI, idType: TypeNameEnum.Value) {
 
   def currentId() = id.get()
 
+  def resetId() = {
+    id.set(0)
+    flushId()
+  }
 
   def nextId(): Long = {
     val nid = id.incrementAndGet()
