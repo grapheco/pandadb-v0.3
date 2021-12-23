@@ -19,11 +19,11 @@ case class ImportCmd(args: Array[String]) {
     res
   }
 
-  val indexHosts: String = {
-    val res = _getArgByName("index-hosts")
-    if (res.isEmpty) throw new PandaDBException("must with 'index-hosts' keyword")
-    res
-  }
+//  val indexHosts: String = {
+//    val res = _getArgByName("index-hosts")
+//    if (res.isEmpty) throw new PandaDBException("must with 'index-hosts' keyword")
+//    res
+//  }
 
   val nodeFileList: List[File] = {
     val nodesFilesPath: Array[String] = _getArgByName("nodes").split(",")

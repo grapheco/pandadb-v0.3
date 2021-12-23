@@ -13,10 +13,9 @@ help_func(){
   echo "[--delimeter]:        your separator of csv file, default is ',' "
   echo "[--array-delimeter]:  array's separator in your csv file, default is '|' "
   echo "[--kv-hosts]:         your tikv hosts"
-  echo "[--index-hosts]:      your elasticSearch hosts"
 
   echo ""
-  echo "example: [./importer-panda.sh  --nodes=n1.csv --nodes=n2.csv --kv-hosts='127.0.0.1:2379,127.0.0.2:2379,127.0.0.3:2379' --index-hosts='127.0.0.1:9200,127.0.0.2:9200,127.0.0.3:9200' --delimeter=\| --array-delimeter=,]  "
+  echo "example: [./importer-panda.sh  --nodes=n1.csv --nodes=n2.csv --kv-hosts='127.0.0.1:2379,127.0.0.2:2379,127.0.0.3:2379'  --delimeter=\| --array-delimeter=,]  "
   echo "================================================================================"
   echo ""
 }
@@ -41,9 +40,6 @@ do
   elif [[ $arg == "--kv-hosts"* ]]
   then
     KV_HOSTS=$arg
-  elif [[ $arg == "--index-hosts"* ]]
-  then
-    INDEX_HOSTS=$arg
   fi
 done
 }
@@ -59,7 +55,7 @@ then
 fi
 get_params_func "$@"
 
-java -cp "$PANDADB_LAB""//*" "cn.pandadb.tools.importer.PandaImporter" "${NODES[@]}" "${RELS[@]}" "$DELIMETER" "$ARRAY_DELIMETER" "$KV_HOSTS" "$INDEX_HOSTS"
+java -cp "$PANDADB_LAB""//*" "cn.pandadb.tools.importer.PandaImporter" "${NODES[@]}" "${RELS[@]}" "$DELIMETER" "$ARRAY_DELIMETER" "$KV_HOSTS"
 
 }
 
