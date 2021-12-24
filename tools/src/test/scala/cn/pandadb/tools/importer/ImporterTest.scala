@@ -32,7 +32,7 @@ class ImporterTest {
   def statistics(): Unit ={
     val kvHosts = "10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379"
     val indexHosts = "10.0.82.144:9200,10.0.82.145:9200,10.0.82.146:9200"
-    val importCmd = s"./importer-panda.sh --nodes=src/test/input/biology.node.trick.csv --relationships=src/test/input/biology.rel.trick.csv --delimeter=☔ --array-delimeter=| --kv-hosts=$kvHosts --index-hosts=$indexHosts".split(" ")
+    val importCmd = s"./importer-panda.sh --nodes=src/test/input/biology.node.trick.csv --relationships=src/test/input/biology.rel.trick.csv --delimeter=☔ --array-delimeter=| --kv-hosts=$kvHosts".split(" ")
     PandaImporter.main(importCmd)
 
     val db = new DistributedGraphFacade(kvHosts, indexHosts)
@@ -42,5 +42,7 @@ class ImporterTest {
 
     println(s"all relations: ${db.statistics._allRelationCount}")
     db.statistics._relationCountByType.foreach(kv => println(s"relation type id: ${kv._1}, count: ${kv._2}"))
+    db.close()
+    db.cypher("match (n) return n limit 10").show()
   }
 }

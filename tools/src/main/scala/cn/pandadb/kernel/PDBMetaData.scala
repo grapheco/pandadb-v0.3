@@ -17,7 +17,7 @@ object PDBMetaData {
   private val _labelIdManager: MetaIdManager = new MetaIdManager(Int.MaxValue)
 
   def persist(globalArgs: GlobalArgs): Unit = {
-    val db = globalArgs.db
+    val db = globalArgs.metaDB
 
     _labelIdManager.all.foreach{
       kv=>

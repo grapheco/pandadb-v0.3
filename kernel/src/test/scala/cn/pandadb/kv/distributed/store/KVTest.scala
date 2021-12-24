@@ -3,7 +3,7 @@ package cn.pandadb.kv.distributed.store
 import java.nio.ByteBuffer
 import java.util
 
-import cn.pandadb.kernel.distribute.DistributedKeyConverter
+import cn.pandadb.kernel.distribute.{DistributedGraphFacade, DistributedKeyConverter}
 import cn.pandadb.kernel.kv.ByteUtils
 import org.junit.Test
 import org.tikv.common.types.Charset
@@ -26,6 +26,20 @@ class Test1 {
   val session = TiSession.create(conf)
   val tikv: RawKVClient = session.createRawClient()
 
+
+  @Test
+  def confTest(): Unit ={
+    val c = TiConfiguration.createRawDefault("10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379").getTableScanConcurrency
+    println(c)
+  }
+
+  @Test
+  def clean(): Unit ={
+    val kvHosts = "10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379"
+    val indexHosts = "10.0.82.144:9200,10.0.82.145:9200,10.0.82.146:9200"
+    val db = new DistributedGraphFacade(kvHosts, indexHosts)
+    db.cleanDB()
+  }
 
   @Test
   def deleteByPrefix(): Unit ={

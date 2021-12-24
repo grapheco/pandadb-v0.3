@@ -31,7 +31,7 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
   }
   override val labelIndex: Int = headLine.indexWhere(item => item.contains(":LABEL"))
   override val estLineCount: Long = estLineCount(csvFile)
-  override val taskCount: Int = globalArgs.coreNum/4
+  override val taskCount: Int = globalArgs.coreNum / 8
 
   override val propHeadMap: Map[Int, (Int, String)] = {
     headLine.zipWithIndex.map(item => {
@@ -58,7 +58,8 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
   }
 
 
-  val db = globalArgs.db
+  val nodeDB = globalArgs.nodeDB
+  val nodeLabelDB = globalArgs.nodeLabelDB
 
   val innerFileNodeCountByLabel: ConcurrentHashMap[Int, Long] = new ConcurrentHashMap[Int, Long]()
   val estNodeCount = globalArgs.estNodeCount
@@ -84,8 +85,8 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
         val nodeBatch = processedData.map(f => f._1)
         val labelBatch = processedData.map(f => f._2)
 
-        val f1: Future[Unit] = Future{nodeBatch.grouped(1000).foreach(batch => db.batchPut(batch))}
-        val f2: Future[Unit] = Future{labelBatch.grouped(1000).foreach(batch => db.batchPut(batch))}
+        val f1: Future[Unit] = Future{nodeBatch.grouped(5000).foreach(batch => nodeDB.batchPut(batch))}
+        val f2: Future[Unit] = Future{labelBatch.grouped(5000).foreach(batch => nodeLabelDB.batchPut(batch))}
 
         Await.result(f1, Duration.Inf)
         Await.result(f2, Duration.Inf)

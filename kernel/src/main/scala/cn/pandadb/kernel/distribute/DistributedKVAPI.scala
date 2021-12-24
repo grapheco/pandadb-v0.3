@@ -2,10 +2,6 @@ package cn.pandadb.kernel.distribute
 
 import java.util
 
-import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
-import cn.pandadb.kernel.util.serializer.NodeSerializer
-import org.tikv.common.types.Charset
-import org.tikv.common.{TiConfiguration, TiSession}
 import org.tikv.kvproto.Kvrpcpb
 import org.tikv.raw.RawKVClient
 import org.tikv.shade.com.google.protobuf.ByteString
@@ -53,6 +49,7 @@ trait DistributedKVAPI {
 }
 
 class PandaDistributeKVAPI(client: RawKVClient) extends DistributedKVAPI {
+
   implicit def arrayByte2TiKv(origin: Array[Byte]): ByteString = ByteString.copyFrom(origin)
 
   implicit def tiKv2ArrayByte(origin: ByteString): Array[Byte] = origin.toByteArray

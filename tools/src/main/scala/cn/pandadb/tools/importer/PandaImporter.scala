@@ -4,6 +4,7 @@ import com.typesafe.scalalogging.LazyLogging
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
+import java.util.logging.{Level, Logger}
 
 import cn.pandadb.kernel.distribute.PandaDistributeKVAPI
 import cn.pandadb.kernel.distribute.meta.DistributedStatistics
@@ -16,6 +17,8 @@ import org.tikv.common.{TiConfiguration, TiSession}
  * @Modified By:
  */
 object PandaImporter extends LazyLogging {
+  Logger.getLogger("org.tikv.common.operation.RegionErrorHandler").setLevel(Level.SEVERE)
+  Logger.getLogger("org.tikv.common.region.StoreHealthyChecker").setLevel(Level.SEVERE)
 
   val importerStatics: ImporterStatics = new ImporterStatics
 
@@ -53,17 +56,19 @@ object PandaImporter extends LazyLogging {
     logger.info(s"Estimated node count: $estNodeCount.")
     logger.info(s"Estimated relation count: $estRelCount.")
 
-    val db = {
-      val conf = TiConfiguration.createRawDefault(importCmd.kvHosts)
+
+    val dbs = (1 to 7).map(i => {
+      val conf = TiConfiguration.createRawDefault(importCmd.kvHosts).setBatchPutConcurrency(2000)
       val session = TiSession.create(conf)
       new PandaDistributeKVAPI(session.createRawClient())
-    }
-    val statistics = new DistributedStatistics(db)
+    }).toArray
+
+    val statistics = new DistributedStatistics(dbs.head)
     statistics.init()
 
     val globalArgs = GlobalArgs(Runtime.getRuntime().availableProcessors(),
       importerStatics,
-      estNodeCount, estRelCount, db)
+      estNodeCount, estRelCount, dbs(1), dbs(2), dbs(3), dbs(4), dbs(5), dbs(6), dbs.head)
     logger.info(s"Import task started. $time")
     service.scheduleAtFixedRate(nodeCountProgressLogger, 0, 30, TimeUnit.SECONDS)
     service.scheduleAtFixedRate(relCountProgressLogger, 0, 30, TimeUnit.SECONDS)
@@ -96,6 +101,8 @@ object PandaImporter extends LazyLogging {
     logger.info(s"${importerStatics.getGlobalRelPropCount} props of relation imported. $time")
     logger.info(s"Import task finished in $timeUsed")
 
-    db.close()
+    dbs.foreach(db => db.close())
+
+    System.exit(0)
   }
 }

@@ -56,6 +56,8 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String) extends Distri
     val left = ByteBuffer.wrap(Array((0).toByte)).array()
     val right = ByteBuffer.wrap(Array((-1).toByte)).array()
     db.deleteRange(left, right)
+
+    indexStore.cleanIndexes(NameMapping.indexName)
   }
 
   override def newNodeId(): Id = nodeStore.newNodeId()

@@ -40,7 +40,7 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
     columnId
   }
   override val estLineCount: Long = estLineCount(csvFile)
-  override val taskCount: Int = globalArgs.coreNum/4
+  override val taskCount: Int = globalArgs.coreNum / 8
 
   val fromIdIndex: Int = headLine.indexWhere(item => item.contains(":START_ID"))
   val toIdIndex: Int = headLine.indexWhere(item => item.contains(":END_ID"))
@@ -69,7 +69,10 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
     }).toMap.filter(item => item._1 > -1)
   }
 
-  val db = globalArgs.db
+  val relationDB = globalArgs.relationDB
+  val inRelationDB = globalArgs.inRelationDB
+  val outRelationDB = globalArgs.outRelationDB
+  val typeRelationDB = globalArgs.relationTypeDB
 
   val innerFileRelCountByType: ConcurrentHashMap[Int, Long] = new ConcurrentHashMap[Int, Long]()
   val estEdgeCount: Long = estLineCount
@@ -99,10 +102,10 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
         val inBatch = processedData.map(f => f._2)
         val outBatch = processedData.map(f => f._3)
         val typeBatch = processedData.map(f => f._4)
-        val f1: Future[Unit] = Future{relationBatch.grouped(1000).foreach(batch => db.batchPut(batch))}
-        val f2: Future[Unit] = Future{inBatch.grouped(1000).foreach(batch => db.batchPut(batch))}
-        val f3: Future[Unit] = Future{outBatch.grouped(1000).foreach(batch => db.batchPut(batch))}
-        val f4: Future[Unit] = Future{typeBatch.grouped(1000).foreach(batch => db.batchPut(batch))}
+        val f1: Future[Unit] = Future{relationBatch.grouped(5000).foreach(batch => relationDB.batchPut(batch))}
+        val f2: Future[Unit] = Future{inBatch.grouped(5000).foreach(batch => inRelationDB.batchPut(batch))}
+        val f3: Future[Unit] = Future{outBatch.grouped(5000).foreach(batch => outRelationDB.batchPut(batch))}
+        val f4: Future[Unit] = Future{typeBatch.grouped(5000).foreach(batch => typeRelationDB.batchPut(batch))}
         Await.result(f1, Duration.Inf)
         Await.result(f2, Duration.Inf)
         Await.result(f3, Duration.Inf)
