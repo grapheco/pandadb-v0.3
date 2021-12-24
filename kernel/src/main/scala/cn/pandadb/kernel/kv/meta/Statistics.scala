@@ -28,6 +28,10 @@ class Statistics(path: String, rocksdbCfgPath: String = "default") {
   private var _relationCountByType: mutable.Map[Int, Long] = mutable.Map[Int, Long]()
   private var _propertyCountByIndex: mutable.Map[Int, Long] = mutable.Map[Int, Long]()
 
+
+  def getNodeLabelCountMap = _nodeCountByLabel.toMap
+  def getRelationTypeCountMap = _relationCountByType.toMap
+
   private def getKey(prefix: Byte, key: Int): Array[Byte] = {
     val res = new Array[Byte](5)
     ByteUtils.setByte(res, 0, prefix)

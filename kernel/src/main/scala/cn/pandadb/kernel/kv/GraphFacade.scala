@@ -32,6 +32,10 @@ class GraphFacade(nodeStore: NodeStoreSPI,
     ???
   }
 
+  def getStatistics: Statistics = statistics
+  def nodeLabelId2Name(id: Int): String = nodeStore.getLabelName(id).get
+  def relTypeId2Name(id: Int): String = relationStore.getRelationTypeName(id).get
+
   override def cypher(query: String, parameters: Map[String, Any], tx: Option[LynxTransaction]): LynxResult = {
     runner.compile(query)
     runner.run(query, parameters, tx)

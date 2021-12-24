@@ -1,10 +1,10 @@
 package cn.pandadb.kernel
 
+import cn.pandadb.kernel.kv.meta.Statistics
 import org.grapheco.lynx.{LynxResult, LynxTransaction}
 
 trait GraphService {
   type Id = Long
-
   def cypher(query: String, parameters: Map[String, Any] = Map.empty, tx: Option[LynxTransaction] = None): LynxResult
 
   def close(): Unit

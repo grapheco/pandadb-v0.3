@@ -22,3 +22,6 @@ case class VerifyConnectionResponse(result: VerifyConnectionMode.Value)
 
 case class ResetAccountRequest(username: String, password: String)
 case class ResetAccountResponse(msg: VerifyConnectionMode.Value)
+
+case class GetStatisticsRequest()
+case class GetStatisticsResponse(allNodes: Long, allRelations: Long, nodesCountByLabel: Map[String, Long], relsCountByType: Map[String, Long]){}

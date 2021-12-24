@@ -20,6 +20,11 @@ class PandaRpcClient(hostName:String, port: Int, clientName: String, serverName:
 
   val DURATION_TIME = "3600s"
 
+  def getStatistics(): GetStatisticsResponse ={
+    val res = Await.result(endpointRef.askWithBuffer[GetStatisticsResponse](GetStatisticsRequest()), Duration(DURATION_TIME))
+    res
+  }
+
   def sendCypherRequest(cypher: String, params:Map[String, Any]): Stream[DriverValue] ={
     val res = endpointRef.getChunkedStream[Any](CypherRequest(cypher, params), Duration(DURATION_TIME))
     res.head match {

@@ -1,19 +1,20 @@
 package cn.pandadb.server.rpc
 
 import java.nio.ByteBuffer
+
 import scala.collection.mutable
 import com.typesafe.scalalogging.LazyLogging
 import net.neoremind.kraps.RpcConf
 import net.neoremind.kraps.rpc.{RpcCallContext, RpcEndpoint, RpcEnvServerConfig}
 import net.neoremind.kraps.rpc.netty.{HippoRpcEnv, HippoRpcEnvFactory}
 import org.grapheco.hippo.{ChunkedStream, HippoRpcHandler, ReceiveContext}
-
 import cn.pandadb.VerifyConnectionMode
 import cn.pandadb.dbms.{GraphDatabaseManager, RsaSecurity}
-import cn.pandadb.hipporpc.message.{CypherRequest, ResetAccountRequest, ResetAccountResponse, SayHelloRequest, SayHelloResponse, SecurityRequest, VerifyConnectionRequest, VerifyConnectionResponse}
+import cn.pandadb.hipporpc.message.{CypherRequest, GetStatisticsRequest, GetStatisticsResponse, ResetAccountRequest, ResetAccountResponse, SayHelloRequest, SayHelloResponse, SecurityRequest, VerifyConnectionRequest, VerifyConnectionResponse}
 import cn.pandadb.hipporpc.utils.DriverValue
 import cn.pandadb.hipporpc.values.Value
 import cn.pandadb.kernel.GraphService
+import cn.pandadb.kernel.kv.GraphFacade
 import cn.pandadb.kernel.kv.meta.Auth
 import cn.pandadb.server.common.configuration.Config
 import cn.pandadb.server.common.modules.LifecycleServerModule
@@ -68,12 +69,21 @@ class PandaEndpoint(override val rpcEnv: HippoRpcEnv) extends RpcEndpoint with L
 //class PandaStreamHandler(graphFacade: GraphService, authUtil: Auth) extends HippoRpcHandler {
 class PandaStreamHandler(graphFacade: GraphService) extends HippoRpcHandler with LazyLogging {
   val converter = new ValueConverter
-  RsaSecurity.init()
+//  RsaSecurity.init()
 
   override def receiveWithBuffer(extraInput: ByteBuffer, context: ReceiveContext): PartialFunction[Any, Unit] = {
     case SayHelloRequest(msg) =>
       context.reply(SayHelloResponse(msg.toUpperCase()))
+    case GetStatisticsRequest() => {
+      val gf = graphFacade.asInstanceOf[GraphFacade]
+      val statistics = gf.getStatistics
+      val totalNodes = statistics.nodeCount
+      val totalRels = statistics.relationCount
+      val nodesByLabel = statistics.getNodeLabelCountMap.map(f => gf.nodeLabelId2Name(f._1) -> f._2 )
+      val relsByType = statistics.getRelationTypeCountMap.map(f => gf.relTypeId2Name(f._1) -> f._2)
 
+      context.reply(GetStatisticsResponse(totalNodes, totalRels, nodesByLabel, relsByType))
+    }
 //    case VerifyConnectionRequest(usernameKey, passwordKey) => {
 //      val username = RsaSecurity.rsaDecrypt(usernameKey, RsaSecurity.getPrivateKeyStr())
 //      val password = RsaSecurity.rsaDecrypt(passwordKey, RsaSecurity.getPrivateKeyStr())

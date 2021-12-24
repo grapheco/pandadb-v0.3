@@ -71,14 +71,6 @@ trait RelationStoreSPI {
 
   def findFromNodeIds(toNodeId: Long, relationType: Int): Iterator[Long];
 
-  def newRelationId(): Long;
-
-  def addRelation(relation: StoredRelation): Unit
-
-  def addRelation(relation: StoredRelationWithProperty): Unit
-
-  def allRelations(withProperty: Boolean = false): Iterator[StoredRelation]
-
   def findOutRelations(fromNodeId: Long): Iterator[StoredRelation] = findOutRelations(fromNodeId, None)
 
   def findOutRelations(fromNodeId: Long, edgeType: Option[Int] = None): Iterator[StoredRelation]
@@ -86,6 +78,14 @@ trait RelationStoreSPI {
   def findInRelations(toNodeId: Long): Iterator[StoredRelation] = findInRelations(toNodeId, None)
 
   def findInRelations(toNodeId: Long, edgeType: Option[Int] = None): Iterator[StoredRelation]
+
+  def newRelationId(): Long;
+
+  def addRelation(relation: StoredRelation): Unit
+
+  def addRelation(relation: StoredRelationWithProperty): Unit
+
+  def allRelations(withProperty: Boolean = false): Iterator[StoredRelation]
 
   def findInRelationsBetween(toNodeId: Long, fromNodeId: Long, edgeType: Option[Int] = None): Iterator[StoredRelation]
 
