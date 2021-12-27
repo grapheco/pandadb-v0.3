@@ -6,6 +6,7 @@ import java.util.Date
 import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
 import java.util.logging.{Level, Logger}
 
+import cn.pandadb.kernel.PDBMetaData
 import cn.pandadb.kernel.distribute.PandaDistributeKVAPI
 import cn.pandadb.kernel.distribute.meta.DistributedStatistics
 import org.tikv.common.{TiConfiguration, TiSession}
@@ -58,7 +59,7 @@ object PandaImporter extends LazyLogging {
 
 
     val dbs = (1 to 7).map(i => {
-      val conf = TiConfiguration.createRawDefault(importCmd.kvHosts).setBatchPutConcurrency(2000)
+      val conf = TiConfiguration.createRawDefault(importCmd.kvHosts).setBatchPutConcurrency(200)
       val session = TiSession.create(conf)
       new PandaDistributeKVAPI(session.createRawClient())
     }).toArray
@@ -83,12 +84,14 @@ object PandaImporter extends LazyLogging {
     logger.info(s"${importerStatics.getGlobalRelCount} relations imported. $time")
     logger.info(s"${importerStatics.getGlobalRelPropCount} props of relation imported. $time")
 
-//    PDBMetaData.persist(globalArgs)
+    PDBMetaData.persist(globalArgs)
     statistics.increaseNodeCount(importerStatics.getGlobalNodeCount.get())
     importerStatics.getNodeCountByLabel.foreach(idNums=> statistics.increaseNodeLabelCount(idNums._1, idNums._2))
     statistics.increaseRelationCount(importerStatics.getGlobalRelCount.get())
     importerStatics.getRelCountByType.foreach(idNums => statistics.increaseRelationTypeCount(idNums._1, idNums._2))
     statistics.flush()
+
+
 
     service.shutdown()
     val endTime: Long = new Date().getTime
@@ -102,7 +105,5 @@ object PandaImporter extends LazyLogging {
     logger.info(s"Import task finished in $timeUsed")
 
     dbs.foreach(db => db.close())
-
-    System.exit(0)
   }
 }

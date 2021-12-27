@@ -3,9 +3,11 @@ package cn.pandadb.tools.importer
 import cn.pandadb.kernel.PDBMetaData
 import cn.pandadb.kernel.kv.KeyConverter
 import cn.pandadb.kernel.util.serializer.NodeSerializer
-
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
+
+import cn.pandadb.kernel.distribute.DistributedKeyConverter
+
 import scala.collection.convert.ImplicitConversions._
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -123,13 +125,13 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
 
   private def _getNodeKeys(id: Long, labelIds: Array[Int]): Array[(Array[Byte], Array[Byte])] = {
     if(labelIds.isEmpty) {
-      val nodeKey = KeyConverter.toNodeKey(NONE_LABEL_ID, id)
-      val labelKey = KeyConverter.toNodeLabelKey(id, NONE_LABEL_ID)
+      val nodeKey = DistributedKeyConverter.toNodeKey(NONE_LABEL_ID, id)
+      val labelKey = DistributedKeyConverter.toNodeLabelKey(id, NONE_LABEL_ID)
       Array((nodeKey, labelKey))
     } else {
       labelIds.map(label => {
-        val nodeKey = KeyConverter.toNodeKey(label, id)
-        val labelKey = KeyConverter.toNodeLabelKey(id, label)
+        val nodeKey = DistributedKeyConverter.toNodeKey(label, id)
+        val labelKey = DistributedKeyConverter.toNodeLabelKey(id, label)
         (nodeKey, labelKey)
       })
     }
