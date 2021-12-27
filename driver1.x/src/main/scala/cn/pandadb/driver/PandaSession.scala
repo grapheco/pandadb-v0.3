@@ -10,12 +10,23 @@ import java.util.Collections.emptyMap
 
 import cn.pandadb.NotImplementMethodException
 import cn.pandadb.driver.rpc.PandaRpcClient
+import cn.pandadb.hipporpc.message.GetStatisticsResponse
+import cn.pandadb.hipporpc.utils.RegexUtils
 
 import scala.collection.JavaConverters._
 
-class PandaSession(rpcClient: PandaRpcClient, address: String) extends StatementRunner with Session with BookmarksHolder {
+class PandaSession(uriAuthority: String, config: PandaDriverConfig) extends StatementRunner with Session with BookmarksHolder {
   var isSessionClosed = false
+  val res = RegexUtils.getIpAndPort(uriAuthority)
+  val address = res._1
+  val _port = res._2
+  val rpcClient = new PandaRpcClient(address, _port, config.RPC_CLIENT_NAME, config.RPC_SERVER_NAME)
+
   rpcClient.createEndpointRef()
+
+  def getStatistics(): GetStatisticsResponse ={
+    rpcClient.getStatistics()
+  }
 
   override def run(s: String, value: Value): StatementResult = run(s, value.asMap())
 
@@ -113,6 +124,7 @@ class PandaSession(rpcClient: PandaRpcClient, address: String) extends Statement
   override def close(): Unit = {
     isSessionClosed = true
     rpcClient.closeEndpointRef()
+    rpcClient.shutdown()
   }
 
   override def closeAsync(): CompletionStage[Void] = throw new NotImplementMethodException("closeAsync")

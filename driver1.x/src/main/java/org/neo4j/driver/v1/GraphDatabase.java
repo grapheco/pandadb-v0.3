@@ -153,7 +153,6 @@ public class GraphDatabase
                 throw new NotValidSchemaException("bolt or panda");
             } catch (NotValidSchemaException e) {
                 e.printStackTrace();
-                System.exit(1);
             }
             return null;
         }
