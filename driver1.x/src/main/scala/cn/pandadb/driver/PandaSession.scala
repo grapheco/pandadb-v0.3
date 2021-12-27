@@ -122,9 +122,11 @@ class PandaSession(uriAuthority: String, config: PandaDriverConfig) extends Stat
   override def reset(): Unit = {}
 
   override def close(): Unit = {
-    isSessionClosed = true
-    rpcClient.closeEndpointRef()
-    rpcClient.shutdown()
+    if (!isSessionClosed){
+      isSessionClosed = true
+      rpcClient.closeEndpointRef()
+      rpcClient.shutdown()
+    }
   }
 
   override def closeAsync(): CompletionStage[Void] = throw new NotImplementMethodException("closeAsync")
