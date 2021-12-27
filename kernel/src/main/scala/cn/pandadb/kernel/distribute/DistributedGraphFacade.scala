@@ -60,6 +60,10 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String) extends Distri
     indexStore.cleanIndexes(NameMapping.indexName)
   }
 
+  def getStatistics() = statistics
+  def nodeLabelId2Name(id: Int) = nodeStore.getLabelName(id).get
+  def relTypeId2Name(id: Int) = relationStore.getRelationTypeName(id).get
+
   override def newNodeId(): Id = nodeStore.newNodeId()
 
   override def newRelationshipId(): Id = relationStore.newRelationId()

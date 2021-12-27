@@ -6,7 +6,6 @@ import cn.pandadb.hipporpc.utils.DriverValue
 import net.neoremind.kraps.RpcConf
 import net.neoremind.kraps.rpc.netty.HippoRpcEnvFactory
 import net.neoremind.kraps.rpc.{RpcAddress, RpcEnvClientConfig}
-import org.neo4j.driver.v1.exceptions.SessionExpiredException
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -19,6 +18,11 @@ class PandaRpcClient(hostName:String, port: Int, clientName: String, serverName:
   var endpointRef = rpcEnv.setupEndpointRef(new RpcAddress(hostName, port), serverName)
 
   val DURATION_TIME = "3600s"
+
+  def getStatistics(): GetStatisticsResponse ={
+    val res = Await.result(endpointRef.askWithBuffer[GetStatisticsResponse](GetStatisticsRequest()), Duration(DURATION_TIME))
+    res
+  }
 
   def sendCypherRequest(cypher: String, params:Map[String, Any]): Stream[DriverValue] ={
     val res = endpointRef.getChunkedStream[Any](CypherRequest(cypher, params), Duration(DURATION_TIME))

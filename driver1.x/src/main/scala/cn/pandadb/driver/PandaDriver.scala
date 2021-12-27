@@ -4,36 +4,45 @@ import java.lang
 import java.util.concurrent.CompletionStage
 
 import cn.pandadb.NotImplementMethodException
-import cn.pandadb.driver.rpc.PandaRpcClient
 import org.neo4j.driver.v1.{AccessMode, Driver, Session}
 
-class PandaDriver(rpcClient: PandaRpcClient, address: String) extends Driver{
+import scala.collection.mutable.ArrayBuffer
+
+class PandaDriver(uriAuthority: String, config: PandaDriverConfig) extends Driver{
+  val sessions = ArrayBuffer[PandaSession]()
+
   override def isEncrypted: Boolean = false
 
-  override def session(): Session = new PandaSession(rpcClient, address)
+  override def session(): Session = {
+    this.synchronized{
+      val s = new PandaSession(uriAuthority, config)
+      sessions += s
+      s
+    }
+  }
 
   override def session(accessMode: AccessMode): Session = {
-    new PandaSession(rpcClient, address)
+    new PandaSession(uriAuthority, config)
   }
 
   override def session(s: String): Session = {
-    new PandaSession(rpcClient, address)
+    new PandaSession(uriAuthority, config)
   }
 
   override def session(accessMode: AccessMode, s: String): Session = {
-    new PandaSession(rpcClient, address)
+    new PandaSession(uriAuthority, config)
   }
 
   override def session(iterable: lang.Iterable[String]): Session = {
-    new PandaSession(rpcClient, address)
+    new PandaSession(uriAuthority, config)
   }
 
   override def session(accessMode: AccessMode, iterable: lang.Iterable[String]): Session = {
-    new PandaSession(rpcClient, address)
+    new PandaSession(uriAuthority, config)
   }
 
   override def close(): Unit = {
-    rpcClient.shutdown()
+    sessions.foreach(s => s.close())
   }
 
   override def closeAsync(): CompletionStage[Void] = throw new NotImplementMethodException("closeAsync")

@@ -25,4 +25,4 @@ case class ResetAccountResponse(msg: VerifyConnectionMode.Value)
 
 
 case class GetStatisticsRequest()
-case class GetStatisticsResponse(allNodes: Long, allRelations: Long, nodesCountByLabel: Map[String, Long], relsCountByType: Map[String, Long]){}
+case class GetStatisticsResponse(allNodes: Long, allRelations: Long, nodesCountByLabel: Map[String, Long], relationsCountByType: Map[String, Long]){}

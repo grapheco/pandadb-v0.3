@@ -27,6 +27,9 @@ class DistributedStatistics(db: DistributedKVAPI) {
    var _relationCountByType: mutable.Map[Int, Long] = mutable.Map[Int, Long]()
    var _propertyCountByIndex: mutable.Map[Int, Long] = mutable.Map[Int, Long]()
 
+  def getNodeLabelCountMap = _nodeCountByLabel.toMap
+  def getRelationTypeCountMap = _relationCountByType.toMap
+
   private def getKey(prefix: Byte, key: Int): Array[Byte] ={
     val res = new Array[Byte](6)
     ByteUtils.setByte(res, 0, DistributedKeyConverter.statisticPrefix)

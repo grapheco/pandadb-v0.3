@@ -105,5 +105,7 @@ object PandaImporter extends LazyLogging {
     logger.info(s"Import task finished in $timeUsed")
 
     dbs.foreach(db => db.close())
+
+    System.exit(0)
   }
 }

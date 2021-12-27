@@ -2,8 +2,8 @@ package cn.pandadb.server.rpc
 
 import java.nio.ByteBuffer
 
-import cn.pandadb.dbms.{DistributedGraphDatabaseManager}
-import cn.pandadb.hipporpc.message.{CypherRequest, SayHelloRequest, SayHelloResponse}
+import cn.pandadb.dbms.DistributedGraphDatabaseManager
+import cn.pandadb.hipporpc.message.{CypherRequest, GetStatisticsRequest, GetStatisticsResponse, SayHelloRequest, SayHelloResponse}
 import cn.pandadb.hipporpc.utils.DriverValue
 import cn.pandadb.hipporpc.values.Value
 import cn.pandadb.server.common.configuration.Config
@@ -64,6 +64,17 @@ class DistributedPandaStreamHandler(graphFacade: DistributedGraphDatabaseManager
   override def receiveWithBuffer(extraInput: ByteBuffer, context: ReceiveContext): PartialFunction[Any, Unit] = {
     case SayHelloRequest(msg) =>
       context.reply(SayHelloResponse(msg.toUpperCase()))
+
+    case GetStatisticsRequest() => {
+      val gf = graphFacade.defaultDB
+      val statistics = gf.getStatistics
+      val totalNodes = statistics.nodeCount
+      val totalRels = statistics.relationCount
+      val nodesByLabel = statistics.getNodeLabelCountMap.map(f => gf.nodeLabelId2Name(f._1) -> f._2 )
+      val relsByType = statistics.getRelationTypeCountMap.map(f => gf.relTypeId2Name(f._1) -> f._2)
+
+      context.reply(GetStatisticsResponse(totalNodes, totalRels, nodesByLabel, relsByType))
+    }
   }
 
   override def openChunkedStream(): PartialFunction[Any, ChunkedStream] = {
