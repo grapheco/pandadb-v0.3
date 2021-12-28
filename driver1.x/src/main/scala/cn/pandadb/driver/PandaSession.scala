@@ -10,7 +10,7 @@ import java.util.Collections.emptyMap
 
 import cn.pandadb.NotImplementMethodException
 import cn.pandadb.driver.rpc.PandaRpcClient
-import cn.pandadb.hipporpc.message.GetStatisticsResponse
+import cn.pandadb.hipporpc.message.{DropIndexMetaResponse, GetIndexedMetaResponse, GetStatisticsResponse}
 import cn.pandadb.hipporpc.utils.RegexUtils
 
 import scala.collection.JavaConverters._
@@ -24,9 +24,11 @@ class PandaSession(uriAuthority: String, config: PandaDriverConfig) extends Stat
 
   rpcClient.createEndpointRef()
 
-  def getStatistics(): GetStatisticsResponse ={
-    rpcClient.getStatistics()
-  }
+  def getStatistics(): GetStatisticsResponse = rpcClient.getStatistics()
+
+  def getIndexedMetaData: GetIndexedMetaResponse = rpcClient.getIndexedMetaData()
+
+  def dropIndex(label: String, propName: String): DropIndexMetaResponse = rpcClient.dropIndexMetaData(label, propName)
 
   override def run(s: String, value: Value): StatementResult = run(s, value.asMap())
 

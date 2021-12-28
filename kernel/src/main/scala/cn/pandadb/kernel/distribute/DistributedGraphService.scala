@@ -86,6 +86,8 @@ trait DistributedGraphService {
 
   def createIndexOnNode(label: String, props: Set[String]): Unit
 
+  def dropIndexOnNode(label: String, prop: String): Unit
+
   def isNodeHasIndex(filter: NodeFilter): Boolean
 
   def getNodesByIndex(nodeFilter: NodeFilter): Iterator[PandaNode]

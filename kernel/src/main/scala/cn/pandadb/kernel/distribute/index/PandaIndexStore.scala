@@ -51,9 +51,13 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
   type NodePropertyName = String
   type NodePropertyValue = Any
 
-  val nodeIndexMetaStore = new NodeIndexMetaStore(_db, nls)
+  private val nodeIndexMetaStore = new NodeIndexMetaStore(_db, nls)
 
   if (!indexIsExist(NameMapping.indexName)) createIndex(NameMapping.indexName)
+
+  def getIndexedMetaData(): Map[String, Seq[String]] ={
+    nodeIndexMetaStore.getIndexedMeta()
+  }
 
   // es index
   def serviceIsAvailable(): Boolean = {

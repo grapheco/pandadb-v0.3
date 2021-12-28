@@ -20,8 +20,13 @@ class PandaRpcClient(hostName:String, port: Int, clientName: String, serverName:
   val DURATION_TIME = "3600s"
 
   def getStatistics(): GetStatisticsResponse ={
-    val res = Await.result(endpointRef.askWithBuffer[GetStatisticsResponse](GetStatisticsRequest()), Duration(DURATION_TIME))
-    res
+    Await.result(endpointRef.askWithBuffer[GetStatisticsResponse](GetStatisticsRequest()), Duration(DURATION_TIME))
+  }
+  def getIndexedMetaData(): GetIndexedMetaResponse = {
+    Await.result(endpointRef.askWithBuffer[GetIndexedMetaResponse](GetIndexedMetaRequest()), Duration(DURATION_TIME))
+  }
+  def dropIndexMetaData(label: String, propName: String): DropIndexMetaResponse = {
+    Await.result(endpointRef.askWithBuffer[DropIndexMetaResponse](DropIndexMetaRequest(label, propName)), Duration(DURATION_TIME))
   }
 
   def sendCypherRequest(cypher: String, params:Map[String, Any]): Stream[DriverValue] ={

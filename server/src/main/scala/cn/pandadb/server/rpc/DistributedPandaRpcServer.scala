@@ -3,7 +3,7 @@ package cn.pandadb.server.rpc
 import java.nio.ByteBuffer
 
 import cn.pandadb.dbms.DistributedGraphDatabaseManager
-import cn.pandadb.hipporpc.message.{CypherRequest, GetStatisticsRequest, GetStatisticsResponse, SayHelloRequest, SayHelloResponse}
+import cn.pandadb.hipporpc.message.{CypherRequest, DropIndexMetaRequest, DropIndexMetaResponse, GetIndexedMetaRequest, GetIndexedMetaResponse, GetStatisticsRequest, GetStatisticsResponse, SayHelloRequest, SayHelloResponse}
 import cn.pandadb.hipporpc.utils.DriverValue
 import cn.pandadb.hipporpc.values.Value
 import cn.pandadb.server.common.configuration.Config
@@ -16,6 +16,7 @@ import net.neoremind.kraps.rpc.{RpcCallContext, RpcEndpoint, RpcEnvServerConfig}
 import org.grapheco.hippo.{ChunkedStream, HippoRpcHandler, ReceiveContext}
 
 import scala.collection.mutable
+import scala.concurrent.Await
 
 
 class DistributedPandaRpcServer(config: Config, database: DistributedGraphDatabaseManager)
@@ -72,8 +73,22 @@ class DistributedPandaStreamHandler(graphFacade: DistributedGraphDatabaseManager
       val totalRels = statistics.relationCount
       val nodesByLabel = statistics.getNodeLabelCountMap.map(f => gf.nodeLabelId2Name(f._1) -> f._2 )
       val relsByType = statistics.getRelationTypeCountMap.map(f => gf.relTypeId2Name(f._1) -> f._2)
+      val propsByIndex = statistics.getPropertyCountByIndex.map(f => gf.propId2Name(f._1) -> f._2)
+      context.reply(GetStatisticsResponse(totalNodes, totalRels, nodesByLabel, relsByType, propsByIndex))
+    }
+    case GetIndexedMetaRequest() => {
+      val indexStore = graphFacade.defaultDB.indexStore
+      context.reply(GetIndexedMetaResponse(indexStore.getIndexedMetaData()))
+    }
+    case DropIndexMetaRequest(label, propName) => {
+      val gf = graphFacade.defaultDB
 
-      context.reply(GetStatisticsResponse(totalNodes, totalRels, nodesByLabel, relsByType))
+      new Thread(){
+        Thread.sleep(100)
+        override def run(): Unit = gf.dropIndexOnNode(label, propName)
+      }.start()
+
+      context.reply(DropIndexMetaResponse(true))
     }
   }
 

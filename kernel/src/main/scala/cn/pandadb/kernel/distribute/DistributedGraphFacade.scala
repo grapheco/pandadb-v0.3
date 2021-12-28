@@ -63,7 +63,7 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String) extends Distri
   def getStatistics() = statistics
   def nodeLabelId2Name(id: Int) = nodeStore.getLabelName(id).get
   def relTypeId2Name(id: Int) = relationStore.getRelationTypeName(id).get
-
+  def propId2Name(id: Int) = propertyNameStore.key(id).get
   override def newNodeId(): Id = nodeStore.newNodeId()
 
   override def newRelationshipId(): Id = relationStore.newRelationId()
@@ -302,6 +302,14 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String) extends Distri
     if (!created){
       val iter = getNodesByLabel(Seq(label), false)
       indexStore.batchAddIndexOnNodes(label, propNames.toSeq, iter)
+    }
+  }
+
+  override def dropIndexOnNode(label: String, prop: String): Unit = {
+    val created = indexStore.isIndexCreated(label, Seq(prop))
+    if (created){
+      val nodes = getNodesByLabel(Seq(label), false)
+      indexStore.batchDeleteIndexLabelWithProperty(label, prop, nodes)
     }
   }
 

@@ -21,6 +21,10 @@ trait IndexNameStore {
   // a label with a set of properties
   var indexMetaMap: mutable.Map[String, mutable.Set[String]] = mutable.Map[String, mutable.Set[String]]()
 
+  def getIndexedMeta(): Map[String, Seq[String]] ={
+    indexMetaMap.map(f => (f._1, f._2.toSeq)).toMap
+  }
+
   def addToDB(labelName: String, propertyName: String): Unit = {
 
     if (indexMetaMap.contains(labelName) && indexMetaMap(labelName).contains(propertyName))

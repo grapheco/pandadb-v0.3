@@ -25,4 +25,10 @@ case class ResetAccountResponse(msg: VerifyConnectionMode.Value)
 
 
 case class GetStatisticsRequest()
-case class GetStatisticsResponse(allNodes: Long, allRelations: Long, nodesCountByLabel: Map[String, Long], relationsCountByType: Map[String, Long]){}
+case class GetStatisticsResponse(allNodes: Long, allRelations: Long, nodesCountByLabel: Map[String, Long], relationsCountByType: Map[String, Long], propertiesCountByIndex: Map[String, Long]){}
+
+case class GetIndexedMetaRequest()
+case class GetIndexedMetaResponse(metaMap: Map[String, Seq[String]])
+
+case class DropIndexMetaRequest(label: String, propName: String)
+case class DropIndexMetaResponse(accept: Boolean)

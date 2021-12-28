@@ -18,9 +18,6 @@ import org.tikv.common.{TiConfiguration, TiSession}
  * @Modified By:
  */
 object PandaImporter extends LazyLogging {
-  Logger.getLogger("org.tikv.common.operation.RegionErrorHandler").setLevel(Level.SEVERE)
-  Logger.getLogger("org.tikv.common.region.StoreHealthyChecker").setLevel(Level.SEVERE)
-
   val importerStatics: ImporterStatics = new ImporterStatics
 
   def time: String = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date)
@@ -40,6 +37,8 @@ object PandaImporter extends LazyLogging {
   }
 
   def main(args: Array[String]): Unit = {
+    Logger.getLogger("org.tikv.common.operation").setLevel(Level.SEVERE)
+
     val startTime: Long = new Date().getTime
     val importCmd: ImportCmd = ImportCmd(args)
 
