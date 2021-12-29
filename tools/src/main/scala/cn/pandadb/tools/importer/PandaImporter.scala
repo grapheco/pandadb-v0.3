@@ -93,6 +93,10 @@ object PandaImporter extends LazyLogging {
     val endTime: Long = new Date().getTime
     val timeUsed: String = TimeUtil.millsSecond2Time(endTime - startTime)
 
+    importerStatics.getNodeCountByLabel.foreach(kv => globalArgs.statistics.setNodeLabelCount(kv._1, kv._2))
+    importerStatics.getRelCountByType.foreach(kv => globalArgs.statistics.setRelationTypeCount(kv._1, kv._2))
+    globalArgs.statistics.nodeCount  = importerStatics.getGlobalNodeCount.get()
+    globalArgs.statistics.relationCount = importerStatics.getGlobalRelCount.get()
     globalArgs.statistics.flush()
 
     logger.info(s"${importerStatics.getGlobalNodeCount} nodes imported. $time")
