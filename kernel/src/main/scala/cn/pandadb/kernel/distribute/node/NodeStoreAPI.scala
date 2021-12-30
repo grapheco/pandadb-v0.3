@@ -22,6 +22,11 @@ class NodeStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStore) e
   val nodeLabelStore = new NodeLabelStore(db)
   val NONE_LABEL_ID: Int = 0
 
+  override def refreshMeta(): Unit ={
+    nodeLabelName.loadAll()
+    idGenerator.refreshId()
+  }
+
   override def newNodeId(): Long = idGenerator.nextId()
 
   override def cleanData(): Unit = idGenerator.resetId()
@@ -165,6 +170,8 @@ class NodeStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStore) e
 }
 
 trait DistributedNodeStoreSPI {
+  def refreshMeta(): Unit
+
   def newNodeId(): Long;
 
   def cleanData(): Unit

@@ -64,6 +64,12 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String) extends Distri
   def nodeLabelId2Name(id: Int) = nodeStore.getLabelName(id).get
   def relTypeId2Name(id: Int) = relationStore.getRelationTypeName(id).get
   def propId2Name(id: Int) = propertyNameStore.key(id).get
+  def refreshMeta(): Unit ={
+    nodeStore.refreshMeta()
+    relationStore.refreshMeta()
+    indexStore.refreshIndexMeta()
+    statistics.init()
+  }
   override def newNodeId(): Id = nodeStore.newNodeId()
 
   override def newRelationshipId(): Id = relationStore.newRelationId()

@@ -55,6 +55,10 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
 
   if (!indexIsExist(NameMapping.indexName)) createIndex(NameMapping.indexName)
 
+  def refreshIndexMeta(): Unit ={
+    nodeIndexMetaStore.loadAll()
+  }
+
   def getIndexedMetaData(): Map[String, Seq[String]] ={
     nodeIndexMetaStore.getIndexedMeta()
   }

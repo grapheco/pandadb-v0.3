@@ -19,6 +19,11 @@ class RelationStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStor
   val relationTypeStore = new RelationTypeStore(db)
   val relationStore = new RelationPropertyStore(db)
 
+  override def refreshMeta(): Unit = {
+    relationTypeNameStore.loadAll()
+    idGenerator.refreshId()
+  }
+
   override def newRelationId(): Long = idGenerator.nextId()
 
   override def cleanData(): Unit = idGenerator.resetId()
@@ -125,6 +130,8 @@ class RelationStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStor
 }
 
 trait DistributedRelationStoreSPI {
+  def refreshMeta(): Unit
+
   def newRelationId(): Long;
 
   def cleanData(): Unit

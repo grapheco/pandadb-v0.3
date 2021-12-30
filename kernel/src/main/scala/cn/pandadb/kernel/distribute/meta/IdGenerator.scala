@@ -22,6 +22,14 @@ class IdGenerator(db: DistributedKVAPI, idType: TypeNameEnum.Value) {
     else new AtomicLong(ByteUtils.getLong(res, 0))
   }
 
+  def refreshId(): Unit ={
+    val newId = {
+      val res = db.get(key)
+      if (res.isEmpty) new AtomicLong(0)
+      else new AtomicLong(ByteUtils.getLong(res, 0))
+    }
+    id.set(newId.get())
+  }
 
   def currentId() = id.get()
 
