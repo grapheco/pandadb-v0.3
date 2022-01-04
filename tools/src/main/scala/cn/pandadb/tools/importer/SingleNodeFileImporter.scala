@@ -87,8 +87,8 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
         val nodeBatch = processedData.map(f => f._1)
         val labelBatch = processedData.map(f => f._2)
 
-        val f1: Future[Unit] = Future{nodeBatch.grouped(10000).foreach(batch => nodeDB.batchPut(batch))}
-        val f2: Future[Unit] = Future{labelBatch.grouped(10000).foreach(batch => nodeLabelDB.batchPut(batch))}
+       val f1 = Future{nodeBatch.grouped(100000).foreach(batch => batch.grouped(10000).toList.par.foreach(_batch => nodeDB.batchPut(_batch)))}
+       val f2 = Future{labelBatch.grouped(100000).foreach(batch => batch.grouped(10000).toList.par.foreach(_batch => nodeLabelDB.batchPut(_batch)))}
 
         Await.result(f1, Duration.Inf)
         Await.result(f2, Duration.Inf)

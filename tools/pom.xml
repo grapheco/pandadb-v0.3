@@ -15,7 +15,7 @@
         <dependency>
             <groupId>pandadb</groupId>
             <artifactId>kernel</artifactId>
-            <version>${parent.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
     </dependencies>
 

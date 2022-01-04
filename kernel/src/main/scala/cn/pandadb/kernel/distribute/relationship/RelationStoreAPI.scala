@@ -11,7 +11,7 @@ import cn.pandadb.kernel.store.{StoredRelation, StoredRelationWithProperty}
  * @create: 2021-11-18 10:53
  */
 class RelationStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStore) extends DistributedRelationStoreSPI {
-  private val relationTypeNameStore = new RelationTypeNameStore(db)
+  private val relationTypeNameStore = new RelationTypeNameStore(db, propertyNameStore.udpClients)
   private val idGenerator =new IdGenerator(db, TypeNameEnum.relationName)
 
   val inRelationStore = new RelationDirectionStore(db, RelationDirection.IN)
@@ -20,7 +20,7 @@ class RelationStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStor
   val relationStore = new RelationPropertyStore(db)
 
   override def refreshMeta(): Unit = {
-    relationTypeNameStore.loadAll()
+    relationTypeNameStore.refreshNameStore()
     idGenerator.refreshId()
   }
 

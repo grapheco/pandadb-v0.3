@@ -15,7 +15,8 @@ object SettingKeys {
 
   val indexHosts = "dbms.index.hosts"
   val kvHosts = "dbms.kv.hosts"
-
+  val pNodes = "dbms.panda.nodes"
+  val udpPort = "dbms.server.udp.port"
 }
 
 class Config extends LazyLogging {
@@ -42,6 +43,9 @@ class Config extends LazyLogging {
   def getRpcPort(): Int = {
     getValueAsInt(SettingKeys.rpcListenPort, 52000)
   }
+  def getUDPPort(): Int = {
+    getValueAsInt(SettingKeys.udpPort, 23333)
+  }
   def getNodeAddress(): String = {getListenHost + ":" + getRpcPort.toString}
 
   def getRpcServerName(): String = {
@@ -52,6 +56,9 @@ class Config extends LazyLogging {
   }
   def getIndexHosts(): String = {
     getValueAsString(SettingKeys.indexHosts, "")
+  }
+  def getPandaNodes(): String = {
+    getValueAsString(SettingKeys.pNodes, "")
   }
 
 

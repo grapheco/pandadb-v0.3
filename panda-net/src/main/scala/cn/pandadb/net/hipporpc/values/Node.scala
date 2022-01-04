@@ -1,4 +1,4 @@
-package cn.pandadb.hipporpc.values
+package cn.pandadb.net.hipporpc.values
 
 case class Node(id: Long,
                 props: Map[String, Value],

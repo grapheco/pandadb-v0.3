@@ -20,7 +20,7 @@
         </dependency>
         <dependency>
             <groupId>pandadb</groupId>
-            <artifactId>panda-rpc</artifactId>
+            <artifactId>panda-net</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
     </dependencies>

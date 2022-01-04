@@ -1,4 +1,4 @@
-package cn.pandadb.hipporpc.utils
+package cn.pandadb.net.hipporpc.utils
 
 import cn.pandadb.NotValidAddressException
 

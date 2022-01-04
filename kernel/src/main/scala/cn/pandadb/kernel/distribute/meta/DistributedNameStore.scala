@@ -4,6 +4,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import cn.pandadb.kernel.distribute.DistributedKVAPI
 import cn.pandadb.kernel.kv.ByteUtils
+import cn.pandadb.net.udp.UDPClient
 
 import scala.collection.mutable
 
@@ -12,6 +13,7 @@ trait DistributedNameStore {
   val initInt: Int
   val key2ByteArrayFunc: (Int) => Array[Byte]
   val keyPrefixFunc: () => Array[Byte]
+  val udpClients: Array[UDPClient]
 
   var idGenerator: AtomicInteger = new AtomicInteger(initInt)
   var mapString2Int: mutable.Map[String, Int] = mutable.Map[String, Int]()
@@ -23,6 +25,9 @@ trait DistributedNameStore {
     mapInt2String += id -> labelName
     val key = key2ByteArrayFunc(id)
     db.put(key, ByteUtils.stringToBytes(labelName))
+
+    udpClients.foreach(client => client.sendRefreshMsg())
+
     id
   }
 
@@ -57,6 +62,8 @@ trait DistributedNameStore {
     mapInt2String -= id
     val key = key2ByteArrayFunc(id)
     db.delete(key)
+
+    udpClients.foreach(client => client.sendRefreshMsg())
   }
 
   def cleanData(): Unit ={
@@ -81,6 +88,25 @@ trait DistributedNameStore {
       mapString2Int += name -> id
       mapInt2String += id -> name
     }
+    idGenerator.set(maxId)
+  }
+
+  def refreshNameStore(): Unit ={
+    val tmpMapString2Int = mutable.Map[String, Int]()
+    val tmpMapInt2String = mutable.Map[Int, String]()
+    val prefix = keyPrefixFunc()
+    var maxId: Int = initInt
+    val iter = db.scanPrefix(prefix, 10000, false)
+    while (iter.hasNext){
+      val key = iter.next().getKey.toByteArray
+      val id = ByteUtils.getInt(key, 1)
+      if (maxId < id) maxId = id
+      val name = ByteUtils.stringFromBytes(db.get(key))
+      tmpMapString2Int += name -> id
+      tmpMapInt2String += id -> name
+    }
+    mapString2Int = tmpMapString2Int
+    mapInt2String = tmpMapInt2String
     idGenerator.set(maxId)
   }
 }

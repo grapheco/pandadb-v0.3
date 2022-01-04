@@ -5,6 +5,7 @@ import java.nio.ByteBuffer
 import cn.pandadb.kernel.distribute.DistributedGraphFacade
 import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
 import cn.pandadb.kernel.distribute.meta.{DistributedStatistics, NameMapping}
+import cn.pandadb.net.udp.UDPClient
 import org.apache.http.HttpHost
 import org.elasticsearch.client.{RestClient, RestHighLevelClient}
 import org.grapheco.lynx.{LynxInteger, LynxString, NodeFilter}
@@ -22,6 +23,7 @@ import org.tikv.shade.com.google.protobuf.ByteString
 class IndexStoreTest {
   val kvHosts = "10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379"
   val indexHosts = "10.0.82.144:9200,10.0.82.145:9200,10.0.82.146:9200"
+  val udpClient = Array(new UDPClient("127.0.0.1", 6000))
 
 
   val hosts = Array(new HttpHost("10.0.82.144", 9200, "http"),
@@ -40,7 +42,7 @@ class IndexStoreTest {
   def init(): Unit = {
     cleanDB()
     client = new RestHighLevelClient(RestClient.builder(hosts: _*))
-    graphFacade = new DistributedGraphFacade(kvHosts, indexHosts)
+    graphFacade = new DistributedGraphFacade(kvHosts, indexHosts, udpClient)
     indexStore = new PandaDistributedIndexStore(client, graphFacade.db, graphFacade.nodeStore, new DistributedStatistics(graphFacade.db))
     cleanIndex()
     addData()

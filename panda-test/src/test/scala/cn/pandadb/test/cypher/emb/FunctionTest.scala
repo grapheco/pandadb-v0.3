@@ -3,6 +3,7 @@ package cn.pandadb.test.cypher.emb
 import java.io.File
 
 import cn.pandadb.kernel.distribute.{DistributedGraphFacade, PandaDistributeKVAPI}
+import cn.pandadb.net.udp.UDPClient
 import org.grapheco.lynx.{LynxNode, LynxValue}
 import org.junit.{After, Assert, Before, Test}
 
@@ -16,6 +17,7 @@ class FunctionTest {
   val kvHosts = "10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379"
   val indexHosts = "10.0.82.144:9200,10.0.82.145:9200,10.0.82.146:9200"
   var db: DistributedGraphFacade = _
+  val udpClient = Array(new UDPClient("127.0.0.1", 6000))
 
   var nodeId1: Long = _
   var nodeId2: Long = _
@@ -23,7 +25,7 @@ class FunctionTest {
 
   @Before
   def init(): Unit ={
-    db = new DistributedGraphFacade(kvHosts, indexHosts)
+    db = new DistributedGraphFacade(kvHosts, indexHosts, udpClient)
     db.cleanDB()
     prepareData(db)
   }

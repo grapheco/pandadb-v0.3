@@ -6,6 +6,7 @@ import cn.pandadb.kernel.distribute.PandaDistributeKVAPI
 import cn.pandadb.kernel.distribute.meta.PropertyNameStore
 import cn.pandadb.kernel.distribute.relationship.{DistributedRelationStoreSPI, RelationStoreAPI}
 import cn.pandadb.kernel.store.StoredRelationWithProperty
+import cn.pandadb.net.udp.UDPClient
 import org.junit.{After, Assert, Before, Test}
 import org.tikv.common.{TiConfiguration, TiSession}
 import org.tikv.raw.RawKVClient
@@ -27,6 +28,7 @@ class RelationStoreTest {
   val r4 = new StoredRelationWithProperty(4, 2, 3, 2, Map(1 -> "tom4"))
   val r5 = new StoredRelationWithProperty(5, 2, 4, 2, Map(1 -> "tom5"))
   val r6 = new StoredRelationWithProperty(6, 3, 4, 2, Map(1 -> "tom6"))
+  val udpClient = Array(new UDPClient("127.0.0.1", 6000))
 
   @Before
   def init(): Unit = {
@@ -38,7 +40,7 @@ class RelationStoreTest {
 
     val db = new PandaDistributeKVAPI(tikv)
 
-    api = new RelationStoreAPI(db, new PropertyNameStore(db))
+    api = new RelationStoreAPI(db, new PropertyNameStore(db, udpClient))
 
     api.addRelation(r1)
     api.addRelation(r2)

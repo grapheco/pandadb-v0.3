@@ -3,9 +3,9 @@ package cn.pandadb.server.rpc
 import java.nio.ByteBuffer
 
 import cn.pandadb.dbms.DistributedGraphDatabaseManager
-import cn.pandadb.hipporpc.message.{CypherRequest, DropIndexMetaRequest, DropIndexMetaResponse, GetIndexedMetaRequest, GetIndexedMetaResponse, GetStatisticsRequest, GetStatisticsResponse, SayHelloRequest, SayHelloResponse}
-import cn.pandadb.hipporpc.utils.DriverValue
-import cn.pandadb.hipporpc.values.Value
+import cn.pandadb.net.hipporpc.message.{CypherRequest, DropIndexMetaRequest, DropIndexMetaResponse, GetIndexedMetaRequest, GetIndexedMetaResponse, GetStatisticsRequest, GetStatisticsResponse, SayHelloRequest, SayHelloResponse}
+import cn.pandadb.net.hipporpc.utils.DriverValue
+import cn.pandadb.net.hipporpc.values.Value
 import cn.pandadb.server.common.configuration.Config
 import cn.pandadb.server.common.modules.LifecycleServerModule
 import cn.pandadb.utils.ValueConverter

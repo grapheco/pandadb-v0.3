@@ -1,4 +1,4 @@
-package cn.pandadb.hipporpc.message
+package cn.pandadb.net.hipporpc.message
 
 import cn.pandadb.VerifyConnectionMode
 

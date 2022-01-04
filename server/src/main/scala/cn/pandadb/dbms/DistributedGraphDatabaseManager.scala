@@ -1,12 +1,13 @@
 package cn.pandadb.dbms
 
 import cn.pandadb.kernel.distribute.DistributedGraphFacade
+import cn.pandadb.net.udp.UDPClient
 import com.typesafe.scalalogging.LazyLogging
 import cn.pandadb.server.common.lifecycle.LifecycleAdapter
 
-class DistributedGraphDatabaseManager(kvHosts: String, indexHosts: String) extends LifecycleAdapter with LazyLogging {
+class DistributedGraphDatabaseManager(kvHosts: String, indexHosts: String, udpClients: Array[UDPClient]) extends LifecycleAdapter with LazyLogging {
 
-  var defaultDB: DistributedGraphFacade = _
+  val defaultDB: DistributedGraphFacade = new DistributedGraphFacade(kvHosts, indexHosts, udpClients)
 
   override def stop(): Unit = {
     defaultDB.close()
@@ -18,7 +19,6 @@ class DistributedGraphDatabaseManager(kvHosts: String, indexHosts: String) exten
   }
 
   override def init(): Unit = {
-    defaultDB = new DistributedGraphFacade(kvHosts, indexHosts)
     logger.debug(s"${this.getClass} inited.")
   }
 

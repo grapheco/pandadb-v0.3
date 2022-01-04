@@ -4,7 +4,8 @@ import java.io.File
 
 import cn.pandadb.kernel.distribute.DistributedGraphFacade
 import cn.pandadb.kernel.store.{PandaNode, PandaRelationship}
-import org.grapheco.lynx.{LynxValue}
+import cn.pandadb.net.udp.UDPClient
+import org.grapheco.lynx.LynxValue
 import org.junit.{After, Assert, Before, Test}
 
 /**
@@ -17,10 +18,11 @@ class SetTest {
   val kvHosts = "10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379"
   val indexHosts = "10.0.82.144:9200,10.0.82.145:9200,10.0.82.146:9200"
   var db: DistributedGraphFacade = _
+  val udpClient = Array(new UDPClient("127.0.0.1", 6000))
 
   @Before
   def init(): Unit ={
-    db = new DistributedGraphFacade(kvHosts, indexHosts)
+    db = new DistributedGraphFacade(kvHosts, indexHosts, udpClient)
     db.cleanDB()
   }
 

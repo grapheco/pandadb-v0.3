@@ -1,6 +1,6 @@
 package cn.pandadb.driver.utils
 
-import cn.pandadb.hipporpc.values.{Value => HippoValue}
+import cn.pandadb.net.hipporpc.values.{Value => HippoValue}
 import org.neo4j.driver.internal.{InternalNode, InternalRelationship}
 import org.neo4j.driver.internal.value.{BooleanValue, DateTimeValue, FloatValue, IntegerValue, ListValue, LocalDateTimeValue, NodeValue, NullValue, RelationshipValue, StringValue}
 import org.neo4j.driver.v1.{Record, Value => Neo4jValue}
@@ -52,6 +52,6 @@ object TypesToNeo4jValue {
   }
 }
 
-class NotSupportValueTypeException(s: String) extends Exception{
+class NotSupportValueTypeException(s: String) extends Exception {
   override def getMessage: String = s
 }

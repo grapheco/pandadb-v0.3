@@ -13,7 +13,7 @@
         <module>kernel</module>
         <module>tools</module>
         <module>server</module>
-        <module>panda-rpc</module>
+        <module>panda-net</module>
         <module>driver1.x</module>
         <module>packaging</module>
         <module>panda-test</module>

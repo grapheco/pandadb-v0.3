@@ -3,6 +3,7 @@ package cn.pandadb.test.cypher.emb
 import java.io.File
 
 import cn.pandadb.kernel.distribute.DistributedGraphFacade
+import cn.pandadb.net.udp.UDPClient
 import org.apache.commons.io.FileUtils
 import org.grapheco.lynx.{LynxNode, LynxRelationship, LynxValue}
 import org.junit.{After, Assert, Before, Test}
@@ -17,6 +18,7 @@ class MatchTest {
   val kvHosts = "10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379"
   val indexHosts = "10.0.82.144:9200,10.0.82.145:9200,10.0.82.146:9200"
   var db: DistributedGraphFacade = _
+  val udpClient = Array(new UDPClient("127.0.0.1", 6000))
 
   var id1: Long = _
   var id2: Long = _
@@ -31,7 +33,7 @@ class MatchTest {
 
   @Before
   def init(): Unit ={
-    db = new DistributedGraphFacade(kvHosts, indexHosts)
+    db = new DistributedGraphFacade(kvHosts, indexHosts, udpClient)
     db.cleanDB()
 
      id1 = db.addNode(Map("name"->"alex",

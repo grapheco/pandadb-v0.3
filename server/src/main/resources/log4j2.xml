@@ -8,6 +8,7 @@
     <loggers>
         <logger name="cn.pandadb" level="info"/>
         <logger name="org.grapheco.lynx.CypherRunner" level="info"/>
+        <logger name="org.tikv.common.operation" level="error"/>
         <root level="info">
             <appender-ref ref="Console"/>
         </root>

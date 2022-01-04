@@ -15,7 +15,7 @@ import scala.collection.mutable.ArrayBuffer
  * @create: 2021-11-16 15:12
  */
 class NodeStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStore) extends DistributedNodeStoreSPI {
-  private val nodeLabelName = new NodeLabelNameStore(db)
+  private val nodeLabelName = new NodeLabelNameStore(db, propertyNameStore.udpClients)
   private val idGenerator = new IdGenerator(db, TypeNameEnum.nodeName)
 
   val nodeStore = new NodeStore(db)
@@ -23,7 +23,7 @@ class NodeStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStore) e
   val NONE_LABEL_ID: Int = 0
 
   override def refreshMeta(): Unit ={
-    nodeLabelName.loadAll()
+    nodeLabelName.refreshNameStore()
     idGenerator.refreshId()
   }
 

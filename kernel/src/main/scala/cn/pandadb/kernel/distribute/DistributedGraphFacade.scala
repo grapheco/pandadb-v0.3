@@ -8,12 +8,12 @@ import cn.pandadb.kernel.distribute.node.NodeStoreAPI
 import cn.pandadb.kernel.distribute.relationship.RelationStoreAPI
 import cn.pandadb.kernel.store.{PandaNode, PandaRelationship, StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
 import cn.pandadb.kernel.util.PandaDBException.PandaDBException
+import cn.pandadb.net.udp.UDPClient
 import org.apache.http.HttpHost
 import org.elasticsearch.client.{RestClient, RestHighLevelClient}
 import org.grapheco.lynx.cypherplus.CypherRunnerPlus
 import org.grapheco.lynx.{LynxResult, LynxTransaction, LynxValue, NodeFilter}
 import org.tikv.common.{TiConfiguration, TiSession}
-import org.tikv.shade.com.google.protobuf.ByteString
 
 /**
  * @program: pandadb-v0.3
@@ -21,7 +21,7 @@ import org.tikv.shade.com.google.protobuf.ByteString
  * @author: LiamGao
  * @create: 2021-11-17 16:45
  */
-class DistributedGraphFacade(kvHosts: String, indexHosts: String) extends DistributedGraphService {
+class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClients: Array[UDPClient]) extends DistributedGraphService {
 
   val db = {
     val conf = TiConfiguration.createRawDefault(kvHosts)
@@ -30,7 +30,7 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String) extends Distri
     new PandaDistributeKVAPI(session.createRawClient())
   }
 
-  val propertyNameStore = new PropertyNameStore(db)
+  val propertyNameStore = new PropertyNameStore(db, udpClients)
   val nodeStore = new NodeStoreAPI(db, propertyNameStore)
   val relationStore = new RelationStoreAPI(db, propertyNameStore)
 
@@ -334,6 +334,7 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String) extends Distri
 
   override def close(): Unit = {
     nodeStore.close()
+    relationStore.close()
     statistics.flush()
   }
 }

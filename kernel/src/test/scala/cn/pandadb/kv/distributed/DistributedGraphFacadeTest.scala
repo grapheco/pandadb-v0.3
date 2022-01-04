@@ -4,6 +4,7 @@ import java.nio.ByteBuffer
 
 import cn.pandadb.kernel.distribute.DistributedGraphFacade
 import cn.pandadb.kernel.store.StoredNodeWithProperty
+import cn.pandadb.net.udp.UDPClient
 import org.grapheco.lynx.{LynxInteger, LynxString}
 import org.junit.{After, Assert, Before, Test}
 import org.tikv.common.{TiConfiguration, TiSession}
@@ -24,7 +25,7 @@ class DistributedGraphFacadeTest {
 
   val kvHosts = "10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379"
   val indexHosts = "10.0.82.144:9200,10.0.82.145:9200,10.0.82.146:9200"
-
+  val udpClient = Array(new UDPClient("127.0.0.1", 6000))
   @Before
   def init(): Unit = {
     val conf = TiConfiguration.createRawDefault("10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379")
@@ -32,7 +33,7 @@ class DistributedGraphFacadeTest {
     tikv = session.createRawClient()
     cleanDB()
 
-    api = new DistributedGraphFacade(kvHosts, indexHosts)
+    api = new DistributedGraphFacade(kvHosts, indexHosts, udpClient)
     addData()
   }
 

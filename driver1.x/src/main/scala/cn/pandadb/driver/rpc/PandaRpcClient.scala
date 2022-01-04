@@ -1,8 +1,8 @@
 package cn.pandadb.driver.rpc
 
 import cn.pandadb.{CypherErrorException, VerifyConnectionMode}
-import cn.pandadb.hipporpc.message._
-import cn.pandadb.hipporpc.utils.DriverValue
+import cn.pandadb.net.hipporpc.message.{CypherRequest, DropIndexMetaRequest, DropIndexMetaResponse, GetIndexedMetaRequest, GetIndexedMetaResponse, GetStatisticsRequest, GetStatisticsResponse, ResetAccountRequest, ResetAccountResponse, SecurityRequest, TransactionCommitRequest, TransactionCommitResponse, TransactionCypherRequest, TransactionRollbackRequest, TransactionRollbackResponse, VerifyConnectionRequest, VerifyConnectionResponse}
+import cn.pandadb.net.hipporpc.utils.DriverValue
 import net.neoremind.kraps.RpcConf
 import net.neoremind.kraps.rpc.netty.HippoRpcEnvFactory
 import net.neoremind.kraps.rpc.{RpcAddress, RpcEnvClientConfig}

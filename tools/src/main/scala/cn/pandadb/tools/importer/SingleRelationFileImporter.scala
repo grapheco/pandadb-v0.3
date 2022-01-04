@@ -102,10 +102,10 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
         val inBatch = processedData.map(f => f._2)
         val outBatch = processedData.map(f => f._3)
         val typeBatch = processedData.map(f => f._4)
-        val f1: Future[Unit] = Future{relationBatch.grouped(10000).foreach(batch => relationDB.batchPut(batch))}
-        val f2: Future[Unit] = Future{inBatch.grouped(10000).foreach(batch => inRelationDB.batchPut(batch))}
-        val f3: Future[Unit] = Future{outBatch.grouped(10000).foreach(batch => outRelationDB.batchPut(batch))}
-        val f4: Future[Unit] = Future{typeBatch.grouped(10000).foreach(batch => typeRelationDB.batchPut(batch))}
+        val f1: Future[Unit] = Future{relationBatch.grouped(100000).foreach(batch => batch.grouped(10000).toList.par.foreach(_batch => relationDB.batchPut(_batch)))}
+        val f2: Future[Unit] = Future{inBatch.grouped(100000).foreach(batch => batch.grouped(10000).toList.par.foreach(_batch => inRelationDB.batchPut(_batch)))}
+        val f3: Future[Unit] = Future{outBatch.grouped(100000).foreach(batch => batch.grouped(10000).toList.par.foreach(_batch => outRelationDB.batchPut(_batch)))}
+        val f4: Future[Unit] = Future{typeBatch.grouped(100000).foreach(batch => batch.grouped(10000).toList.par.foreach(_batch => typeRelationDB.batchPut(_batch)))}
         Await.result(f1, Duration.Inf)
         Await.result(f2, Duration.Inf)
         Await.result(f3, Duration.Inf)
