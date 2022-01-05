@@ -3,7 +3,7 @@ package cn.pandadb.test.cypher.emb
 import java.io.File
 
 import cn.pandadb.kernel.distribute.DistributedGraphFacade
-import cn.pandadb.net.udp.UDPClient
+import cn.pandadb.kernel.udp.UDPClient
 import org.grapheco.lynx.{LynxNode, LynxRelationship}
 import org.junit.{After, Assert, Before, Test}
 

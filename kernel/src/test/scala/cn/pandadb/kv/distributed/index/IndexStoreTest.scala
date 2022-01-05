@@ -5,7 +5,7 @@ import java.nio.ByteBuffer
 import cn.pandadb.kernel.distribute.DistributedGraphFacade
 import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
 import cn.pandadb.kernel.distribute.meta.{DistributedStatistics, NameMapping}
-import cn.pandadb.net.udp.UDPClient
+import cn.pandadb.kernel.udp.UDPClient
 import org.apache.http.HttpHost
 import org.elasticsearch.client.{RestClient, RestHighLevelClient}
 import org.grapheco.lynx.{LynxInteger, LynxString, NodeFilter}

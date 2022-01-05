@@ -1,7 +1,7 @@
 package cn.pandadb.dbms
 
 import cn.pandadb.kernel.distribute.DistributedGraphFacade
-import cn.pandadb.net.udp.UDPClient
+import cn.pandadb.kernel.udp.UDPClient
 import com.typesafe.scalalogging.LazyLogging
 import cn.pandadb.server.common.lifecycle.LifecycleAdapter
 

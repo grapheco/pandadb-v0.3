@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import cn.pandadb.kernel.distribute.DistributedKVAPI
 import cn.pandadb.kernel.kv.ByteUtils
-import cn.pandadb.net.udp.UDPClient
+import cn.pandadb.kernel.udp.UDPClient
 
 import scala.collection.mutable
 

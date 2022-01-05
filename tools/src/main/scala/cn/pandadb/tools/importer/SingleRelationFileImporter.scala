@@ -102,10 +102,23 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
         val inBatch = processedData.map(f => f._2)
         val outBatch = processedData.map(f => f._3)
         val typeBatch = processedData.map(f => f._4)
-        val f1: Future[Unit] = Future{relationBatch.grouped(100000).foreach(batch => batch.grouped(10000).toList.par.foreach(_batch => relationDB.batchPut(_batch)))}
-        val f2: Future[Unit] = Future{inBatch.grouped(100000).foreach(batch => batch.grouped(10000).toList.par.foreach(_batch => inRelationDB.batchPut(_batch)))}
-        val f3: Future[Unit] = Future{outBatch.grouped(100000).foreach(batch => batch.grouped(10000).toList.par.foreach(_batch => outRelationDB.batchPut(_batch)))}
-        val f4: Future[Unit] = Future{typeBatch.grouped(100000).foreach(batch => batch.grouped(10000).toList.par.foreach(_batch => typeRelationDB.batchPut(_batch)))}
+
+        val f1: Future[Unit] = Future{relationBatch.grouped(10000).toList.par.foreach(_batch => {
+          val sorted = _batch.sortBy(f => ByteUtils.getLong(f._1, 1))
+          relationDB.batchPut(sorted)
+        })}
+        val f2: Future[Unit] = Future{inBatch.grouped(10000).toList.par.foreach(_batch => {
+          val sorted = _batch.sortBy(f => ByteUtils.getLong(f._1, 1))
+          inRelationDB.batchPut(sorted)
+        })}
+        val f3: Future[Unit] = Future{outBatch.grouped(10000).toList.par.foreach(_batch => {
+          val sorted = _batch.sortBy(f => ByteUtils.getLong(f._1, 1))
+          outRelationDB.batchPut(sorted)
+        })}
+        val f4: Future[Unit] = Future{typeBatch.grouped(10000).toList.par.foreach(_batch => {
+          val sorted = _batch.sortBy(f => ByteUtils.getLong(f._1, 5))
+          typeRelationDB.batchPut(sorted)
+        })}
         Await.result(f1, Duration.Inf)
         Await.result(f2, Duration.Inf)
         Await.result(f3, Duration.Inf)

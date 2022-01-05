@@ -7,7 +7,7 @@ import org.junit.{After, Assert, Before, Test}
 import java.io.File
 
 import cn.pandadb.kernel.distribute.DistributedGraphFacade
-import cn.pandadb.net.udp.UDPClient
+import cn.pandadb.kernel.udp.UDPClient
 
 class DeleteNodeTest {
   val kvHosts = "10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379"

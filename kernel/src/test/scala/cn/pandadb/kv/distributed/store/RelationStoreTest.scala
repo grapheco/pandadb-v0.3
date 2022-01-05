@@ -6,7 +6,7 @@ import cn.pandadb.kernel.distribute.PandaDistributeKVAPI
 import cn.pandadb.kernel.distribute.meta.PropertyNameStore
 import cn.pandadb.kernel.distribute.relationship.{DistributedRelationStoreSPI, RelationStoreAPI}
 import cn.pandadb.kernel.store.StoredRelationWithProperty
-import cn.pandadb.net.udp.UDPClient
+import cn.pandadb.kernel.udp.UDPClient
 import org.junit.{After, Assert, Before, Test}
 import org.tikv.common.{TiConfiguration, TiSession}
 import org.tikv.raw.RawKVClient

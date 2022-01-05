@@ -1,7 +1,8 @@
 package cn.pandadb.server
 
 import cn.pandadb.dbms.DistributedGraphDatabaseManager
-import cn.pandadb.net.udp.{UDPClient, UDPServer}
+import cn.pandadb.kernel.udp.{UDPClient, UDPServer}
+import cn.pandadb.kernel.udp.UDPServer
 import cn.pandadb.server.common.configuration.Config
 import cn.pandadb.server.common.lifecycle.LifecycleSupport
 import cn.pandadb.server.rpc.DistributedPandaRpcServer

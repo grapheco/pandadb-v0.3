@@ -7,8 +7,8 @@ import cn.pandadb.kernel.distribute.meta.{DistributedStatistics, NameMapping, Pr
 import cn.pandadb.kernel.distribute.node.NodeStoreAPI
 import cn.pandadb.kernel.distribute.relationship.RelationStoreAPI
 import cn.pandadb.kernel.store.{PandaNode, PandaRelationship, StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
+import cn.pandadb.kernel.udp.UDPClient
 import cn.pandadb.kernel.util.PandaDBException.PandaDBException
-import cn.pandadb.net.udp.UDPClient
 import org.apache.http.HttpHost
 import org.elasticsearch.client.{RestClient, RestHighLevelClient}
 import org.grapheco.lynx.cypherplus.CypherRunnerPlus

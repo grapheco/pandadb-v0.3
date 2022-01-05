@@ -1,6 +1,6 @@
 package cn.pandadb.kernel.distribute.meta
 import cn.pandadb.kernel.distribute.{DistributedKVAPI, DistributedKeyConverter}
-import cn.pandadb.net.udp.UDPClient
+import cn.pandadb.kernel.udp.UDPClient
 
 /**
  * @program: pandadb-v0.3

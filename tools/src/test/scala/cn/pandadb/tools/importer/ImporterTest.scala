@@ -2,7 +2,7 @@ package cn.pandadb.tools.importer
 
 
 import cn.pandadb.kernel.distribute.DistributedGraphFacade
-import cn.pandadb.net.udp.UDPClient
+import cn.pandadb.kernel.udp.UDPClient
 import org.junit.Test
 
 /**

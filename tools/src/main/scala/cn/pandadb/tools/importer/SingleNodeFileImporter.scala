@@ -1,7 +1,7 @@
 package cn.pandadb.tools.importer
 
 import cn.pandadb.kernel.PDBMetaData
-import cn.pandadb.kernel.kv.KeyConverter
+import cn.pandadb.kernel.kv.{ByteUtils, KeyConverter}
 import cn.pandadb.kernel.util.serializer.NodeSerializer
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
@@ -83,12 +83,17 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
           node._2.foreach(labelId => _countMapAdd(innerTaskNodeCountByLabel, labelId, 1L))
           keys.map(nodeKeyLabelKey => ((nodeKeyLabelKey._1, serializedNodeValue), (nodeKeyLabelKey._2, Array.emptyByteArray)))
         })
-
         val nodeBatch = processedData.map(f => f._1)
         val labelBatch = processedData.map(f => f._2)
 
-       val f1 = Future{nodeBatch.grouped(100000).foreach(batch => batch.grouped(10000).toList.par.foreach(_batch => nodeDB.batchPut(_batch)))}
-       val f2 = Future{labelBatch.grouped(100000).foreach(batch => batch.grouped(10000).toList.par.foreach(_batch => nodeLabelDB.batchPut(_batch)))}
+       val f1 = Future{nodeBatch.grouped(10000).toList.par.foreach(batch => {
+         val sorted = batch.sortBy(f => ByteUtils.getLong(f._1, 5))
+         nodeDB.batchPut(sorted)
+       })}
+       val f2 = Future{labelBatch.grouped(10000).toList.par.foreach(batch =>{
+         val sorted = batch.sortBy(f => ByteUtils.getLong(f._1, 1))
+         nodeLabelDB.batchPut(sorted)
+       })}
 
         Await.result(f1, Duration.Inf)
         Await.result(f2, Duration.Inf)

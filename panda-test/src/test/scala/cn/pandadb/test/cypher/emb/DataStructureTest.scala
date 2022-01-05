@@ -4,7 +4,7 @@ import java.io.File
 
 import cn.pandadb.kernel.distribute.DistributedGraphFacade
 import cn.pandadb.kernel.store.{PandaNode, PandaRelationship}
-import cn.pandadb.net.udp.UDPClient
+import cn.pandadb.kernel.udp.UDPClient
 import org.grapheco.lynx.LynxValue
 import org.junit.{After, Assert, Before, Test}
 

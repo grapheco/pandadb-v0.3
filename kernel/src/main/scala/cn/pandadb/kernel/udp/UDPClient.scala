@@ -1,4 +1,4 @@
-package cn.pandadb.net.udp
+package cn.pandadb.kernel.udp
 
 import java.net.{DatagramPacket, DatagramSocket, InetAddress}
 import java.nio.charset.Charset

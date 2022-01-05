@@ -1,4 +1,4 @@
-package cn.pandadb.net.udp
+package cn.pandadb.kernel.udp
 
 object UDPMsg {
   val refreshMsg = "1"

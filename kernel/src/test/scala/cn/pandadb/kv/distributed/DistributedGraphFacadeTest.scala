@@ -4,7 +4,7 @@ import java.nio.ByteBuffer
 
 import cn.pandadb.kernel.distribute.DistributedGraphFacade
 import cn.pandadb.kernel.store.StoredNodeWithProperty
-import cn.pandadb.net.udp.UDPClient
+import cn.pandadb.kernel.udp.UDPClient
 import org.grapheco.lynx.{LynxInteger, LynxString}
 import org.junit.{After, Assert, Before, Test}
 import org.tikv.common.{TiConfiguration, TiSession}

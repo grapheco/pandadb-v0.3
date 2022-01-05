@@ -5,7 +5,7 @@ import java.util
 
 import cn.pandadb.kernel.distribute.{DistributedGraphFacade, DistributedKeyConverter}
 import cn.pandadb.kernel.kv.ByteUtils
-import cn.pandadb.net.udp.UDPClient
+import cn.pandadb.kernel.udp.UDPClient
 import org.junit.Test
 import org.tikv.common.types.Charset
 import org.tikv.common.{TiConfiguration, TiSession}
