@@ -21,6 +21,7 @@ class RelationStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStor
 
   override def refreshMeta(): Unit = {
     relationTypeNameStore.refreshNameStore()
+    propertyNameStore.refreshNameStore()
     idGenerator.refreshId()
   }
 

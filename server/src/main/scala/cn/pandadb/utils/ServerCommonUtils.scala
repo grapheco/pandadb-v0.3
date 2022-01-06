@@ -1,7 +1,9 @@
 package cn.pandadb.utils
 
-import java.net.InetAddress
+import java.net.{DatagramSocket, InetAddress, Socket}
 
+import cn.pandadb.kernel.udp.UDPServer
+import cn.pandadb.kernel.util.PandaDBException.PandaDBException
 import cn.pandadb.server.common.configuration.Config
 
 import scala.util.matching.Regex
@@ -23,24 +25,44 @@ object ServerCommonUtils {
     InetAddress.getLocalHost().getHostAddress
   }
 
-  def getOtherClusterNodesIP(config: Config): Array[(String, Int)] ={
-    val localNetIp = getLocalIP()
-    val port = config.getUDPPort()
-    val tmp = config.getPandaNodes().split(",").filterNot(ip => {
-      if (ip.startsWith("127.0.0.1")) ip == s"127.0.0.1:$port"
-      else ip == s"$localNetIp:$port"
+  def getClusterNodesIP(config: Config): (Boolean, Array[(String, Int)]) ={
+    val addresses = config.getPandaNodes().split(",")
+    val ipAndPort = addresses.map(f => {
+      val array = f.split(":")
+      (array.head, array.last.toInt)
     })
-    if (tmp.length > 0) {
-      tmp.map(s => {
-        val t = s.split(":")
-        (t(0), t(1).toInt)
-      })
+
+    val isLocal = addresses.forall(f => f.startsWith("127.0.0.1"))
+    if (isLocal){
+      (true, ipAndPort.sortBy(f => f._2))
     }
-    else Array.empty
+    else {
+      if (ipAndPort.length != ipAndPort.map(f => f._1).toSet.size) throw new PandaDBException("check your config file of dbms.panda.nodes, all ip should be different")
+      val localNetIp = getLocalIP()
+      val localIp = ipAndPort.filter(p => p._1 == localNetIp)
+      if (localIp.nonEmpty){
+        val localPort = localIp.head._2
+        val otherIps = ipAndPort.filterNot(p => p._1 == localNetIp)
+        (false, Array((localNetIp, localPort)) ++ otherIps)
+      }
+      else throw new PandaDBException(s"you should start panda node at $localNetIp ")
+    }
   }
 
   def isWriteStatement(statement: String): Boolean = {
     val cypher = statement.toLowerCase().replaceAll("\n", "").replaceAll("\r", "")
     pattern.findAllIn(cypher).nonEmpty
+  }
+
+  def isUDPPortUsing(port: Int): Boolean ={
+    var flag = false
+    try {
+      val tmp = new DatagramSocket(port)
+      tmp.close()
+    }
+    catch {
+      case e: Exception => {flag = true}
+    }
+    flag
   }
 }

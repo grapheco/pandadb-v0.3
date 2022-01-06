@@ -16,9 +16,9 @@ trait ReaderMode{
 case class WithHead() extends ReaderMode
 case class WithOutHead() extends ReaderMode
 
-class ImporterFileReader(file: File, delimeter: String, batchSize: Int = 100000, mode: ReaderMode = WithHead()) {
+class ImporterFileReader(file: File, delimiter: String, batchSize: Int = 200000, mode: ReaderMode = WithHead()) {
 
-  val fileIter: Iterator[CSVLine] = this.synchronized(new CSVReader(file, delimeter).getAsCSVLines)
+  val fileIter: Iterator[CSVLine] = this.synchronized(new CSVReader(file, delimiter).getAsCSVLines)
 
   private val _head: CSVLine = {
     mode match {

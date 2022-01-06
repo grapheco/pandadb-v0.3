@@ -24,6 +24,7 @@ class NodeStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStore) e
 
   override def refreshMeta(): Unit ={
     nodeLabelName.refreshNameStore()
+    propertyNameStore.refreshNameStore()
     idGenerator.refreshId()
   }
 
