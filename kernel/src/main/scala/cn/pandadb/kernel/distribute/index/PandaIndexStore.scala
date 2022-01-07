@@ -3,7 +3,8 @@ package cn.pandadb.kernel.distribute.index
 import java.util
 
 import cn.pandadb.kernel.distribute.DistributedKVAPI
-import cn.pandadb.kernel.distribute.index.utils.{IndexConverter}
+import cn.pandadb.kernel.distribute.index.encoding.{EncoderFactory, IndexEncoder}
+import cn.pandadb.kernel.distribute.index.utils.IndexConverter
 import cn.pandadb.kernel.distribute.meta.{DistributedStatistics, NameMapping, NodeLabelNameStore, PropertyNameStore}
 import cn.pandadb.kernel.distribute.node.DistributedNodeStoreSPI
 import cn.pandadb.kernel.store.PandaNode
@@ -62,6 +63,8 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
   def getIndexedMetaData(): Map[String, Seq[String]] ={
     nodeIndexMetaStore.getIndexedMeta()
   }
+
+  def getDB() = _db
 
   // es index
   def serviceIsAvailable(): Boolean = {
@@ -224,7 +227,7 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
         val indexedLabels = node.labels.intersect(indexMetaMap.keySet.toSeq)
         val nodeHasIndex = indexedLabels.nonEmpty
         val data = noIndexProps.map(propName => (s"$targetLabel.$propName", node.property(propName).get.value)).toMap
-        if (indexMetaMap.contains(targetLabel) || nodeHasIndex) processor.add(updatePropertyRequest(NameMapping.indexName, node.longId, data))
+        if (indexMetaMap.contains(targetLabel) || nodeHasIndex) processor.add(updateNodeRequest(NameMapping.indexName, node.longId, node.labels, data))
         else processor.add(addNewNodeRequest(NameMapping.indexName, node.longId, node.labels, data))
 
         nodeCount += 1
@@ -257,13 +260,22 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
     statistics.decreaseIndexPropertyCount(nls.getPropertyKeyId(targetPropName).get, nodeCount)
   }
 
-  private def addNewNodeRequest(indexName: String, nodeId: Long, labels: Seq[String], transferProps: Map[NodePropertyName, NodePropertyValue]): IndexRequest = {
+  def addNewNodeRequest(indexName: String, nodeId: Long, labels: Seq[String], transferProps: Map[NodePropertyName, NodePropertyValue]): IndexRequest = {
     val data = (Map(NameMapping.indexNodeLabelColumnName -> labels.asJava) ++ transferProps).asJava
     val jsonString = JSON.toJSONString(data, SerializerFeature.QuoteFieldNames)
     new IndexRequest(indexName).id(nodeId.toString).source(jsonString, XContentType.JSON)
   }
 
-  private def updatePropertyRequest(indexName: String, nodeId: Long, transferProps: Map[String, Any]): UpdateRequest = {
+  def updateNodeRequest(indexName: String, nodeId: Long, labels: Seq[String], transferProps: Map[String, Any]): UpdateRequest = {
+    val request = new UpdateRequest()
+    val _data = (Map(NameMapping.indexNodeLabelColumnName -> labels.asJava) ++ transferProps).asInstanceOf[Map[String, Object]].asJava
+    val jsonString = JSON.toJSONString(_data, SerializerFeature.QuoteFieldNames)
+    request.index(indexName).id(nodeId.toString)
+    request.doc(jsonString, XContentType.JSON)
+    request
+  }
+
+  def addExtraProperty(indexName: String, nodeId: Long, transferProps: Map[String, Any]): UpdateRequest ={
     val request = new UpdateRequest()
     val _data = transferProps.asInstanceOf[Map[String, Object]].asJava
     val jsonString = JSON.toJSONString(_data, SerializerFeature.QuoteFieldNames)
@@ -272,11 +284,12 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
     request
   }
 
-  private def deleteIndexField(indexName: String, nodeId: Long, label: String, propertyName: String): UpdateRequest = {
+  def deleteIndexField(indexName: String, nodeId: Long, label: String, propertyName: String): UpdateRequest = {
     val script = s"ctx._source.remove('$label.$propertyName')"
     new UpdateRequest().index(indexName).id(nodeId.toString).script(new Script(script))
   }
-  private def deleteDocRequest(indexName: String, docId: String): DeleteRequest = {
+
+  def deleteDocRequest(indexName: String, docId: String): DeleteRequest = {
     new DeleteRequest().index(indexName).id(docId)
   }
 

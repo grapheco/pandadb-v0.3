@@ -30,6 +30,7 @@ object DistributedKeyConverter {
   val indexMetaPrefix: Byte = 21
   val statisticPrefix: Byte = 22
 
+  val indexEncoderPrefix: Byte = 23
 
   val NODE_ID_SIZE     = 8
   val RELATION_ID_SIZE = 8
@@ -233,4 +234,10 @@ object DistributedKeyConverter {
     ByteUtils.setInt(bytes, 1, labelId)
     bytes
   }
+
+  def indexEncoderKeyToBytes(encoderName: String): Array[Byte] = {
+    val nameBytes = encoderName.getBytes("utf-8")
+    Array(indexEncoderPrefix) ++ nameBytes
+  }
+
 }
