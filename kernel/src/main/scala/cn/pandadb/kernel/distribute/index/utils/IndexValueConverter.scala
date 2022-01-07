@@ -18,7 +18,7 @@ import scala.collection.mutable
  * @author: LiamGao
  * @create: 2021-11-22 15:57
  */
-object IndexConverter {
+object IndexValueConverter {
   def transferType2Java(value: Any): Object ={
     value match {
       case n: LynxInteger => n.value.asInstanceOf[Object]

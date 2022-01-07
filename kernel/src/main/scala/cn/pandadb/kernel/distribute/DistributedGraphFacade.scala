@@ -115,7 +115,7 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClients: Ar
           val lid = nodeStore.getLabelId(labelNames.head).get
           nodeStore.getNodesByLabel(lid).map(mapNode(_))
         }
-        case _ =>{
+        case _ => {
           val labelIds = labelNames.map(nodeStore.getLabelId(_).get).sorted
           val minLabel = labelIds.map(lid => lid -> statistics.getNodeLabelCount(lid).get).minBy(f => f._2)
 
@@ -148,7 +148,7 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClients: Ar
     val node = getNodeById(id).get
 
     nodeStore.deleteNode(id)
-    if (indexStore.isDocExist(id.toString)) indexStore.deleteDoc(id.toString)
+    if (indexStore.getIndexTool().isDocExist(id.toString)) indexStore.deleteNode(id.toString)
 
     statistics.decreaseNodes(1)
     node.labels.map(l => nodeStore.getLabelId(l).get).foreach(lid => statistics.decreaseNodeLabelCount(lid, 1))
@@ -180,11 +180,9 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClients: Ar
       nodeStore.nodeRemoveProperty(id, pid.get)
       val node = getNodeById(id).get
       if (node.properties.nonEmpty) indexStore.updateIndexOnSingleNode(node.longId, node.labels, node.properties.map(p => p._1->p._2.value), (true, key))
-      else indexStore.deleteDoc(node.longId.toString)
+      else indexStore.deleteNode(node.longId.toString)
     }
   }
-
-
 
   override def nodeAddLabel(id: Id, label: String): Unit = {
     val lid = nodeStore.addLabel(label)
@@ -200,7 +198,7 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClients: Ar
     lid.foreach(lid => nodeStore.nodeRemoveLabel(id, lid))
     val node = getNodeById(id).get
     if (node.labels.nonEmpty) indexStore.updateIndexOnSingleNode(node.longId, node.labels, node.properties.map(p => p._1->p._2.value), (false, ""))
-    else indexStore.deleteDoc(node.longId.toString)
+    else indexStore.deleteNode(node.longId.toString)
 
     statistics.decreaseNodeLabelCount(lid.get, 1)
   }

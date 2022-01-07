@@ -4,7 +4,7 @@ import java.util
 
 import cn.pandadb.kernel.distribute.DistributedKVAPI
 import cn.pandadb.kernel.distribute.index.encoding.{EncoderFactory, IndexEncoder}
-import cn.pandadb.kernel.distribute.index.utils.IndexConverter
+import cn.pandadb.kernel.distribute.index.utils.{IndexValueConverter, IndexTool}
 import cn.pandadb.kernel.distribute.meta.{DistributedStatistics, NameMapping, NodeLabelNameStore, PropertyNameStore}
 import cn.pandadb.kernel.distribute.node.DistributedNodeStoreSPI
 import cn.pandadb.kernel.store.PandaNode
@@ -53,94 +53,44 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
   type NodePropertyValue = Any
 
   private val nodeIndexMetaStore = new NodeIndexMetaStore(_db, nls)
+  private val indexTool = new IndexTool(client)
 
-  if (!indexIsExist(NameMapping.indexName)) createIndex(NameMapping.indexName)
+  if (!indexTool.indexIsExist(NameMapping.indexName)) indexTool.createIndex(NameMapping.indexName)
 
+  // for udp
   def refreshIndexMeta(): Unit ={
     nodeIndexMetaStore.loadAll()
   }
 
+  // for driver
   def getIndexedMetaData(): Map[String, Seq[String]] ={
     nodeIndexMetaStore.getIndexedMeta()
   }
 
   def getDB() = _db
 
-  // es index
-  def serviceIsAvailable(): Boolean = {
-    try {
-      client.ping(RequestOptions.DEFAULT)
-    } catch {
-      case e: Exception => throw new PandaDBException("elasticSearch cluster can't access...")
-    }
+  def getIndexTool() = indexTool
+
+  def cleanIndexes(indexName: String*): Unit ={
+    indexTool.cleanIndexes(indexName:_*)
   }
 
-  def indexIsExist(indexNames: String*): Boolean = {
-    client.indices().exists(new GetIndexRequest(indexNames: _*), RequestOptions.DEFAULT)
-  }
-
-  def cleanIndexes(indexNames: String*): Unit = {
-    indexNames.foreach(name => {
-      if (indexIsExist(name)) deleteIndex(name)
-      createIndex(name, Map("refresh_interval" -> "1s"))
-    })
-  }
-
-  def createIndex(indexName: String, settings: Map[String, Any] = Map.empty): Boolean = {
-    val request = new CreateIndexRequest(indexName)
-    val settingsBuilder = Settings.builder()
-    // default settings
-    settingsBuilder.put("index.number_of_shards", 5)
-      .put("index.number_of_replicas", 0)
-      .put("max_result_window", 50000000)
-      .put("translog.flush_threshold_size", "1g")
-      .put("refresh_interval", "30s")
-      .put("translog.durability", "request")
-    //new settings
-    settings.foreach {
-      kv => {
-        kv._2 match {
-          case n: String => settingsBuilder.put(kv._1, n)
-          case n: Int => settingsBuilder.put(kv._1, n)
-          case n: Long => settingsBuilder.put(kv._1, n)
-          case n: Double => settingsBuilder.put(kv._1, n)
-          case n: Float => settingsBuilder.put(kv._1, n)
-          case n: Boolean => settingsBuilder.put(kv._1, n)
-        }
-      }
-    }
-
-    request.settings(settingsBuilder)
-    client.indices().create(request, RequestOptions.DEFAULT).isAcknowledged
-  }
-
-  def deleteIndex(indexName: String): Boolean = {
-    client.indices().delete(new DeleteIndexRequest(indexName), RequestOptions.DEFAULT).isAcknowledged
-  }
-
-  def getDocById(docId: String): PandaNode ={
+  def getNodeByDocId(docId: String): PandaNode ={
     val request = new GetRequest().index(NameMapping.indexName).id(docId)
     val res = client.get(request, RequestOptions.DEFAULT)
-    IndexConverter.transferDoc2Node(res.getId, res.getSourceAsMap.asScala.toMap)
+    IndexValueConverter.transferDoc2Node(res.getId, res.getSourceAsMap.asScala.toMap)
   }
 
-  def isDocExist(docId: String): Boolean = {
-    val request = new GetRequest().index(NameMapping.indexName).id(docId)
-    client.exists(request, RequestOptions.DEFAULT)
-  }
-  def deleteDoc(docId: String) = {
-    val node = getDocById(docId)
-
-    val request = new DeleteRequest().index(NameMapping.indexName).id(docId)
-    client.delete(request, RequestOptions.DEFAULT)
-
+  def deleteNode(nodeId: String) = {
+    val node = getNodeByDocId(nodeId)
+    indexTool.deleteDoc(nodeId)
     node.properties.keySet.foreach(pn => statistics.decreaseIndexPropertyCount(nls.getPropertyKeyId(pn).get, 1))
   }
 
   def searchNodes(labels: Seq[String], filter: Map[String, Any]): Iterator[Seq[PandaNode]] = {
     val indexedLabels = labels.intersect(nodeIndexMetaStore.indexMetaMap.keySet.toSeq)
     if (indexedLabels.nonEmpty){
-      val data = IndexConverter.transferNode2Doc(nodeIndexMetaStore.indexMetaMap, indexedLabels, filter)
+      val data = IndexValueConverter.transferNode2Doc(nodeIndexMetaStore.indexMetaMap, indexedLabels, filter)
 
       val queryBuilder = new BoolQueryBuilder()
       indexedLabels.foreach(labelName => queryBuilder.must(QueryBuilders.termQuery(s"${NameMapping.indexNodeLabelColumnName}", labelName).caseInsensitive(true)))
@@ -167,7 +117,7 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
         .from(page * pageSize)
         .size(pageSize)
       request.source(builder)
-      dataBatch = client.search(request, RequestOptions.DEFAULT).getHits.asScala.map(f => IndexConverter.transferDoc2Node(f.getId, f.getSourceAsMap.asScala.toMap)).toSeq
+      dataBatch = client.search(request, RequestOptions.DEFAULT).getHits.asScala.map(f => IndexValueConverter.transferDoc2Node(f.getId, f.getSourceAsMap.asScala.toMap)).toSeq
       page += 1
       dataBatch.nonEmpty
     }
@@ -196,6 +146,7 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
     else false
   }
 
+
   def updateIndexOnSingleNode(nodeId: Long, labels: Seq[String], nodeProps: Map[String, Any], isDelete: (Boolean, String)): Unit ={
     val indexMetaMap = nodeIndexMetaStore.indexMetaMap
     val indexedLabel = labels.intersect(indexMetaMap.keySet.toSeq)
@@ -203,8 +154,8 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
       val indexedData = indexedLabel.map(iLabel => iLabel -> indexMetaMap(iLabel).intersect(nodeProps.keySet))
       indexedData.foreach(labelAndProps => {
         if (labelAndProps._2.nonEmpty){
-          val data = IndexConverter.transferNode2Doc(indexMetaMap, Seq(labelAndProps._1), labelAndProps._2.map(name => name -> nodeProps(name)).toMap)
-          client.index(addNewNodeRequest(NameMapping.indexName, nodeId, labels, data.toMap), RequestOptions.DEFAULT)
+          val data = IndexValueConverter.transferNode2Doc(indexMetaMap, Seq(labelAndProps._1), labelAndProps._2.map(name => name -> nodeProps(name)).toMap)
+          client.update(updateNodeRequest(NameMapping.indexName, nodeId, labels, data.toMap), RequestOptions.DEFAULT)
 
           if (!isDelete._1) labelAndProps._2.foreach(propName => statistics.increaseIndexPropertyCount(nls.getPropertyKeyId(propName).get, 1))
           else {
@@ -220,8 +171,8 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
     val indexMetaMap = nodeIndexMetaStore.indexMetaMap
     val noIndexProps = targetPropNames.diff(indexMetaMap.getOrElse(targetLabel, Set.empty).toSeq)
     if (noIndexProps.nonEmpty){
-      val processor = getBulkProcessor(2000, 3)
-      setIndexToBatchMode(NameMapping.indexName)
+      val processor = indexTool.getBulkProcessor(2000, 3)
+      indexTool.setIndexToBatchMode(NameMapping.indexName)
       while (nodes.hasNext){
         val node = nodes.next()
         val indexedLabels = node.labels.intersect(indexMetaMap.keySet.toSeq)
@@ -234,7 +185,7 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
       }
       processor.flush()
       processor.close()
-      setIndexToNormalMode(NameMapping.indexName)
+      indexTool.setIndexToNormalMode(NameMapping.indexName)
 
       noIndexProps.foreach(name => nodeIndexMetaStore.addToDB(targetLabel, name))
       noIndexProps.foreach(name => statistics.increaseIndexPropertyCount(nls.getPropertyKeyId(name).get, nodeCount))
@@ -242,8 +193,8 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
   }
 
   def batchDeleteIndexLabelWithProperty(indexLabel: String, targetPropName: String, nodes: Iterator[PandaNode]): Unit ={
-    val processor = getBulkProcessor(2000, 3)
-    setIndexToBatchMode(NameMapping.indexName)
+    val processor = indexTool.getBulkProcessor(2000, 3)
+    indexTool.setIndexToBatchMode(NameMapping.indexName)
     var nodeCount = 0
     while (nodes.hasNext){
       val node = nodes.next()
@@ -254,7 +205,7 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
     }
     processor.flush()
     processor.close()
-    setIndexToNormalMode(NameMapping.indexName)
+    indexTool.setIndexToNormalMode(NameMapping.indexName)
 
     nodeIndexMetaStore.delete(indexLabel, targetPropName)
     statistics.decreaseIndexPropertyCount(nls.getPropertyKeyId(targetPropName).get, nodeCount)
@@ -291,51 +242,5 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
 
   def deleteDocRequest(indexName: String, docId: String): DeleteRequest = {
     new DeleteRequest().index(indexName).id(docId)
-  }
-
-  def setIndexToBatchMode(indexName: String): Boolean = {
-    val request = new UpdateSettingsRequest(indexName)
-    val settings = Settings.builder()
-      .put("refresh_interval", "300s")
-      .put("translog.durability", "async")
-      .build()
-    request.settings(settings)
-    val response = client.indices().putSettings(request, RequestOptions.DEFAULT)
-    response.isAcknowledged
-  }
-
-  def setIndexToNormalMode(indexName: String): Boolean = {
-    val request = new UpdateSettingsRequest(indexName)
-    val settings = Settings.builder()
-      .put("refresh_interval", "1s") // 1s for test
-      .put("translog.durability", "request")
-      .build()
-    request.settings(settings)
-    val response = client.indices().putSettings(request, RequestOptions.DEFAULT)
-    response.isAcknowledged
-  }
-
-  def getBulkProcessor(batchSize: Int, concurrentThreadNums: Int): BulkProcessor = {
-    val listener: BulkProcessor.Listener = new BulkProcessor.Listener() {
-      def beforeBulk(executionId: Long, request: BulkRequest): Unit = {
-      }
-
-      def afterBulk(executionId: Long, request: BulkRequest, response: BulkResponse): Unit = {
-      }
-
-      def afterBulk(executionId: Long, request: BulkRequest, failure: Throwable): Unit = {
-        println(failure)
-      }
-    }
-
-    val builder: BulkProcessor.Builder = BulkProcessor.builder((request: BulkRequest, bulkListener: ActionListener[BulkResponse])
-    => client.bulkAsync(request, RequestOptions.DEFAULT, bulkListener), listener, "bulk-processor")
-
-    builder.setBulkActions(batchSize)
-    builder.setBulkSize(new ByteSizeValue(10, ByteSizeUnit.MB))
-    builder.setConcurrentRequests(concurrentThreadNums) // default is 1
-    builder.setBackoffPolicy(BackoffPolicy.constantBackoff(TimeValue.timeValueSeconds(1), 3))
-
-    builder.build()
   }
 }

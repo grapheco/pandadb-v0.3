@@ -17,7 +17,7 @@ class TreeEncoder(indexStore: PandaDistributedIndexStore) extends IndexEncoder{
 
   val db = indexStore.getDB()
 
-  private val processor = indexStore.getBulkProcessor(1000, 2)
+  private val processor = indexStore.getIndexTool().getBulkProcessor(1000, 2)
 
 
   private val indexName = NameMapping.indexName
@@ -40,7 +40,7 @@ class TreeEncoder(indexStore: PandaDistributedIndexStore) extends IndexEncoder{
     labelHasIndex = indexStore.getIndexedMetaData().contains(_labelName)
     treeFiledName = s"$labelName.tree_code"
 
-    indexStore.setIndexToBatchMode(indexName)
+    indexStore.getIndexTool().setIndexToBatchMode(indexName)
 
     // add treeCode to root node
     val initRequest = {
@@ -54,7 +54,7 @@ class TreeEncoder(indexStore: PandaDistributedIndexStore) extends IndexEncoder{
   def close(): Unit ={
     processor.flush()
     processor.close()
-    indexStore.setIndexToNormalMode(indexName)
+    indexStore.getIndexTool().setIndexToNormalMode(indexName)
   }
 
   /**
