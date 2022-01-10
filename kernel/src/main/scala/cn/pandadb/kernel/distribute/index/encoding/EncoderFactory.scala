@@ -1,7 +1,7 @@
 package cn.pandadb.kernel.distribute.index.encoding
 
 import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
-import cn.pandadb.kernel.distribute.index.encoding.encoders.{IndexEncoderNames, TreeEncoder}
+import cn.pandadb.kernel.distribute.index.encoding.encoders.TreeEncoder
 
 /**
  * @program: pandadb-v0.3

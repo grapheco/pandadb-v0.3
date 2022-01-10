@@ -29,7 +29,6 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClients: Ar
     val session = TiSession.create(conf)
     new PandaDistributeKVAPI(session.createRawClient())
   }
-
   val propertyNameStore = new PropertyNameStore(db, udpClients)
   val nodeStore = new NodeStoreAPI(db, propertyNameStore)
   val relationStore = new RelationStoreAPI(db, propertyNameStore)
@@ -46,7 +45,9 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClients: Ar
     new PandaDistributedIndexStore(new RestHighLevelClient(RestClient.builder(hosts: _*)), db, nodeStore, statistics)
   }
 
-  val runner = new CypherRunnerPlus(new GraphParseModel(this))
+  val cypherParseModel = new GraphParseModel(this)
+
+  val runner = new CypherRunnerPlus(cypherParseModel)
 
   def cleanDB(): Unit ={
     statistics.clean()
@@ -314,6 +315,7 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClients: Ar
     if (created){
       val nodes = getNodesByLabel(Seq(label), false)
       indexStore.batchDeleteIndexLabelWithProperty(label, prop, nodes)
+      indexStore.removeIndexMeta(label, prop)
     }
   }
 

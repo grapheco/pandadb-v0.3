@@ -67,6 +67,10 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
     nodeIndexMetaStore.getIndexedMeta()
   }
 
+  def removeIndexMeta(labelName: String, props: String): Unit ={
+    nodeIndexMetaStore.delete(labelName, props)
+  }
+
   def getDB() = _db
 
   def getIndexTool() = indexTool

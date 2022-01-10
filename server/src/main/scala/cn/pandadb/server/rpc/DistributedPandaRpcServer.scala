@@ -82,7 +82,6 @@ class DistributedPandaStreamHandler(graphFacade: DistributedGraphDatabaseManager
     }
     case DropIndexMetaRequest(label, propName) => {
       val gf = graphFacade.defaultDB
-
       new Thread(){
         Thread.sleep(100)
         override def run(): Unit = gf.dropIndexOnNode(label, propName)
