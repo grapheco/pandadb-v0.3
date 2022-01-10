@@ -15,7 +15,7 @@ intelligent graph database
 ```
 mvn clean install
 ```
-###1.2 building server-side distribution zip package
+### 1.2 building server-side distribution zip package
 ```
 cd packaging
 
@@ -24,8 +24,8 @@ mvn package -Pserver-unix-dist
 this command will create `pandadb-server-<version>.jar` in `target` directory.
 
 ## 2. Prepared
-1. deploy ElasticSearch7.x or later version in your machines
-2. deploy TiKV in your machines
+1. deploy ElasticSearch7.x or later version on your machines
+2. deploy TiKV on your machines
 
 ## 3. start
 #### 3.1 Download package
