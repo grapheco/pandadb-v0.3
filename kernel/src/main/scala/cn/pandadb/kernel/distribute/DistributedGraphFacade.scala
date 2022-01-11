@@ -308,6 +308,8 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClients: Ar
       val iter = getNodesByLabel(Seq(label), false)
       indexStore.batchAddIndexOnNodes(label, propNames.toSeq, iter)
     }
+
+    udpClients.foreach(client => client.sendRefreshMsg())
   }
 
   override def dropIndexOnNode(label: String, prop: String): Unit = {
@@ -316,6 +318,8 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClients: Ar
       val nodes = getNodesByLabel(Seq(label), false)
       indexStore.batchDeleteIndexLabelWithProperty(label, prop, nodes)
     }
+
+    udpClients.foreach(client => client.sendRefreshMsg())
   }
 
   override def isNodeHasIndex(filter: NodeFilter): Boolean = {

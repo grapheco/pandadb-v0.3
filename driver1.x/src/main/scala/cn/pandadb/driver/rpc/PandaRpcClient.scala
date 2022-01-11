@@ -1,7 +1,7 @@
 package cn.pandadb.driver.rpc
 
 import cn.pandadb.{CypherErrorException, VerifyConnectionMode}
-import cn.pandadb.net.hipporpc.message.{CypherRequest, DropIndexMetaRequest, DropIndexMetaResponse, GetIndexedMetaRequest, GetIndexedMetaResponse, GetStatisticsRequest, GetStatisticsResponse, ResetAccountRequest, ResetAccountResponse, SecurityRequest, TransactionCommitRequest, TransactionCommitResponse, TransactionCypherRequest, TransactionRollbackRequest, TransactionRollbackResponse, VerifyConnectionRequest, VerifyConnectionResponse}
+import cn.pandadb.net.hipporpc.message.{CreateIndexRequest, CreateIndexResponse, CypherRequest, DropIndexRequest, DropIndexResponse, GetIndexedMetaRequest, GetIndexedMetaResponse, GetStatisticsRequest, GetStatisticsResponse, ResetAccountRequest, ResetAccountResponse, SecurityRequest, TransactionCommitRequest, TransactionCommitResponse, TransactionCypherRequest, TransactionRollbackRequest, TransactionRollbackResponse, VerifyConnectionRequest, VerifyConnectionResponse}
 import cn.pandadb.net.hipporpc.utils.DriverValue
 import net.neoremind.kraps.RpcConf
 import net.neoremind.kraps.rpc.netty.HippoRpcEnvFactory
@@ -25,8 +25,11 @@ class PandaRpcClient(hostName:String, port: Int, clientName: String, serverName:
   def getIndexedMetaData(): GetIndexedMetaResponse = {
     Await.result(endpointRef.askWithBuffer[GetIndexedMetaResponse](GetIndexedMetaRequest()), Duration(DURATION_TIME))
   }
-  def dropIndexMetaData(label: String, propName: String): DropIndexMetaResponse = {
-    Await.result(endpointRef.askWithBuffer[DropIndexMetaResponse](DropIndexMetaRequest(label, propName)), Duration(DURATION_TIME))
+  def createIndex(label: String, propNames: Seq[String]): CreateIndexResponse = {
+    Await.result(endpointRef.askWithBuffer[CreateIndexResponse](CreateIndexRequest(label, propNames)), Duration(DURATION_TIME))
+  }
+  def dropIndex(label: String, propName: String): DropIndexResponse = {
+    Await.result(endpointRef.askWithBuffer[DropIndexResponse](DropIndexRequest(label, propName)), Duration(DURATION_TIME))
   }
 
   def sendCypherRequest(cypher: String, params:Map[String, Any]): Stream[DriverValue] ={

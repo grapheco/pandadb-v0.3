@@ -3,7 +3,7 @@ package cn.pandadb.server.rpc
 import java.nio.ByteBuffer
 
 import cn.pandadb.dbms.DistributedGraphDatabaseManager
-import cn.pandadb.net.hipporpc.message.{CypherRequest, DropIndexMetaRequest, DropIndexMetaResponse, GetIndexedMetaRequest, GetIndexedMetaResponse, GetStatisticsRequest, GetStatisticsResponse, SayHelloRequest, SayHelloResponse}
+import cn.pandadb.net.hipporpc.message.{CreateIndexRequest, CreateIndexResponse, CypherRequest,  DropIndexRequest, DropIndexResponse, GetIndexedMetaRequest, GetIndexedMetaResponse, GetStatisticsRequest, GetStatisticsResponse, SayHelloRequest, SayHelloResponse}
 import cn.pandadb.net.hipporpc.utils.DriverValue
 import cn.pandadb.net.hipporpc.values.Value
 import cn.pandadb.server.common.configuration.Config
@@ -80,14 +80,24 @@ class DistributedPandaStreamHandler(graphFacade: DistributedGraphDatabaseManager
       val indexStore = graphFacade.defaultDB.indexStore
       context.reply(GetIndexedMetaResponse(indexStore.getIndexedMetaData()))
     }
-    case DropIndexMetaRequest(label, propName) => {
+    case CreateIndexRequest(label, props) => {
+      val gf = graphFacade.defaultDB
+      new Thread(){
+        Thread.sleep(100)
+        override def run(): Unit = gf.createIndexOnNode(label, props.toSet)
+      }.start()
+
+      context.reply(CreateIndexResponse(true))
+    }
+
+    case DropIndexRequest(label, propName) => {
       val gf = graphFacade.defaultDB
       new Thread(){
         Thread.sleep(100)
         override def run(): Unit = gf.dropIndexOnNode(label, propName)
       }.start()
 
-      context.reply(DropIndexMetaResponse(true))
+      context.reply(DropIndexResponse(true))
     }
   }
 

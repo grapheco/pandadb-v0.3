@@ -30,5 +30,8 @@ case class GetStatisticsResponse(allNodes: Long, allRelations: Long, nodesCountB
 case class GetIndexedMetaRequest()
 case class GetIndexedMetaResponse(metaMap: Map[String, Seq[String]])
 
-case class DropIndexMetaRequest(label: String, propName: String)
-case class DropIndexMetaResponse(accept: Boolean)
+case class CreateIndexRequest(label: String, propNames: Seq[String])
+case class CreateIndexResponse(accept: Boolean)
+
+case class DropIndexRequest(label: String, propName: String)
+case class DropIndexResponse(accept: Boolean)
