@@ -2,8 +2,9 @@ package cn.pandadb.kernel.distribute.index.encoding.encoders
 
 import cn.pandadb.kernel.distribute.DistributedKeyConverter
 import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
-import cn.pandadb.kernel.distribute.index.encoding.IndexEncoder
+import cn.pandadb.kernel.distribute.index.encoding.{IndexEncoder, IndexEncoderNames}
 import cn.pandadb.kernel.distribute.meta.NameMapping
+import cn.pandadb.kernel.kv.ByteUtils
 
 /**
  * @program: pandadb-v0.3
@@ -35,17 +36,19 @@ class TreeEncoder(indexStore: PandaDistributedIndexStore) extends IndexEncoder{
 
   def init(_labelName: String, _rootNodeId: Long): Unit ={
     labelName = _labelName
+    treeFiledName = s"$labelName.tree_encode"
     rootNodeId = _rootNodeId.toString
     currentParent = (_rootNodeId, getTreeCode())
     labelHasIndex = indexStore.getIndexedMetaData().contains(_labelName)
-    treeFiledName = s"$labelName.tree_code"
 
     indexStore.getIndexTool().setIndexToBatchMode(indexName)
 
     // add treeCode to root node
     val initRequest = {
       if (labelHasIndex) indexStore.addExtraProperty(indexName, _rootNodeId, Map((treeFiledName, currentParent._2)))
-      else indexStore.addNewNodeRequest(indexName, _rootNodeId, Seq(labelName), Map((treeFiledName, currentParent._2)))
+      else {
+        indexStore.addNewNodeRequest(indexName, _rootNodeId, Seq(labelName), Map((treeFiledName, currentParent._2)))
+      }
     }
     processor.add(initRequest)
 
@@ -60,18 +63,16 @@ class TreeEncoder(indexStore: PandaDistributedIndexStore) extends IndexEncoder{
   /**
    * Assign the encoding start ID from db.
    */
-  def getTreeCode(): String ={
-    val key = DistributedKeyConverter.indexEncoderKeyToBytes(treeFiledName)
-    val res = db.get(key)
-    if (res.isEmpty){
-      db.put(key, "1".getBytes("utf-8"))
-      "1"
+  def getTreeCode(): String = {
+    val meta = indexStore.getEncodingMetaData()
+    if (meta.contains(treeFiledName)){
+      val code = ByteUtils.getInt(meta(treeFiledName), 0)
+      indexStore.setEncodingMeta(treeFiledName, ByteUtils.intToBytes(code + 1))
+      code.toString
     }
     else {
-      val code = new String(res)
-      val tmp = (code.toInt + 1).toString
-      db.put(key, tmp.getBytes("utf-8"))
-      tmp
+      indexStore.setEncodingMeta(treeFiledName, ByteUtils.intToBytes(1))
+      "1"
     }
   }
 

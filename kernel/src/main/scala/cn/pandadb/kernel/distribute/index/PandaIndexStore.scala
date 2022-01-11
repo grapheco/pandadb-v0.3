@@ -4,7 +4,7 @@ import java.util
 
 import cn.pandadb.kernel.distribute.DistributedKVAPI
 import cn.pandadb.kernel.distribute.index.encoding.{EncoderFactory, IndexEncoder}
-import cn.pandadb.kernel.distribute.index.utils.{IndexValueConverter, IndexTool}
+import cn.pandadb.kernel.distribute.index.utils.{IndexTool, IndexValueConverter}
 import cn.pandadb.kernel.distribute.meta.{DistributedStatistics, NameMapping, NodeLabelNameStore, PropertyNameStore}
 import cn.pandadb.kernel.distribute.node.DistributedNodeStoreSPI
 import cn.pandadb.kernel.store.PandaNode
@@ -26,7 +26,7 @@ import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.common.unit.{ByteSizeUnit, ByteSizeValue}
 import org.elasticsearch.common.xcontent.XContentType
 import org.elasticsearch.core.TimeValue
-import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilders}
+import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilder, QueryBuilders}
 import org.elasticsearch.ingest.Processor
 import org.elasticsearch.script.Script
 import org.elasticsearch.search.{SearchHit, SearchHits}
@@ -67,8 +67,14 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
     nodeIndexMetaStore.getIndexedMeta()
   }
 
-  def removeIndexMeta(labelName: String, props: String): Unit ={
-    nodeIndexMetaStore.delete(labelName, props)
+  def getEncodingMetaData() = nodeIndexMetaStore.getEncodingMetaMap
+
+  def removeEncodingMeta(name: String) = nodeIndexMetaStore.deleteEncodingMeta(name)
+
+  def setEncodingMeta(name: String, value: Array[Byte]) = nodeIndexMetaStore.setEncodingMeta(name, value)
+
+  def getEncoder(name: String): IndexEncoder = {
+    EncoderFactory.getEncoder(name, this)
   }
 
   def getDB() = _db
@@ -97,7 +103,7 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
       val data = IndexValueConverter.transferNode2Doc(nodeIndexMetaStore.indexMetaMap, indexedLabels, filter)
 
       val queryBuilder = new BoolQueryBuilder()
-      indexedLabels.foreach(labelName => queryBuilder.must(QueryBuilders.termQuery(s"${NameMapping.indexNodeLabelColumnName}", labelName).caseInsensitive(true)))
+      indexedLabels.foreach(labelName => queryBuilder.must(QueryBuilders.termQuery(s"${NameMapping.indexNodeLabelColumnName}.keyword", labelName)))
       data.foreach(propNameAndValue => {
         propNameAndValue._2 match {
           case stringProp: String => queryBuilder.must(QueryBuilders.termQuery(s"${propNameAndValue._1}.keyword", propNameAndValue._2))
@@ -110,7 +116,12 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
     else Iterator.empty
   }
 
-  class SearchNodeIterator(queryBuilder: BoolQueryBuilder) extends Iterator[Seq[PandaNode]]{
+  def searchByQuery(json: String): Unit ={
+    val queryBuilder = QueryBuilders.wrapperQuery(json)
+    new SearchNodeIterator(queryBuilder)
+  }
+
+  class SearchNodeIterator(queryBuilder: QueryBuilder) extends Iterator[Seq[PandaNode]]{
     var dataBatch: Seq[PandaNode] = _
     var page = 0
     val pageSize = 1000
@@ -128,7 +139,6 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
 
     override def next(): Seq[PandaNode] = dataBatch
   }
-
 
   def isIndexCreated(targetLabel: String, propNames: Seq[String]): Boolean ={
     val indexMetaMap = nodeIndexMetaStore.indexMetaMap
@@ -151,7 +161,7 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
   }
 
 
-  def updateIndexOnSingleNode(nodeId: Long, labels: Seq[String], nodeProps: Map[String, Any], isDelete: (Boolean, String)): Unit ={
+  def setIndexOnSingleNode(nodeId: Long, labels: Seq[String], nodeProps: Map[String, Any]): Unit ={
     val indexMetaMap = nodeIndexMetaStore.indexMetaMap
     val indexedLabel = labels.intersect(indexMetaMap.keySet.toSeq)
     if (indexedLabel.nonEmpty){
@@ -160,19 +170,35 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
         if (labelAndProps._2.nonEmpty){
           val data = IndexValueConverter.transferNode2Doc(indexMetaMap, Seq(labelAndProps._1), labelAndProps._2.map(name => name -> nodeProps(name)).toMap)
           client.update(updateNodeRequest(NameMapping.indexName, nodeId, labels, data.toMap), RequestOptions.DEFAULT)
-
-          if (!isDelete._1) labelAndProps._2.foreach(propName => statistics.increaseIndexPropertyCount(nls.getPropertyKeyId(propName).get, 1))
-          else {
-            if (labelAndProps._2.contains(isDelete._2)) statistics.decreaseIndexPropertyCount(nls.getPropertyKeyId(isDelete._2).get, 1)
-          }
+          labelAndProps._2.foreach(propName => statistics.increaseIndexPropertyCount(nls.getPropertyKeyId(propName).get, 1))
         }
       })
     }
   }
 
+  def dropIndexOnSingleNodeProp(nodeId: Long, labels: Seq[String], dropPropName: String): Unit ={
+    val indexMetaMap = nodeIndexMetaStore.indexMetaMap
+    val indexedLabel = labels.intersect(indexMetaMap.keySet.toSeq)
+    if (indexedLabel.nonEmpty){
+      indexedLabel.foreach(iLabel => {
+        if (indexMetaMap(iLabel).contains(dropPropName)){
+          deleteIndexField(NameMapping.indexName, nodeId, iLabel, dropPropName)
+          statistics.decreaseIndexPropertyCount(nls.getPropertyKeyId(dropPropName).get, 1)
+        }
+      })
+    }
+  }
+
+  def isLabelHasEncoder(label: String): Boolean = {
+    val encoderMetaMap = nodeIndexMetaStore.encodingMetaMap
+    encoderMetaMap.exists(p => p._1.split("\\.")(0) == label)
+  }
+
   def batchAddIndexOnNodes(targetLabel: String, targetPropNames: Seq[String], nodes: Iterator[PandaNode]): Unit ={
     var nodeCount = 0
     val indexMetaMap = nodeIndexMetaStore.indexMetaMap
+    val labelHasEncoder = isLabelHasEncoder(targetLabel)
+
     val noIndexProps = targetPropNames.diff(indexMetaMap.getOrElse(targetLabel, Set.empty).toSeq)
     if (noIndexProps.nonEmpty){
       val processor = indexTool.getBulkProcessor(2000, 3)
@@ -182,7 +208,7 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
         val indexedLabels = node.labels.intersect(indexMetaMap.keySet.toSeq)
         val nodeHasIndex = indexedLabels.nonEmpty
         val data = noIndexProps.map(propName => (s"$targetLabel.$propName", node.property(propName).get.value)).toMap
-        if (indexMetaMap.contains(targetLabel) || nodeHasIndex) processor.add(updateNodeRequest(NameMapping.indexName, node.longId, node.labels, data))
+        if (indexMetaMap.contains(targetLabel) || nodeHasIndex || labelHasEncoder) processor.add(updateNodeRequest(NameMapping.indexName, node.longId, node.labels, data))
         else processor.add(addNewNodeRequest(NameMapping.indexName, node.longId, node.labels, data))
 
         nodeCount += 1
@@ -196,13 +222,31 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
     }
   }
 
+  def batchDropEncoder(label: String, encoderName: String, nodes: Iterator[PandaNode]): Unit ={
+    val labelIndexMeta = nodeIndexMetaStore.indexMetaMap.keySet.toSeq
+
+    val processor = indexTool.getBulkProcessor(2000, 3)
+    indexTool.setIndexToBatchMode(NameMapping.indexName)
+    while (nodes.hasNext){
+      val node = nodes.next()
+      val hasIndexLabel = node.labels.intersect(labelIndexMeta).nonEmpty
+      if (hasIndexLabel) processor.add(deleteIndexField(NameMapping.indexName, node.longId, label, encoderName))
+      else processor.add(deleteDocRequest(NameMapping.indexName, node.longId.toString))
+    }
+    processor.flush()
+    processor.close()
+    indexTool.setIndexToNormalMode(NameMapping.indexName)
+  }
+
   def batchDeleteIndexLabelWithProperty(indexLabel: String, targetPropName: String, nodes: Iterator[PandaNode]): Unit ={
+    val labelHasEncoder = isLabelHasEncoder(indexLabel)
+
     val processor = indexTool.getBulkProcessor(2000, 3)
     indexTool.setIndexToBatchMode(NameMapping.indexName)
     var nodeCount = 0
     while (nodes.hasNext){
       val node = nodes.next()
-      if (nodeIndexMetaStore.indexMetaMap(indexLabel).size == 1) processor.add(deleteDocRequest(NameMapping.indexName, node.longId.toString))
+      if (nodeIndexMetaStore.indexMetaMap(indexLabel).size == 1 && !labelHasEncoder) processor.add(deleteDocRequest(NameMapping.indexName, node.longId.toString))
       else processor.add(deleteIndexField(NameMapping.indexName, node.longId, indexLabel, targetPropName))
 
       nodeCount += 1

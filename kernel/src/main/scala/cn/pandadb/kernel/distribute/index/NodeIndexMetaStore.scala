@@ -13,6 +13,7 @@ import cn.pandadb.kernel.distribute.{DistributedKVAPI, DistributedKeyConverter}
 class NodeIndexMetaStore(_db: DistributedKVAPI, nls: DistributedNodeStoreSPI) extends IndexNameStore {
   override val db: DistributedKVAPI = _db
   override val keyPrefixFunc: () => Array[Byte] = DistributedKeyConverter.indexMetaPrefixToBytes
+  override val encodingKeyPrefix: () => Array[Byte] = ()=>Array(DistributedKeyConverter.indexEncoderPrefix)
   override val keyWithLabelPrefixFunc: Int => Array[Byte] = DistributedKeyConverter.indexMetaWithLabelPrefixToBytes
   override val keyWithIndexFunc: (Int, Int) => Array[Byte] = DistributedKeyConverter.indexMetaToBytes
   override val nodeStore: DistributedNodeStoreSPI = nls

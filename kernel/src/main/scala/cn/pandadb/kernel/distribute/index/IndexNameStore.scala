@@ -2,7 +2,7 @@ package cn.pandadb.kernel.distribute.index
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import cn.pandadb.kernel.distribute.DistributedKVAPI
+import cn.pandadb.kernel.distribute.{DistributedKVAPI, DistributedKeyConverter}
 import cn.pandadb.kernel.distribute.meta.{NodeLabelNameStore, PropertyNameStore}
 import cn.pandadb.kernel.distribute.node.DistributedNodeStoreSPI
 import cn.pandadb.kernel.kv.ByteUtils
@@ -13,6 +13,8 @@ import scala.collection.mutable
 trait IndexNameStore {
   val db: DistributedKVAPI
   val keyPrefixFunc: () => Array[Byte]
+  val encodingKeyPrefix: () => Array[Byte]
+
   val keyWithLabelPrefixFunc: (Int) => Array[Byte]
   val keyWithIndexFunc: (Int, Int) => Array[Byte]
 
@@ -20,6 +22,20 @@ trait IndexNameStore {
 
   // a label with a set of properties
   var indexMetaMap: mutable.Map[String, mutable.Set[String]] = mutable.Map[String, mutable.Set[String]]()
+
+  var encodingMetaMap: mutable.Map[String, Array[Byte]] = mutable.Map[String, Array[Byte]]()
+  def getEncodingMetaMap = encodingMetaMap.toMap
+
+  def setEncodingMeta(key: String, value: Array[Byte]) = {
+    encodingMetaMap += key->value
+    db.put(DistributedKeyConverter.indexEncoderKeyToBytes(key), value)
+  }
+
+  def deleteEncodingMeta(key: String): Unit ={
+    encodingMetaMap.remove(key)
+    db.delete(DistributedKeyConverter.indexEncoderKeyToBytes(key))
+  }
+
 
   def getIndexedMeta(): Map[String, Seq[String]] ={
     indexMetaMap.map(f => (f._1, f._2.toSeq)).toMap
@@ -63,6 +79,16 @@ trait IndexNameStore {
       val property = nodeStore.getPropertyKeyName(ByteUtils.getInt(key, 5)).get
       if (indexMetaMap.contains(label)) indexMetaMap(label).add(property)
       else indexMetaMap += label -> mutable.Set(property)
+    }
+
+    val encodingPrefix = encodingKeyPrefix()
+    val eIter = db.scanPrefix(encodingPrefix, 10000, false)
+    while (eIter.hasNext){
+      val data = eIter.next()
+      val key = data.getKey.toByteArray
+      val value = data.getValue.toByteArray
+      val encoderKey = new String(key, 1, key.length - 1)
+      encodingMetaMap += encoderKey -> value
     }
   }
 }
