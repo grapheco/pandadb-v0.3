@@ -23,7 +23,7 @@ class UDPServer(port: Int, db: DistributedGraphFacade) extends LazyLogging{
   val checkHasUdpMsg: Runnable = new Runnable {
     override def run(): Unit = {
       if (hasUdpMsg) {
-        logger.info("refresh meta ...")
+        logger.debug("refresh meta ...")
         db.refreshMeta()
         hasUdpMsg = false
       }
@@ -32,7 +32,7 @@ class UDPServer(port: Int, db: DistributedGraphFacade) extends LazyLogging{
   checkFlagService.scheduleAtFixedRate(checkHasUdpMsg, 0, 3, TimeUnit.SECONDS)
 
   def start(): Unit ={
-    logger.info(s"udp server started at port $port...")
+    logger.debug(s"udp server started at port $port...")
     new Thread(){
       override def run(): Unit = {
         try {

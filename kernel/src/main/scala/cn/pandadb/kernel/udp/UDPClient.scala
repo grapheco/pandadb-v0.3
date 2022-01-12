@@ -16,7 +16,7 @@ class UDPClient(serverIp: String, serverPort: Int) extends LazyLogging{
   private val ds = new DatagramSocket()
 
   def sendRefreshMsg(): Unit ={
-    logger.info(s"send refresh udp to $serverIp:$serverPort")
+    logger.debug(s"send refresh udp to $serverIp:$serverPort")
     val data = UDPMsg.refreshMsg.getBytes(Charset.forName("utf-8"))
     val dp = new DatagramPacket(data, data.length, inet, serverPort)
     ds.send(dp)
