@@ -3,7 +3,7 @@ package cn.pandadb.test.cypher.emb
 import java.io.File
 
 import cn.pandadb.kernel.distribute.DistributedGraphFacade
-import cn.pandadb.kernel.udp.UDPClient
+import cn.pandadb.kernel.udp.{UDPClient, UDPClientManager}
 import org.apache.commons.io.FileUtils
 import org.grapheco.lynx.{LynxNode, LynxRelationship, LynxValue}
 import org.junit.{After, Assert, Before, Test}
@@ -33,45 +33,45 @@ class MatchTest {
 
   @Before
   def init(): Unit ={
-    db = new DistributedGraphFacade(kvHosts, indexHosts, udpClient)
-    db.cleanDB()
-
-     id1 = db.addNode(Map("name"->"alex",
-      "storage"->1000000,
-      "salary"->2333.33,
-      "isCoder"->true,
-      "indexes"->Array[Int](1,2,3,4,5),
-      "floats"->Array[Double](11.1, 22.2, 33.3),
-      "bools"->Array[Boolean](true, true, false, false),
-      "jobs"->Array[String]("teacher", "coder", "singer")), "person")
-
-     id2 = db.addNode(Map("name"->"bob",
-      "storage"->1000000,
-      "indexes"->Array[Int](1,2,2,2,2)), "people")
-
-     id3 = db.addNode(Map("name"->"clause",
-      "storage"->66666,
-      "isCoder"->true,
-      "indexes"->Array[Int](1,2,3,4,5)), "person")
-
-    db.addRelation("TMP", id1, id2, Map())
-    db.addRelation("TMP", id2, id3, Map("index"->2))
-
-    n1 = db.addNode(Map("name"->"Oliver Stone", "sex"->"male"), "Person","Director")
-    n2 = db.addNode(Map("name"->"Michael Douglas"), "Person")
-    n3 = db.addNode(Map("name"->"Charlie Sheen"), "Person")
-    n4 = db.addNode(Map("name"->"Martin Sheen"), "Person")
-    n5 = db.addNode(Map("name"->"Rob Reiner"), "Person", "Director")
-    m1 = db.addNode(Map("title"->"Wall Street", "year"->1987), "Movie")
-    m2 = db.addNode(Map("title"->"The American President"), "Movie")
-
-    val directedR1 = db.addRelation("DIRECTED", n1, m1, Map())
-    val directedR2 = db.addRelation("DIRECTED", n5, m2, Map())
-    val actedR1 = db.addRelation("ACTED_IN", n2, m1, Map("role"->"Gordon Gekko"))
-    val actedR2 = db.addRelation("ACTED_IN", n2, m2, Map("role"->"President Andrew Shepherd"))
-    val actedR3 = db.addRelation("ACTED_IN", n3, m1, Map("role"->"Bud Fox"))
-    val actedR4 = db.addRelation("ACTED_IN", n4, m1, Map("role"->"Carl Fox"))
-    val actedR5 = db.addRelation("ACTED_IN", n4, m2, Map("role"->"A.J. MacInerney"))
+    db = new DistributedGraphFacade(kvHosts, indexHosts, new UDPClientManager(udpClient))
+//    db.cleanDB()
+//
+//     id1 = db.addNode(Map("name"->"alex",
+//      "storage"->1000000,
+//      "salary"->2333.33,
+//      "isCoder"->true,
+//      "indexes"->Array[Int](1,2,3,4,5),
+//      "floats"->Array[Double](11.1, 22.2, 33.3),
+//      "bools"->Array[Boolean](true, true, false, false),
+//      "jobs"->Array[String]("teacher", "coder", "singer")), "person")
+//
+//     id2 = db.addNode(Map("name"->"bob",
+//      "storage"->1000000,
+//      "indexes"->Array[Int](1,2,2,2,2)), "people")
+//
+//     id3 = db.addNode(Map("name"->"clause",
+//      "storage"->66666,
+//      "isCoder"->true,
+//      "indexes"->Array[Int](1,2,3,4,5)), "person")
+//
+//    db.addRelation("TMP", id1, id2, Map())
+//    db.addRelation("TMP", id2, id3, Map("index"->2))
+//
+//    n1 = db.addNode(Map("name"->"Oliver Stone", "sex"->"male"), "Person","Director")
+//    n2 = db.addNode(Map("name"->"Michael Douglas"), "Person")
+//    n3 = db.addNode(Map("name"->"Charlie Sheen"), "Person")
+//    n4 = db.addNode(Map("name"->"Martin Sheen"), "Person")
+//    n5 = db.addNode(Map("name"->"Rob Reiner"), "Person", "Director")
+//    m1 = db.addNode(Map("title"->"Wall Street", "year"->1987), "Movie")
+//    m2 = db.addNode(Map("title"->"The American President"), "Movie")
+//
+//    val directedR1 = db.addRelation("DIRECTED", n1, m1, Map())
+//    val directedR2 = db.addRelation("DIRECTED", n5, m2, Map())
+//    val actedR1 = db.addRelation("ACTED_IN", n2, m1, Map("role"->"Gordon Gekko"))
+//    val actedR2 = db.addRelation("ACTED_IN", n2, m2, Map("role"->"President Andrew Shepherd"))
+//    val actedR3 = db.addRelation("ACTED_IN", n3, m1, Map("role"->"Bud Fox"))
+//    val actedR4 = db.addRelation("ACTED_IN", n4, m1, Map("role"->"Carl Fox"))
+//    val actedR5 = db.addRelation("ACTED_IN", n4, m2, Map("role"->"A.J. MacInerney"))
   }
 
   @Test

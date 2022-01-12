@@ -40,7 +40,7 @@ class IdGenerator(db: DistributedKVAPI, idType: TypeNameEnum.Value) {
 
   def nextId(): Long = {
     val nid = id.incrementAndGet()
-    //all ids consumed ?
+    flushId()
     nid
   }
 

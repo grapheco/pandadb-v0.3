@@ -4,7 +4,8 @@ import java.nio.ByteBuffer
 
 import cn.pandadb.kernel.distribute.DistributedGraphFacade
 import cn.pandadb.kernel.store.StoredNodeWithProperty
-import cn.pandadb.kernel.udp.UDPClient
+import cn.pandadb.kernel.udp.{UDPClient, UDPClientManager}
+import cn.pandadb.kv.distributed.BioTest.udpClient
 import org.grapheco.lynx.{LynxInteger, LynxString}
 import org.junit.{After, Assert, Before, Test}
 import org.tikv.common.{TiConfiguration, TiSession}
@@ -33,7 +34,7 @@ class DistributedGraphFacadeTest {
     tikv = session.createRawClient()
     cleanDB()
 
-    api = new DistributedGraphFacade(kvHosts, indexHosts, udpClient)
+    api = new DistributedGraphFacade(kvHosts, indexHosts, new UDPClientManager(udpClient))
     addData()
   }
 

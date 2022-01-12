@@ -4,7 +4,7 @@ import java.io.File
 
 import cn.pandadb.kernel.distribute.DistributedGraphFacade
 import cn.pandadb.kernel.store.{PandaNode, PandaRelationship}
-import cn.pandadb.kernel.udp.UDPClient
+import cn.pandadb.kernel.udp.{UDPClient, UDPClientManager}
 import org.grapheco.lynx.LynxValue
 import org.junit.{After, Assert, Before, Test}
 
@@ -27,7 +27,7 @@ class DataStructureTest {
 
   @Before
   def init(): Unit ={
-    db = new DistributedGraphFacade(kvHosts, indexHosts, udpClient)
+    db = new DistributedGraphFacade(kvHosts, indexHosts, new UDPClientManager(udpClient))
     db.cleanDB()
   }
   @Test

@@ -5,7 +5,8 @@ import java.util
 
 import cn.pandadb.kernel.distribute.{DistributedGraphFacade, DistributedKeyConverter}
 import cn.pandadb.kernel.kv.ByteUtils
-import cn.pandadb.kernel.udp.UDPClient
+import cn.pandadb.kernel.udp.{UDPClient, UDPClientManager}
+import cn.pandadb.kv.distributed.BioTest.udpClient
 import org.junit.Test
 import org.tikv.common.types.Charset
 import org.tikv.common.{TiConfiguration, TiSession}
@@ -39,7 +40,7 @@ class Test1 {
   def clean(): Unit ={
     val kvHosts = "10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379"
     val indexHosts = "10.0.82.144:9200,10.0.82.145:9200,10.0.82.146:9200"
-    val db = new DistributedGraphFacade(kvHosts, indexHosts, udpClient)
+    val db = new DistributedGraphFacade(kvHosts, indexHosts, new UDPClientManager(udpClient))
     db.cleanDB()
   }
 

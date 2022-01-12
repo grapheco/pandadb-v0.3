@@ -8,6 +8,7 @@ import cn.pandadb.kernel.distribute.index.utils.{IndexTool, IndexValueConverter}
 import cn.pandadb.kernel.distribute.meta.{DistributedStatistics, NameMapping, NodeLabelNameStore, PropertyNameStore}
 import cn.pandadb.kernel.distribute.node.DistributedNodeStoreSPI
 import cn.pandadb.kernel.store.PandaNode
+import cn.pandadb.kernel.udp.{UDPClient, UDPClientManager}
 import cn.pandadb.kernel.util.PandaDBException.PandaDBException
 import com.alibaba.fastjson.JSON
 import com.alibaba.fastjson.serializer.SerializerFeature
@@ -45,21 +46,21 @@ import scala.collection.mutable.ArrayBuffer
  */
 class PandaDistributedIndexStore(client: RestHighLevelClient,
                                  _db: DistributedKVAPI, nls: DistributedNodeStoreSPI,
-                                 statistics: DistributedStatistics) {
+                                 statistics: DistributedStatistics, dupClientManager: UDPClientManager) {
   type NodeID = Long
   type NodeLabel = String
   type NodeLabels = List[String]
   type NodePropertyName = String
   type NodePropertyValue = Any
 
-  private val nodeIndexMetaStore = new NodeIndexMetaStore(_db, nls)
+  private val nodeIndexMetaStore = new NodeIndexMetaStore(_db, nls, dupClientManager)
   private val indexTool = new IndexTool(client)
 
   if (!indexTool.indexIsExist(NameMapping.indexName)) indexTool.createIndex(NameMapping.indexName)
 
   // for udp
   def refreshIndexMeta(): Unit ={
-    nodeIndexMetaStore.loadAll()
+    nodeIndexMetaStore.refreshIndexMeta()
   }
 
   // for driver

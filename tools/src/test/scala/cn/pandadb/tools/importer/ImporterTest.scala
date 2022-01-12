@@ -2,7 +2,7 @@ package cn.pandadb.tools.importer
 
 
 import cn.pandadb.kernel.distribute.DistributedGraphFacade
-import cn.pandadb.kernel.udp.UDPClient
+import cn.pandadb.kernel.udp.{UDPClient, UDPClientManager}
 import org.junit.Test
 
 /**
@@ -38,7 +38,7 @@ class ImporterTest {
 //    val importCmd = s"./importer-panda.sh --nodes=src/test/input/biology.node.trick.csv --relationships=src/test/input/biology.rel.trick.csv --delimeter=☔ --array-delimeter=| --kv-hosts=$kvHosts".split(" ")
     PandaImporter.main(importCmd)
 
-    val db = new DistributedGraphFacade(kvHosts, indexHosts, udpClient)
+    val db = new DistributedGraphFacade(kvHosts, indexHosts, new UDPClientManager(udpClient))
     println(s"all nodes: ${db.statistics._allNodesCount}")
     db.statistics._nodeCountByLabel.foreach(kv => println(s"node label id: ${kv._1}, count: ${kv._2}"))
     db.statistics._propertyCountByIndex.foreach(kv => println(s"node index prop id: ${kv._1}, count: ${kv._2}"))

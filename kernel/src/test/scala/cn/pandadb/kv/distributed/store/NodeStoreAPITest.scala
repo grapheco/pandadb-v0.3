@@ -7,7 +7,8 @@ import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
 import cn.pandadb.kernel.distribute.meta.{NameMapping, PropertyNameStore}
 import cn.pandadb.kernel.distribute.node.{DistributedNodeStoreSPI, NodeStoreAPI}
 import cn.pandadb.kernel.store.StoredNodeWithProperty
-import cn.pandadb.kernel.udp.UDPClient
+import cn.pandadb.kernel.udp.{UDPClient, UDPClientManager}
+import cn.pandadb.kv.distributed.BioTest.udpClient
 import org.apache.http.HttpHost
 import org.elasticsearch.client.{RestClient, RestHighLevelClient}
 import org.junit.{Assert, Before, Test}
@@ -50,7 +51,7 @@ class NodeStoreAPITest {
     cleanDB()
 
     val db = new PandaDistributeKVAPI(tikv)
-    api = new NodeStoreAPI(db, new PropertyNameStore(db, udpClient))
+    api = new NodeStoreAPI(db, new PropertyNameStore(db, new UDPClientManager(udpClient)))
 
     api.addNode(n1)
     api.addNode(n2)

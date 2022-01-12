@@ -7,7 +7,7 @@ import org.junit.{After, Assert, Before, Test}
 import java.io.File
 
 import cn.pandadb.kernel.distribute.DistributedGraphFacade
-import cn.pandadb.kernel.udp.UDPClient
+import cn.pandadb.kernel.udp.{UDPClient, UDPClientManager}
 
 class DeleteNodeTest {
   val kvHosts = "10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379"
@@ -29,7 +29,7 @@ class DeleteNodeTest {
 
   @Before
   def init(): Unit ={
-    db = new DistributedGraphFacade(kvHosts, indexHosts, udpClient)
+    db = new DistributedGraphFacade(kvHosts, indexHosts, new UDPClientManager(udpClient))
     db.cleanDB()
 
     id1 = db.addNode(Map("name"->"alex",

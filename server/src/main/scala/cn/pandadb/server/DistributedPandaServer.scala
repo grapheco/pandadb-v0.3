@@ -1,8 +1,7 @@
 package cn.pandadb.server
 
 import cn.pandadb.dbms.DistributedGraphDatabaseManager
-import cn.pandadb.kernel.udp.{UDPClient, UDPServer}
-import cn.pandadb.kernel.udp.UDPServer
+import cn.pandadb.kernel.udp.{UDPClient, UDPClientManager, UDPServer}
 import cn.pandadb.kernel.util.PandaDBException.PandaDBException
 import cn.pandadb.server.common.configuration.Config
 import cn.pandadb.server.common.lifecycle.LifecycleSupport
@@ -29,7 +28,7 @@ class DistributedPandaServer(config: Config) extends LazyLogging {
     else {
       val other = ips._2.filterNot(p => p._2 == notUsePort)
       udpClients = other.map(ip => new UDPClient(ip._1, ip._2))
-      database = new DistributedGraphDatabaseManager(config.getKVHosts(), config.getIndexHosts(), udpClients)
+      database = new DistributedGraphDatabaseManager(config.getKVHosts(), config.getIndexHosts(), new UDPClientManager(udpClients))
       pandaRpcServer = new DistributedPandaRpcServer(config, database)
       udpServer = new UDPServer(notUsePort, database.defaultDB)
     }
@@ -38,7 +37,7 @@ class DistributedPandaServer(config: Config) extends LazyLogging {
     val local = ips._2.head
     val other = ips._2.tail
     udpClients = other.map(ip => new UDPClient(ip._1, ip._2))
-    database = new DistributedGraphDatabaseManager(config.getKVHosts(), config.getIndexHosts(), udpClients)
+    database = new DistributedGraphDatabaseManager(config.getKVHosts(), config.getIndexHosts(), new UDPClientManager(udpClients))
     pandaRpcServer = new DistributedPandaRpcServer(config, database)
     udpServer = new UDPServer(local._2, database.defaultDB)
   }

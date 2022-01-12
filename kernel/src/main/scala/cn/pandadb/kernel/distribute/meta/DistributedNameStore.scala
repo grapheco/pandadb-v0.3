@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import cn.pandadb.kernel.distribute.DistributedKVAPI
 import cn.pandadb.kernel.kv.ByteUtils
-import cn.pandadb.kernel.udp.UDPClient
+import cn.pandadb.kernel.udp.{UDPClient, UDPClientManager}
 
 import scala.collection.mutable
 
@@ -13,7 +13,7 @@ trait DistributedNameStore {
   val initInt: Int
   val key2ByteArrayFunc: (Int) => Array[Byte]
   val keyPrefixFunc: () => Array[Byte]
-  val udpClients: Array[UDPClient]
+  val udpClientManager: UDPClientManager
 
   var idGenerator: AtomicInteger = new AtomicInteger(initInt)
   var mapString2Int: mutable.Map[String, Int] = mutable.Map[String, Int]()
@@ -26,7 +26,7 @@ trait DistributedNameStore {
     val key = key2ByteArrayFunc(id)
     db.put(key, ByteUtils.stringToBytes(labelName))
 
-    udpClients.foreach(client => client.sendRefreshMsg())
+    udpClientManager.sendRefreshMsg()
 
     id
   }
@@ -63,7 +63,7 @@ trait DistributedNameStore {
     val key = key2ByteArrayFunc(id)
     db.delete(key)
 
-    udpClients.foreach(client => client.sendRefreshMsg())
+    udpClientManager.sendRefreshMsg()
   }
 
   def cleanData(): Unit ={

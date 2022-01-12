@@ -5,7 +5,8 @@ import cn.pandadb.kernel.distribute.index.PandaDistributedIndexStore
 import cn.pandadb.kernel.distribute.index.encoding.{EncoderFactory, IndexEncoderNames}
 import cn.pandadb.kernel.distribute.index.encoding.encoders.TreeEncoder
 import cn.pandadb.kernel.distribute.meta.{DistributedStatistics, NameMapping}
-import cn.pandadb.kernel.udp.UDPClient
+import cn.pandadb.kernel.udp.{UDPClient, UDPClientManager}
+import cn.pandadb.kv.distributed.BioTest.udpClient
 import org.apache.http.HttpHost
 import org.elasticsearch.client.{RestClient, RestHighLevelClient}
 import org.junit.{After, Before, Test}
@@ -39,8 +40,8 @@ class TreeEncodeTest {
   @Before
   def init(): Unit ={
     client = new RestHighLevelClient(RestClient.builder(hosts: _*))
-    graphFacade = new DistributedGraphFacade(kvHosts, indexHosts, udpClient)
-    indexStore = new PandaDistributedIndexStore(client, graphFacade.db, graphFacade.nodeStore, new DistributedStatistics(graphFacade.db))
+    graphFacade = new DistributedGraphFacade(kvHosts, indexHosts, new UDPClientManager(udpClient))
+    indexStore = new PandaDistributedIndexStore(client, graphFacade.db, graphFacade.nodeStore, new DistributedStatistics(graphFacade.db), new UDPClientManager(udpClient))
 
 //    prepareData()
   }

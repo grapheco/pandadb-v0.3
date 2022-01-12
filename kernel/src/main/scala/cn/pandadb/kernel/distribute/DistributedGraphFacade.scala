@@ -7,7 +7,7 @@ import cn.pandadb.kernel.distribute.meta.{DistributedStatistics, NameMapping, Pr
 import cn.pandadb.kernel.distribute.node.NodeStoreAPI
 import cn.pandadb.kernel.distribute.relationship.RelationStoreAPI
 import cn.pandadb.kernel.store.{PandaNode, PandaRelationship, StoredNode, StoredNodeWithProperty, StoredRelation, StoredRelationWithProperty}
-import cn.pandadb.kernel.udp.UDPClient
+import cn.pandadb.kernel.udp.{UDPClient, UDPClientManager}
 import cn.pandadb.kernel.util.PandaDBException.PandaDBException
 import org.apache.http.HttpHost
 import org.elasticsearch.client.{RestClient, RestHighLevelClient}
@@ -21,7 +21,7 @@ import org.tikv.common.{TiConfiguration, TiSession}
  * @author: LiamGao
  * @create: 2021-11-17 16:45
  */
-class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClients: Array[UDPClient]) extends DistributedGraphService {
+class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClientManager: UDPClientManager) extends DistributedGraphService {
 
   val db = {
     val conf = TiConfiguration.createRawDefault(kvHosts)
@@ -29,7 +29,7 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClients: Ar
     val session = TiSession.create(conf)
     new PandaDistributeKVAPI(session.createRawClient())
   }
-  val propertyNameStore = new PropertyNameStore(db, udpClients)
+  val propertyNameStore = new PropertyNameStore(db, udpClientManager)
   val nodeStore = new NodeStoreAPI(db, propertyNameStore)
   val relationStore = new RelationStoreAPI(db, propertyNameStore)
 
@@ -42,14 +42,16 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClients: Ar
       new HttpHost(ip(0), ip(1).toInt, "http")
     })
 
-    new PandaDistributedIndexStore(new RestHighLevelClient(RestClient.builder(hosts: _*)), db, nodeStore, statistics)
+    new PandaDistributedIndexStore(new RestHighLevelClient(RestClient.builder(hosts: _*)), db, nodeStore, statistics, udpClientManager)
   }
 
   val cypherParseModel = new GraphParseModel(this)
 
   val runner = new CypherRunnerPlus(cypherParseModel)
 
-  def cleanDB(): Unit ={
+  udpClientManager.setDB(this)
+
+  def cleanDB(): Unit = {
     statistics.clean()
     propertyNameStore.cleanData()
     nodeStore.cleanData()
@@ -62,15 +64,22 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClients: Ar
   }
 
   def getStatistics() = statistics
+
   def nodeLabelId2Name(id: Int) = nodeStore.getLabelName(id).get
+
   def relTypeId2Name(id: Int) = relationStore.getRelationTypeName(id).get
+
   def propId2Name(id: Int) = propertyNameStore.key(id).get
-  def refreshMeta(): Unit ={
-    nodeStore.refreshMeta()
-    relationStore.refreshMeta()
-    indexStore.refreshIndexMeta()
-    statistics.init()
+
+  def refreshMeta(): Unit = {
+    synchronized {
+      nodeStore.refreshMeta()
+      relationStore.refreshMeta()
+      indexStore.refreshIndexMeta()
+      statistics.refreshMeta()
+    }
   }
+
   override def newNodeId(): Id = nodeStore.newNodeId()
 
   override def newRelationshipId(): Id = relationStore.newRelationId()
@@ -109,7 +118,7 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClients: Ar
   override def getNodesByLabel(labelNames: Seq[String], exact: Boolean): Iterator[PandaNode] = {
     val labelNotExist = labelNames.filter(labelName => getNodeLabelId(labelName).isEmpty)
 
-    if (labelNotExist.isEmpty){
+    if (labelNotExist.isEmpty) {
       labelNames.size match {
         case 0 => scanAllNode()
         case 1 => {
@@ -172,12 +181,12 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClients: Ar
     val pid = nodeStore.addPropertyKey(key)
     nodeStore.nodeSetProperty(id, pid, value)
     val node = getNodeById(id).get
-    indexStore.setIndexOnSingleNode(node.longId, node.labels, node.properties.map(p => p._1->p._2.value))
+    indexStore.setIndexOnSingleNode(node.longId, node.labels, node.properties.map(p => p._1 -> p._2.value))
   }
 
   override def nodeRemoveProperty(id: Id, key: String): Unit = {
     val pid = nodeStore.getPropertyKeyId(key)
-    if (pid.isDefined){
+    if (pid.isDefined) {
       nodeStore.nodeRemoveProperty(id, pid.get)
       val node = getNodeById(id).get
       if (node.properties.nonEmpty) indexStore.dropIndexOnSingleNodeProp(node.longId, node.labels, key)
@@ -189,7 +198,7 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClients: Ar
     val lid = nodeStore.addLabel(label)
     nodeStore.nodeAddLabel(id, lid)
     val node = getNodeById(id).get
-    indexStore.setIndexOnSingleNode(node.longId, node.labels, node.properties.map(p => p._1->p._2.value))
+    indexStore.setIndexOnSingleNode(node.longId, node.labels, node.properties.map(p => p._1 -> p._2.value))
 
     statistics.increaseNodeLabelCount(lid, 1)
   }
@@ -198,7 +207,7 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClients: Ar
     val lid = nodeStore.getLabelId(label)
     lid.foreach(lid => nodeStore.nodeRemoveLabel(id, lid))
     val node = getNodeById(id).get
-    if (node.labels.nonEmpty) indexStore.setIndexOnSingleNode(node.longId, node.labels, node.properties.map(p => p._1->p._2.value))
+    if (node.labels.nonEmpty) indexStore.setIndexOnSingleNode(node.longId, node.labels, node.properties.map(p => p._1 -> p._2.value))
     else indexStore.deleteNode(node.longId.toString)
 
     statistics.decreaseNodeLabelCount(lid.get, 1)
@@ -304,30 +313,29 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClients: Ar
 
   override def createIndexOnNode(label: String, propNames: Set[String]): Unit = {
     val created = indexStore.isIndexCreated(label, propNames.toSeq)
-    if (!created){
+    if (!created) {
       val iter = getNodesByLabel(Seq(label), false)
       indexStore.batchAddIndexOnNodes(label, propNames.toSeq, iter)
     }
-
-    udpClients.foreach(client => client.sendRefreshMsg())
+    udpClientManager.sendRefreshMsg()
   }
 
   override def dropIndexOnNode(label: String, prop: String): Unit = {
     val created = indexStore.isIndexCreated(label, Seq(prop))
-    if (created){
+    if (created) {
       val nodes = getNodesByLabel(Seq(label), false)
       indexStore.batchDeleteIndexLabelWithProperty(label, prop, nodes)
     }
 
-    udpClients.foreach(client => client.sendRefreshMsg())
+    udpClientManager.sendRefreshMsg()
   }
 
   override def isNodeHasIndex(filter: NodeFilter): Boolean = {
     indexStore.isNodeHasIndex(filter)
   }
 
-  override def getNodesByIndex(nodeFilter: NodeFilter): Iterator[PandaNode] ={
-    indexStore.searchNodes(nodeFilter.labels, nodeFilter.properties.map(p => p._1->p._2.value)).flatten
+  override def getNodesByIndex(nodeFilter: NodeFilter): Iterator[PandaNode] = {
+    indexStore.searchNodes(nodeFilter.labels, nodeFilter.properties.map(p => p._1 -> p._2.value)).flatten
   }
 
   override def cypher(query: String, parameters: Map[String, Any], tx: Option[LynxTransaction]): LynxResult = {

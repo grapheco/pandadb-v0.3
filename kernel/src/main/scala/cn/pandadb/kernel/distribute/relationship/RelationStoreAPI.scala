@@ -11,7 +11,7 @@ import cn.pandadb.kernel.store.{StoredRelation, StoredRelationWithProperty}
  * @create: 2021-11-18 10:53
  */
 class RelationStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStore) extends DistributedRelationStoreSPI {
-  private val relationTypeNameStore = new RelationTypeNameStore(db, propertyNameStore.udpClients)
+  private val relationTypeNameStore = new RelationTypeNameStore(db, propertyNameStore.udpClientManager)
   private val idGenerator =new IdGenerator(db, TypeNameEnum.relationName)
 
   val inRelationStore = new RelationDirectionStore(db, RelationDirection.IN)
@@ -53,7 +53,6 @@ class RelationStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStor
     inRelationStore.set(relation)
     outRelationStore.set(relation)
     relationTypeStore.set(relation.typeId, relation.id)
-    idGenerator.flushId()
   }
 
   override def addRelationType(relationTypeName: String): Int = {
@@ -127,7 +126,7 @@ class RelationStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStor
 
   override def relationCount: Long = relationStore.count
 
-  override def close(): Unit = {idGenerator.flushId()}
+  override def close(): Unit = {}
 }
 
 trait DistributedRelationStoreSPI {

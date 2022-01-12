@@ -6,6 +6,7 @@ import cn.pandadb.kernel.distribute.{DistributedKVAPI, DistributedKeyConverter}
 import cn.pandadb.kernel.distribute.meta.{NodeLabelNameStore, PropertyNameStore}
 import cn.pandadb.kernel.distribute.node.DistributedNodeStoreSPI
 import cn.pandadb.kernel.kv.ByteUtils
+import cn.pandadb.kernel.udp.{UDPClient, UDPClientManager}
 import cn.pandadb.kernel.util.PandaDBException.PandaDBException
 
 import scala.collection.mutable
@@ -19,6 +20,8 @@ trait IndexNameStore {
   val keyWithIndexFunc: (Int, Int) => Array[Byte]
 
   val nodeStore: DistributedNodeStoreSPI
+  val udpClientManager: UDPClientManager
+
 
   // a label with a set of properties
   var indexMetaMap: mutable.Map[String, mutable.Set[String]] = mutable.Map[String, mutable.Set[String]]()
@@ -29,11 +32,15 @@ trait IndexNameStore {
   def setEncodingMeta(key: String, value: Array[Byte]) = {
     encodingMetaMap += key->value
     db.put(DistributedKeyConverter.indexEncoderKeyToBytes(key), value)
+
+    udpClientManager.sendRefreshMsg()
   }
 
   def deleteEncodingMeta(key: String): Unit ={
     encodingMetaMap.remove(key)
     db.delete(DistributedKeyConverter.indexEncoderKeyToBytes(key))
+
+    udpClientManager.sendRefreshMsg()
   }
 
 
@@ -56,6 +63,8 @@ trait IndexNameStore {
       db.put(key, Array.emptyByteArray)
     }
     else throw new PandaDBException("no such label or property to create index")
+
+    udpClientManager.sendRefreshMsg()
   }
 
   def delete(labelName: String, propertyName: String): Unit = {
@@ -67,6 +76,8 @@ trait IndexNameStore {
 
       indexMetaMap(labelName).remove(propertyName)
       if (indexMetaMap(labelName).isEmpty) indexMetaMap -= labelName
+
+      udpClientManager.sendRefreshMsg()
     }
   }
 
@@ -90,5 +101,33 @@ trait IndexNameStore {
       val encoderKey = new String(key, 1, key.length - 1)
       encodingMetaMap += encoderKey -> value
     }
+  }
+
+  def refreshIndexMeta(): Unit ={
+    var tmpIndexMetaMap: mutable.Map[String, mutable.Set[String]] = mutable.Map[String, mutable.Set[String]]()
+    var tmpEncodingMetaMap: mutable.Map[String, Array[Byte]] = mutable.Map[String, Array[Byte]]()
+
+    val prefix = keyPrefixFunc()
+    val iter = db.scanPrefix(prefix, 10000, true)
+    while (iter.hasNext){
+      val key = iter.next().getKey.toByteArray
+      val label = nodeStore.getLabelName(ByteUtils.getInt(key, 1)).get
+      val property = nodeStore.getPropertyKeyName(ByteUtils.getInt(key, 5)).get
+      if (tmpIndexMetaMap.contains(label)) tmpIndexMetaMap(label).add(property)
+      else tmpIndexMetaMap += label -> mutable.Set(property)
+    }
+
+    val encodingPrefix = encodingKeyPrefix()
+    val eIter = db.scanPrefix(encodingPrefix, 10000, false)
+    while (eIter.hasNext){
+      val data = eIter.next()
+      val key = data.getKey.toByteArray
+      val value = data.getValue.toByteArray
+      val encoderKey = new String(key, 1, key.length - 1)
+      tmpEncodingMetaMap += encoderKey -> value
+    }
+
+    indexMetaMap = tmpIndexMetaMap
+    encodingMetaMap = tmpEncodingMetaMap
   }
 }

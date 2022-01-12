@@ -4,7 +4,7 @@ import java.io.File
 
 import cn.pandadb.kernel.distribute.DistributedGraphFacade
 import cn.pandadb.kernel.store.{PandaNode, PandaRelationship}
-import cn.pandadb.kernel.udp.UDPClient
+import cn.pandadb.kernel.udp.{UDPClient, UDPClientManager}
 import org.junit.{After, Assert, Before, Test}
 
 /**
@@ -21,7 +21,7 @@ class RemoveTest {
 
   @Before
   def init(): Unit ={
-    db = new DistributedGraphFacade(kvHosts, indexHosts, udpClient)
+    db = new DistributedGraphFacade(kvHosts, indexHosts, new UDPClientManager(udpClient))
     db.cleanDB()
     val n1 = db.addNode(Map("name"->"Oliver Stone", "sex"->"male", "value1"->1, "value2"->true), "Person","Director")
     val m1 = db.addNode(Map("title"->"Wall Street", "year"->1987), "Movie")
