@@ -41,6 +41,7 @@ vim conf/pandadb.conf
 ```
 1. set ElasticSearch hosts address to `dbms.index.hosts`.
 2. set TiKV PD hosts address to `dbms.kv.hosts`.
+3. set PandaDB cluster nodes to `dbms.panda.nodes`
 #### 3.3 Start
 1. start your ElasticSearch service.
 2. start your TiKV service. 
@@ -114,7 +115,16 @@ usage example:
   session.close()
   driver.close()
 ```
-## 5. Extra
+## 5. Cypher-shell
+script location: `/usr/local/pandadb-server-<version>/bin/cypher-shell`  
+
+usage: 
+1. `./cypher-shell -a panda://127.0.0.1:9989 -u "" -p ""`
+2. `./cypher-shell -a panda://127.0.0.1:9989,127.0.0.2:9989,127.0.0.3:9989 -u "" -p ""`  
+
+exit: `:quit`
+
+## 6. Extra
 ###  TiKV deploy
 * add a linux user first, eg: `useradd tikv`
 * install tiup
