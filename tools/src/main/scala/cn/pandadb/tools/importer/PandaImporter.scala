@@ -7,8 +7,9 @@ import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
 import java.util.logging.{Level, Logger}
 
 import cn.pandadb.kernel.PDBMetaData
-import cn.pandadb.kernel.distribute.PandaDistributeKVAPI
+import cn.pandadb.kernel.distribute.{DistributedKeyConverter, PandaDistributeKVAPI}
 import cn.pandadb.kernel.distribute.meta.DistributedStatistics
+import cn.pandadb.kernel.kv.ByteUtils
 import org.tikv.common.{TiConfiguration, TiSession}
 
 /**
@@ -63,12 +64,13 @@ object PandaImporter extends LazyLogging {
       new PandaDistributeKVAPI(session.createRawClient())
     }).toArray
 
-    val statistics = new DistributedStatistics(dbs.head)
+    val metaDB = dbs.head
+    val statistics = new DistributedStatistics(metaDB)
     statistics.init()
 
     val globalArgs = GlobalArgs(Runtime.getRuntime().availableProcessors(),
       importerStatics,
-      estNodeCount, estRelCount, dbs(1), dbs(2), dbs(3), dbs(4), dbs(5), dbs(6), dbs.head)
+      estNodeCount, estRelCount, dbs(1), dbs(2), dbs(3), dbs(4), dbs(5), dbs(6), metaDB)
     logger.info(s"Import task started. $time")
     service.scheduleAtFixedRate(nodeCountProgressLogger, 0, 30, TimeUnit.SECONDS)
     service.scheduleAtFixedRate(relCountProgressLogger, 0, 30, TimeUnit.SECONDS)
@@ -90,7 +92,8 @@ object PandaImporter extends LazyLogging {
     importerStatics.getRelCountByType.foreach(idNums => statistics.increaseRelationTypeCount(idNums._1, idNums._2))
     statistics.flush()
 
-
+    metaDB.put(DistributedKeyConverter.nodeMaxIdKey, ByteUtils.longToBytes(importerStatics.getGlobalNodeCount.get()))
+    metaDB.put(DistributedKeyConverter.relationMaxIdKey, ByteUtils.longToBytes(importerStatics.getGlobalRelCount.get()))
 
     service.shutdown()
     val endTime: Long = new Date().getTime
