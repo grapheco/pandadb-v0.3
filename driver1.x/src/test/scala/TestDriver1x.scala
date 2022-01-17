@@ -1,4 +1,4 @@
-import cn.pandadb.CypherErrorException
+import cn.pandadb.driver.{CypherErrorException, PandaSession}
 import org.junit.runners.MethodSorters
 import org.junit.{Assert, FixMethodOrder, Test}
 import org.neo4j.driver.v1.types.Node

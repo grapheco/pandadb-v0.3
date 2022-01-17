@@ -1,6 +1,6 @@
-package cn.pandadb.net.hipporpc.utils
+package cn.pandadb.driver.utils
 
-import cn.pandadb.NotValidAddressException
+import cn.pandadb.driver.NotValidAddressException
 
 import scala.util.matching.Regex
 

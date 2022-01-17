@@ -4,7 +4,7 @@ import java.security.KeyFactory
 import java.security.spec.X509EncodedKeySpec
 
 import cn.pandadb.driver.rpc.PandaRpcClient
-import cn.pandadb.{UnknownErrorException, UsernameOrPasswordErrorException, VerifyConnectionMode}
+import cn.pandadb.VerifyConnectionMode
 import javax.crypto.Cipher
 import org.apache.commons.codec.binary.Base64
 import org.neo4j.driver.internal.security.InternalAuthToken

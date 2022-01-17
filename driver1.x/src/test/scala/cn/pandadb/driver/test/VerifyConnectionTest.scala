@@ -1,6 +1,7 @@
 package cn.pandadb.driver.test
 
-import cn.pandadb.{NotValidAddressException, UsernameOrPasswordErrorException}
+import cn.pandadb.NotValidAddressException
+import cn.pandadb.driver.{NotValidAddressException, UsernameOrPasswordErrorException}
 import net.neoremind.kraps.RpcException
 import org.junit.runners.MethodSorters
 import org.junit.{FixMethodOrder, Test}

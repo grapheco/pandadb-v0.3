@@ -3,7 +3,6 @@ package cn.pandadb.driver
 import java.util.concurrent.TimeUnit
 import java.{util => javaUtil}
 
-import cn.pandadb.NotImplementMethodException
 import cn.pandadb.driver.utils.TypesToNeo4jValue
 import cn.pandadb.net.hipporpc.utils.DriverValue
 import org.neo4j.driver.internal.util.Format.formatPairs

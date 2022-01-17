@@ -8,10 +8,9 @@ import org.neo4j.driver.v1.types.TypeSystem
 import org.neo4j.driver.v1.{Record, Session, Statement, StatementResult, StatementResultCursor, StatementRunner, Transaction, TransactionConfig, TransactionWork, Value}
 import java.util.Collections.emptyMap
 
-import cn.pandadb.NotImplementMethodException
 import cn.pandadb.driver.rpc.PandaRpcClient
+import cn.pandadb.driver.utils.RegexUtils
 import cn.pandadb.net.hipporpc.message.{CreateIndexResponse, DropIndexResponse, GetIndexedMetaResponse, GetStatisticsResponse}
-import cn.pandadb.net.hipporpc.utils.RegexUtils
 
 import scala.collection.JavaConverters._
 

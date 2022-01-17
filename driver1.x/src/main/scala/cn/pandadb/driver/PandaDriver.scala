@@ -3,7 +3,6 @@ package cn.pandadb.driver
 import java.lang
 import java.util.concurrent.CompletionStage
 
-import cn.pandadb.NotImplementMethodException
 import org.neo4j.driver.v1.{AccessMode, Driver, Session}
 
 import scala.collection.mutable.ArrayBuffer

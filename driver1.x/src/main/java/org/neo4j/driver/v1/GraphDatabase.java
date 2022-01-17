@@ -18,7 +18,7 @@
  */
 package org.neo4j.driver.v1;
 
-import cn.pandadb.NotValidSchemaException;
+import cn.pandadb.driver.NotValidSchemaException;
 import cn.pandadb.driver.PandaDriverConfig;
 import cn.pandadb.driver.PandaDriverFactory;
 import org.neo4j.driver.internal.DriverFactory;
