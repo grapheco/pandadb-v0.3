@@ -24,9 +24,9 @@ do
 done
 }
 get_file_rels_names(){
-for file_name in ${PANDADB_DEMO_RELS}/*
+for file_name2 in ${PANDADB_DEMO_RELS}/*
 do
-  tmpFile="--rels="${PANDADB_HOME}/demo/rels/`basename $file_name`
+  tmpFile="--relationships="${PANDADB_HOME}/demo/relations/`basename $file_name2`
   RELS[$RELSCOUNT]=$tmpFile
   let RELSCOUNT++
 done
