@@ -69,6 +69,12 @@
             </excludes>
         </fileSet>
         <fileSet>
+            <directory>src/main/distribution/demo</directory>
+            <outputDirectory>demo</outputDirectory>
+            <directoryMode>0755</directoryMode>
+            <fileMode>0755</fileMode>
+        </fileSet>
+        <fileSet>
             <directory>src/main/distribution/import</directory>
             <outputDirectory>import</outputDirectory>
             <directoryMode>0755</directoryMode>
