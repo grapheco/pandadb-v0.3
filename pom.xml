@@ -13,10 +13,9 @@
         <module>kernel</module>
         <module>tools</module>
         <module>server</module>
-        <module>panda-net</module>
-        <module>driver1.x</module>
+        <module>pandadb-net</module>
         <module>packaging</module>
-        <module>panda-test</module>
+        <module>pandadb-test</module>
     </modules>
 
     <properties>

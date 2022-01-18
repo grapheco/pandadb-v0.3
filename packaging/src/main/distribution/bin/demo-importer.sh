@@ -42,7 +42,7 @@ get_params_func "$@"
 get_file_nodes_names
 get_file_rels_names
 
-java -cp "$PANDADB_LAB""//*" "cn.pandadb.tools.importer.PandaImporter" "${NODES[@]}" "${RELS[@]}" "--delimeter=|" "--array-delimeter=," "$KV_HOSTS"
+java -cp "$PANDADB_LAB""//*" "org.grapheco.pandadb.tools.importer.PandaImporter" "${NODES[@]}" "${RELS[@]}" "--delimeter=|" "--array-delimeter=," "$KV_HOSTS"
 
 }
 

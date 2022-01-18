@@ -7,7 +7,7 @@ get_pandadb_home(){
   PANDADB_DATA=$PANDADB_HOME"/data/"
   PANDADB_JAR=$PANDADB_HOME"/lib/panda-entry-point.jar"
   PANDADB_LAB=$PANDADB_HOME"/lib"
-  PANDADB_ENTRY="cn.pandadb.server.DistributedPandaServerEntryPoint"
+  PANDADB_ENTRY="org.grapheco.pandadb.server.DistributedPandaServerEntryPoint"
 }
 check_files() {
   if [ -e $PANDADB_CONF ]

@@ -55,7 +55,7 @@ then
 fi
 get_params_func "$@"
 
-java -cp "$PANDADB_LAB""//*" "cn.pandadb.tools.importer.PandaImporter" "${NODES[@]}" "${RELS[@]}" "$DELIMETER" "$ARRAY_DELIMETER" "$KV_HOSTS"
+java -cp "$PANDADB_LAB""//*" "org.grapheco.pandadb.tools.importer.PandaImporter" "${NODES[@]}" "${RELS[@]}" "$DELIMETER" "$ARRAY_DELIMETER" "$KV_HOSTS"
 
 }
 
