@@ -7,8 +7,8 @@ intelligent graph database
 * intelligent property graph mgmt
 * distributed non-Neo4j graph
 
-# Licensing
-???
+# License
+PandaDB is under the Apache 2.0 license.
 
 ## 1. Building PandaDB
 ### 1.1 install all artifacts
@@ -92,7 +92,7 @@ relationship csv example:
 
 
 ## 4. Driver
-visit https://github.com/grapheco/pandadb-java-driver to get pandadb-java-driver.jar.   
+visit https://github.com/grapheco/pandadb-v0.3/releases to get pandadb-java-driver.jar.   
 
 usage example:
 ```
