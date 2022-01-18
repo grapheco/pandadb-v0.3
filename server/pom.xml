@@ -4,18 +4,17 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>parent</artifactId>
-        <groupId>pandadb</groupId>
-        <version>1.0-SNAPSHOT</version>
+        <groupId>org.grapheco.pandadb</groupId>
+        <version>0.3</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>pandadb</groupId>
     <artifactId>server</artifactId>
 
     <dependencies>
         <dependency>
-            <groupId>pandadb</groupId>
+            <groupId>org.grapheco.pandadb</groupId>
             <artifactId>kernel</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
@@ -24,8 +23,8 @@
             <artifactId>hippo-rpc_2.12</artifactId>
         </dependency>
         <dependency>
-            <groupId>pandadb</groupId>
-            <artifactId>panda-net</artifactId>
+            <groupId>org.grapheco.pandadb</groupId>
+            <artifactId>pandadb-net</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
     </dependencies>

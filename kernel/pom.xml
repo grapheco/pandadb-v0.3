@@ -4,8 +4,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>parent</artifactId>
-        <groupId>pandadb</groupId>
-        <version>1.0-SNAPSHOT</version>
+        <groupId>org.grapheco.pandadb</groupId>
+        <version>0.3</version>
         <relativePath>../pom.xml</relativePath>
 
     </parent>
@@ -21,8 +21,8 @@
     </properties>
     <dependencies>
         <dependency>
-            <groupId>pandadb</groupId>
-            <artifactId>panda-net</artifactId>
+            <groupId>org.grapheco.pandadb</groupId>
+            <artifactId>pandadb-net</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>

@@ -4,12 +4,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>parent</artifactId>
-        <groupId>pandadb</groupId>
-        <version>1.0-SNAPSHOT</version>
+        <groupId>org.grapheco.pandadb</groupId>
+        <version>0.3</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>panda-test</artifactId>
+    <artifactId>pandadb-test</artifactId>
     <dependencies>
         <dependency>
             <groupId>junit</groupId>
@@ -22,19 +22,14 @@
             <version>2.6</version>
         </dependency>
         <dependency>
-            <groupId>pandadb</groupId>
+            <groupId>org.grapheco.pandadb</groupId>
             <artifactId>kernel</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>0.3</version>
         </dependency>
         <dependency>
-            <groupId>pandadb</groupId>
-            <artifactId>driver1.x</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>pandadb</groupId>
+            <groupId>org.grapheco.pandadb</groupId>
             <artifactId>server</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>0.3</version>
         </dependency>
     </dependencies>
     <build>
