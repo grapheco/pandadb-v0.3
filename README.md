@@ -92,39 +92,48 @@ relationship csv example:
 
 
 ## 4. Driver
-visit https://github.com/grapheco/pandadb-v0.3/releases to get pandadb-driver-1.0-SNAPSHOT.jar.   
-then add the jar to your project, this driver only support `session.run()`.  
+visit https://github.com/grapheco/pandadb-java-driver to get pandadb-java-driver.jar.   
+
 usage example:
 ```
-  val driver = GraphDatabase.driver("panda://localhost:9989", AuthTokens.basic("", ""))
-  val session = driver.session()
-  
-  val res1 = session.run("create (n:people{name:'alex', company:'google'}) return n")
-  println(res1.next().get("n").asMap())
-  
-  val res2 = session.run(“match (n:people) return n”)
-  while (res2.hasNext){
-    println(res.next().get("n").asNode().get("name"))
-  }
-  
-  val res3 = session.run(“match (n)-[r]->(m) return r”)
-  while (res3.hasNext){
-    println(res.next().get("r").asRelationship())
-  }
-  
-  session.close()
-  driver.close()
+ import org.neo4j.driver.v1.*;
+ import org.neo4j.driver.v1.types.Node;
+ import org.neo4j.driver.v1.types.Relationship;
+ 
+ public class DriverDemo {
+     public static void main(String[] args) {
+         Driver driver = GraphDatabase.driver("panda://127.0.0.1:9989", AuthTokens.basic("", ""));
+         // Driver driver = GraphDatabase.driver("panda://127.0.0.1:9989,127.0.0.2:9989,127.0.0.3:9989", AuthTokens.basic("", ""));
+ 
+         Session session = driver.session();
+         StatementResult result1 = session.run("match (n) return n limit 10");
+         while (result1.hasNext()){
+             Record next = result1.next();
+             Node n = next.get("n").asNode();
+             System.out.print("node labels: ");
+             n.labels().iterator().forEachRemaining(System.out::println);
+             System.out.println("node properties: " + n.asMap());
+             System.out.println();
+         }
+ 
+         StatementResult result2 = session.run("match (n)-[r]->(m) return r limit 10");
+         while (result2.hasNext()){
+             Record next = result2.next();
+             Relationship r = next.get("r").asRelationship();
+             System.out.println("rel type: " + r.type());
+             System.out.println("rel start node id: " + r.startNodeId());
+             System.out.println("rel end node id: " + r.endNodeId());
+             System.out.println("rel properties: " + r.asMap());
+             System.out.println();
+         }
+ 
+         session.close();
+         driver.close();
+     }
+ }
+
 ```
-## 5. Cypher-shell
-script location: `/usr/local/pandadb-server-<version>/bin/cypher-shell`  
-
-usage: 
-1. `./cypher-shell -a panda://127.0.0.1:9989 -u "" -p ""`
-2. `./cypher-shell -a panda://127.0.0.1:9989,127.0.0.2:9989,127.0.0.3:9989 -u "" -p ""`  
-
-exit: `:quit`
-
-## 6. Extra
+## 5. Extra
 ###  TiKV deploy
 * add a linux user first, eg: `useradd tikv`
 * install tiup
@@ -181,4 +190,8 @@ tikv version: v5.3.0, check tikv version info: `tiup list tikv`
 ```
 tiup cluster display cluster-tmp
 tiup cluster start cluster-tmp
+```
+* destroy tikv cluster
+```
+tiup cluster destroy cluster-tmp
 ```
