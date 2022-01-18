@@ -45,12 +45,12 @@ vim conf/pandadb.conf
 #### 3.3 Start
 1. start your ElasticSearch service.
 2. start your TiKV service. 
-3. `./usr/local/pandadb-server-<version>/bin/pandadb.sh start`
+3. start pandadb server on each machine. `${pandadb-home}/bin/pandadb.sh start`
 
-notice: `./bin/pandadb.sh` will show help.
+notice: `${pandadb-home}/bin/pandadb.sh` will show help.
 
 ## 3. Data import
-use the shell script: `/usr/local/pandadb-server-<version>/bin/importer-panda.sh`  
+use the shell script: `${pandadb-home}/bin/importer-panda.sh`  
 
 **params:**
 * `--nodes`     : nodes csv files.
@@ -89,9 +89,19 @@ relationship csv example:
 | REL_ID | relation:TYPE | :START_ID | :END_ID |  
 | :----: | :----: | :----: | :----: |  
 | 1 | friend | 1 | 2 |
+- - -
+### LDBC Demo data import
+```
+cd ${pandadb-home}
+
+./bin/demo-importer.sh --kv-hosts=${YOUR-TIKV-PD-ADDRESS}
+```
+eg: `./${pandadb-home}/bin/demo-importer.sh --kv-hosts=127.0.0.1:2379,127.0.0.2:2379,127.0.0.3:2379`
 
 
 ## 4. Driver
+pandadb-java-driver can easily switch to neo4j driver or pandadb driver, all the user needs to do is change the connection schema to `bolt` or `panda`. when connected to pandadb, only support `session.run()` method to run cypher.  
+
 visit https://github.com/grapheco/pandadb-v0.3/releases to get pandadb-java-driver.jar.   
 
 usage example:
