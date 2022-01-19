@@ -5,7 +5,9 @@ Intelligent graph database
 
 # Feature
 * Intelligent property graph database
-* Distributed non-Neo4j graph
+* Distributed graph
+* ElasticSearch as index backend
+* TiKV as storage backend
 * Support common Cypher queries
 
 # License
@@ -36,7 +38,7 @@ visit https://github.com/grapheco/pandadb-v0.3/releases to get pandadb-v0.3 bina
 
 unpack `pandadb-server-<version>-unix.tar.gz` in your local directory.
 
-### 3.2 Modify the configuration file
+#### 3.2 Modify the configuration file
 ```
 cd ${pandadb-home}
 vim conf/pandadb.conf
@@ -83,12 +85,12 @@ example:
     - default: string
 
 node csv example:  
-| nodeId:ID | label:LABEL | name | jobs:string[] |  
+| :ID | :LABEL | name | jobs:string[] |  
 | :----: | :----: | :----: | :----: |  
 | 1 | person | alex | [teacher\|coder\|singer] |
   
 relationship csv example:
-| REL_ID | relation:TYPE | :START_ID | :END_ID |  
+| REL_ID | :TYPE | :START_ID | :END_ID |  
 | :----: | :----: | :----: | :----: |  
 | 1 | friend | 1 | 2 |
 - - -
