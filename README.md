@@ -38,7 +38,7 @@ visit https://github.com/grapheco/pandadb-v0.3/releases to get pandadb-v0.3 bina
 
 unpack `pandadb-server-<version>-unix.tar.gz` in your local directory.
 
-#### 3.2 Modify the configuration file
+### 3.2 Modify the configuration file
 ```
 cd ${pandadb-home}
 vim conf/pandadb.conf
@@ -46,14 +46,12 @@ vim conf/pandadb.conf
 1. set ElasticSearch hosts address to `dbms.index.hosts`.
 2. set TiKV PD hosts address to `dbms.kv.hosts`.
 3. set PandaDB cluster nodes to `dbms.panda.nodes`
-#### 3.3 Start
+### 3.3 Start
 1. start your ElasticSearch service.
 2. start your TiKV service. 
 3. start pandadb server on each machine. `${pandadb-home}/bin/pandadb.sh start`
 
-notice: `${pandadb-home}/bin/pandadb.sh` will show help.
-
-## 3. Data import
+## 4. Data import
 use the shell script: `${pandadb-home}/bin/importer-panda.sh`  
 
 **params:**
@@ -100,6 +98,7 @@ cd ${pandadb-home}
 
 ./bin/demo-importer.sh
 ```
+Notice: User must configure the pandadb.conf file first.
 
 ## 4. Driver
 pandadb-java-driver can easily switch to neo4j driver or pandadb driver, all the user needs to do is change the connection schema to `bolt` or `panda`. when connected to pandadb, only support `session.run()` method to run cypher.  
@@ -145,7 +144,13 @@ usage example:
  }
 
 ```
-## 5. Extra
+## 5. Cypher-shell
+usage:
+```
+./${pandadb-home}/bin/cypher-shell -a "panda://127.0.0.1:9989" -p "" -u ""
+```
+
+## 6. Extra
 ###  TiKV deploy
 More detail see [TiKV Deploy](https://tikv.org/docs/5.1/deploy/install/production/).  
 * add a linux user first, eg: `useradd tikv`
