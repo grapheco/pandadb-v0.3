@@ -98,10 +98,8 @@ relationship csv example:
 ```
 cd ${pandadb-home}
 
-./bin/demo-importer.sh --kv-hosts=${YOUR-TIKV-PD-ADDRESS}
+./bin/demo-importer.sh
 ```
-eg: `./${pandadb-home}/bin/demo-importer.sh --kv-hosts=127.0.0.1:2379,127.0.0.2:2379,127.0.0.3:2379`
-
 
 ## 4. Driver
 pandadb-java-driver can easily switch to neo4j driver or pandadb driver, all the user needs to do is change the connection schema to `bolt` or `panda`. when connected to pandadb, only support `session.run()` method to run cypher.  

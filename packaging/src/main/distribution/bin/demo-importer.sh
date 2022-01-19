@@ -5,12 +5,12 @@ RELSCOUNT=0
 DELIMETER="--delimeter=,"
 ARRAY_DELIMETER="--array-delimeter=|"
 
-get_params_func(){
-for arg in $@
+get_kv_host(){
+CONF_File=${PANDADB_HOME}/conf/pandadb.conf
+for line in `cat ${CONF_File}`
 do
-  if [[ $arg == "--kv-hosts"* ]]
-  then
-    KV_HOSTS=$arg
+  if [[ "$line" == dbms.kv.hosts* ]]
+        then KV_HOSTS="--kv-hosts="${line#*=}
   fi
 done
 }
@@ -38,7 +38,7 @@ PANDADB_LAB=$PANDADB_HOME"/lib"
 PANDADB_DEMO_NODES=$PANDADB_HOME"/demo/nodes"
 PANDADB_DEMO_RELS=$PANDADB_HOME"/demo/relations"
 
-get_params_func "$@"
+get_kv_host
 get_file_nodes_names
 get_file_rels_names
 
