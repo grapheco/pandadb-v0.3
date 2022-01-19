@@ -1,21 +1,27 @@
 # pandadb-v0.3
-intelligent graph database
+Intelligent graph database
 
 <img src="docs/logo.jpg" width="128">
 
 # Feature
-* intelligent property graph mgmt
-* distributed non-Neo4j graph
+* Intelligent property graph database
+* Distributed non-Neo4j graph
+* Support common Cypher queries
 
 # License
-PandaDB is under the Apache 2.0 license.
+PandaDB is under the Apache 2.0 license. More detail see [LICENSE](https://github.com/grapheco/pandadb-v0.3/blob/kv-distributed/LICENSE)
 
-## 1. Building PandaDB
-### 1.1 install all artifacts
+## 1. Prerequisites
+1. ElasticSearch7.x or later version
+2. TiKV5.x or later version
+3. JDK1.8+
+
+## 2. Building PandaDB
+### 2.1 install all artifacts
 ```
 mvn clean install
 ```
-### 1.2 building server-side distribution zip package
+### 2.2 building server-side distribution zip package
 ```
 cd packaging
 
@@ -23,20 +29,16 @@ mvn package -Pserver-unix-dist
 ```
 this command will create `pandadb-server-<version>.jar` in `target` directory.
 
-## 2. Prepared
-1. deploy ElasticSearch7.x or later version on your machines
-2. deploy TiKV on your machines
-
 ## 3. start
-#### 3.1 Download package
+### 3.1 Download package
 
 visit https://github.com/grapheco/pandadb-v0.3/releases to get pandadb-v0.3 binary distributions.
 
-unpack `pandadb-server-<version>-unix.tar.gz` in your local directory, e.g. `/usr/local/`.
+unpack `pandadb-server-<version>-unix.tar.gz` in your local directory.
 
-#### 3.2 Modify the configuration file
+### 3.2 Modify the configuration file
 ```
-cd /usr/local/pandadb-server-<version>
+cd ${pandadb-home}
 vim conf/pandadb.conf
 ```
 1. set ElasticSearch hosts address to `dbms.index.hosts`.
@@ -145,6 +147,7 @@ usage example:
 ```
 ## 5. Extra
 ###  TiKV deploy
+More detail see [TiKV Deploy](https://tikv.org/docs/5.1/deploy/install/production/).  
 * add a linux user first, eg: `useradd tikv`
 * install tiup
 ```
