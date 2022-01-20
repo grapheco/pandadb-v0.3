@@ -11,7 +11,7 @@ Intelligent graph database
 * Support common Cypher queries
 
 # License
-PandaDB is under the Apache 2.0 license. More detail see [LICENSE](https://github.com/grapheco/pandadb-v0.3/blob/kv-distributed/LICENSE)
+PandaDB source code is mainly open sourced using Apache 2.0 license. Some auxiliary tools' source code is under GNU GENERAL PUBLIC LICENSE Version 3.
 
 ## 1. Prerequisites
 1. ElasticSearch7.x or later version
