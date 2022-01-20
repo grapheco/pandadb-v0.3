@@ -25,7 +25,7 @@
         <dependency>
             <groupId>org.grapheco.pandadb</groupId>
             <artifactId>pandadb-net</artifactId>
-            <version>${project.parent.version}</version>
+            <version>0.3.3</version>
         </dependency>
     </dependencies>
 
