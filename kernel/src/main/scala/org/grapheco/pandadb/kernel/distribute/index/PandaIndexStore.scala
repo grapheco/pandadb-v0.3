@@ -104,7 +104,7 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
     node.properties.keySet.foreach(pn => statistics.decreaseIndexPropertyCount(nls.getPropertyKeyId(pn).get, 1))
   }
 
-  def searchNodes(labels: Seq[String], filter: Map[String, Any]): Iterator[Seq[PandaNode]] = {
+  def searchNodes(labels: Seq[String], filter: Map[String, Any]): Iterator[Seq[Long]] = {
     val indexedLabels = labels.intersect(nodeIndexMetaStore.indexMetaMap.keySet.toSeq)
     if (indexedLabels.nonEmpty){
       val data = IndexValueConverter.transferNode2Doc(nodeIndexMetaStore.indexMetaMap, indexedLabels, filter)
@@ -123,13 +123,13 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
     else Iterator.empty
   }
 
-  def searchByQuery(json: String): Unit ={
-    val queryBuilder = QueryBuilders.wrapperQuery(json)
-    new SearchNodeIterator(queryBuilder)
-  }
+//  def searchByQuery(json: String): Unit ={
+//    val queryBuilder = QueryBuilders.wrapperQuery(json)
+//    new SearchNodeIterator(queryBuilder)
+//  }
 
-  class SearchNodeIterator(queryBuilder: QueryBuilder) extends Iterator[Seq[PandaNode]]{
-    var dataBatch: Seq[PandaNode] = _
+  class SearchNodeIterator(queryBuilder: QueryBuilder) extends Iterator[Seq[Long]]{
+    var dataBatch: Seq[String] = _
     var page = 0
     val pageSize = 1000
     val request = new SearchRequest().indices(NameMapping.indexName)
@@ -139,12 +139,12 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
         .from(page * pageSize)
         .size(pageSize)
       request.source(builder)
-      dataBatch = client.search(request, RequestOptions.DEFAULT).getHits.asScala.map(f => IndexValueConverter.transferDoc2Node(f.getId, f.getSourceAsMap.asScala.toMap)).toSeq
+      dataBatch = client.search(request, RequestOptions.DEFAULT).getHits.asScala.map(f => f.getId).toSeq
       page += 1
       dataBatch.nonEmpty
     }
 
-    override def next(): Seq[PandaNode] = dataBatch
+    override def next(): Seq[Long] = dataBatch.map(f => f.toLong)
   }
 
   def isIndexCreated(targetLabel: String, propNames: Seq[String]): Boolean ={
@@ -176,7 +176,10 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
       indexedData.foreach(labelAndProps => {
         if (labelAndProps._2.nonEmpty){
           val data = IndexValueConverter.transferNode2Doc(indexMetaMap, Seq(labelAndProps._1), labelAndProps._2.map(name => name -> nodeProps(name)).toMap)
-          client.update(updateNodeRequest(NameMapping.indexName, nodeId, labels, data.toMap), RequestOptions.DEFAULT)
+          if (indexTool.isDocExist(nodeId.toString))
+            client.update(updateNodeRequest(NameMapping.indexName, nodeId, labels, data.toMap), RequestOptions.DEFAULT)
+          else
+            client.index(addNewNodeRequest(NameMapping.indexName, nodeId, labels, data.toMap), RequestOptions.DEFAULT)
           labelAndProps._2.foreach(propName => statistics.increaseIndexPropertyCount(nls.getPropertyKeyId(propName).get, 1))
         }
       })

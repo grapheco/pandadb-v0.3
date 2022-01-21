@@ -54,10 +54,10 @@ class IndexTool(client: RestHighLevelClient) {
     val settingsBuilder = Settings.builder()
     // default settings
     settingsBuilder.put("index.number_of_shards", 5)
-      .put("index.number_of_replicas", 0)
+      .put("index.number_of_replicas", 3)
       .put("max_result_window", 50000000)
       .put("translog.flush_threshold_size", "1g")
-      .put("refresh_interval", "30s")
+      .put("refresh_interval", "1s")
       .put("translog.durability", "request")
     //new settings
     settings.foreach {

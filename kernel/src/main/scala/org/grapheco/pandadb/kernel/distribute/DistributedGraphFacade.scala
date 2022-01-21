@@ -335,7 +335,7 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClientManag
   }
 
   override def getNodesByIndex(nodeFilter: NodeFilter): Iterator[PandaNode] = {
-    indexStore.searchNodes(nodeFilter.labels, nodeFilter.properties.map(p => p._1 -> p._2.value)).flatten
+    indexStore.searchNodes(nodeFilter.labels, nodeFilter.properties.map(p => p._1 -> p._2.value)).flatten.map(f => getNodeById(f, nodeFilter.labels.head).get)
   }
 
   override def cypher(query: String, parameters: Map[String, Any], tx: Option[LynxTransaction]): LynxResult = {
