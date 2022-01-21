@@ -29,7 +29,7 @@ class DistributedPandaServerBootstrapper() extends LazyLogging {
   private def addShutdownHook(): Unit = {
     Runtime.getRuntime().addShutdownHook(new Thread() {
       override def run(): Unit = {
-        logger.info("hook processed...")
+        logger.debug("hook processed...")
         pandaServer.shutdown()
       }
     })

@@ -1,11 +1,11 @@
 package org.grapheco.pandadb.utils
 
-import java.net.{DatagramSocket, InetAddress, Socket}
-
+import java.net.{DatagramSocket, NetworkInterface}
 import org.grapheco.pandadb.kernel.udp.UDPServer
 import org.grapheco.pandadb.kernel.util.PandaDBException.PandaDBException
 import org.grapheco.pandadb.server.common.configuration.Config
 
+import scala.collection.mutable.ArrayBuffer
 import scala.util.matching.Regex
 
 /**
@@ -20,9 +20,21 @@ object ServerCommonUtils {
   val r3 = "(explain\\s+)?create\\s*\\(.*\\{?.*\\}?\\s*\\)"
   val r4 = "create index on"
   val pattern = new Regex(s"${r1}|${r2}|${r3}|${r4}")
+  var serverLocalIp: String = _
+  var serverLocalPort: Int = _
 
-  def getLocalIP(): String = {
-    InetAddress.getLocalHost().getHostAddress
+  def getLocalIP(): Array[String] = {
+    val localIps = ArrayBuffer[String]()
+    val netInterfaces = NetworkInterface.getNetworkInterfaces()
+    while (netInterfaces.hasMoreElements){
+      val ni = netInterfaces.nextElement()
+      val nii = ni.getInetAddresses()
+      while (nii.hasMoreElements){
+        val ip = nii.nextElement()
+        localIps.append(ip.getHostAddress)
+      }
+    }
+    localIps.toArray
   }
 
   def getClusterNodesIP(config: Config): (Boolean, Array[(String, Int)]) ={
@@ -39,13 +51,20 @@ object ServerCommonUtils {
     else {
       if (ipAndPort.length != ipAndPort.map(f => f._1).toSet.size) throw new PandaDBException("check your config file of dbms.panda.nodes, all ip should be different")
       val localNetIp = getLocalIP()
-      val localIp = ipAndPort.filter(p => p._1 == localNetIp)
+      val localIp = ipAndPort.filter(p => {
+        if (localNetIp.contains(p._1)) {
+          serverLocalIp = p._1
+          serverLocalPort = p._2
+          true
+        }
+        else false
+      })
       if (localIp.nonEmpty){
         val localPort = localIp.head._2
-        val otherIps = ipAndPort.filterNot(p => p._1 == localNetIp)
-        (false, Array((localNetIp, localPort)) ++ otherIps)
+        val otherIps = ipAndPort.filterNot(p => localNetIp.contains(p._1))
+        (false, Array((serverLocalIp, serverLocalPort)) ++ otherIps)
       }
-      else throw new PandaDBException(s"you should start panda node at $localNetIp ")
+      else throw new PandaDBException(s"you should start panda node at $serverLocalIp ")
     }
   }
 
