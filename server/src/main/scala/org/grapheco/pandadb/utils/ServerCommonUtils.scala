@@ -25,13 +25,14 @@ object ServerCommonUtils {
 
   def getLocalIP(): Array[String] = {
     val localIps = ArrayBuffer[String]()
-    val netInterfaces = NetworkInterface.getNetworkInterfaces()
+    val netInterfaces = NetworkInterface.getNetworkInterfaces
     while (netInterfaces.hasMoreElements){
       val ni = netInterfaces.nextElement()
-      val nii = ni.getInetAddresses()
+      val nii = ni.getInetAddresses
       while (nii.hasMoreElements){
         val ip = nii.nextElement()
-        localIps.append(ip.getHostAddress)
+        if (!ip.isLoopbackAddress && ip.getHostAddress.matches("(\\d{1,3}\\.){3}\\d{1,3}"))
+          localIps.append(ip.getHostAddress)
       }
     }
     localIps.toArray
