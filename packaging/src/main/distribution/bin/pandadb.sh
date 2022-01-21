@@ -23,7 +23,12 @@ check_files() {
 }
 
 do_console(){
-  java -cp "$PANDADB_LAB""//*" $PANDADB_ENTRY $PANDADB_CONF
+   PANDADB_PID=`pgrep -f "DistributedPandaServerEntryPoint"`
+    if [ "$PANDADB_PID" != "" ]
+    then echo "pandadb is running on pid: $PANDADB_PID"
+    else
+      java -cp "$PANDADB_LAB""//*" $PANDADB_ENTRY $PANDADB_CONF
+    fi
 }
 do_start(){
   PANDADB_PID=`pgrep -f "DistributedPandaServerEntryPoint"`
