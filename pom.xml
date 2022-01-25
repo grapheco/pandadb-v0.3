@@ -27,15 +27,14 @@
         <scala.binary.version>2.12</scala.binary.version>
         <scala.compat.version>2.12</scala.compat.version>
         <netty.version>4.1.17.Final</netty.version>
-<!--        <rocksdb.version>6.15.2</rocksdb.version>-->
         <scala-logging.version>3.9.4</scala-logging.version>
-        <log4j-slf4j-impl.version>2.16.0</log4j-slf4j-impl.version>
+        <log4j-slf4j-impl.version>2.17.1</log4j-slf4j-impl.version>
+        <commons-io.version>2.11.0</commons-io.version>
         <junit.version>4.13.1</junit.version>
         <pandadb.version>${project.version}</pandadb.version>
         <tikv.client.version>3.1.2</tikv.client.version>
         <elasticserach.version>7.14.1</elasticserach.version>
         <fastjson.version>1.2.78</fastjson.version>
-<!--        <lucene.version>8.9.0</lucene.version>-->
     </properties>
 
     <dependencies>
@@ -92,7 +91,7 @@
             <dependency>
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
-                <version>2.6</version>
+                <version>${commons-io.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
