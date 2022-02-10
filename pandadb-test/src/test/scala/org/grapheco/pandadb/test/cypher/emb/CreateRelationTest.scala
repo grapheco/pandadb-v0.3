@@ -54,7 +54,7 @@ class CreateRelationTest {
     val rel = res(0).get("r").get.asInstanceOf[LynxRelationship]
     Assert.assertEquals(n1, rel.startNodeId.value)
     Assert.assertEquals(n2, rel.endNodeId.value)
-    Assert.assertEquals("RELTYPE", rel.relationType.get)
+    Assert.assertEquals("RELTYPE", rel.relationType.get.value)
   }
 
   @Test
@@ -77,11 +77,11 @@ class CreateRelationTest {
     val rel1 = res(0).get("r1").get.asInstanceOf[LynxRelationship]
     Assert.assertEquals(n1, rel1.startNodeId.value)
     Assert.assertEquals(n2, rel1.endNodeId.value)
-    Assert.assertEquals("RELTYPE", rel1.relationType.get)
+    Assert.assertEquals("RELTYPE", rel1.relationType.get.value)
     val rel2 = res(0).get("r2").get.asInstanceOf[LynxRelationship]
     Assert.assertEquals(n3, rel2.startNodeId.value)
     Assert.assertEquals(n4, rel2.endNodeId.value)
-    Assert.assertEquals("RELTYPE", rel2.relationType.get)
+    Assert.assertEquals("RELTYPE", rel2.relationType.get.value)
   }
 
   @Test
@@ -104,11 +104,11 @@ class CreateRelationTest {
     val rel1 = res(0).get("r1").get.asInstanceOf[LynxRelationship]
     Assert.assertEquals(n1, rel1.startNodeId.value)
     Assert.assertEquals(n2, rel1.endNodeId.value)
-    Assert.assertEquals("RELTYPE", rel1.relationType.get)
+    Assert.assertEquals("RELTYPE", rel1.relationType.get.value)
     val rel2 = res(0).get("r2").get.asInstanceOf[LynxRelationship]
     Assert.assertEquals(n2, rel2.startNodeId.value)
     Assert.assertEquals(n3, rel2.endNodeId.value)
-    Assert.assertEquals("RELTYPE", rel2.relationType.get)
+    Assert.assertEquals("RELTYPE", rel2.relationType.get.value)
   }
 
   @Test
@@ -131,11 +131,11 @@ class CreateRelationTest {
     val rel1 = res(0).get("r1").get.asInstanceOf[LynxRelationship]
     Assert.assertEquals(n1, rel1.startNodeId.value)
     Assert.assertEquals(n4, rel1.endNodeId.value)
-    Assert.assertEquals("RELTYPE", rel1.relationType.get)
+    Assert.assertEquals("RELTYPE", rel1.relationType.get.value)
     val rel2 = res(0).get("r2").get.asInstanceOf[LynxRelationship]
     Assert.assertEquals(n4, rel2.startNodeId.value)
     Assert.assertEquals(n1, rel2.endNodeId.value)
-    Assert.assertEquals("RELTYPE", rel2.relationType.get)
+    Assert.assertEquals("RELTYPE", rel2.relationType.get.value)
   }
 
   @Test
@@ -158,7 +158,7 @@ class CreateRelationTest {
     val rel1 = res(0).get("r1").get.asInstanceOf[LynxRelationship]
     Assert.assertEquals(n1, rel1.startNodeId.value)
     Assert.assertEquals(n2, rel1.endNodeId.value)
-    Assert.assertEquals("RELTYPE", rel1.relationType.get)
+    Assert.assertEquals("RELTYPE", rel1.relationType.get.value)
 
     val nodeA = res(0).get("a").get.asInstanceOf[LynxNode]
     val nodeB = res(0).get("b").get.asInstanceOf[LynxNode]

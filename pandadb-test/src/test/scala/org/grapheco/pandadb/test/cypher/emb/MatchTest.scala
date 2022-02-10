@@ -1,11 +1,10 @@
 package org.grapheco.pandadb.test.cypher.emb
 
 import java.io.File
-
 import org.grapheco.pandadb.kernel.distribute.DistributedGraphFacade
 import org.grapheco.pandadb.kernel.udp.{UDPClient, UDPClientManager}
 import org.apache.commons.io.FileUtils
-import org.grapheco.lynx.{LynxNode, LynxRelationship, LynxValue}
+import org.grapheco.lynx.{LynxNode, LynxPropertyKey, LynxRelationship, LynxValue}
 import org.grapheco.pandadb.kernel.distribute.DistributedGraphFacade
 import org.junit.{After, Assert, Before, Test}
 
@@ -35,44 +34,44 @@ class MatchTest {
   @Before
   def init(): Unit ={
     db = new DistributedGraphFacade(kvHosts, indexHosts, new UDPClientManager(udpClient))
-//    db.cleanDB()
-//
-//     id1 = db.addNode(Map("name"->"alex",
-//      "storage"->1000000,
-//      "salary"->2333.33,
-//      "isCoder"->true,
-//      "indexes"->Array[Int](1,2,3,4,5),
-//      "floats"->Array[Double](11.1, 22.2, 33.3),
-//      "bools"->Array[Boolean](true, true, false, false),
-//      "jobs"->Array[String]("teacher", "coder", "singer")), "person")
-//
-//     id2 = db.addNode(Map("name"->"bob",
-//      "storage"->1000000,
-//      "indexes"->Array[Int](1,2,2,2,2)), "people")
-//
-//     id3 = db.addNode(Map("name"->"clause",
-//      "storage"->66666,
-//      "isCoder"->true,
-//      "indexes"->Array[Int](1,2,3,4,5)), "person")
-//
-//    db.addRelation("TMP", id1, id2, Map())
-//    db.addRelation("TMP", id2, id3, Map("index"->2))
-//
-//    n1 = db.addNode(Map("name"->"Oliver Stone", "sex"->"male"), "Person","Director")
-//    n2 = db.addNode(Map("name"->"Michael Douglas"), "Person")
-//    n3 = db.addNode(Map("name"->"Charlie Sheen"), "Person")
-//    n4 = db.addNode(Map("name"->"Martin Sheen"), "Person")
-//    n5 = db.addNode(Map("name"->"Rob Reiner"), "Person", "Director")
-//    m1 = db.addNode(Map("title"->"Wall Street", "year"->1987), "Movie")
-//    m2 = db.addNode(Map("title"->"The American President"), "Movie")
-//
-//    val directedR1 = db.addRelation("DIRECTED", n1, m1, Map())
-//    val directedR2 = db.addRelation("DIRECTED", n5, m2, Map())
-//    val actedR1 = db.addRelation("ACTED_IN", n2, m1, Map("role"->"Gordon Gekko"))
-//    val actedR2 = db.addRelation("ACTED_IN", n2, m2, Map("role"->"President Andrew Shepherd"))
-//    val actedR3 = db.addRelation("ACTED_IN", n3, m1, Map("role"->"Bud Fox"))
-//    val actedR4 = db.addRelation("ACTED_IN", n4, m1, Map("role"->"Carl Fox"))
-//    val actedR5 = db.addRelation("ACTED_IN", n4, m2, Map("role"->"A.J. MacInerney"))
+    db.cleanDB()
+
+     id1 = db.addNode(Map("name"->"alex",
+      "storage"->1000000,
+      "salary"->2333.33,
+      "isCoder"->true,
+      "indexes"->Array[Int](1,2,3,4,5),
+      "floats"->Array[Double](11.1, 22.2, 33.3),
+      "bools"->Array[Boolean](true, true, false, false),
+      "jobs"->Array[String]("teacher", "coder", "singer")), "person")
+
+     id2 = db.addNode(Map("name"->"bob",
+      "storage"->1000000,
+      "indexes"->Array[Int](1,2,2,2,2)), "people")
+
+     id3 = db.addNode(Map("name"->"clause",
+      "storage"->66666,
+      "isCoder"->true,
+      "indexes"->Array[Int](1,2,3,4,5)), "person")
+
+    db.addRelation("TMP", id1, id2, Map())
+    db.addRelation("TMP", id2, id3, Map("index"->2))
+
+    n1 = db.addNode(Map("name"->"Oliver Stone", "sex"->"male"), "Person","Director")
+    n2 = db.addNode(Map("name"->"Michael Douglas"), "Person")
+    n3 = db.addNode(Map("name"->"Charlie Sheen"), "Person")
+    n4 = db.addNode(Map("name"->"Martin Sheen"), "Person")
+    n5 = db.addNode(Map("name"->"Rob Reiner"), "Person", "Director")
+    m1 = db.addNode(Map("title"->"Wall Street", "year"->1987), "Movie")
+    m2 = db.addNode(Map("title"->"The American President"), "Movie")
+
+    val directedR1 = db.addRelation("DIRECTED", n1, m1, Map())
+    val directedR2 = db.addRelation("DIRECTED", n5, m2, Map())
+    val actedR1 = db.addRelation("ACTED_IN", n2, m1, Map("role"->"Gordon Gekko"))
+    val actedR2 = db.addRelation("ACTED_IN", n2, m2, Map("role"->"President Andrew Shepherd"))
+    val actedR3 = db.addRelation("ACTED_IN", n3, m1, Map("role"->"Bud Fox"))
+    val actedR4 = db.addRelation("ACTED_IN", n4, m1, Map("role"->"Carl Fox"))
+    val actedR5 = db.addRelation("ACTED_IN", n4, m2, Map("role"->"A.J. MacInerney"))
   }
 
   @Test
@@ -93,10 +92,10 @@ class MatchTest {
     Assert.assertEquals(2L, res1)
 
     val res2 = db.cypher("match (n) where n.indexes=[1,2,2,2,2] return n").records().next()("n").asInstanceOf[LynxNode]
-    Assert.assertEquals("bob", res2.property("name").get.value)
+    Assert.assertEquals("bob", res2.property(LynxPropertyKey("name")).get.value)
 
     val res3 = db.cypher("match (n) where n.indexes=[1,2,3,4,5] and n.storage=66666 return n").records().next()("n").asInstanceOf[LynxNode]
-    Assert.assertEquals("clause", res3.property("name").get.value)
+    Assert.assertEquals("clause", res3.property(LynxPropertyKey("name")).get.value)
 
     val res4 = db.cypher("match (n) where n.storage=1000001 return count(n)").records().next()("count(n)").asInstanceOf[LynxValue].value
     Assert.assertEquals(0L, res4)
@@ -134,12 +133,12 @@ class MatchTest {
     val res8 = db.cypher("match (n:person)-[r]->(m:people) return r").records().next()("r").asInstanceOf[LynxRelationship]
     Assert.assertEquals(id1, res8.startNodeId.value)
     Assert.assertEquals(id2, res8.endNodeId.value)
-    Assert.assertEquals("TMP", res8.relationType.get)
+    Assert.assertEquals("TMP", res8.relationType.get.value)
 
     val res9 = db.cypher("match (n)-[r]->(m) where n.name='Rob Reiner' return r").records().next()("r").asInstanceOf[LynxRelationship]
     Assert.assertEquals(n5, res9.startNodeId.value)
     Assert.assertEquals(m2, res9.endNodeId.value)
-    Assert.assertEquals("DIRECTED", res9.relationType.get)
+    Assert.assertEquals("DIRECTED", res9.relationType.get.value)
 
     val res10 = db.cypher("match (n)-[r]->(m) where n.name='XXX' return r").records().toList
     Assert.assertEquals(0, res10.size)

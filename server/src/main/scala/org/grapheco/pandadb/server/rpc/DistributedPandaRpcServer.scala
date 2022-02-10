@@ -71,14 +71,14 @@ class DistributedPandaStreamHandler(graphFacade: DistributedGraphDatabaseManager
       val statistics = gf.getStatistics
       val totalNodes = statistics.nodeCount
       val totalRels = statistics.relationCount
-      val nodesByLabel = statistics.getNodeLabelCountMap.map(f => gf.nodeLabelId2Name(f._1) -> f._2 )
-      val relsByType = statistics.getRelationTypeCountMap.map(f => gf.relTypeId2Name(f._1) -> f._2)
-      val propsByIndex = statistics.getPropertyCountByIndex.map(f => gf.propId2Name(f._1) -> f._2)
+      val nodesByLabel = statistics.getNodeLabelCountMap.map(f => gf.getNodeLabelName(f._1).get -> f._2 )
+      val relsByType = statistics.getRelationTypeCountMap.map(f => gf.getRelationTypeName(f._1).get -> f._2)
+      val propsByIndex = statistics.getPropertyCountByIndex.map(f => gf.getPropertyName(f._1).get -> f._2)
       context.reply(GetStatisticsResponse(totalNodes, totalRels, nodesByLabel, relsByType, propsByIndex))
     }
     case GetIndexedMetaRequest() => {
-      val indexStore = graphFacade.defaultDB.indexStore
-      context.reply(GetIndexedMetaResponse(indexStore.getIndexedMetaData()))
+      val indexStore = graphFacade.defaultDB.getIndexStore
+      context.reply(GetIndexedMetaResponse(indexStore.getIndexMeta))
     }
     case CreateIndexRequest(label, props) => {
       val gf = graphFacade.defaultDB

@@ -2,7 +2,7 @@ package org.grapheco.pandadb.kernel.store
 
 import org.grapheco.pandadb.kernel.distribute.node.DistributedNodeStoreSPI
 import org.grapheco.pandadb.kernel.util.serializer.BaseSerializer
-import org.grapheco.lynx.{LynxId, LynxNode, LynxValue}
+import org.grapheco.lynx.{LynxId, LynxNode, LynxNodeLabel, LynxPropertyKey, LynxValue}
 
 
 trait StoredValue{
@@ -28,28 +28,13 @@ class StoredNodeWithProperty(override val id: Long,
   override def toString: String = s"{<id>:${id}, labels:[${labelIds.mkString(",")}], properties:{${properties.map(kv=>kv._1+": "+kv._2.toString).mkString(",")}}"
 }
 
-case class NodeId(value: Long) extends LynxId {}
+case class NodeId(value: Long) extends LynxId
 
-case class PandaNode(longId: Long, labels: Seq[String], props: (String, LynxValue)*) extends LynxNode {
-  lazy val properties: Map[String, LynxValue] = props.toMap
-  override val id: LynxId = NodeId(longId)
-  override def property(name: String): Option[LynxValue] = properties.get(name)
+case class PandaNode(id: NodeId, labels: Seq[LynxNodeLabel], props: Map[LynxPropertyKey, LynxValue]) extends LynxNode{
 
-  override def toString: String = s"{<id>:${id.value}, labels:[${labels.mkString(",")}], properties:{${properties.map(kv=>kv._1+": "+kv._2.value.toString).mkString(",")}}"
+  override def property(propertyKey: LynxPropertyKey): Option[LynxValue] = props.get(propertyKey)
+
+  override def toString: String = s"{<id>:${id.value}, labels:[${labels.map(_.value).mkString(",")}], properties:{${props.map(kv=>kv._1.value+": "+kv._2.value.toString).mkString(",")}}"
 }
 
-case class LazyPandaNode(longId: Long, nodeStoreSPI: DistributedNodeStoreSPI) extends LynxNode {
-  lazy val nodeValue: PandaNode = transfer(nodeStoreSPI)
-  override val id: LynxId = NodeId(longId)
-
-  override def labels: Seq[String] = nodeStoreSPI.getNodeLabelsById(longId).map(f=>nodeStoreSPI.getLabelName(f).get).toSeq
-
-  override def property(name: String): Option[LynxValue] = nodeValue.properties.get(name)
-
-  def transfer(nodeStore: DistributedNodeStoreSPI): PandaNode = {
-    val node = nodeStore.getNodeById(longId).get
-    PandaNode(node.id,
-      node.labelIds.map((id: Int) => nodeStore.getLabelName(id).get).toSeq,
-      node.properties.map(kv=>(nodeStore.getPropertyKeyName(kv._1).getOrElse("unknown"), LynxValue(kv._2))).toSeq:_*)
-  }
-}
+case class IndexNode(id: String, labels: Seq[String], props: Map[String, Any])

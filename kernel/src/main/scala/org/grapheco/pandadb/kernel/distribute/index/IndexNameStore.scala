@@ -1,10 +1,7 @@
 package org.grapheco.pandadb.kernel.distribute.index
 
 import java.util.concurrent.atomic.AtomicInteger
-
-import org.grapheco.pandadb.kernel.distribute.{DistributedKVAPI, DistributedKeyConverter}
-import org.grapheco.pandadb.kernel.distribute.meta.{NodeLabelNameStore, PropertyNameStore}
-import org.grapheco.pandadb.kernel.distribute.node.DistributedNodeStoreSPI
+import org.grapheco.pandadb.kernel.distribute.{DistributedGraphService, DistributedKVAPI, DistributedKeyConverter}
 import org.grapheco.pandadb.kernel.kv.ByteUtils
 import org.grapheco.pandadb.kernel.udp.{UDPClient, UDPClientManager}
 import org.grapheco.pandadb.kernel.util.PandaDBException.PandaDBException
@@ -19,7 +16,7 @@ trait IndexNameStore {
   val keyWithLabelPrefixFunc: (Int) => Array[Byte]
   val keyWithIndexFunc: (Int, Int) => Array[Byte]
 
-  val nodeStore: DistributedNodeStoreSPI
+  val graphService: DistributedGraphService
   val udpClientManager: UDPClientManager
 
 
@@ -56,8 +53,8 @@ trait IndexNameStore {
     if (indexMetaMap.contains(labelName)) indexMetaMap(labelName).add(propertyName)
     else indexMetaMap += labelName -> mutable.Set(propertyName)
 
-    val labelId = nodeStore.getLabelId(labelName)
-    val propertyId = nodeStore.getPropertyKeyId(propertyName)
+    val labelId = graphService.getNodeLabelId(labelName)
+    val propertyId = graphService.getPropertyId(propertyName)
     if (labelId.isDefined && propertyId.isDefined){
       val key = keyWithIndexFunc(labelId.get, propertyId.get)
       db.put(key, Array.emptyByteArray)
@@ -68,8 +65,8 @@ trait IndexNameStore {
   }
 
   def delete(labelName: String, propertyName: String): Unit = {
-    val id = nodeStore.getLabelId(labelName)
-    val pid = nodeStore.getPropertyKeyId(propertyName)
+    val id = graphService.getNodeLabelId(labelName)
+    val pid = graphService.getPropertyId(propertyName)
     if (id.isDefined && pid.isDefined){
       val key = keyWithIndexFunc(id.get, pid.get)
       db.delete(key)
@@ -86,8 +83,8 @@ trait IndexNameStore {
     val iter = db.scanPrefix(prefix, 10000, true)
     while (iter.hasNext){
       val key = iter.next().getKey.toByteArray
-      val label = nodeStore.getLabelName(ByteUtils.getInt(key, 1)).get
-      val property = nodeStore.getPropertyKeyName(ByteUtils.getInt(key, 5)).get
+      val label = graphService.getNodeLabelName(ByteUtils.getInt(key, 1)).get
+      val property = graphService.getPropertyName(ByteUtils.getInt(key, 5)).get
       if (indexMetaMap.contains(label)) indexMetaMap(label).add(property)
       else indexMetaMap += label -> mutable.Set(property)
     }
@@ -111,8 +108,8 @@ trait IndexNameStore {
     val iter = db.scanPrefix(prefix, 10000, true)
     while (iter.hasNext){
       val key = iter.next().getKey.toByteArray
-      val label = nodeStore.getLabelName(ByteUtils.getInt(key, 1)).get
-      val property = nodeStore.getPropertyKeyName(ByteUtils.getInt(key, 5)).get
+      val label = graphService.getNodeLabelName(ByteUtils.getInt(key, 1)).get
+      val property = graphService.getPropertyName(ByteUtils.getInt(key, 5)).get
       if (tmpIndexMetaMap.contains(label)) tmpIndexMetaMap(label).add(property)
       else tmpIndexMetaMap += label -> mutable.Set(property)
     }

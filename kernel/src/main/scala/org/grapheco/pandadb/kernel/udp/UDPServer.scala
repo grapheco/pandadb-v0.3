@@ -2,8 +2,7 @@ package org.grapheco.pandadb.kernel.udp
 
 import java.net.{DatagramPacket, DatagramSocket}
 import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
-
-import org.grapheco.pandadb.kernel.distribute.DistributedGraphFacade
+import org.grapheco.pandadb.kernel.distribute.{DistributedGraphFacade, DistributedGraphService}
 import com.typesafe.scalalogging.LazyLogging
 
 
@@ -13,7 +12,7 @@ import com.typesafe.scalalogging.LazyLogging
  * @author: LiamGao
  * @create: 2022-01-04 09:34
  */
-class UDPServer(port: Int, db: DistributedGraphFacade) extends LazyLogging{
+class UDPServer(port: Int, db: DistributedGraphService) extends LazyLogging{
   val dataServer = new DatagramSocket(port)
   val data = new Array[Byte](1024)
   val dp = new DatagramPacket(data, data.length)

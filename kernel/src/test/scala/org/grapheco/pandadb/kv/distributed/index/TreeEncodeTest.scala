@@ -40,12 +40,12 @@ class TreeEncodeTest {
   def init(): Unit ={
     client = new RestHighLevelClient(RestClient.builder(hosts: _*))
     graphFacade = new DistributedGraphFacade(kvHosts, indexHosts, new UDPClientManager(udpClient))
-    indexStore = new PandaDistributedIndexStore(client, graphFacade.db, graphFacade.nodeStore, new DistributedStatistics(graphFacade.db), new UDPClientManager(udpClient))
+    indexStore = new PandaDistributedIndexStore(client, graphFacade.db, graphFacade, new UDPClientManager(udpClient))
 
 //    prepareData()
   }
   def prepareData(): Unit ={
-    graphFacade.cleanDB()
+    graphFacade.cleanDB
     indexStore.cleanIndexes(NameMapping.indexName)
     graphFacade.addNode(Map("name" -> "a1", "age" -> 11), "person", "worker")
     graphFacade.addNode(Map("name" -> "a2", "age" -> 12, "country" -> "China"), "person", "human")
@@ -78,7 +78,7 @@ class TreeEncodeTest {
 
   @Test
   def dropEncoder(): Unit ={
-    val nodes = graphFacade.getNodesByLabel(Seq("person"), false)
+    val nodes = graphFacade.getNodesByLabel("person", false)
     indexStore.batchDropEncoder("person", "tree_encode", nodes)
   }
 

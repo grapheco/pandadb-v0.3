@@ -48,17 +48,18 @@ class DataStructureTest {
         |""".stripMargin).show()
 
     val res = db.cypher("match (n) return n").records().next()("n").asInstanceOf[PandaNode]
+    val props = res.props.map{ case (key, value) => (key.value, value)}
 
-    Assert.assertEquals(100L, res.properties("money1").value)
-    Assert.assertEquals(233.3, res.properties("money2").value)
-    Assert.assertEquals(true, res.properties("flag").value)
-    Assert.assertEquals("alex", res.properties("name").value)
-    Assert.assertEquals(Set(11L,22L,33L,44L), res.properties("money11").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
-    Assert.assertEquals(Set(22.1, 33.2, 44.3), res.properties("money22").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
-    Assert.assertEquals(Set(true, true, false), res.properties("flags").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
-    Assert.assertEquals(Set("teacher", "singer", "player"), res.properties("jobs").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
-    Assert.assertEquals(Set(1, 2.0, "3.0", true), res.properties("hybridArr").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
-    Assert.assertEquals(Set("person", "people"), res.labels.toSet)
+    Assert.assertEquals(100L, props("money1").value)
+    Assert.assertEquals(233.3, props("money2").value)
+    Assert.assertEquals(true, props("flag").value)
+    Assert.assertEquals("alex", props("name").value)
+    Assert.assertEquals(Set(11L,22L,33L,44L), props("money11").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
+    Assert.assertEquals(Set(22.1, 33.2, 44.3), props("money22").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
+    Assert.assertEquals(Set(true, true, false), props("flags").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
+    Assert.assertEquals(Set("teacher", "singer", "player"), props("jobs").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
+    Assert.assertEquals(Set(1, 2.0, "3.0", true), props("hybridArr").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
+    Assert.assertEquals(Set("person", "people"), res.labels.map(_.value).toSet)
   }
 
   @Test
@@ -88,15 +89,17 @@ class DataStructureTest {
         |""".stripMargin).show()
 
     val res = db.cypher("match (n)-[r]->(m) return r").records().next()("r").asInstanceOf[PandaRelationship]
-    Assert.assertEquals(100L, res.properties("money1").value)
-    Assert.assertEquals(233.3, res.properties("money2").value)
-    Assert.assertEquals(true, res.properties("flag").value)
-    Assert.assertEquals("alex", res.properties("name").value)
-    Assert.assertEquals(Set(11L,22L,33L,44L), res.properties("money11").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
-    Assert.assertEquals(Set(22.1, 33.2, 44.3), res.properties("money22").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
-    Assert.assertEquals(Set(true, true, false), res.properties("flags").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
-    Assert.assertEquals(Set("teacher", "singer", "player"), res.properties("jobs").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
-    Assert.assertEquals(Set(1, 2.0, "3.0", true), res.properties("hybridArr").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
+    val props = res.props.map{ case (key, value) => (key.value, value)}
+
+    Assert.assertEquals(100L, props("money1").value)
+    Assert.assertEquals(233.3, props("money2").value)
+    Assert.assertEquals(true, props("flag").value)
+    Assert.assertEquals("alex", props("name").value)
+    Assert.assertEquals(Set(11L,22L,33L,44L), props("money11").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
+    Assert.assertEquals(Set(22.1, 33.2, 44.3), props("money22").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
+    Assert.assertEquals(Set(true, true, false), props("flags").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
+    Assert.assertEquals(Set("teacher", "singer", "player"), props("jobs").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
+    Assert.assertEquals(Set(1, 2.0, "3.0", true), props("hybridArr").value.asInstanceOf[List[LynxValue]].map(f => f.value).toSet)
   }
 
   @After

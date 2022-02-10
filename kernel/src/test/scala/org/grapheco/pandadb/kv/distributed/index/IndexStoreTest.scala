@@ -1,14 +1,13 @@
 package org.grapheco.pandadb.kv.distributed.index
 
 import java.nio.ByteBuffer
-
 import org.grapheco.pandadb.kernel.distribute.DistributedGraphFacade
 import org.grapheco.pandadb.kernel.distribute.index.PandaDistributedIndexStore
 import org.grapheco.pandadb.kernel.distribute.meta.{DistributedStatistics, NameMapping}
 import org.grapheco.pandadb.kernel.udp.{UDPClient, UDPClientManager}
 import org.apache.http.HttpHost
 import org.elasticsearch.client.{RestClient, RestHighLevelClient}
-import org.grapheco.lynx.{LynxInteger, LynxString, NodeFilter}
+import org.grapheco.lynx.{LynxInteger, LynxNodeLabel, LynxPropertyKey, LynxString, NodeFilter}
 import org.junit.{After, Assert, Before, Test}
 import org.tikv.common.{TiConfiguration, TiSession}
 import org.tikv.raw.RawKVClient
@@ -43,7 +42,7 @@ class IndexStoreTest {
     cleanDB()
     client = new RestHighLevelClient(RestClient.builder(hosts: _*))
     graphFacade = new DistributedGraphFacade(kvHosts, indexHosts, new UDPClientManager(udpClient))
-    indexStore = new PandaDistributedIndexStore(client, graphFacade.db, graphFacade.nodeStore, new DistributedStatistics(graphFacade.db), new UDPClientManager(udpClient))
+    indexStore = new PandaDistributedIndexStore(client, graphFacade.db, graphFacade, new UDPClientManager(udpClient))
     cleanIndex()
     addData()
   }
@@ -69,7 +68,7 @@ class IndexStoreTest {
   def createSinglePropIndexTest(): Unit ={
     graphFacade.cypher("create index on: person(age)")
     Thread.sleep(2000)
-    val iter = graphFacade.getNodesByIndex(NodeFilter(Seq("person"), Map("age"->LynxInteger(18))))
+    val iter = graphFacade.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("person")), Map(LynxPropertyKey("age")->LynxInteger(18))))
     Assert.assertEquals(2, iter.size)
   }
 
@@ -77,8 +76,8 @@ class IndexStoreTest {
   def createMultiPropsIndexTest(): Unit ={
     graphFacade.cypher("create index on: person(age, name)")
     Thread.sleep(2000)
-    val iter = graphFacade.getNodesByIndex(NodeFilter(Seq("person"), Map("age"->LynxInteger(18),  "name"->LynxString("A5"))))
-    Assert.assertEquals(1, iter.size)
+    val iter = graphFacade.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("person")), Map(LynxPropertyKey("age")->LynxInteger(18))))
+    Assert.assertEquals(2, iter.size)
   }
 
   @Test
@@ -86,7 +85,7 @@ class IndexStoreTest {
     graphFacade.cypher("create index on: person(age)")
     graphFacade.cypher("create index on: person(name)")
     Thread.sleep(2000)
-    val iter = graphFacade.getNodesByIndex(NodeFilter(Seq("person"), Map("age"->LynxInteger(18),  "name"->LynxString("A5"))))
+    val iter = graphFacade.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("person")), Map(LynxPropertyKey("age")->LynxInteger(18),  LynxPropertyKey("name")->LynxString("A5"))))
     Assert.assertEquals(1, iter.size)
   }
 

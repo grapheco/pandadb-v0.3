@@ -1,13 +1,11 @@
 package org.grapheco.pandadb.kernel.distribute.index
 
 import java.util
-
-import org.grapheco.pandadb.kernel.distribute.DistributedKVAPI
-import org.grapheco.pandadb.kernel.distribute.index.encoding.{EncoderFactory, IndexEncoder}
+import org.grapheco.pandadb.kernel.distribute.{DistributedGraphService, DistributedKVAPI}
 import org.grapheco.pandadb.kernel.distribute.index.utils.{IndexTool, IndexValueConverter}
 import org.grapheco.pandadb.kernel.distribute.meta.{DistributedStatistics, NameMapping, NodeLabelNameStore, PropertyNameStore}
 import org.grapheco.pandadb.kernel.distribute.node.DistributedNodeStoreSPI
-import org.grapheco.pandadb.kernel.store.PandaNode
+import org.grapheco.pandadb.kernel.store.{IndexNode, PandaNode}
 import org.grapheco.pandadb.kernel.udp.{UDPClient, UDPClientManager}
 import org.grapheco.pandadb.kernel.util.PandaDBException.PandaDBException
 import com.alibaba.fastjson.JSON
@@ -32,7 +30,7 @@ import org.elasticsearch.ingest.Processor
 import org.elasticsearch.script.Script
 import org.elasticsearch.search.{SearchHit, SearchHits}
 import org.elasticsearch.search.builder.SearchSourceBuilder
-import org.grapheco.lynx.{LynxValue, NodeFilter}
+import org.grapheco.lynx.{Index, LynxNodeLabel, LynxPropertyKey, LynxValue, NodeFilter}
 import org.grapheco.pandadb.kernel.distribute.DistributedKVAPI
 import org.grapheco.pandadb.kernel.distribute.index.encoding.{EncoderFactory, IndexEncoder}
 import org.grapheco.pandadb.kernel.distribute.index.utils.IndexValueConverter
@@ -51,60 +49,59 @@ import scala.collection.mutable.ArrayBuffer
  * @create: 2021-11-15 11:17
  */
 class PandaDistributedIndexStore(client: RestHighLevelClient,
-                                 _db: DistributedKVAPI, nls: DistributedNodeStoreSPI,
-                                 statistics: DistributedStatistics, dupClientManager: UDPClientManager) {
+                                 _db: DistributedKVAPI, graphService: DistributedGraphService,
+                                 dupClientManager: UDPClientManager) extends IndexStoreService {
   type NodeID = Long
   type NodeLabel = String
   type NodeLabels = List[String]
   type NodePropertyName = String
   type NodePropertyValue = Any
 
-  private val nodeIndexMetaStore = new NodeIndexMetaStore(_db, nls, dupClientManager)
-  private val indexTool = new IndexTool(client)
+  val nodeIndexMetaStore = new NodeIndexMetaStore(_db, graphService, dupClientManager)
+  val indexTool = new IndexTool(client)
 
   if (!indexTool.indexIsExist(NameMapping.indexName)) indexTool.createIndex(NameMapping.indexName)
 
   // for udp
-  def refreshIndexMeta(): Unit ={
+  override def refreshIndexMeta(): Unit ={
     nodeIndexMetaStore.refreshIndexMeta()
   }
 
-  // for driver
-  def getIndexedMetaData(): Map[String, Seq[String]] ={
-    nodeIndexMetaStore.getIndexedMeta()
+  override def getIndexMeta: Map[String, Seq[String]] = {
+    nodeIndexMetaStore.indexMetaMap.map(p => (p._1, p._2.toSeq)).toMap
   }
 
-  def getEncodingMetaData() = nodeIndexMetaStore.getEncodingMetaMap
+  override def getEncodingMeta: Map[String, Array[Byte]] = nodeIndexMetaStore.getEncodingMetaMap
 
-  def removeEncodingMeta(name: String) = nodeIndexMetaStore.deleteEncodingMeta(name)
+  override def removeEncodingMeta(name: String): Unit = nodeIndexMetaStore.deleteEncodingMeta(name)
 
-  def setEncodingMeta(name: String, value: Array[Byte]) = nodeIndexMetaStore.setEncodingMeta(name, value)
+  override def setEncodingMeta(name: String, value: Array[Byte]): Unit = nodeIndexMetaStore.setEncodingMeta(name, value)
 
-  def getEncoder(name: String): IndexEncoder = {
+  override def getEncoder(name: String): IndexEncoder = {
     EncoderFactory.getEncoder(name, this)
   }
 
   def getDB() = _db
 
-  def getIndexTool() = indexTool
+  override def getIndexTool() = indexTool
 
-  def cleanIndexes(indexName: String*): Unit ={
+  override def cleanIndexes(indexName: String*): Unit ={
     indexTool.cleanIndexes(indexName:_*)
   }
 
-  def getNodeByDocId(docId: String): PandaNode ={
+  override def getNodeByDocId(docId: String): IndexNode ={
     val request = new GetRequest().index(NameMapping.indexName).id(docId)
     val res = client.get(request, RequestOptions.DEFAULT)
-    IndexValueConverter.transferDoc2Node(res.getId, res.getSourceAsMap.asScala.toMap)
+    IndexValueConverter.transferDoc2IndexNode(res.getId, res.getSourceAsMap.asScala.toMap)
   }
 
-  def deleteNode(nodeId: String) = {
+  override def deleteNodeByNodeId(nodeId: String): Unit = {
     val node = getNodeByDocId(nodeId)
     indexTool.deleteDoc(nodeId)
-    node.properties.keySet.foreach(pn => statistics.decreaseIndexPropertyCount(nls.getPropertyKeyId(pn).get, 1))
+    node.props.keySet.foreach(pn => graphService.getStatistics.decreaseIndexPropertyCount(graphService.getPropertyId(pn).get, 1))
   }
 
-  def searchNodes(labels: Seq[String], filter: Map[String, Any]): Iterator[Seq[Long]] = {
+  override def searchNodes(labels: Seq[String], filter: Map[String, Any]): Iterator[Seq[Long]] = {
     val indexedLabels = labels.intersect(nodeIndexMetaStore.indexMetaMap.keySet.toSeq)
     if (indexedLabels.nonEmpty){
       val data = IndexValueConverter.transferNode2Doc(nodeIndexMetaStore.indexMetaMap, indexedLabels, filter)
@@ -122,11 +119,6 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
     }
     else Iterator.empty
   }
-
-//  def searchByQuery(json: String): Unit ={
-//    val queryBuilder = QueryBuilders.wrapperQuery(json)
-//    new SearchNodeIterator(queryBuilder)
-//  }
 
   class SearchNodeIterator(queryBuilder: QueryBuilder) extends Iterator[Seq[Long]]{
     var dataBatch: Seq[String] = _
@@ -147,7 +139,7 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
     override def next(): Seq[Long] = dataBatch.map(f => f.toLong)
   }
 
-  def isIndexCreated(targetLabel: String, propNames: Seq[String]): Boolean ={
+  override def isIndexCreated(targetLabel: String, propNames: Seq[String]): Boolean ={
     val indexMetaMap = nodeIndexMetaStore.indexMetaMap
     if (indexMetaMap.contains(targetLabel)){
       propNames.intersect(indexMetaMap(targetLabel).toSeq).size == propNames.size
@@ -155,20 +147,19 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
     else false
   }
 
-  def isNodeHasIndex(filter: NodeFilter): Boolean ={
+  override def isNodeHasIndex(filter: NodeFilter): Boolean ={
     val labels = filter.labels
     val propNames = filter.properties.keySet.toSeq
     val indexedLabels = labels.intersect(nodeIndexMetaStore.indexMetaMap.keySet.toSeq)
     if (indexedLabels.nonEmpty){
-      val indexedProps = indexedLabels.flatMap(label => propNames.intersect(nodeIndexMetaStore.indexMetaMap(label).toSeq))
+      val indexedProps = indexedLabels.flatMap(label => propNames.intersect(nodeIndexMetaStore.indexMetaMap(label.value).toSeq))
       if (indexedProps.nonEmpty) true
       else false
     }
     else false
   }
 
-
-  def setIndexOnSingleNode(nodeId: Long, labels: Seq[String], nodeProps: Map[String, Any]): Unit ={
+  override def setIndexOnSingleNode(nodeId: Long, labels: Seq[String], nodeProps: Map[String, Any]): Unit ={
     val indexMetaMap = nodeIndexMetaStore.indexMetaMap
     val indexedLabel = labels.intersect(indexMetaMap.keySet.toSeq)
     if (indexedLabel.nonEmpty){
@@ -180,31 +171,41 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
             client.update(updateNodeRequest(NameMapping.indexName, nodeId, labels, data.toMap), RequestOptions.DEFAULT)
           else
             client.index(addNewNodeRequest(NameMapping.indexName, nodeId, labels, data.toMap), RequestOptions.DEFAULT)
-          labelAndProps._2.foreach(propName => statistics.increaseIndexPropertyCount(nls.getPropertyKeyId(propName).get, 1))
+          labelAndProps._2.foreach(propName => graphService.getStatistics.increaseIndexPropertyCount(graphService.getPropertyId(propName).get, 1))
         }
       })
     }
   }
 
-  def dropIndexOnSingleNodeProp(nodeId: Long, labels: Seq[String], dropPropName: String): Unit ={
+  override def dropIndexOnSingleNodeProp(nodeId: Long, labels: Seq[String], dropPropName: String): Unit ={
     val indexMetaMap = nodeIndexMetaStore.indexMetaMap
     val indexedLabel = labels.intersect(indexMetaMap.keySet.toSeq)
     if (indexedLabel.nonEmpty){
       indexedLabel.foreach(iLabel => {
         if (indexMetaMap(iLabel).contains(dropPropName)){
           deleteIndexField(NameMapping.indexName, nodeId, iLabel, dropPropName)
-          statistics.decreaseIndexPropertyCount(nls.getPropertyKeyId(dropPropName).get, 1)
+          graphService.getStatistics.decreaseIndexPropertyCount(graphService.getPropertyId(dropPropName).get, 1)
         }
       })
     }
   }
 
-  def isLabelHasEncoder(label: String): Boolean = {
+  override def dropIndexOnSingleNodeLabel(nodeId: Long, label: String): Unit = {
+    val indexMetaMap = nodeIndexMetaStore.indexMetaMap
+    if (indexMetaMap.contains(label)){
+      indexMetaMap(label).foreach(propName => {
+        deleteIndexField(NameMapping.indexName, nodeId, label, propName)
+        graphService.getStatistics.decreaseIndexPropertyCount(graphService.getPropertyId(propName).get, 1)
+      })
+    }
+  }
+
+  override def isLabelHasEncoder(label: String): Boolean = {
     val encoderMetaMap = nodeIndexMetaStore.encodingMetaMap
     encoderMetaMap.exists(p => p._1.split("\\.")(0) == label)
   }
 
-  def batchAddIndexOnNodes(targetLabel: String, targetPropNames: Seq[String], nodes: Iterator[PandaNode]): Unit ={
+  override def batchAddIndexOnNodes(targetLabel: String, targetPropNames: Seq[String], nodes: Iterator[PandaNode]): Unit ={
     var nodeCount = 0
     val indexMetaMap = nodeIndexMetaStore.indexMetaMap
     val labelHasEncoder = isLabelHasEncoder(targetLabel)
@@ -217,9 +218,9 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
         val node = nodes.next()
         val indexedLabels = node.labels.intersect(indexMetaMap.keySet.toSeq)
         val nodeHasIndex = indexedLabels.nonEmpty
-        val data = noIndexProps.map(propName => (s"$targetLabel.$propName", node.property(propName).get.value)).toMap
-        if (indexMetaMap.contains(targetLabel) || nodeHasIndex || labelHasEncoder) processor.add(updateNodeRequest(NameMapping.indexName, node.longId, node.labels, data))
-        else processor.add(addNewNodeRequest(NameMapping.indexName, node.longId, node.labels, data))
+        val data = noIndexProps.map(propName => (s"$targetLabel.$propName", node.property(LynxPropertyKey(propName)).get.value)).toMap
+        if (indexMetaMap.contains(targetLabel) || nodeHasIndex || labelHasEncoder) processor.add(updateNodeRequest(NameMapping.indexName, node.id.value, node.labels.map(_.value), data))
+        else processor.add(addNewNodeRequest(NameMapping.indexName, node.id.value, node.labels.map(_.value), data))
 
         nodeCount += 1
       }
@@ -228,11 +229,11 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
       indexTool.setIndexToNormalMode(NameMapping.indexName)
 
       noIndexProps.foreach(name => nodeIndexMetaStore.addToDB(targetLabel, name))
-      noIndexProps.foreach(name => statistics.increaseIndexPropertyCount(nls.getPropertyKeyId(name).get, nodeCount))
+      noIndexProps.foreach(name => graphService.getStatistics.increaseIndexPropertyCount(graphService.getPropertyId(name).get, nodeCount))
     }
   }
 
-  def batchDropEncoder(label: String, encoderName: String, nodes: Iterator[PandaNode]): Unit ={
+  override def batchDropEncoder(label: String, encoderName: String, nodes: Iterator[PandaNode]): Unit ={
     val labelIndexMeta = nodeIndexMetaStore.indexMetaMap.keySet.toSeq
 
     val processor = indexTool.getBulkProcessor(2000, 3)
@@ -240,15 +241,15 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
     while (nodes.hasNext){
       val node = nodes.next()
       val hasIndexLabel = node.labels.intersect(labelIndexMeta).nonEmpty
-      if (hasIndexLabel) processor.add(deleteIndexField(NameMapping.indexName, node.longId, label, encoderName))
-      else processor.add(deleteDocRequest(NameMapping.indexName, node.longId.toString))
+      if (hasIndexLabel) processor.add(deleteIndexField(NameMapping.indexName, node.id.value, label, encoderName))
+      else processor.add(deleteDocRequest(NameMapping.indexName, node.id.value.toString))
     }
     processor.flush()
     processor.close()
     indexTool.setIndexToNormalMode(NameMapping.indexName)
   }
 
-  def batchDeleteIndexLabelWithProperty(indexLabel: String, targetPropName: String, nodes: Iterator[PandaNode]): Unit ={
+  override def batchDropIndexLabelWithProperty(indexLabel: String, targetPropName: String, nodes: Iterator[PandaNode]): Unit ={
     val labelHasEncoder = isLabelHasEncoder(indexLabel)
 
     val processor = indexTool.getBulkProcessor(2000, 3)
@@ -256,8 +257,8 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
     var nodeCount = 0
     while (nodes.hasNext){
       val node = nodes.next()
-      if (nodeIndexMetaStore.indexMetaMap(indexLabel).size == 1 && !labelHasEncoder) processor.add(deleteDocRequest(NameMapping.indexName, node.longId.toString))
-      else processor.add(deleteIndexField(NameMapping.indexName, node.longId, indexLabel, targetPropName))
+      if (nodeIndexMetaStore.indexMetaMap(indexLabel).size == 1 && !labelHasEncoder) processor.add(deleteDocRequest(NameMapping.indexName, node.id.value.toString))
+      else processor.add(deleteIndexField(NameMapping.indexName, node.id.value, indexLabel, targetPropName))
 
       nodeCount += 1
     }
@@ -266,7 +267,7 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
     indexTool.setIndexToNormalMode(NameMapping.indexName)
 
     nodeIndexMetaStore.delete(indexLabel, targetPropName)
-    statistics.decreaseIndexPropertyCount(nls.getPropertyKeyId(targetPropName).get, nodeCount)
+    graphService.getStatistics.decreaseIndexPropertyCount(graphService.getPropertyId(targetPropName).get, nodeCount)
   }
 
   def addNewNodeRequest(indexName: String, nodeId: Long, labels: Seq[String], transferProps: Map[NodePropertyName, NodePropertyValue]): IndexRequest = {

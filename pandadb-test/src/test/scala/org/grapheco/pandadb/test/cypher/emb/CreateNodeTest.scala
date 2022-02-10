@@ -41,14 +41,14 @@ class CreateNodeTest {
   def createNode(): Unit = {
     val cypher = "CREATE (n)"
     db.cypher(cypher)
-    Assert.assertEquals(1, db.scanAllNode().size)
+    Assert.assertEquals(1, db.scanAllNodes().size)
   }
 
   @Test
   def createNodeWithLabel(): Unit = {
     val cypher = "CREATE (n:Person)"
     db.cypher(cypher).records()
-    val nodes = db.scanAllNode().toList
+    val nodes = db.scanAllNodes().toList
     Assert.assertEquals(1, nodes.size)
   }
 
@@ -56,7 +56,7 @@ class CreateNodeTest {
   def testNotUseShowCreateData(): Unit ={
     db.cypher("CREATE (n:person{name:'a'}) RETURN n")
     val record = db.cypher("match (n) return n").records().next()
-    val property = record("n").asInstanceOf[PandaNode].properties
+    val property = record("n").asInstanceOf[PandaNode].props.map{ case (key, value) => (key.value, value)}
     Assert.assertEquals("a", property("name").value)
   }
 
@@ -64,7 +64,7 @@ class CreateNodeTest {
   def node_String_Int_float_boolean(): Unit ={
     val record = db.cypher("CREATE (Keanu:Person {name:'String_Int_float_boolean', born:1964, " +
       "money:100.55, animal:false}) return Keanu").records().next()
-    val property = record("Keanu").asInstanceOf[PandaNode].properties
+    val property = record("Keanu").asInstanceOf[PandaNode].props.map{ case (key, value) => (key.value, value)}
 
     Assert.assertEquals("String_Int_float_boolean", property("name").value)
     Assert.assertEquals(1964L, property("born").value)
@@ -75,7 +75,7 @@ class CreateNodeTest {
   @Test
   def node_Array_String(): Unit ={
     val record = db.cypher("CREATE (Keanu:Person {name:'node_List', born:1964, arr1:['singer', 'ceo']}) RETURN Keanu").records().next()
-    val arr1 = record("Keanu").asInstanceOf[PandaNode].properties.get("arr1")
+    val arr1 = record("Keanu").asInstanceOf[PandaNode].props.map{ case (key, value) => (key.value, value)}.get("arr1")
       .get.value.asInstanceOf[List[LynxValue]].map(x=>x.value).toArray
     Assert.assertEquals(2, arr1.length)
     Assert.assertEquals("singer", arr1(0))
@@ -85,7 +85,7 @@ class CreateNodeTest {
   @Test
   def node_Array_Number(): Unit ={
     val record = db.cypher("CREATE (Keanu:Person {name:'node_List', born:1964, arr1:[198893982, 1.1]}) RETURN Keanu").records().next()
-    val arr1 = record("Keanu").asInstanceOf[PandaNode].properties.get("arr1")
+    val arr1 = record("Keanu").asInstanceOf[PandaNode].props.map{ case (key, value) => (key.value, value)}.get("arr1")
       .get.value.asInstanceOf[List[LynxValue]].map(x=>x.value).toArray
     Assert.assertEquals(2, arr1.length)
     Assert.assertEquals(198893982L, arr1(0))
@@ -95,7 +95,7 @@ class CreateNodeTest {
   @Test
   def node_Array_Boolean(): Unit ={
     val record = db.cypher("CREATE (Keanu:Person {name:'node_List', born:1964, arr1:[true, false]}) RETURN Keanu").records().next()
-    val arr1 = record("Keanu").asInstanceOf[PandaNode].properties.get("arr1")
+    val arr1 = record("Keanu").asInstanceOf[PandaNode].props.map{ case (key, value) => (key.value, value)}.get("arr1")
       .get.value.asInstanceOf[List[LynxValue]].map(x=>x.value).toArray
     Assert.assertEquals(2, arr1.length)
     Assert.assertEquals(true, arr1(0))
@@ -108,11 +108,11 @@ class CreateNodeTest {
     val record = db.cypher("MATCH(n) return n").records().toList
     Assert.assertEquals(1, record.size)
     val n = record(0)("n").asInstanceOf[PandaNode]
-    val arr1 = n.properties.get("arr1")
+    val arr1 = n.props.map{ case (key, value) => (key.value, value)}.get("arr1")
       .get.value.asInstanceOf[List[LynxValue]].map(x=>x.value).toArray
     Assert.assertEquals(2, arr1.length)
     Assert.assertEquals(true, arr1(0))
     Assert.assertEquals(false, arr1(1))
-    Assert.assertEquals("Person", n.labels(0))
+    Assert.assertEquals("Person", n.labels(0).value)
   }
 }

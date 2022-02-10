@@ -1,32 +1,28 @@
 package org.grapheco.pandadb.kernel.store
 
-import org.grapheco.lynx.{LynxId, LynxRelationship, LynxTransaction, LynxValue}
+import org.grapheco.lynx.{LynxId, LynxPropertyKey, LynxRelationship, LynxRelationshipType, LynxValue}
 
 
-case class StoredRelation(id: Long, from: Long, to: Long, typeId: Int) extends StoredValue{
-  val properties:Map[Int,Any] = Map.empty
+case class StoredRelation(id: Long, from: Long, to: Long, typeId: Int) extends StoredValue {
+  val properties: Map[Int, Any] = Map.empty
 }
 
 class StoredRelationWithProperty(override val id: Long,
                                  override val from: Long,
                                  override val to: Long,
                                  override val typeId: Int,
-                                 override val properties:Map[Int,Any])
+                                 override val properties: Map[Int, Any])
   extends StoredRelation(id, from, to, typeId) {
 
   def invert() = new StoredRelationWithProperty(id, to, from, typeId, properties)
 }
 
-case class RelationId(value: Long) extends LynxId {}
+case class RelationId(value: Long) extends LynxId
 
-case class PandaRelationship(_id: Long, startId: Long, endId: Long, relationType: Option[String],
-                            props: (String, LynxValue)*) extends LynxRelationship {
-  lazy val properties = props.toMap
-  override val id: LynxId = RelationId(_id)
-  override val startNodeId: LynxId = NodeId(startId)
-  override val endNodeId: LynxId = NodeId(endId)
+case class PandaRelationship(id: RelationId, startNodeId: NodeId, endNodeId: NodeId, relationType: Option[LynxRelationshipType],
+                             props: Map[LynxPropertyKey, LynxValue]) extends LynxRelationship {
 
-  override def property(name: String): Option[LynxValue] = properties.get(name)
+  override def property(propertyKey: LynxPropertyKey): Option[LynxValue] = props.get(propertyKey)
 }
 
 

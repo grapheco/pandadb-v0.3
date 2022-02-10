@@ -77,7 +77,7 @@ class FunctionTest {
 
   @Test
   def testType(): Unit ={
-    val res1 = db.cypher("match (n)-[r]->(m) return type(r)").records().next()("type(r)").asInstanceOf[LynxValue].value
+    val res1 = db.cypher("match (n)-[r]->(m) return type(r)").records().next()
     Assert.assertEquals("KNOW", res1)
   }
 

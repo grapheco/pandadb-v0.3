@@ -39,7 +39,7 @@ class TreeEncoder(indexStore: PandaDistributedIndexStore) extends IndexEncoder{
     treeFiledName = s"$labelName.tree_encode"
     rootNodeId = _rootNodeId.toString
     currentParent = (_rootNodeId, getTreeCode())
-    labelHasIndex = indexStore.getIndexedMetaData().contains(_labelName)
+    labelHasIndex = indexStore.nodeIndexMetaStore.indexMetaMap.contains(_labelName)
 
     indexStore.getIndexTool().setIndexToBatchMode(indexName)
 
@@ -64,7 +64,7 @@ class TreeEncoder(indexStore: PandaDistributedIndexStore) extends IndexEncoder{
    * Assign the encoding start ID from db.
    */
   def getTreeCode(): String = {
-    val meta = indexStore.getEncodingMetaData()
+    val meta = indexStore.getEncodingMeta()
     if (meta.contains(treeFiledName)){
       val code = ByteUtils.getInt(meta(treeFiledName), 0)
       indexStore.setEncodingMeta(treeFiledName, ByteUtils.intToBytes(code + 1))

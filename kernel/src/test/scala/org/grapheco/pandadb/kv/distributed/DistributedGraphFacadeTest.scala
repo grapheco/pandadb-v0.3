@@ -58,7 +58,7 @@ class DistributedGraphFacadeTest {
 
   @Test
   def all(): Unit = {
-    val nodes = api.scanAllNode()
+    val nodes = api.scanAllNodes()
     val rels = api.scanAllRelations()
     Assert.assertEquals(5, nodes.size)
     Assert.assertEquals(4, rels.size)
@@ -66,8 +66,8 @@ class DistributedGraphFacadeTest {
 
   @Test
   def getNodesByLabel(): Unit ={
-    val iter1 = api.getNodesByLabel(Seq("person"), false)
-    val iter2 = api.getNodesByLabel(Seq("worker"), false)
+    val iter1 = api.getNodesByLabel("person", false)
+    val iter2 = api.getNodesByLabel("worker", false)
 
     Assert.assertEquals(5, iter1.size)
     Assert.assertEquals(2, iter2.size)
@@ -89,42 +89,42 @@ class DistributedGraphFacadeTest {
   @Test
   def nodeAddLabel(): Unit = {
     api.nodeAddLabel(1, "test")
-    Assert.assertEquals(Seq("person", "worker", "test"), api.getNodeById(1).get.labels)
+    Assert.assertEquals(Seq("person", "worker", "test"), api.getNodeById(1).get.labels.map(_.value))
   }
 
   @Test
   def nodeRemoveLabel(): Unit = {
     api.nodeAddLabel(1, "test")
-    Assert.assertEquals(Seq("person", "worker", "test"), api.getNodeById(1).get.labels)
+    Assert.assertEquals(Seq("person", "worker", "test"), api.getNodeById(1).get.labels.map(_.value))
 
     api.nodeRemoveLabel(1, "test")
-    Assert.assertEquals(Seq("person", "worker"), api.getNodeById(1).get.labels)
+    Assert.assertEquals(Seq("person", "worker"), api.getNodeById(1).get.labels.map(_.value))
   }
 
   @Test
   def nodeSetProperty(): Unit = {
     api.nodeSetProperty(1, "TestKey", "testValue")
     Assert.assertEquals(Seq(("name", LynxString("a1")), ("age", LynxInteger(11)), ("TestKey", LynxString("testValue"))),
-      api.getNodeById(1).get.properties.toSeq)
+      api.getNodeById(1).get.props.map{ case (key, value) => (key.value, value)}.toSeq)
   }
 
   @Test
   def nodeRemoveProperty(): Unit = {
     api.nodeRemoveProperty(1, "TestKey")
     Assert.assertEquals(Seq(("name", LynxString("a1")), ("age", LynxInteger(11))),
-      api.getNodeById(1).get.properties.toSeq)
+      api.getNodeById(1).get.props.map{ case (key, value) => (key.value, value)}.toSeq)
   }
 
   @Test
   def relationSetProperty(): Unit = {
     api.relationSetProperty(1, "Color", "blue")
-    Assert.assertEquals(Map("Color" -> LynxString("blue")), api.getRelation(1).get.properties)
+    Assert.assertEquals(Map("Color" -> LynxString("blue")), api.getRelationById(1).get.props.map{ case (key, value) => (key.value, value)})
   }
 
   @Test
   def relationRemoveProperty(): Unit = {
     api.relationRemoveProperty(1, "Color")
-    Assert.assertEquals(Map.empty, api.getRelation(1).get.properties)
+    Assert.assertEquals(Map.empty, api.getRelationById(1).get.props.map{ case (key, value) => (key.value, value)})
   }
 
   @After

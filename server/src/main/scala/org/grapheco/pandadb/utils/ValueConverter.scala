@@ -1,6 +1,6 @@
 package org.grapheco.pandadb.utils
 
-import org.grapheco.pandadb.kernel.store.{LazyPandaNode, PandaNode, PandaRelationship}
+import org.grapheco.pandadb.kernel.store.{PandaNode, PandaRelationship}
 import org.grapheco.pandadb.net.rpc.values.{BooleanValue, FloatValue, IntegerValue, Label, ListValue, Node, NodeValue, NullValue, Relationship, RelationshipType, RelationshipValue, StringValue, Value}
 import org.grapheco.lynx.{LynxBoolean, LynxDouble, LynxInteger, LynxList, LynxString}
 
@@ -12,7 +12,6 @@ class ValueConverter {
   def converterValue(v: Any): Value = {
     v match {
       case pandaNode: PandaNode => convertPandaNode(pandaNode)
-      case lazyPandaNode: LazyPandaNode => convertPandaNode(lazyPandaNode.nodeValue)
       case pandaRelationship: PandaRelationship =>convertPandaRelationship(pandaRelationship)
       case lynxInteger: LynxInteger => IntegerValue(lynxInteger.value)
       case lynxString: LynxString => StringValue(lynxString.value)
@@ -24,9 +23,9 @@ class ValueConverter {
   }
 
   def convertPandaNode(node: PandaNode): NodeValue ={
-    val id = node.longId
-    val labels = node.labels.toArray.map(l => Label(l))
-    val properties = node.properties
+    val id = node.id.value
+    val labels = node.labels.toArray.map(l => Label(l.value))
+    val properties = node.props.map{ case (key, value) => (key.value, value)}
     val propertiesMap = new mutable.HashMap[String, Value]()
     for (k <- properties.keys){
       val v1 = properties.getOrElse(k, null)
@@ -38,12 +37,12 @@ class ValueConverter {
   }
 
   def convertPandaRelationship(relationship: PandaRelationship): RelationshipValue ={
-    val id = relationship._id
-    val relationshipType = RelationshipType(relationship.relationType.get)
-    val startNodeId = relationship.startId
-    val endNodeId = relationship.endId
+    val id = relationship.id.value
+    val relationshipType = RelationshipType(relationship.relationType.get.value)
+    val startNodeId = relationship.startNodeId.value
+    val endNodeId = relationship.endNodeId.value
 
-    val properties = relationship.properties
+    val properties = relationship.props.map{ case (key, value) => (key.value, value)}
     val propertiesMap = new mutable.HashMap[String, Value]()
     for (k <- properties.keys){
       val v1 = properties.getOrElse(k, null)

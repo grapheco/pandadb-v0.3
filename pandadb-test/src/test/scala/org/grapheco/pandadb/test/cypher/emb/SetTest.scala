@@ -1,11 +1,10 @@
 package org.grapheco.pandadb.test.cypher.emb
 
 import java.io.File
-
 import org.grapheco.pandadb.kernel.distribute.DistributedGraphFacade
 import org.grapheco.pandadb.kernel.store.{PandaNode, PandaRelationship}
 import org.grapheco.pandadb.kernel.udp.{UDPClient, UDPClientManager}
-import org.grapheco.lynx.LynxValue
+import org.grapheco.lynx.{LynxPropertyKey, LynxValue}
 import org.junit.{After, Assert, Before, Test}
 
 /**
@@ -55,28 +54,28 @@ class SetTest {
     Assert.assertEquals(LynxValue(List(LynxValue(1), LynxValue(2.0),LynxValue("3.0"),LynxValue(true))), res)
 
     // type 2: set xxx= set yyy=
-    var dataMap = db.cypher("match (n) set n.value1=1 set n.value2='a' return n").records().next()("n").asInstanceOf[PandaNode].properties
-    Assert.assertEquals(LynxValue(1), dataMap("value1"))
-    Assert.assertEquals(LynxValue("a"), dataMap("value2"))
+    var dataMap = db.cypher("match (n) set n.value1=1 set n.value2='a' return n").records().next()("n").asInstanceOf[PandaNode].props
+    Assert.assertEquals(LynxValue(1), dataMap(LynxPropertyKey("value1")))
+    Assert.assertEquals(LynxValue("a"), dataMap(LynxPropertyKey("value2")))
 
     // type 3: set xxx=, yyy=
-    dataMap = db.cypher("match (n) set n.value1=2 , n.value2='b' return n").records().next()("n").asInstanceOf[PandaNode].properties
-    Assert.assertEquals(LynxValue(2), dataMap("value1"))
-    Assert.assertEquals(LynxValue("b"), dataMap("value2"))
+    dataMap = db.cypher("match (n) set n.value1=2 , n.value2='b' return n").records().next()("n").asInstanceOf[PandaNode].props
+    Assert.assertEquals(LynxValue(2), dataMap(LynxPropertyKey("value1")))
+    Assert.assertEquals(LynxValue("b"), dataMap(LynxPropertyKey("value2")))
 
     // type 4: set +={}
-    dataMap = db.cypher("match (n) set n +={value1:3, value2:'c'} return n").records().next()("n").asInstanceOf[PandaNode].properties
-    Assert.assertEquals(LynxValue(3), dataMap("value1"))
-    Assert.assertEquals(LynxValue("c"), dataMap("value2"))
+    dataMap = db.cypher("match (n) set n +={value1:3, value2:'c'} return n").records().next()("n").asInstanceOf[PandaNode].props
+    Assert.assertEquals(LynxValue(3), dataMap(LynxPropertyKey("value1")))
+    Assert.assertEquals(LynxValue("c"), dataMap(LynxPropertyKey("value2")))
   }
 
   @Test
   def testSetNodeLabels(): Unit ={
     db.cypher("create (n:person)")
-    var res = db.cypher("match (n) set n:AAA return n").records().next()("n").asInstanceOf[PandaNode].labels
+    var res = db.cypher("match (n) set n:AAA return n").records().next()("n").asInstanceOf[PandaNode].labels.map(_.value)
     Assert.assertEquals(Seq("person", "AAA"), res)
 
-    res = db.cypher("match (n) set n:BBB:CCC return n").records().next()("n").asInstanceOf[PandaNode].labels
+    res = db.cypher("match (n) set n:BBB:CCC return n").records().next()("n").asInstanceOf[PandaNode].labels.map(_.value)
     Assert.assertEquals(Seq("person", "AAA", "BBB", "CCC"), res)
   }
 
@@ -86,8 +85,8 @@ class SetTest {
     val n2 = db.addNode(Map("value"->"B"), "Person")
     val r1 = db.addRelation("KNOW", n1, n2, Map("value"->"alex"))
 
-    var res = db.cypher("match (n)-[r]->(m) set r.value='alex' return r.value").records().next()("r.value")
-    Assert.assertEquals(LynxValue("alex"), res)
+    var res = db.cypher("match (n)-[r]->(m) set r.value='alex2' return r.value").records().next()("r.value")
+    Assert.assertEquals(LynxValue("alex2"), res)
 
     res = db.cypher("match (n)-[r]->(m) set r.value=100 return r.value").records().next()("r.value")
     Assert.assertEquals(LynxValue(100), res)
@@ -111,19 +110,19 @@ class SetTest {
     Assert.assertEquals(LynxValue(List(LynxValue(1), LynxValue(2.0),LynxValue("3.0"),LynxValue(true))), res)
 
     // type 2: set xxx= set yyy=
-    var dataMap = db.cypher("match (n)-[r]->(m) set r.value1=1 set r.value2='a' return r").records().next()("r").asInstanceOf[PandaRelationship].properties
-    Assert.assertEquals(LynxValue(1), dataMap("value1"))
-    Assert.assertEquals(LynxValue("a"), dataMap("value2"))
+    var dataMap = db.cypher("match (n)-[r]->(m) set r.value1=1 set r.value2='a' return r").records().next()("r").asInstanceOf[PandaRelationship].props
+    Assert.assertEquals(LynxValue(1), dataMap(LynxPropertyKey("value1")))
+    Assert.assertEquals(LynxValue("a"), dataMap(LynxPropertyKey("value2")))
 
     // type 3: set xxx=, yyy=
-    dataMap = db.cypher("match (n)-[r]->(m) set r.value1=2, r.value2='b' return r").records().next()("r").asInstanceOf[PandaRelationship].properties
-    Assert.assertEquals(LynxValue(2), dataMap("value1"))
-    Assert.assertEquals(LynxValue("b"), dataMap("value2"))
+    dataMap = db.cypher("match (n)-[r]->(m) set r.value1=2, r.value2='b' return r").records().next()("r").asInstanceOf[PandaRelationship].props
+    Assert.assertEquals(LynxValue(2), dataMap(LynxPropertyKey("value1")))
+    Assert.assertEquals(LynxValue("b"), dataMap(LynxPropertyKey("value2")))
 
     // type 4: set +={}
-    dataMap = db.cypher("match (n)-[r]->(m) set r +={value1:3, value2:'c'} return r").records().next()("r").asInstanceOf[PandaRelationship].properties
-    Assert.assertEquals(LynxValue(3), dataMap("value1"))
-    Assert.assertEquals(LynxValue("c"), dataMap("value2"))
+    dataMap = db.cypher("match (n)-[r]->(m) set r +={value1:3, value2:'c'} return r").records().next()("r").asInstanceOf[PandaRelationship].props
+    Assert.assertEquals(LynxValue(3), dataMap(LynxPropertyKey("value1")))
+    Assert.assertEquals(LynxValue("c"), dataMap(LynxPropertyKey("value2")))
   }
 
   @After

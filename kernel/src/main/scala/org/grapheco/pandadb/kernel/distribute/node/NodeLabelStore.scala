@@ -3,6 +3,7 @@ package org.grapheco.pandadb.kernel.distribute.node
 import org.grapheco.pandadb.kernel.distribute.DistributedKeyConverter.{LabelId, NodeId}
 import org.grapheco.pandadb.kernel.kv.ByteUtils
 import org.grapheco.pandadb.kernel.distribute.{DistributedKVAPI, DistributedKeyConverter}
+import org.grapheco.pandadb.kernel.store.StoredNodeWithProperty
 import org.tikv.shade.com.google.protobuf.ByteString
 
 /**
@@ -13,7 +14,7 @@ import org.tikv.shade.com.google.protobuf.ByteString
  */
 class NodeLabelStore(db: DistributedKVAPI) {
   implicit def ByteString2ArrayByte(data: ByteString) = data.toByteArray
-
+  val NONE_LABEL_ID: Int = 0
   val BATCH_SIZE = 10000
 
   def set(nodeId: NodeId, labelId: LabelId): Unit =
@@ -24,17 +25,33 @@ class NodeLabelStore(db: DistributedKVAPI) {
   def delete(nodeId: NodeId, labelId: LabelId): Unit =
     db.delete(DistributedKeyConverter.toNodeLabelKey(nodeId, labelId))
 
-  def delete(nodeId: NodeId): Unit =
-    db.deleteRange(DistributedKeyConverter.toNodeLabelKey(nodeId, 0),
-      DistributedKeyConverter.toNodeLabelKey(nodeId, -1))
+//  def delete(nodeId: NodeId): Unit =
+//    db.deleteRange(DistributedKeyConverter.toNodeLabelKey(nodeId, 0),
+//      DistributedKeyConverter.toNodeLabelKey(nodeId, -1))
+//
+//  def deleteRange(startKey: Array[Byte], endKey: Array[Byte]): Unit ={
+//    db.deleteRange(startKey, endKey)
+//  }
 
-  def deleteRange(startKey: Array[Byte], endKey: Array[Byte]): Unit ={
-    db.deleteRange(startKey, endKey)
+  def deletePrefix(nodeId: NodeId): Unit = {
+    db.deletePrefix(DistributedKeyConverter.toNodeLabelKey(nodeId))
+  }
+
+  def batchPut(nodes: Seq[StoredNodeWithProperty]): Unit ={
+    val res = nodes.flatMap{
+      node =>
+        if (node.labelIds.nonEmpty)
+          node.labelIds.map(lid => (DistributedKeyConverter.toNodeLabelKey(node.id, lid), Array.emptyByteArray))
+        else
+          Array((DistributedKeyConverter.toNodeLabelKey(node.id, NONE_LABEL_ID), Array.emptyByteArray))
+    }
+    db.batchPut(res)
   }
 
   def batchDelete(nodeIds: Seq[Long]): Unit ={
+    //todo: opt
     val keys = nodeIds.map(id => DistributedKeyConverter.toNodeLabelKey(id))
-    db.batchDelete(keys)
+    keys.foreach(db.deletePrefix)
   }
 
   def get(nodeId: NodeId): Option[LabelId] = {

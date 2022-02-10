@@ -1,13 +1,13 @@
 package org.grapheco.pandadb.dbms
 
-import org.grapheco.pandadb.kernel.distribute.DistributedGraphFacade
+import org.grapheco.pandadb.kernel.distribute.{DistributedGraphFacade, DistributedGraphService}
 import org.grapheco.pandadb.kernel.udp.{UDPClient, UDPClientManager}
 import com.typesafe.scalalogging.LazyLogging
 import org.grapheco.pandadb.server.common.lifecycle.LifecycleAdapter
 
 class DistributedGraphDatabaseManager(kvHosts: String, indexHosts: String, udpClientManager: UDPClientManager) extends LifecycleAdapter with LazyLogging {
 
-  val defaultDB: DistributedGraphFacade = new DistributedGraphFacade(kvHosts, indexHosts, udpClientManager)
+  val defaultDB: DistributedGraphService = new DistributedGraphFacade(kvHosts, indexHosts, udpClientManager)
 
   override def stop(): Unit = {
     defaultDB.close()

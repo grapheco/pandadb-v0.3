@@ -27,14 +27,6 @@ trait DistributedKVAPI {
 
   def deleteRange(startKey: Array[Byte], endKey: Array[Byte]): Unit
 
-  //  def scan(startKey: Array[Byte], batchSize: Int): Iterator[Kvrpcpb.KvPair]
-  //  def scan(startKey: Array[Byte], batchSize: Int, keyOnly: Boolean = false): Iterator[Kvrpcpb.KvPair]
-  //  def scan(startKey: Array[Byte], endKey: Array[Byte]): Iterator[Kvrpcpb.KvPair]
-  //  def scan(startKey: Array[Byte], endKey: Array[Byte], limit: Int): Iterator[Kvrpcpb.KvPair]
-  //  def scan(startKey: Array[Byte], endKey: Array[Byte], keyOnly: Boolean): Iterator[Kvrpcpb.KvPair]
-  //  def scan(startKey: Array[Byte], endKey: Array[Byte], limit: Int, keyOnly: Boolean): Iterator[Kvrpcpb.KvPair]
-  //  def scanPrefix(startKey: Array[Byte]): Iterator[Kvrpcpb.KvPair]
-  //  def scanPrefix(startKey: Array[Byte], keyOnly: Boolean): Iterator[Kvrpcpb.KvPair]
   def scanPrefix(prefix: Array[Byte], batchSize: Int, keyOnly: Boolean): Iterator[Kvrpcpb.KvPair]
 
   def batchGetValue(keys: Seq[Array[Byte]]): Iterator[Array[Byte]]
@@ -64,45 +56,6 @@ class PandaDistributeKVAPI(client: RawKVClient) extends DistributedKVAPI {
 
   override def deleteRange(startKey: Array[Byte], endKey: Array[Byte]): Unit = client.deleteRange(startKey, endKey)
 
-  // scan.....
-  //  override def scan(startKey: Array[Byte], limit: Int): Iterator[Kvrpcpb.KvPair] ={
-  //    new Iterator[Kvrpcpb.KvPair]{
-  //      var dataBatch = client.scan(startKey, limit)
-  //
-  //      override def hasNext: Boolean = ???
-  //
-  //      override def next(): Kvrpcpb.KvPair = ???
-  //    }
-  //  }
-  //  override def scan(startKey: Array[Byte], limit: Int, keyOnly: Boolean): Iterator[Kvrpcpb.KvPair] ={
-  //    val iter = client.scan(startKey, limit, keyOnly)
-  //    iter.iterator().asScala
-  //  }
-  //  override def scan(startKey: Array[Byte], endKey: Array[Byte]): Iterator[Kvrpcpb.KvPair] ={
-  //    val iter = client.scan(startKey, endKey)
-  //    iter.iterator().asScala
-  //  }
-  //  override def scan(startKey: Array[Byte], endKey: Array[Byte], keyOnly: Boolean): Iterator[Kvrpcpb.KvPair] ={
-  //    val iter = client.scan(startKey, endKey, keyOnly)
-  //    iter.iterator().asScala
-  //  }
-  //  override def scan(startKey: Array[Byte], endKey: Array[Byte], limit: Int): Iterator[Kvrpcpb.KvPair] ={
-  //    val iter = client.scan(startKey, endKey, limit)
-  //    iter.iterator().asScala
-  //  }
-  //  override def scan(startKey: Array[Byte], endKey: Array[Byte], limit: Int, keyOnly: Boolean): Iterator[Kvrpcpb.KvPair] ={
-  //    val iter = client.scan(startKey, endKey, limit, keyOnly)
-  //    iter.iterator().asScala
-  //  }
-  // prefix...
-  //  override def scanPrefix(startKey: Array[Byte]): Iterator[Kvrpcpb.KvPair] ={
-  //    val iter = client.scanPrefix(startKey)
-  //    iter.iterator().asScala
-  //  }
-  //  override def scanPrefix(startKey: Array[Byte], keyOnly: Boolean): Iterator[Kvrpcpb.KvPair] ={
-  //    val iter = client.scanPrefix(startKey, keyOnly)
-  //    iter.iterator().asScala
-  //  }
   override def scanPrefix(prefix: Array[Byte], batchSize: Int, keyOnly: Boolean): Iterator[Kvrpcpb.KvPair] = {
     val iter = new Iterator[Seq[Kvrpcpb.KvPair]] {
       var nextData: Seq[Kvrpcpb.KvPair] = _

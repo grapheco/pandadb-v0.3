@@ -1,14 +1,13 @@
 package org.grapheco.pandadb.kernel.distribute.index.utils
 
 import java.util
-
 import org.grapheco.pandadb.kernel.distribute.meta.NameMapping
-import org.grapheco.pandadb.kernel.store.PandaNode
+import org.grapheco.pandadb.kernel.store.{IndexNode, NodeId, PandaNode}
 import org.elasticsearch.action.search.SearchRequest
 import org.elasticsearch.client.{RequestOptions, RestHighLevelClient}
 import org.elasticsearch.index.query.{BoolQueryBuilder, QueryBuilders}
 import org.elasticsearch.search.builder.SearchSourceBuilder
-import org.grapheco.lynx.{LynxBoolean, LynxDate, LynxDateTime, LynxDouble, LynxDuration, LynxInteger, LynxList, LynxLocalDateTime, LynxLocalTime, LynxNumber, LynxString, LynxTime, LynxValue}
+import org.grapheco.lynx.{LynxBoolean, LynxDate, LynxDateTime, LynxDouble, LynxDuration, LynxInteger, LynxList, LynxLocalDateTime, LynxLocalTime, LynxNodeLabel, LynxNumber, LynxPropertyKey, LynxString, LynxTime, LynxValue}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -53,11 +52,10 @@ object IndexValueConverter {
     data
   }
 
-  def transferDoc2Node(docId: String, dataMap: Map[String, AnyRef]): PandaNode ={
-    val nodeId = docId.toLong
+  def transferDoc2IndexNode(docId: String, dataMap: Map[String, AnyRef]): IndexNode ={
     val labels = dataMap(NameMapping.indexNodeLabelColumnName).asInstanceOf[util.ArrayList[String]].asScala.toSeq
     val props = dataMap - NameMapping.indexNodeLabelColumnName
-    val cleanProps = props.map(pv => pv._1.split("\\.")(1)->LynxValue(pv._2))
-    PandaNode(nodeId, labels, cleanProps.toSeq:_*)
+    val cleanProps = props.map(pv => pv._1.split("\\.")(1)->pv._2)
+    IndexNode(docId, labels, cleanProps)
   }
 }

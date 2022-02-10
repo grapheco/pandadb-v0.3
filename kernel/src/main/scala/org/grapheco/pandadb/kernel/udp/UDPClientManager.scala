@@ -2,9 +2,7 @@ package org.grapheco.pandadb.kernel.udp
 
 import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
 import java.util.concurrent.atomic.AtomicInteger
-
-import org.grapheco.pandadb.kernel.distribute.DistributedGraphFacade
-import org.apache.commons.lang3.concurrent.AtomicSafeInitializer
+import org.grapheco.pandadb.kernel.distribute.{DistributedGraphFacade, DistributedGraphService}
 import org.grapheco.pandadb.kernel.distribute.DistributedGraphFacade
 
 /**
@@ -14,7 +12,7 @@ import org.grapheco.pandadb.kernel.distribute.DistributedGraphFacade
  * @create: 2022-01-12 13:54
  */
 class UDPClientManager(clients: Array[UDPClient]) {
-  private var db: DistributedGraphFacade = _
+  private var db: DistributedGraphService = _
   private var hasOperation: Boolean = false
   private var currentOperationNum: Int = 0
   private val countOperation: AtomicInteger = new AtomicInteger(0)
@@ -43,7 +41,7 @@ class UDPClientManager(clients: Array[UDPClient]) {
   scheduleAddService.scheduleAtFixedRate(addNum, 0, 1, TimeUnit.SECONDS)
 
 
-  def setDB(d: DistributedGraphFacade): Unit ={
+  def setDB(d: DistributedGraphService): Unit ={
     db = d
   }
   // receive all kind of operation
@@ -53,7 +51,7 @@ class UDPClientManager(clients: Array[UDPClient]) {
   }
 
   def sendMsg(): Unit ={
-    db.statistics.flush()
+    db.getStatistics.flush()
     clients.foreach(c => c.sendRefreshMsg())
   }
 

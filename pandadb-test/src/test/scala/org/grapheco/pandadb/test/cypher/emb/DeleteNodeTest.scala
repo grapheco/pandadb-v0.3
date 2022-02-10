@@ -88,7 +88,11 @@ class DeleteNodeTest {
   def testDeleteDetachNode(): Unit = {
     var res = db.cypher("match (n) return count(n)").records().next()("count(n)").asInstanceOf[LynxValue].value
     Assert.assertEquals(10L, res)
+    res = db.cypher("match (n)-[r]->(m) return count(r)").records().next()("count(r)").asInstanceOf[LynxValue].value
+    Assert.assertEquals(9L, res)
+
     db.cypher("MATCH (n) Detach Delete n")
+
     res = db.cypher("match (n) return count(n)").records().next()("count(n)").asInstanceOf[LynxValue].value
     Assert.assertEquals(0L, res)
   }

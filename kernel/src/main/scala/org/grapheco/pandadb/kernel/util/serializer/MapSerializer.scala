@@ -2,7 +2,7 @@ package org.grapheco.pandadb.kernel.util.serializer
 
 import io.netty.buffer.ByteBuf
 import org.grapheco.lynx.{LynxDate, LynxValue}
-import org.grapheco.lynx.cypherplus.Blob
+//import org.grapheco.lynx.cypherplus.Blob
 import java.time.{LocalDate, LocalDateTime, LocalTime, OffsetTime, ZonedDateTime}
 
 /**
@@ -31,7 +31,7 @@ object MapSerializer extends BaseSerializer {
         case SerialzerDataType.DOUBLE => byteBuf.readDouble()
         case SerialzerDataType.FLOAT => byteBuf.readFloat()
         case SerialzerDataType.BOOLEAN => byteBuf.readBoolean()
-        case SerialzerDataType.BLOB => _readBlob(byteBuf)
+//        case SerialzerDataType.BLOB => _readBlob(byteBuf)
         case SerialzerDataType.DATE => _readDate(byteBuf)
 //        case SerialzerDataType.DATE_TIME => _readDateTime(byteBuf)
         case SerialzerDataType.TIME => _readTime(byteBuf)
@@ -63,7 +63,7 @@ object MapSerializer extends BaseSerializer {
       case s: Long => _writeLong(value.asInstanceOf[Long], byteBuf)
       case s: Array[_] => ArraySerializer.writeArray(value.asInstanceOf[Array[_]], byteBuf)
       case s: List[LynxValue] => ArraySerializer.writeArray(s.map(v => v.value).toArray, byteBuf)
-      case s: Blob => _writeBlob(value.asInstanceOf[Blob], byteBuf)
+//      case s: Blob => _writeBlob(value.asInstanceOf[Blob], byteBuf)
       case s: LynxDate => _writeDate(s.value, byteBuf) // date()
       case s: LocalDateTime => _writeLocalDateTime(s, byteBuf) // localdatetime()
       case s: LocalTime => _writeLocalTime(s, byteBuf) // localtime()

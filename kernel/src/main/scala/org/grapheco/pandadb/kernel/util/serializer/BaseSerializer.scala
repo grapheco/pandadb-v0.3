@@ -2,7 +2,7 @@ package org.grapheco.pandadb.kernel.util.serializer
 
 import io.netty.buffer.{ByteBuf, ByteBufAllocator, Unpooled}
 import org.grapheco.lynx.LynxDate
-import org.grapheco.lynx.cypherplus.Blob
+//import org.grapheco.lynx.cypherplus.Blob
 
 import java.io.ByteArrayOutputStream
 import java.time._
@@ -167,12 +167,12 @@ trait BaseSerializer {
     byteBuf.writeBoolean(value)
   }
 
-  protected def _writeBlob(value: Blob, byteBuf: ByteBuf): ByteBuf = {
-    byteBuf.writeByte(SerialzerDataType.BLOB.id.toByte)
-    val blobInBytes = value.toBytes()
-    byteBuf.writeInt(blobInBytes.length)
-    byteBuf.writeBytes(blobInBytes)
-  }
+//  protected def _writeBlob(value: Blob, byteBuf: ByteBuf): ByteBuf = {
+//    byteBuf.writeByte(SerialzerDataType.BLOB.id.toByte)
+//    val blobInBytes = value.toBytes()
+//    byteBuf.writeInt(blobInBytes.length)
+//    byteBuf.writeBytes(blobInBytes)
+//  }
 
   protected def _writeAny(value: Any, byteBuf: ByteBuf): Unit = {
     value match {
@@ -270,12 +270,12 @@ trait BaseSerializer {
     LocalTime.ofNanoOfDay(localNanosOfDay)
   }
 
-  protected def _readBlob(byteBuf: ByteBuf): Blob = {
-    val len: Int = byteBuf.readInt()
-    val bytesArray : Array[Byte] = new Array[Byte](len)
-    byteBuf.readBytes(bytesArray)
-    Blob.fromBytes(bytesArray)
-  }
+//  protected def _readBlob(byteBuf: ByteBuf): Blob = {
+//    val len: Int = byteBuf.readInt()
+//    val bytesArray : Array[Byte] = new Array[Byte](len)
+//    byteBuf.readBytes(bytesArray)
+//    Blob.fromBytes(bytesArray)
+//  }
 
   def exportBytes(byteBuf: ByteBuf): Array[Byte] = {
     val dst = new Array[Byte](byteBuf.writerIndex())

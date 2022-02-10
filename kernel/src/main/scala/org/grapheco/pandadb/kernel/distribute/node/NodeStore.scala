@@ -95,6 +95,16 @@ class NodeStore(db: DistributedKVAPI) {
 
   def delete(node: StoredNodeWithProperty): Unit = delete(node.id, node.labelIds)
 
+  def batchPut(nodes: Seq[StoredNodeWithProperty]): Unit = {
+    val res = nodes.flatMap(node => {
+      if (node.labelIds.nonEmpty)
+        node.labelIds.map(lid => (DistributedKeyConverter.toNodeKey(lid, node.id), NodeSerializer.serialize(node)))
+      else
+        Array((DistributedKeyConverter.toNodeKey(NONE_LABEL_ID, node.id), NodeSerializer.serialize(node)))
+    })
+    db.batchPut(res)
+  }
+
   def batchDelete(keys: Seq[Array[Byte]]): Unit ={
     db.batchDelete(keys)
   }

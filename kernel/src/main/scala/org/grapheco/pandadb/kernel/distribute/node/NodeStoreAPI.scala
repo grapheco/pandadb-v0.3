@@ -1,12 +1,9 @@
 package org.grapheco.pandadb.kernel.distribute.node
 
 import org.grapheco.pandadb.kernel.distribute.{DistributedKVAPI, DistributedKeyConverter}
-import org.grapheco.pandadb.kernel.distribute.index.PandaDistributedIndexStore
-import org.grapheco.pandadb.kernel.distribute.meta.{IdGenerator, NameMapping, NodeLabelNameStore, PropertyNameStore, TypeNameEnum}
+import org.grapheco.pandadb.kernel.distribute.meta.{IdGenerator, NodeLabelNameStore, PropertyNameStore, TypeNameEnum}
 import org.grapheco.pandadb.kernel.store.StoredNodeWithProperty
 import org.grapheco.pandadb.kernel.util.serializer.BaseSerializer
-import org.grapheco.pandadb.kernel.distribute.{DistributedKVAPI, DistributedKeyConverter}
-import org.grapheco.pandadb.kernel.distribute.meta.{PropertyNameStore, TypeNameEnum}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -47,6 +44,11 @@ class NodeStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStore) e
     }
   }
 
+  override def addNodes(nodes: Seq[StoredNodeWithProperty]): Unit = {
+    nodeStore.batchPut(nodes)
+    nodeLabelStore.batchPut(nodes)
+  }
+
   override def addLabel(labelName: String): Int = nodeLabelName.getOrAddId(labelName)
 
   override def addPropertyKey(keyName: String): Int = propertyNameStore.getOrAddId(keyName)
@@ -55,7 +57,7 @@ class NodeStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStore) e
     nodeLabelStore.getAll(nodeId).foreach(labelId => {
       nodeStore.delete(nodeId, labelId)
     })
-    nodeLabelStore.delete(nodeId)
+    nodeLabelStore.deletePrefix(nodeId)
   }
 
   override def deleteNodes(nodeIDs: Iterator[Long]): Unit = {
@@ -70,8 +72,7 @@ class NodeStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStore) e
           nodeStore.batchDelete(batchDelete.toSeq)
           batchDelete.clear()
 
-          nodeLabelStore.deleteRange(DistributedKeyConverter.toNodeLabelKey(nId, 0),
-            DistributedKeyConverter.toNodeLabelKey(nId, -1))
+          nodeLabelStore.deletePrefix(nId)
         })
       }
     )
@@ -81,7 +82,7 @@ class NodeStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStore) e
     nodeStore.getNodeIdsByLabel(labelId).foreach {
       nodeId => {
         nodeLabelStore.getAll(nodeId).foreach(labelId => nodeStore.delete(nodeId, labelId))
-        nodeLabelStore.delete(nodeId)
+        nodeLabelStore.deletePrefix(nodeId)
       }
     }
     nodeStore.deleteByLabel(labelId)
@@ -181,6 +182,8 @@ trait DistributedNodeStoreSPI {
   def hasLabel(nodeId: Long, label: Int): Boolean;
 
   def addNode(node: StoredNodeWithProperty): Unit
+
+  def addNodes(nodes: Seq[StoredNodeWithProperty]): Unit
 
   def addLabel(labelName: String): Int;
 
