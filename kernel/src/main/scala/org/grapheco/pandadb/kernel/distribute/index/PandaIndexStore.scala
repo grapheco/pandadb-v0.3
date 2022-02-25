@@ -32,7 +32,6 @@ import org.elasticsearch.search.{SearchHit, SearchHits}
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.grapheco.lynx.{Index, LynxNodeLabel, LynxPropertyKey, LynxValue, NodeFilter}
 import org.grapheco.pandadb.kernel.distribute.DistributedKVAPI
-import org.grapheco.pandadb.kernel.distribute.index.encoding.{EncoderFactory, IndexEncoder}
 import org.grapheco.pandadb.kernel.distribute.index.utils.IndexValueConverter
 import org.grapheco.pandadb.kernel.distribute.meta.{DistributedStatistics, NameMapping}
 import org.grapheco.pandadb.kernel.distribute.node.DistributedNodeStoreSPI
@@ -76,10 +75,6 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
   override def removeEncodingMeta(name: String): Unit = nodeIndexMetaStore.deleteEncodingMeta(name)
 
   override def setEncodingMeta(name: String, value: Array[Byte]): Unit = nodeIndexMetaStore.setEncodingMeta(name, value)
-
-  override def getEncoder(name: String): IndexEncoder = {
-    EncoderFactory.getEncoder(name, this)
-  }
 
   def getDB() = _db
 

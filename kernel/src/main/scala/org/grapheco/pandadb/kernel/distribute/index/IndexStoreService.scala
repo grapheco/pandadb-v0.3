@@ -1,7 +1,6 @@
 package org.grapheco.pandadb.kernel.distribute.index
 
 import org.grapheco.lynx.{Index, NodeFilter}
-import org.grapheco.pandadb.kernel.distribute.index.encoding.IndexEncoder
 import org.grapheco.pandadb.kernel.distribute.index.utils.IndexTool
 import org.grapheco.pandadb.kernel.store.{IndexNode, PandaNode}
 
@@ -17,7 +16,6 @@ trait IndexStoreService {
   def getEncodingMeta(): Map[String, Array[Byte]] // for encoding like tree
   def removeEncodingMeta(name: String): Unit
   def setEncodingMeta(name: String, value: Array[Byte]): Unit
-  def getEncoder(name: String): IndexEncoder
 
   def getNodeByDocId(docId: String): IndexNode
   def deleteNodeByNodeId(nodeId: String): Unit
