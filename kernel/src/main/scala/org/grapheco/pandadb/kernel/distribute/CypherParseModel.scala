@@ -182,6 +182,7 @@ class GraphParseModel(db: DistributedGraphService) extends GraphModel {
       case _ => {
         val nodeHasIndex = db.getIndexStore.isNodeHasIndex(nodeFilter)
         if (nodeHasIndex) {
+          println("++++++++++++++++++++++++++++++ go index ++++++++++++++++++++++++++++++")
           db.getNodesByIndex(nodeFilter)
         }
         else {
@@ -312,32 +313,4 @@ class GraphParseModel(db: DistributedGraphService) extends GraphModel {
         }
       }
     }
-
-  //  override def mergeNode(nodeFilter: NodeFilter, forceToCreate: Boolean, tx: Option[LynxTransaction]): LynxNode = {
-  //    val props = nodeFilter.properties.map(kv => (kv._1, kv._2.value))
-  //    if (forceToCreate){
-  //      val id = db.addNode(props, nodeFilter.labels:_*)
-  //      db.getNodeById(id).get
-  //    }
-  //    else {
-  //      val n = nodes(nodeFilter, tx)
-  //      if (n.nonEmpty) n.next()
-  //      else db.getNodeById(db.addNode(props, nodeFilter.labels:_*)).get
-  //    }
-  //  }
-  //
-  //  override def mergeRelationship(relationshipFilter: RelationshipFilter, leftNode: LynxNode, rightNode: LynxNode, direction: SemanticDirection, forceToCreate: Boolean, tx: Option[LynxTransaction]): PathTriple = {
-  //    val props = relationshipFilter.properties.map(kv => (kv._1, kv._2.value))
-  //    val id = db.addRelation(relationshipFilter.types.head, leftNode.id, rightNode.id, props)
-  //    PathTriple(leftNode, db.getRelation(id).get, rightNode)
-  //  }
-  //
-  //  override def createIndex(labelName: LabelName, properties: List[PropertyKeyName], tx: Option[LynxTransaction]): Unit = {
-  //    db.createIndexOnNode(labelName.name, properties.map(p => p.name).toSet)
-  //  }
-  //
-  //  override def getIndexes(tx: Option[LynxTransaction]): Array[(LabelName, List[PropertyKeyName])] = {
-  ////    db.getIndexes()
-  //    ???
-  //  }
 }

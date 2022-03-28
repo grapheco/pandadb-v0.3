@@ -23,7 +23,7 @@ import scala.collection.mutable.ArrayBuffer
  * @create: 2021-11-17 10:44
  */
 class Test1 {
-  val conf = TiConfiguration.createRawDefault("10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379")
+  val conf = TiConfiguration.createRawDefault("10.0.82.144:2379,10.0.82.145:2379,10.0.82.146:2379")
   val session = TiSession.create(conf)
   val tikv: RawKVClient = session.createRawClient()
   val udpClient = Array(new UDPClient("127.0.0.1", 6000))
@@ -37,7 +37,7 @@ class Test1 {
 
   @Test
   def clean(): Unit ={
-    val kvHosts = "10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379"
+    val kvHosts = "10.0.82.144:2379,10.0.82.145:2379,10.0.82.146:2379"
     val indexHosts = "10.0.82.144:9200,10.0.82.145:9200,10.0.82.146:9200"
     val db = new DistributedGraphFacade(kvHosts, indexHosts, new UDPClientManager(udpClient))
     db.cleanDB()

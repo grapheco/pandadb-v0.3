@@ -143,11 +143,11 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
   }
 
   override def isNodeHasIndex(filter: NodeFilter): Boolean ={
-    val labels = filter.labels
-    val propNames = filter.properties.keySet.toSeq
+    val labels = filter.labels.map(f => f.value)
+    val propNames = filter.properties.keySet.toSeq.map(f => f.value)
     val indexedLabels = labels.intersect(nodeIndexMetaStore.indexMetaMap.keySet.toSeq)
     if (indexedLabels.nonEmpty){
-      val indexedProps = indexedLabels.flatMap(label => propNames.intersect(nodeIndexMetaStore.indexMetaMap(label.value).toSeq))
+      val indexedProps = indexedLabels.flatMap(label => propNames.intersect(nodeIndexMetaStore.indexMetaMap(label).toSeq))
       if (indexedProps.nonEmpty) true
       else false
     }

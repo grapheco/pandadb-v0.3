@@ -2,7 +2,7 @@ package org.grapheco.pandadb.kernel.store
 
 import org.grapheco.pandadb.kernel.distribute.node.DistributedNodeStoreSPI
 import org.grapheco.pandadb.kernel.util.serializer.BaseSerializer
-import org.grapheco.lynx.{LynxId, LynxNode, LynxNodeLabel, LynxPropertyKey, LynxValue}
+import org.grapheco.lynx.{LynxId, LynxInteger, LynxNode, LynxNodeLabel, LynxPropertyKey, LynxValue}
 
 
 trait StoredValue{
@@ -28,13 +28,17 @@ class StoredNodeWithProperty(override val id: Long,
   override def toString: String = s"{<id>:${id}, labels:[${labelIds.mkString(",")}], properties:{${properties.map(kv=>kv._1+": "+kv._2.toString).mkString(",")}}"
 }
 
-case class NodeId(value: Long) extends LynxId
+case class NodeId(value: Long) extends LynxId{
+  override def toLynxInteger: LynxInteger = LynxInteger(value)
+}
 
 case class PandaNode(id: NodeId, labels: Seq[LynxNodeLabel], props: Map[LynxPropertyKey, LynxValue]) extends LynxNode{
 
   override def property(propertyKey: LynxPropertyKey): Option[LynxValue] = props.get(propertyKey)
 
   override def toString: String = s"{<id>:${id.value}, labels:[${labels.map(_.value).mkString(",")}], properties:{${props.map(kv=>kv._1.value+": "+kv._2.value.toString).mkString(",")}}"
+
+  override def keys: Seq[LynxPropertyKey] = props.keys.toSeq
 }
 
 case class IndexNode(id: String, labels: Seq[String], props: Map[String, Any])

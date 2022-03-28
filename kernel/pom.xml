@@ -51,7 +51,7 @@
         </dependency>
         <dependency>
             <groupId>org.grapheco</groupId>
-            <artifactId>lynx</artifactId>
+            <artifactId>cypherplus</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>

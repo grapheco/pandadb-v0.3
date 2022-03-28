@@ -23,18 +23,18 @@ class DistributedGraphFacadeTest {
 
   var tikv: RawKVClient = _
 
-  val kvHosts = "10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379"
+  val kvHosts = "10.0.82.144:2379,10.0.82.145:2379,10.0.82.146:2379"
   val indexHosts = "10.0.82.144:9200,10.0.82.145:9200,10.0.82.146:9200"
   val udpClient = Array(new UDPClient("127.0.0.1", 6000))
   @Before
   def init(): Unit = {
-    val conf = TiConfiguration.createRawDefault("10.0.82.143:2379,10.0.82.144:2379,10.0.82.145:2379")
+    val conf = TiConfiguration.createRawDefault(kvHosts)
     val session = TiSession.create(conf)
     tikv = session.createRawClient()
-    cleanDB()
+//    cleanDB()
 
     api = new DistributedGraphFacade(kvHosts, indexHosts, new UDPClientManager(udpClient))
-    addData()
+//    addData()
   }
 
   def addData(): Unit = {
@@ -48,6 +48,14 @@ class DistributedGraphFacadeTest {
     api.addRelation("friend2", 2, 3, Map.empty)
     api.addRelation("friend3", 4, 5, Map.empty)
     api.addRelation("friend4", 4, 2, Map("Year" -> 2020))
+  }
+
+  @Test
+  def cypherTest(): Unit ={
+    api.cypher(
+      """
+        |MATCH (t:taxonomy {tax_id:'9606'})-[r:taxonomy2bioproject]->(b:bioproject) RETURN t.scientific_name as scientific_name, b.bioproject_id as bioproject_id, b.title as title, b.cen as cen SKIP 0 LIMIT 10
+        |""".stripMargin).show()
   }
 
   def cleanDB(): Unit ={
