@@ -37,12 +37,12 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
 
   override val propHeadMap: Map[Int, (Int, String)] = {
     headLine.zipWithIndex.map(item => {
-      if(item._2 == idIndex || item._2 == labelIndex){
-        if(item._1.split(":")(0).length == 0) {
+      if (item._2 == idIndex || item._2 == labelIndex) {
+        if (item._1.split(":")(0).length == 0) {
           (-1, (-1, ""))
         } else {
           val pair = item._1.split(":")
-          if(pair(0)=="") throw new Exception(s"Missed property name in column ${item._2}.")
+          if (pair(0) == "") throw new Exception(s"Missed property name in column ${item._2}.")
           val propId = PDBMetaData.getPropId(pair(0))
           val propType = "string"
           (item._2, (propId, propType))
@@ -60,11 +60,9 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
   }
 
 
-  val nodeDB = globalArgs.nodeDB
-  val nodeLabelDB = globalArgs.nodeLabelDB
+  val globalDB = globalArgs.db
 
   val innerFileNodeCountByLabel: ConcurrentHashMap[Int, Long] = new ConcurrentHashMap[Int, Long]()
-  val estNodeCount = globalArgs.estNodeCount
   val NONE_LABEL_ID = -1
 
 
@@ -83,23 +81,28 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
           node._2.foreach(labelId => _countMapAdd(innerTaskNodeCountByLabel, labelId, 1L))
           keys.map(nodeKeyLabelKey => ((nodeKeyLabelKey._1, serializedNodeValue), (nodeKeyLabelKey._2, Array.emptyByteArray)))
         })
+
         val nodeBatch = processedData.map(f => f._1)
         val labelBatch = processedData.map(f => f._2)
 
-       val f1 = Future{nodeBatch.grouped(10000).toList.par.foreach(batch => {
-         val sorted = batch.sortBy(f => ByteUtils.getLong(f._1, 5))
-         nodeDB.batchPut(sorted)
-       })}
-       val f2 = Future{labelBatch.grouped(10000).toList.par.foreach(batch =>{
-         val sorted = batch.sortBy(f => ByteUtils.getLong(f._1, 1))
-         nodeLabelDB.batchPut(sorted)
-       })}
+        val f1 = Future {
+          nodeBatch.grouped(10000).toList.par.foreach(batch => {
+            val sorted = batch.sortBy(f => ByteUtils.getLong(f._1, 5))
+            globalDB.batchPut(sorted)
+          })
+        }
+        val f2 = Future {
+          labelBatch.grouped(10000).toList.par.foreach(batch => {
+            val sorted = batch.sortBy(f => ByteUtils.getLong(f._1, 1))
+            globalDB.batchPut(sorted)
+          })
+        }
 
         Await.result(f1, Duration.Inf)
         Await.result(f2, Duration.Inf)
 
         globalArgs.importerStatics.nodeCountAddBy(batchData.length)
-        globalArgs.importerStatics.nodePropCountAddBy(batchData.length*propHeadMap.size)
+        globalArgs.importerStatics.nodePropCountAddBy(batchData.length * propHeadMap.size)
       }
     }
 
@@ -111,10 +114,10 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
   private def _wrapNode(lineArr: Array[String]): (Long, Array[Int], Map[Int, Any]) = {
     val id = lineArr(idIndex).toLong
     val labels: Array[String] = {
-      if (labelIndex == -1){
+      if (labelIndex == -1) {
         new Array[String](0)
       }
-      else{
+      else {
         lineArr(labelIndex).split(importCmd.arrayDelimeter)
       }
     }
@@ -129,7 +132,7 @@ class SingleNodeFileImporter(file: File, importCmd: ImportCmd, globalArgs: Globa
   }
 
   private def _getNodeKeys(id: Long, labelIds: Array[Int]): Array[(Array[Byte], Array[Byte])] = {
-    if(labelIds.isEmpty) {
+    if (labelIds.isEmpty) {
       val nodeKey = DistributedKeyConverter.toNodeKey(NONE_LABEL_ID, id)
       val labelKey = DistributedKeyConverter.toNodeLabelKey(id, NONE_LABEL_ID)
       Array((nodeKey, labelKey))

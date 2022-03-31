@@ -94,16 +94,17 @@ trait SingleFileImporter extends LazyLogging{
   }
 
   protected def _countMapAdd(countMap: mutable.Map[Int, Long], key: Int, addBy: Long): Long = {
-    if(countMap.contains(key)){
-      val countBeforeAdd: Long = countMap.getOrElse(key, 0.toLong)
-      val countAfterAdd: Long = countBeforeAdd + addBy
-      countMap.put(key, countAfterAdd)
-      countAfterAdd
-    } else {
-      countMap.put(key, addBy)
-      addBy
+    this.synchronized{
+      if(countMap.contains(key)){
+        val countBeforeAdd: Long = countMap.getOrElse(key, 0.toLong)
+        val countAfterAdd: Long = countBeforeAdd + addBy
+        countMap.put(key, countAfterAdd)
+        countAfterAdd
+      } else {
+        countMap.put(key, addBy)
+        addBy
+      }
     }
-
   }
 
   protected def _commitInnerFileStatToGlobal(): Boolean

@@ -14,11 +14,7 @@ import scala.collection.convert.ImplicitConversions._
  * @Modified By:
  */
 case class GlobalArgs(coreNum: Int = Runtime.getRuntime().availableProcessors(),
-                      importerStatics : ImporterStatics,
-                      estNodeCount: Long, estRelCount: Long,
-                      nodeDB: DistributedKVAPI, nodeLabelDB: DistributedKVAPI,
-                      relationDB: DistributedKVAPI,inRelationDB: DistributedKVAPI,
-                      outRelationDB: DistributedKVAPI,relationTypeDB: DistributedKVAPI, metaDB: DistributedKVAPI)
+                      importerStatics : ImporterStatics, db: DistributedKVAPI)
 
 case class ImporterStatics() {
   private val globalNodeCount: AtomicLong = new AtomicLong(0)

@@ -59,19 +59,16 @@ object PandaImporter extends LazyLogging {
     logger.info(s"Estimated relation count: $estRelCount.")
 
 
-    val dbs = (1 to 7).map(i => {
+    val db = {
       val conf = TiConfiguration.createRawDefault(importCmd.kvHosts).setBatchPutConcurrency(200)
       val session = TiSession.create(conf)
       new PandaDistributeKVAPI(session.createRawClient())
-    }).toArray
+    }
 
-    val metaDB = dbs.head
-    val statistics = new DistributedStatistics(metaDB)
+    val statistics = new DistributedStatistics(db)
     statistics.init()
 
-    val globalArgs = GlobalArgs(Runtime.getRuntime().availableProcessors(),
-      importerStatics,
-      estNodeCount, estRelCount, dbs(1), dbs(2), dbs(3), dbs(4), dbs(5), dbs(6), metaDB)
+    val globalArgs = GlobalArgs(Runtime.getRuntime().availableProcessors(), importerStatics, db)
     logger.info(s"Import task started. $time")
     service.scheduleAtFixedRate(nodeCountProgressLogger, 0, 30, TimeUnit.SECONDS)
     service.scheduleAtFixedRate(relCountProgressLogger, 0, 30, TimeUnit.SECONDS)
@@ -93,8 +90,8 @@ object PandaImporter extends LazyLogging {
     importerStatics.getRelCountByType.foreach(idNums => statistics.increaseRelationTypeCount(idNums._1, idNums._2))
     statistics.flush()
 
-    metaDB.put(DistributedKeyConverter.nodeMaxIdKey, ByteUtils.longToBytes(importerStatics.getGlobalNodeCount.get()))
-    metaDB.put(DistributedKeyConverter.relationMaxIdKey, ByteUtils.longToBytes(importerStatics.getGlobalRelCount.get()))
+    db.put(DistributedKeyConverter.nodeMaxIdKey, ByteUtils.longToBytes(importerStatics.getGlobalNodeCount.get()))
+    db.put(DistributedKeyConverter.relationMaxIdKey, ByteUtils.longToBytes(importerStatics.getGlobalRelCount.get()))
 
     service.shutdown()
     val endTime: Long = new Date().getTime
@@ -107,7 +104,7 @@ object PandaImporter extends LazyLogging {
     logger.info(s"${importerStatics.getGlobalRelPropCount} props of relation imported. $time")
     logger.info(s"Import task finished in $timeUsed")
 
-    dbs.foreach(db => db.close())
+    db.close()
 
     System.exit(0)
   }

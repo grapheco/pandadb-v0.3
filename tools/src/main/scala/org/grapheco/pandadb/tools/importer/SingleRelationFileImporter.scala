@@ -69,10 +69,7 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
     }).toMap.filter(item => item._1 > -1)
   }
 
-  val relationDB = globalArgs.relationDB
-  val inRelationDB = globalArgs.inRelationDB
-  val outRelationDB = globalArgs.outRelationDB
-  val typeRelationDB = globalArgs.relationTypeDB
+  val dbImporter = globalArgs.db
 
   val innerFileRelCountByType: ConcurrentHashMap[Int, Long] = new ConcurrentHashMap[Int, Long]()
   val estEdgeCount: Long = estLineCount
@@ -105,19 +102,19 @@ class SingleRelationFileImporter(file: File, importCmd: ImportCmd, globalArgs: G
 
         val f1: Future[Unit] = Future{relationBatch.grouped(10000).toList.par.foreach(_batch => {
           val sorted = _batch.sortBy(f => ByteUtils.getLong(f._1, 1))
-          relationDB.batchPut(sorted)
+          dbImporter.batchPut(sorted)
         })}
         val f2: Future[Unit] = Future{inBatch.grouped(10000).toList.par.foreach(_batch => {
           val sorted = _batch.sortBy(f => ByteUtils.getLong(f._1, 1))
-          inRelationDB.batchPut(sorted)
+          dbImporter.batchPut(sorted)
         })}
         val f3: Future[Unit] = Future{outBatch.grouped(10000).toList.par.foreach(_batch => {
           val sorted = _batch.sortBy(f => ByteUtils.getLong(f._1, 1))
-          outRelationDB.batchPut(sorted)
+          dbImporter.batchPut(sorted)
         })}
         val f4: Future[Unit] = Future{typeBatch.grouped(10000).toList.par.foreach(_batch => {
           val sorted = _batch.sortBy(f => ByteUtils.getLong(f._1, 5))
-          typeRelationDB.batchPut(sorted)
+          dbImporter.batchPut(sorted)
         })}
         Await.result(f1, Duration.Inf)
         Await.result(f2, Duration.Inf)
