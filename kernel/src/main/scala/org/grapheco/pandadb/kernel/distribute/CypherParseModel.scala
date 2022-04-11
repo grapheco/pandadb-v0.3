@@ -182,7 +182,6 @@ class GraphParseModel(db: DistributedGraphService) extends GraphModel {
       case _ => {
         val nodeHasIndex = db.getIndexStore.isNodeHasIndex(nodeFilter)
         if (nodeHasIndex) {
-          println("++++++++++++++++++++++++++++++ go index ++++++++++++++++++++++++++++++")
           db.getNodesByIndex(nodeFilter)
         }
         else {
@@ -202,9 +201,9 @@ class GraphParseModel(db: DistributedGraphService) extends GraphModel {
   }
 
   private def paths(nodeId: LynxId,
-            relationshipFilter: RelationshipFilter,
-            endNodeFilter: NodeFilter,
-            direction: SemanticDirection): Iterator[PathTriple] = {
+                    relationshipFilter: RelationshipFilter,
+                    endNodeFilter: NodeFilter,
+                    direction: SemanticDirection): Iterator[PathTriple] = {
     db.getNodeById(nodeId.value.asInstanceOf[Long]).map(
       node => {
         if (relationshipFilter.types.nonEmpty) {
@@ -278,39 +277,39 @@ class GraphParseModel(db: DistributedGraphService) extends GraphModel {
     }
   }
 
-    private def expand(nodeId: LynxId, direction: SemanticDirection, relationshipFilter: RelationshipFilter): Iterator[PathTriple] = {
-      val typeId = {
-        relationshipFilter.types match {
-          case Seq() => None
-          case _ => db.getRelationTypeId(relationshipFilter.types.head.value)
-        }
+  private def expand(nodeId: LynxId, direction: SemanticDirection, relationshipFilter: RelationshipFilter): Iterator[PathTriple] = {
+    val typeId = {
+      relationshipFilter.types match {
+        case Seq() => None
+        case _ => db.getRelationTypeId(relationshipFilter.types.head.value)
       }
-      if (typeId.isEmpty && relationshipFilter.types.nonEmpty) {
-        Iterator.empty
-      } else {
-        direction match {
-          case SemanticDirection.INCOMING => db.findInRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
-            val toNode = db.getNodeById(r.endNodeId.value).get
-            val fromNode = db.getNodeById(r.startNodeId.value).get
-            PathTriple(toNode, r, fromNode)
-          })
+    }
+    if (typeId.isEmpty && relationshipFilter.types.nonEmpty) {
+      Iterator.empty
+    } else {
+      direction match {
+        case SemanticDirection.INCOMING => db.findInRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
+          val toNode = db.getNodeById(r.endNodeId.value).get
+          val fromNode = db.getNodeById(r.startNodeId.value).get
+          PathTriple(toNode, r, fromNode)
+        })
 
-          case SemanticDirection.OUTGOING => db.findOutRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
+        case SemanticDirection.OUTGOING => db.findOutRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
+          val toNode = db.getNodeById(r.endNodeId.value).get
+          val fromNode = db.getNodeById(r.startNodeId.value).get
+          PathTriple(fromNode, r, toNode)
+        })
+        case SemanticDirection.BOTH => db.findInRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
+          val toNode = db.getNodeById(r.endNodeId.value).get
+          val fromNode = db.getNodeById(r.startNodeId.value).get
+          PathTriple(toNode, r, fromNode)
+        }) ++
+          db.findOutRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
             val toNode = db.getNodeById(r.endNodeId.value).get
             val fromNode = db.getNodeById(r.startNodeId.value).get
             PathTriple(fromNode, r, toNode)
           })
-          case SemanticDirection.BOTH => db.findInRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
-            val toNode = db.getNodeById(r.endNodeId.value).get
-            val fromNode = db.getNodeById(r.startNodeId.value).get
-            PathTriple(toNode, r, fromNode)
-          }) ++
-            db.findOutRelations(nodeId.value.asInstanceOf[Long], typeId).map(r => {
-              val toNode = db.getNodeById(r.endNodeId.value).get
-              val fromNode = db.getNodeById(r.startNodeId.value).get
-              PathTriple(fromNode, r, toNode)
-            })
-        }
       }
     }
+  }
 }

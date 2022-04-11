@@ -1,7 +1,8 @@
 package org.grapheco.pandadb.kernel.distribute
 
-import java.util
+import org.tikv.common.util.ScanOption
 
+import java.util
 import org.tikv.kvproto.Kvrpcpb
 import org.tikv.raw.RawKVClient
 import org.tikv.shade.com.google.protobuf.ByteString

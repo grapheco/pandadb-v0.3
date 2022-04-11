@@ -50,6 +50,8 @@ trait DistributedGraphService {
   def nodeRemoveLabel(id: Id, label: String): Unit
   def getNodeById(id: Id): Option[PandaNode]
   def getNodeById(id: Id, labelName: String): Option[PandaNode]
+  def getNodesByIds(ids: Seq[Id], labelName: String): Seq[PandaNode]
+  def getNodesByIds(ids: Seq[Id], labelId: Int): Seq[PandaNode]
   def getNodesByLabel(labelName: String, exact: Boolean): Iterator[PandaNode]
   def scanAllNodes(): Iterator[PandaNode]
 
@@ -65,12 +67,19 @@ trait DistributedGraphService {
   def relationRemoveType(id: Id, label: String): Unit
   def getRelationById(id: Id): Option[PandaRelationship]
   def scanAllRelations(): Iterator[PandaRelationship]
-//  def findToNodeIds(fromNodeId: Long): Iterator[Long];
-//  def findToNodeIds(fromNodeId: Long, relationType: Int): Iterator[Long];
-//  def findFromNodeIds(toNodeId: Long): Iterator[Long];
-//  def findFromNodeIds(toNodeId: Long, relationType: Int): Iterator[Long];
+  //  def findToNodeIds(fromNodeId: Long): Iterator[Long];
+  //  def findToNodeIds(fromNodeId: Long, relationType: Int): Iterator[Long];
+  //  def findFromNodeIds(toNodeId: Long): Iterator[Long];
+  //  def findFromNodeIds(toNodeId: Long, relationType: Int): Iterator[Long];
   def findOutRelations(fromNodeId: Long): Iterator[PandaRelationship] = findOutRelations(fromNodeId, None)
   def findOutRelations(fromNodeId: Long, edgeType: Option[Int]): Iterator[PandaRelationship]
   def findInRelations(toNodeId: Long): Iterator[PandaRelationship] = findInRelations(toNodeId, None)
   def findInRelations(toNodeId: Long, edgeType: Option[Int]): Iterator[PandaRelationship]
+
+  // ====================================== new added ======================================
+  def countOutRelations(fromNodeId: Long): Long
+  def countOutRelations(fromNodeId: Long, edgeType: Int): Long
+  def findOutRelationsEndNodeIds(fromNodeId: Long): Iterator[Long]
+  def findOutRelationsEndNodeIds(fromNodeId: Long, edgeType: Int): Iterator[Long]
+  // =======================================================================================
 }

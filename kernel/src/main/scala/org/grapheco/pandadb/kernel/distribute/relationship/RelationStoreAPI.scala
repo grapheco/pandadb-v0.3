@@ -114,6 +114,16 @@ class RelationStoreAPI(db: DistributedKVAPI, propertyNameStore: PropertyNameStor
       .getOrElse(inRelationStore.getRelations(toNodeId))
   }
 
+  // ====================================== new added ======================================
+  override def countOutRelations(fromNodeId: Long): Long = outRelationStore.countRelations(fromNodeId)
+
+  override def countOutRelations(fromNodeId: Long, edgeType: Int): Long = outRelationStore.countRelations(fromNodeId, edgeType)
+
+  override def findOutRelationsEndNodeIds(fromNodeId: Long): Iterator[Long] = outRelationStore.getRelationsEndNodeId(fromNodeId)
+
+  override def findOutRelationsEndNodeIds(fromNodeId: Long, edgeType: Int): Iterator[Long] = outRelationStore.getRelationsEndNodeId(fromNodeId, edgeType)
+
+  // =======================================================================================
   override def allRelationTypes(): Array[String] = relationTypeNameStore.mapString2Int.keys.toArray
 
   override def allRelationTypeIds(): Array[Int] = relationTypeNameStore.mapInt2String.keys.toArray
@@ -177,7 +187,15 @@ trait DistributedRelationStoreSPI {
   def findInRelations(toNodeId: Long): Iterator[StoredRelation] = findInRelations(toNodeId, None)
 
   def findInRelations(toNodeId: Long, edgeType: Option[Int] = None): Iterator[StoredRelation]
+  // ====================================== new added ======================================
+  def countOutRelations(fromNodeId: Long): Long
 
+  def countOutRelations(fromNodeId: Long, edgeType: Int): Long
+
+  def findOutRelationsEndNodeIds(fromNodeId: Long): Iterator[Long]
+
+  def findOutRelationsEndNodeIds(fromNodeId: Long, edgeType: Int): Iterator[Long]
+  // =======================================================================================
   def allRelationTypes(): Array[String];
 
   def allRelationTypeIds(): Array[Int];

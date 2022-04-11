@@ -114,9 +114,32 @@ class RelationDirectionStore(db: DistributedKVAPI, direction: RelationDirection.
     }
   }
 
+  // ================= new added ===============================
+  def countRelations(nodeId: Long): Long ={
+    val prefix = DistributedKeyConverter.edgeKeyPrefixToBytes(nodeId, direction)
+    db.scanPrefix(prefix, 10000, true).length
+  }
+  def countRelations(nodeId: Long, edgeType: Int): Long = {
+    val prefix = DistributedKeyConverter.edgeKeyPrefixToBytes(nodeId, edgeType, direction)
+    db.scanPrefix(prefix, 10000, true).length
+  }
+  def getRelationsEndNodeId(startNodeId: Long): Iterator[Long] = {
+    val prefix = DistributedKeyConverter.edgeKeyPrefixToBytes(startNodeId, direction)
+    db.scanPrefix(prefix, 10000,true).map(kv => {
+      val key = kv.getKey.toByteArray
+      ByteUtils.getLong(key, 13)
+    })
+  }
+  def getRelationsEndNodeId(startNodeId: Long, edgeType: Int): Iterator[Long] = {
+    val prefix = DistributedKeyConverter.edgeKeyPrefixToBytes(startNodeId, edgeType, direction)
+    db.scanPrefix(prefix, 10000,true).map(kv => {
+      val key = kv.getKey.toByteArray
+      ByteUtils.getLong(key, 13)
+    })
+  }
+  // ===========================================================
   class RelationIterator(db: DistributedKVAPI, prefix: Array[Byte]) extends Iterator[StoredRelation] {
     val iter = db.scanPrefix(prefix, BATCH_SIZE, false)
-
     override def hasNext: Boolean = iter.hasNext
 
     override def next(): StoredRelation = {
