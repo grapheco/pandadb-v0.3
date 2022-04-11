@@ -87,7 +87,7 @@ class BiologyTest {
   @Test
   def totalPubmedOfTaxonomyAPI(): Unit = {
     // 137ms
-    // match.*\[.*\].*return\scount\(.\).*
+    // match\s*\(.*\)\s*-\s*\[.*]\s*->\s*\(.*\)\s*return count\S* as \S*
     timeCost(() => {
       val node = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
       val relType = api.getRelationTypeId("taxonomy2pubmed").get
@@ -107,7 +107,7 @@ class BiologyTest {
   @Test
   def countCitedAPI(): Unit = {
     // 1636 ms
-    // match.*\[.*\].*return\ssum\(tointeger.*cited_num.*
+    // match\s*\(.*\)\s*-\s*\[.*]\s*->\s*\(.*\)\s*return sum\s*\(\s*tointeger.*\) as \S*
     timeCost(() => {
       val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
       val relType = api.getRelationTypeId("taxonomy2pubmed").get
@@ -136,7 +136,7 @@ class BiologyTest {
   @Test
   def count3YearCitedAPI(): Unit = {
     // 1546 ms
-    //match.*\s*\[.*].*where.*>\s*.*publish_date.*count.*
+    //match\s*\(.*\)\s*-\s*\[.*]\s*->\s*\(.*\)\s*where \S*\s*<\s*tointeger.*\) return count\S* as \S*
     timeCost(() => {
       val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
       val relType = api.getRelationTypeId("taxonomy2pubmed").get
@@ -159,7 +159,7 @@ class BiologyTest {
   @Test
   def earliestAPI(): Unit = {
     // 1681ms
-    // match.*\s*\[.*].*min.*year
+    // match\s*\(.*\)\s*-\s*\[.*]\s*->\s*\(.*\)\s*return min.*\) as \S*
     timeCost(() => {
       val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
       val relType = api.getRelationTypeId("taxonomy2pubmed").get
@@ -181,7 +181,7 @@ class BiologyTest {
   @Test
   def findTop3LevelParentAPI(): Unit = {
     // 852ms
-    // match.*=.*taxonomy.*\[.*1..3\].*
+    // match \S*=.*\[.*1..3\].* return \S*
     // ()-[]->()
     // ()-[]->()-[]->()
     // () -[]->() -[]->() -[]->()
@@ -220,7 +220,7 @@ class BiologyTest {
    * 查询物种项目信息
    */
   @Test
-  // match.*\[.*taxonomy2bioproject.*\].*title.*bioproject_id.*smdt.*
+  // match\s*\(.*\)\s*-\s*\[.*]\s*->\s*\(.*\)\s*return \S*.title.*bioproject_id.*smdt.*limit \S*
   // 9838 ms
   def projectInfoAPI(): Unit = {
     val pattern = Pattern.compile(".*/.*")
@@ -253,7 +253,7 @@ class BiologyTest {
    */
   @Test
   def geneOfTaxonomyAPI(): Unit = {
-    // match.*\[.*taxonomy2gene].*title.*gene_id.*
+    // match\s*\(.*\)\s*-\s*\[.*]\s*->\s*\(.*\)\s*return.*title.*gene_id limit \S*
     // 471ms
     timeCost(() => {
       val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
@@ -275,7 +275,7 @@ class BiologyTest {
    */
   @Test
   def genomeOfTaxonomyAPI(): Unit = {
-    // match.*\[.*taxonomy2genome].*genome_id.*acc.*
+    // match\s*\(.*\)\s*-\s*\[.*]\s*->\s*\(.*\)\s*return.*genome_id.*aacc limit \S*
     // 365ms
     timeCost(() => {
       val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
@@ -299,7 +299,7 @@ class BiologyTest {
    */
   @Test
   def paperTendencyAPI(): Unit = {
-    // match.*\[.*taxonomy2pubmed].*publish_date.*count.*year.*
+    // match\s*\(.*\)\s*-\s*\[.*]\s*->\s*\(.*\)\s* where tointeger.*>=\s*\S* return .*publish_date.*count\S* as \S* order by \S* \S*
     // 1962 ms
     timeCost(() => {
       val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
@@ -339,7 +339,7 @@ class BiologyTest {
    */
   @Test
   def topKTendencyAPI(): Unit = {
-    //match.*\[.*].*unwind.*<=.*
+    //match\s*\(.*\)\s*-\s*\[.*]\s*->\s*\(.*\)\s* where.*>= \S*.*<= \S* unwind.*>=.*<=.* return.*publish_date.*count\S* as \S* order by \S* \S*
     //
     val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
     val relType = api.getRelationTypeId("taxonomy2pubmed")
@@ -392,7 +392,7 @@ class BiologyTest {
    */
   @Test
   def keywordRelationAPI(): Unit = {
-    // match.*\[.*].*unwind.*unwind.*order by.*
+    // match\s*\(.*\)\s*-\s*\[.*]\s*->\s*\(.*\)\s* where.*with \S* as \S*.*unwind.*<>.*limit \S*
     timeCost(() => {
       val key = LynxPropertyKey("keywords")
       val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
@@ -465,7 +465,7 @@ class BiologyTest {
    */
   @Test
   def countKeyAPI(): Unit = {
-    // match.*\[.*].*split.*unwind.*count.*
+    // match\s*\(.*\)\s*-\s*\[.*]\s*->\s*\(.*\)\s* where.* with.*unwind \S* as \S* return .*count.*limit \S*
     timeCost(() => {
       val key = LynxPropertyKey("keywords")
       val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
@@ -499,7 +499,7 @@ class BiologyTest {
    */
   @Test
   def distributionOfCountryOfPaperAPI(): Unit = {
-    // match.*\[.*].*\[.*pubmed2country].*country.*
+    // match\s*\(.*taxonomy.*\)\s*-\s*\[.*]\s*->\s*\(.*pubmed.*\)\s*-\[.*\]\s*->\s*\(.*map_country.*\) return.*country.*count\(.* as \S*
     timeCost(() => {
       val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
       val relType = api.getRelationTypeId("taxonomy2pubmed")
@@ -537,7 +537,7 @@ class BiologyTest {
    */
   @Test
   def distributionOfCountryOfProjectAPI(): Unit = {
-    // match.*\[.*taxonomy2bioproject].*\[.*bioproject2country].*country.*
+    // match\s*\(.*taxonomy.*\)\s*-\s*\[.*]\s*->\s*\(.*bioproject.*\)\s*-\[.*\]\s*->\s*\(.*map_country.*\) return.*country.*count\(.* as \S*
     timeCost(() => {
       val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
       val relType = api.getRelationTypeId("taxonomy2bioproject")
@@ -563,25 +563,25 @@ class BiologyTest {
     })
   }
 
-  @Test
-  def relativePaperCount(): Unit = {
-    api.cypher(
-      """MATCH (t:taxonomy {tax_id:'9606'})-[r:taxonomy2pubmed]->(p:pubmed) return count(p)""".stripMargin)
-  }
-
-  /**
-   * 相关资料-论文总数
-   */
-  @Test
-  def relativePaperCountAPI(): Unit = {
-    // match.*\[.*taxonomy2pubmed].*return count\(.*\)
-    timeCost(() => {
-      val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
-      val relType = api.getRelationTypeId("taxonomy2pubmed")
-      val rels = api.findOutRelations(startNode.id.value, relType)
-      println(rels.length)
-    })
-  }
+//  @Test
+//  def relativePaperCount(): Unit = {
+//    api.cypher(
+//      """MATCH (t:taxonomy {tax_id:'9606'})-[r:taxonomy2pubmed]->(p:pubmed) return count(p)""".stripMargin)
+//  }
+//
+//  /**
+//   * 相关资料-论文总数
+//   */
+//  @Test
+//  def relativePaperCountAPI(): Unit = {
+//    // match\s*\(.*taxonomy.*\)\s*-\s*\[.*]\s*->\s*\(.*pubmed.*\)\s* return count\S*
+//    timeCost(() => {
+//      val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
+//      val relType = api.getRelationTypeId("taxonomy2pubmed")
+//      val rels = api.findOutRelations(startNode.id.value, relType)
+//      println(rels.length)
+//    })
+//  }
 
   @Test
   def relativePaper(): Unit = {
@@ -595,7 +595,7 @@ class BiologyTest {
    */
   @Test
   def relativePaperAPI(): Unit = {
-    // match.*taxonomy2pubmed.*pubmed_id.*title.*authors.*publish_date.*keywords.*
+    // match\s*\(.*taxonomy.*\)\s*-\s*\[.*]\s*->\s*\(.*pubmed.*\)\s* return.*pubmed_id.*title.*authors.*skip \S* limit \S*
     timeCost(() => {
       val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
       val relType = api.getRelationTypeId("taxonomy2pubmed")
@@ -624,7 +624,7 @@ class BiologyTest {
    */
   @Test
   def relativePNGAPI(): Unit = {
-    // match.*\[.*].*:pubmed.*\[.*png.*caption
+    // match\s*\(.*taxonomy.*\)\s*-\s*\[.*]\s*->\s*\(.*pubmed.*\)\s* return.*doi.*png.*caption as \S*
     timeCost(() => {
       val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
       val relType = api.getRelationTypeId("taxonomy2pubmed")
@@ -668,7 +668,7 @@ class BiologyTest {
    */
   @Test
   def countProjectAPI(): Unit ={
-    // match.*taxonomy.*\[.*taxonomy2bioproject.*bioproject.*return count.*
+    // match\s*\(.*taxonomy.*\)\s*-\s*\[.*]\s*->\s*\(.*bioproject.*\)\s* return count\S* as \S*
     timeCost(() => {
       val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
       val relType = api.getRelationTypeId("taxonomy2bioproject")
@@ -691,7 +691,7 @@ class BiologyTest {
    */
   @Test
   def relativeProjectAPI(): Unit = {
-    //match.*taxonomy.*\[.*taxonomy2bioproject.*scientific_name.*cen.*skip.*
+    // match\s*\(.*taxonomy.*\)\s*-\s*\[.*]\s*->\s*\(.*bioproject.*\)\s* return.*scientific_name.*cen skip \S* limit \S*
     timeCost(() => {
       val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
       val scientific_name = startNode.props(LynxPropertyKey("scientific_name")).value
