@@ -368,6 +368,6 @@ class BiologyTricksAPI(api: DistributedGraphFacade) {
       (scientific_name, bioproject_id, title, cen)
     })
     res.drop(skip)
-    BioDataFrame(schema, res.map(f => Seq(f._1, f._2, f._3, f._4)))
+    BioDataFrame(schema, res.slice(0, limit).map(f => Seq(f._1, f._2, f._3, f._4)))
   }
 }

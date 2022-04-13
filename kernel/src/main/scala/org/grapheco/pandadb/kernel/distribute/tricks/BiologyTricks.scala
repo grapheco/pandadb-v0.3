@@ -151,7 +151,7 @@ class BiologyTricks(api: DistributedGraphFacade) {
   }
 
   def parseCypherParams(_cypher: String): (Seq[String], Seq[String]) = {
-    val cypher = _cypher.toLowerCase.replaceAll("\r", " ").replaceAll("\n", " ")
+    val cypher = _cypher.toLowerCase.replaceAll("\r", " ").replaceAll("\n", " ").trim
     val result = {
       if (basicInfoOfTaxonomy.matcher(cypher).matches()) {
         val p = Pattern.compile("""tax_id\s*=\s*\S*""")
