@@ -2,8 +2,12 @@ package org.grapheco.pandadb.kernel.distribute
 
 import org.grapheco.pandadb.kernel.store.{PandaNode, PandaRelationship}
 import org.grapheco.lynx.{LynxResult, NodeFilter}
-import org.grapheco.pandadb.kernel.distribute.index.{IndexStoreService}
+import org.grapheco.pandadb.kernel.distribute.index.IndexStoreService
 import org.grapheco.pandadb.kernel.distribute.meta.DistributedStatistics
+import org.tikv.common.util.ScanOption
+import org.tikv.kvproto.Kvrpcpb
+
+import java.util
 
 /**
  * @program: pandadb-v0.3
@@ -81,5 +85,8 @@ trait DistributedGraphService {
   def countOutRelations(fromNodeId: Long, edgeType: Int): Long
   def findOutRelationsEndNodeIds(fromNodeId: Long): Iterator[Long]
   def findOutRelationsEndNodeIds(fromNodeId: Long, edgeType: Int): Iterator[Long]
+
+  //origin
+  def batchScan(list: util.List[ScanOption]): util.List[util.List[Kvrpcpb.KvPair]]
   // =======================================================================================
 }

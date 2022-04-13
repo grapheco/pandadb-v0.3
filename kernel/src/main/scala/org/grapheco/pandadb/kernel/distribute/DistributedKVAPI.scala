@@ -3,6 +3,7 @@ package org.grapheco.pandadb.kernel.distribute
 import org.tikv.common.util.ScanOption
 
 import java.util
+import java.util.List
 import org.tikv.kvproto.Kvrpcpb
 import org.tikv.raw.RawKVClient
 import org.tikv.shade.com.google.protobuf.ByteString
@@ -32,7 +33,7 @@ trait DistributedKVAPI {
 
   def batchGetValue(keys: Seq[Array[Byte]]): Iterator[Array[Byte]]
 
-  def batchScan(): Iterator[(Array[Byte], Array[Byte])]
+  def batchScan(list: util.List[ScanOption]): util.List[util.List[Kvrpcpb.KvPair]]
 
   def batchDelete(data: Seq[Array[Byte]]): Unit
 
@@ -100,7 +101,7 @@ class PandaDistributeKVAPI(client: RawKVClient) extends DistributedKVAPI {
     client.batchGet(new util.ArrayList[ByteString](_keys)).iterator().asScala.map(kv => kv.getValue)
   }
 
-  override def batchScan(): Iterator[(Array[Byte], Array[Byte])] = ???
+  override def batchScan(ranges: util.List[ScanOption]): util.List[util.List[Kvrpcpb.KvPair]] = client.batchScan(ranges)
 
   override def batchDelete(data: Seq[Array[Byte]]): Unit = {
     val transfer = new util.ArrayList[ByteString](JavaConverters.seqAsJavaList(data.map(f => ByteString.copyFrom(f))))

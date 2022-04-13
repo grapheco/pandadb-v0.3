@@ -11,7 +11,11 @@ import org.grapheco.pandadb.kernel.util.PandaDBException.PandaDBException
 import org.apache.http.HttpHost
 import org.elasticsearch.client.{RestClient, RestHighLevelClient}
 import org.grapheco.lynx.{CypherRunner, LynxNodeLabel, LynxPropertyKey, LynxRelationshipType, LynxResult, LynxValue, NodeFilter}
+import org.tikv.common.util.ScanOption
 import org.tikv.common.{TiConfiguration, TiSession}
+import org.tikv.kvproto.Kvrpcpb
+
+import java.util
 
 /**
  * @program: pandadb-v0.3
@@ -284,6 +288,10 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClientManag
 
   override def findOutRelationsEndNodeIds(fromNodeId: Id, edgeType: Int): Iterator[Id] = relationStoreAPI.findOutRelationsEndNodeIds(fromNodeId, edgeType)
 
+  // origin method
+  override def batchScan(ranges: util.List[ScanOption]): util.List[util.List[Kvrpcpb.KvPair]] = {
+    db.batchScan(ranges)
+  }
   // =======================================================================================
 
   private def mapRelation(rel: StoredRelation): PandaRelationship = {

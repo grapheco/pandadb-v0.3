@@ -29,7 +29,6 @@ import scala.collection.JavaConverters._
 class BiologyTest {
   var api: DistributedGraphFacade = _
 
-  var tikv: RawKVClient = _
 
   val kvHosts = "10.0.82.144:2379,10.0.82.145:2379,10.0.82.146:2379"
   val indexHosts = "10.0.82.144:9200,10.0.82.145:9200,10.0.82.146:9200"
@@ -39,7 +38,6 @@ class BiologyTest {
   def init(): Unit = {
     val conf = TiConfiguration.createRawDefault(kvHosts)
     val session = TiSession.create(conf)
-    tikv = session.createRawClient()
     api = new DistributedGraphFacade(kvHosts, indexHosts, new UDPClientManager(udpClient))
   }
 
@@ -109,11 +107,14 @@ class BiologyTest {
     // 1636 ms
     // match\s*\(.*\)\s*-\s*\[.*]\s*->\s*\(.*\)\s*return sum\s*\(\s*tointeger.*\) as \S*
     timeCost(() => {
+      var start = System.nanoTime()
       val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
       val relType = api.getRelationTypeId("taxonomy2pubmed").get
       val pubmedId = api.getNodeLabelId("pubmed").get
       val endNodeIds = api.findOutRelationsEndNodeIds(startNode.id.value, relType)
       val resNodes = endNodeIds.grouped(1000).flatMap(group => api.getNodesByIds(group, pubmedId))
+      println(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start))
+      start = System.nanoTime()
       // big cost
       val count = resNodes
         .map(n => {
@@ -122,6 +123,7 @@ class BiologyTest {
           else 0
         }).sum
       println(count)
+      println(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start))
     })
   }
 
@@ -143,7 +145,11 @@ class BiologyTest {
       val labelId = api.getNodeLabelId("pubmed").get
       val endNodeIds = api.findOutRelationsEndNodeIds(startNode.id.value, relType)
       val resNodes = endNodeIds.grouped(1000).flatMap(group => api.getNodesByIds(group, labelId))
+
+      val start = System.nanoTime()
       val count = resNodes.count(n => n.props(LynxPropertyKey("publish_date")).value.toString.slice(0, 4).toInt > 2019)
+
+      println(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start))
       println(count)
     })
   }
@@ -166,7 +172,9 @@ class BiologyTest {
       val labelId = api.getNodeLabelId("pubmed").get
       val endNodeIds = api.findOutRelationsEndNodeIds(startNode.id.value, relType)
       val resNodes = endNodeIds.grouped(1000).flatMap(group => api.getNodesByIds(group, labelId))
+      val start = System.nanoTime()
       val res = resNodes.map(n => n.props(LynxPropertyKey("publish_date")).value.toString.slice(0, 4).toInt).min
+      println(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start))
       println(res)
     })
   }
@@ -190,13 +198,16 @@ class BiologyTest {
       val typeId = api.getRelationTypeId("parent")
       val node1 = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
 
+      var start = System.nanoTime()
       val path1 = outPattern(Seq(node1.id.value), typeId, "taxonomy")
       val path2 = outPattern(path1.map(f => f._2.id.value), typeId, "taxonomy")
       val path3 = outPattern(path2.map(f => f._2.id.value), typeId, "taxonomy")
-
+      println(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start))
+      start = System.nanoTime()
       val data1 = path1.flatMap(f => Seq(node1, f._1, f._2))
       val data2 = path2.flatMap(f => data1 ++ Seq(f._1, f._2))
       val data3 = path3.flatMap(f => data2 ++ Seq(f._1, f._2))
+      println(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start))
       result = Seq(data1, data2, data3)
       println(result)
     })
@@ -230,7 +241,9 @@ class BiologyTest {
       val endNodeIds = api.findOutRelationsEndNodeIds(startNode.id.value, relType)
       val resNodes = endNodeIds.grouped(1000).flatMap(group => api.getNodesByIds(group, "bioproject"))
 
+      var start = System.nanoTime()
       val res = resNodes.toSeq.map(node => (node.props(LynxPropertyKey("smdt")).value.toString, node)).sortBy(f => f._1).reverse
+      println(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start))
 
       val dataArray: ArrayBuffer[PandaNode] = ArrayBuffer.empty
       val dataLength = res.length
@@ -307,6 +320,7 @@ class BiologyTest {
       val endNodeIds = api.findOutRelations(startNode.id.value, relType).map(f => f.endNodeId.value)
       val resNodes = endNodeIds.grouped(1000).flatMap(group => api.getNodesByIds(group, "pubmed"))
       val yearCountMap = mutable.Map[Int, Int]()
+      var start = System.nanoTime()
       resNodes.foreach(node => {
         val year = node.props(LynxPropertyKey("publish_date")).value.toString.slice(0, 4).toInt
         if (year >= 1980) {
@@ -316,7 +330,10 @@ class BiologyTest {
           else yearCountMap += year -> 1
         }
       })
+      println(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start))
+      start = System.nanoTime()
       yearCountMap.toSeq.sortBy(f => f._1).foreach(println)
+      println(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start))
     })
   }
 
@@ -340,40 +357,43 @@ class BiologyTest {
   @Test
   def topKTendencyAPI(): Unit = {
     //match\s*\(.*\)\s*-\s*\[.*]\s*->\s*\(.*\)\s* where.*>= \S*.*<= \S* unwind.*>=.*<=.* return.*publish_date.*count\S* as \S* order by \S* \S*
-    //
-    val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
-    val relType = api.getRelationTypeId("taxonomy2pubmed")
-    val endNodeIds = api.findOutRelations(startNode.id.value, relType).map(f => f.endNodeId.value)
-    val resNodes = endNodeIds.grouped(1000).flatMap(group => api.getNodesByIds(group, "pubmed"))
+    //1814 ms
+    timeCost(() => {
+      val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
+      val relType = api.getRelationTypeId("taxonomy2pubmed")
+      val endNodeIds = api.findOutRelations(startNode.id.value, relType).map(f => f.endNodeId.value)
+      val resNodes = endNodeIds.grouped(1000).flatMap(group => api.getNodesByIds(group, "pubmed"))
 
-    val betweenYearData = resNodes.filter(p => {
-      p.props(LynxPropertyKey("keywords")).value.toString.nonEmpty && {
-        val year = p.props(LynxPropertyKey("publish_date")).value.toString.slice(0, 4).toInt
-        year >= 1970 && year <= 2021
-      }
-    }).duplicate
-
-    val keywords = betweenYearData._1.flatMap(p => p.props(LynxPropertyKey("keywords")).value.toString.split(";").distinct)
-      .toSeq
-      .groupBy(k => k)
-      .map(f => (f._1, f._2.length)).toSeq
-      .sortBy(f => f._2).reverse.slice(0, 20).map(f => (f._1.toLowerCase, f._2)).toMap
-
-
-    val resMap = mutable.Map[(Int, String), Int]()
-    betweenYearData._2.foreach(node => {
-      val keywds = node.props(LynxPropertyKey("keywords")).value.toString.toLowerCase().split(";")
-      val year = node.props(LynxPropertyKey("publish_date")).value.toString.slice(0, 4).toInt
-      keywds.foreach(key => {
-        if (keywords.contains(key)) {
-          if (resMap.contains((year, key))) resMap((year, key)) = resMap((year, key)) + 1
-          else resMap += (year, key) -> 1
+      val betweenYearData = resNodes.filter(p => {
+        p.props(LynxPropertyKey("keywords")).value.toString.nonEmpty && {
+          val year = p.props(LynxPropertyKey("publish_date")).value.toString.slice(0, 4).toInt
+          year >= 1970 && year <= 2021
         }
-      })
-    })
+      }).duplicate
 
-    val res = resMap.toSeq.sortBy(f => f._1._1)
-    res.foreach(f => println(s"year:${f._1._1}, keyword:${f._1._2}, count: ${f._2}"))
+      val start = System.nanoTime()
+      val keywords = betweenYearData._1.flatMap(p => p.props(LynxPropertyKey("keywords")).value.toString.split(";").distinct)
+        .toSeq
+        .groupBy(k => k)
+        .map(f => (f._1, f._2.length)).toSeq
+        .sortBy(f => f._2).reverse.slice(0, 20).map(f => (f._1.toLowerCase, f._2)).toMap
+      println(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start))
+
+      val resMap = mutable.Map[(Int, String), Int]()
+      betweenYearData._2.foreach(node => {
+        val keywds = node.props(LynxPropertyKey("keywords")).value.toString.toLowerCase().split(";")
+        val year = node.props(LynxPropertyKey("publish_date")).value.toString.slice(0, 4).toInt
+        keywds.foreach(key => {
+          if (keywords.contains(key)) {
+            if (resMap.contains((year, key))) resMap((year, key)) = resMap((year, key)) + 1
+            else resMap += (year, key) -> 1
+          }
+        })
+      })
+
+      val res = resMap.toSeq.sortBy(f => f._1._1)
+      res.foreach(f => println(s"year:${f._1._1}, keyword:${f._1._2}, count: ${f._2}"))
+    })
   }
 
   @Test
@@ -393,6 +413,7 @@ class BiologyTest {
   @Test
   def keywordRelationAPI(): Unit = {
     // match\s*\(.*\)\s*-\s*\[.*]\s*->\s*\(.*\)\s* where.*with \S* as \S*.*unwind.*<>.*limit \S*
+    // 3444ms
     timeCost(() => {
       val key = LynxPropertyKey("keywords")
       val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
@@ -466,6 +487,7 @@ class BiologyTest {
   @Test
   def countKeyAPI(): Unit = {
     // match\s*\(.*\)\s*-\s*\[.*]\s*->\s*\(.*\)\s* where.* with.*unwind \S* as \S* return .*count.*limit \S*
+    // 1664ms
     timeCost(() => {
       val key = LynxPropertyKey("keywords")
       val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
@@ -500,6 +522,7 @@ class BiologyTest {
   @Test
   def distributionOfCountryOfPaperAPI(): Unit = {
     // match\s*\(.*taxonomy.*\)\s*-\s*\[.*]\s*->\s*\(.*pubmed.*\)\s*-\[.*\]\s*->\s*\(.*map_country.*\) return.*country.*count\(.* as \S*
+    // 5758 ms
     timeCost(() => {
       val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
       val relType = api.getRelationTypeId("taxonomy2pubmed")
@@ -515,7 +538,7 @@ class BiologyTest {
           .setLimit(10) // 限制region而不是data
           .build()
       }).asJava
-      val res = tikv.batchScan(opts).asScala.flatMap(f => f.asScala)
+      val res = api.batchScan(opts).asScala.flatMap(f => f.asScala)
       val endNode2 = res.map(kv => {
         ByteUtils.getLong(kv.getKey.toByteArray, 13)
       })
@@ -538,6 +561,7 @@ class BiologyTest {
   @Test
   def distributionOfCountryOfProjectAPI(): Unit = {
     // match\s*\(.*taxonomy.*\)\s*-\s*\[.*]\s*->\s*\(.*bioproject.*\)\s*-\[.*\]\s*->\s*\(.*map_country.*\) return.*country.*count\(.* as \S*
+    // 94013ms
     timeCost(() => {
       val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
       val relType = api.getRelationTypeId("taxonomy2bioproject")
@@ -555,7 +579,7 @@ class BiologyTest {
           .build()
       }).asJava
 
-      val res = tikv.batchScan(opts).asScala.flatMap(f => f.asScala)
+      val res = api.batchScan(opts).asScala.flatMap(f => f.asScala)
       val endNode2 = res.map(kv => ByteUtils.getLong(kv.getKey.toByteArray, 13))
       val country = endNode2.grouped(1000).flatMap(f => api.getNodesByIds(f, labelType)).map(n => n.props(LynxPropertyKey("country")).value.toString)
       val count = country.toSeq.groupBy(f => f).map(f => (f._1, f._2.length))
@@ -596,6 +620,7 @@ class BiologyTest {
   @Test
   def relativePaperAPI(): Unit = {
     // match\s*\(.*taxonomy.*\)\s*-\s*\[.*]\s*->\s*\(.*pubmed.*\)\s* return.*pubmed_id.*title.*authors.*skip \S* limit \S*
+    // 1820 ms
     timeCost(() => {
       val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
       val relType = api.getRelationTypeId("taxonomy2pubmed")
@@ -625,6 +650,7 @@ class BiologyTest {
   @Test
   def relativePNGAPI(): Unit = {
     // match\s*\(.*taxonomy.*\)\s*-\s*\[.*]\s*->\s*\(.*pubmed.*\)\s* return.*doi.*png.*caption as \S*
+    // 5369 ms
     timeCost(() => {
       val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
       val relType = api.getRelationTypeId("taxonomy2pubmed")
@@ -642,7 +668,7 @@ class BiologyTest {
           .build()
       }).asJava
 
-      val res = tikv.batchScan(opts).asScala.flatMap(f => f.asScala)
+      val res = api.batchScan(opts).asScala.flatMap(f => f.asScala)
       val endNode2 = res.map(kv => ByteUtils.getLong(kv.getKey.toByteArray, 13))
       val pubmed_pdf_png = endNode2.grouped(1000).flatMap(f => api.getNodesByIds(f, labelType)).map(n => {
         val a = n.props(LynxPropertyKey("doi")).value.toString
@@ -669,15 +695,30 @@ class BiologyTest {
   @Test
   def countProjectAPI(): Unit ={
     // match\s*\(.*taxonomy.*\)\s*-\s*\[.*]\s*->\s*\(.*bioproject.*\)\s* return count\S* as \S*
+    // 643ms
     timeCost(() => {
       val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
       val relType = api.getRelationTypeId("taxonomy2bioproject")
-      val rels = api.findOutRelations(startNode.id.value, relType)
-      println(rels.length)
+      val rels = api.countOutRelations(startNode.id.value, relType.get)
+      println(rels)
     })
   }
 
+  @Test
+  def T1(): Unit ={
+    api.cypher("""Create(n:Person2{name:'Bob'}) return n""").show()
+    api.cypher("""Match(n:Person2) WHERE n.name='Bob' Set n.age=30""").show()
+    api.cypher("""Match(n:Person2) Where n.name="Bob" return n.age""").show()
+  }
 
+@Test
+  def tttt(): Unit ={
+  api.cypher(
+    """
+      |Create(n:Person{name:'Bob'})
+      |Match(n) WHERE n.name='Bob' Set n.age=30
+      |Match(n) Where n.name="Bob" return n.age""".stripMargin).show()
+}
   @Test
   def relativeProject(): Unit = {
     api.cypher(
@@ -692,6 +733,7 @@ class BiologyTest {
   @Test
   def relativeProjectAPI(): Unit = {
     // match\s*\(.*taxonomy.*\)\s*-\s*\[.*]\s*->\s*\(.*bioproject.*\)\s* return.*scientific_name.*cen skip \S* limit \S*
+    // 569ms
     timeCost(() => {
       val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue("9606")))).next()
       val scientific_name = startNode.props(LynxPropertyKey("scientific_name")).value

@@ -1,5 +1,8 @@
 package org.grapheco.pandadb.kernel.distribute.tricks
 
+import org.grapheco.pandadb.kernel.distribute.DistributedGraphFacade
+import org.tikv.raw.RawKVClient
+
 import java.util.regex.Pattern
 import scala.collection.mutable.ArrayBuffer
 
@@ -9,7 +12,9 @@ import scala.collection.mutable.ArrayBuffer
  * @author: LiamGao
  * @create: 2022-04-11 15:35
  */
-class BiologyTricks {
+class BiologyTricks(api: DistributedGraphFacade) {
+  val tricksAPI = new BiologyTricksAPI(api)
+
   private val basicInfoOfTaxonomy = Pattern.compile("""match\s*\(.*\)\s*where\s*\S*\s*=\s*'\S*' return\s*n""")
   private val totalPubmedOfTaxonomy = Pattern.compile("""match\s*\(.*taxonomy.*\)\s*-\s*\[.*]\s*->\s*\(.*pubmed\s*\)\s* return count\S* as \S*""")
   private val countCited = Pattern.compile("""match\s*\(.*\)\s*-\s*\[.*]\s*->\s*\(.*\)\s*return sum\s*\(\s*tointeger.*\) as \S*""")
@@ -31,88 +36,139 @@ class BiologyTricks {
   private val relativeProject = Pattern.compile("""match\s*\(.*taxonomy.*\)\s*-\s*\[.*]\s*->\s*\(.*bioproject.*\)\s* return.*scientific_name.*cen skip \S* limit \S*""")
 
 
-  def returnCypherParams(_cypher: String): Unit = {
+  def returnCypherParams(_cypher: String): BioDataFrame = {
     val cypher = _cypher.toLowerCase.replaceAll("\r", " ").replaceAll("\n", " ")
     val res = parseCypherParams(cypher)
     res._1.head match {
       case "basicInfoOfTaxonomy" => {
-
+        val taxId = res._1(1)
+        val schema = res._2
+        tricksAPI.basicInfoOfTaxonomy(taxId, schema)
       }
       case "totalPubmedOfTaxonomy" => {
-
+        val taxId = res._1(1)
+        val schema = res._2
+        tricksAPI.totalPubmedOfTaxonomy(taxId, schema)
       }
       case "countCited" => {
-
+        val taxId = res._1(1)
+        val schema = res._2
+        tricksAPI.countCited(taxId, schema)
       }
       case "count3YearCited" => {
-
+        val taxId = res._1(1)
+        val year = res._1(2)
+        val schema = res._2
+        tricksAPI.count3YearCited(taxId, year.toInt, schema)
       }
       case "earliest" => {
-
+        val taxId = res._1(1)
+        val schema = res._2
+        tricksAPI.earliest(taxId, schema)
       }
       case "findTop3LevelParent" => {
-
+        val taxId = res._1(1)
+        val schema = res._2
+        tricksAPI.findTop3LevelParent(taxId, schema)
       }
       case "projectInfo" => {
-
+        val taxId = res._1(1)
+        val limit = res._1(2)
+        val schema = res._2
+        tricksAPI.projectInfo(taxId, limit.toInt, schema)
       }
       case "geneOfTaxonomy" => {
-
+        val taxId = res._1(1)
+        val limit = res._1(2)
+        val schema = res._2
+        tricksAPI.geneOfTaxonomy(taxId, limit.toInt, schema)
       }
       case "genomeOfTaxonomy" => {
-
+        val taxId = res._1(1)
+        val limit = res._1(2)
+        val schema = res._2
+        tricksAPI.genomeOfTaxonomy(taxId, limit.toInt, schema)
       }
       case "paperTendency" => {
-
+        val taxId = res._1(1)
+        val schema = res._2
+        tricksAPI.paperTendency(taxId, schema)
       }
       case "topKTendency" => {
-
+        val taxId = res._1(1)
+        val startYear = res._1(3)
+        val endYear = res._1(5)
+        val limit = res._1(7)
+        val schema = res._2
+        tricksAPI.topKTendency(taxId, startYear.toInt, endYear.toInt, limit.toInt, schema)
       }
       case "keywordRelation" => {
-
+        val taxId = res._1(1)
+        val limit = res._1(2)
+        val schema = res._2
+        tricksAPI.keywordRelation(taxId, limit.toInt, schema)
       }
       case "countKey" => {
-
+        val taxId = res._1(1)
+        val limit = res._1(2)
+        val schema = res._2
+        tricksAPI.countKey(taxId, limit.toInt, schema)
       }
       case "distributionOfCountryOfPaper" => {
-
+        val taxId = res._1(1)
+        val schema = res._2
+        tricksAPI.distributionOfCountryOfPaper(taxId, schema)
       }
       case "distributionOfCountryOfProject" => {
-
+        val taxId = res._1(1)
+        val schema = res._2
+        tricksAPI.distributionOfCountryOfProject(taxId, schema)
       }
       case "relativePaper" => {
-
+        val taxId = res._1(1)
+        val skip = res._1(2)
+        val limit = res._1(3)
+        val schema = res._2
+        tricksAPI.relativePaper(taxId, skip.toInt, limit.toInt, schema)
       }
       case "relativePNG" => {
-
+        val taxId = res._1(1)
+        val schema = res._2
+        tricksAPI.relativePNG(taxId, schema)
       }
       case "countProject" => {
-
+        val taxId = res._1(1)
+        val schema = res._2
+        tricksAPI.countProject(taxId, schema)
       }
       case "relativeProject" => {
-
+        val taxId = res._1(1)
+        val skip = res._1(2)
+        val limit = res._1(3)
+        val schema = res._2
+        tricksAPI.relativeProject(taxId, skip.toInt, limit.toInt, schema)
       }
     }
   }
 
-  def parseCypherParams(cypher: String): (Seq[String], Seq[String]) ={
+  def parseCypherParams(cypher: String): (Seq[String], Seq[String]) = {
     val result = {
-      if (basicInfoOfTaxonomy.matcher(cypher).matches()){
+      if (basicInfoOfTaxonomy.matcher(cypher).matches()) {
         val p = Pattern.compile("""tax_id\s*=\s*\S*""")
         val res = p.matcher(cypher)
         res.find()
         val target = res.group()
         (Seq("basicInfoOfTaxonomy", target.slice(target.length - 5, target.length - 1)), getReturnSchema(cypher))
       }
-      else if (totalPubmedOfTaxonomy.matcher(cypher).matches()){
+      else if (totalPubmedOfTaxonomy.matcher(cypher).matches()) {
         val taxId = getTaxId(cypher)
         (Seq("totalPubmedOfTaxonomy") ++ taxId, getReturnSingleAsSchema(cypher))
       }
-      else if (countCited.matcher(cypher).matches()){
+      else if (countCited.matcher(cypher).matches()) {
         val taxId = getTaxId(cypher)
         (Seq("countCited") ++ taxId, getReturnSingleAsSchema(cypher))
       }
-      else if (count3YearCited.matcher(cypher).matches()){
+      else if (count3YearCited.matcher(cypher).matches()) {
         val taxId = getTaxId(cypher)
         val p = Pattern.compile("""where \S*""")
         val res = p.matcher(cypher)
@@ -121,75 +177,75 @@ class BiologyTricks {
         val year = target.slice(target.length - 4, target.length)
         (Seq("count3YearCited") ++ taxId ++ Seq(year), getReturnSingleAsSchema(cypher))
       }
-      else if (earliest.matcher(cypher).matches()){
+      else if (earliest.matcher(cypher).matches()) {
         val taxId = getTaxId(cypher)
         (Seq("earliest") ++ taxId, getReturnSingleAsSchema(cypher))
       }
-      else if (findTop3LevelParent.matcher(cypher).matches()){
+      else if (findTop3LevelParent.matcher(cypher).matches()) {
         val taxId = getTaxId(cypher)
         (Seq("findTop3LevelParent") ++ taxId, getReturnSchema(cypher))
       }
-      else if (projectInfo.matcher(cypher).matches()){
+      else if (projectInfo.matcher(cypher).matches()) {
         val taxId = getTaxId(cypher)
         val limit = getLimit(cypher)
-        (Seq("projectInfo")  ++ taxId ++ Seq(limit), getReturnMultipleAsSchema(cypher))
+        (Seq("projectInfo") ++ taxId ++ Seq(limit), getReturnMultipleAsSchema(cypher))
       }
-      else if (geneOfTaxonomy.matcher(cypher).matches()){
+      else if (geneOfTaxonomy.matcher(cypher).matches()) {
         val taxId = getTaxId(cypher)
         val limit = getLimit(cypher)
-        (Seq("geneOfTaxonomy")  ++ taxId ++ Seq(limit), getReturnMultipleAsSchema(cypher))
+        (Seq("geneOfTaxonomy") ++ taxId ++ Seq(limit), getReturnMultipleAsSchema(cypher))
       }
-      else if (genomeOfTaxonomy.matcher(cypher).matches()){
+      else if (genomeOfTaxonomy.matcher(cypher).matches()) {
         val taxId = getTaxId(cypher)
         val limit = getLimit(cypher)
-        (Seq("genomeOfTaxonomy")  ++ taxId ++ Seq(limit), getReturnMultipleAsSchema(cypher))
+        (Seq("genomeOfTaxonomy") ++ taxId ++ Seq(limit), getReturnMultipleAsSchema(cypher))
       }
-      else if (paperTendency.matcher(cypher).matches()){
+      else if (paperTendency.matcher(cypher).matches()) {
         val taxId = getTaxId(cypher)
         (Seq("paperTendency") ++ taxId, getReturnMultipleAsSchema(cypher))
       }
-      else if (topKTendency.matcher(cypher).matches()){
+      else if (topKTendency.matcher(cypher).matches()) {
         val taxId = getTaxId(cypher)
         val startYear = getStartYear(cypher)
         val endYear = getEndYear(cypher)
         val limit = getLimit(cypher)
         (Seq("topKTendency") ++ taxId ++ startYear ++ endYear ++ Seq(limit), Seq("year", "k", "num"))
       }
-      else if (keywordRelation.matcher(cypher).matches()){
+      else if (keywordRelation.matcher(cypher).matches()) {
         val taxId = getTaxId(cypher)
         val limit = getLimit(cypher)
         (Seq("keywordRelation") ++ taxId ++ Seq(limit), getReturnMultipleAsSchema(cypher))
       }
-      else if (countKey.matcher(cypher).matches()){
+      else if (countKey.matcher(cypher).matches()) {
         val taxId = getTaxId(cypher)
         val limit = getLimit(cypher)
         (Seq("countKey") ++ taxId ++ Seq(limit), Seq("keyword", "num"))
       }
-      else if (distributionOfCountryOfPaper.matcher(cypher).matches()){
+      else if (distributionOfCountryOfPaper.matcher(cypher).matches()) {
         val taxId = getTaxId(cypher)
         (Seq("distributionOfCountryOfPaper") ++ taxId, getReturnMultipleAsSchema(cypher))
       }
-      else if (distributionOfCountryOfProject.matcher(cypher).matches()){
+      else if (distributionOfCountryOfProject.matcher(cypher).matches()) {
         val taxId = getTaxId(cypher)
         (Seq("distributionOfCountryOfProject") ++ taxId, getReturnMultipleAsSchema(cypher))
       }
-      else if (relativePaper.matcher(cypher).matches()){
+      else if (relativePaper.matcher(cypher).matches()) {
         val taxId = getTaxId(cypher)
         val skip = getSkip(cypher)
         val limit = getLimit(cypher)
         (Seq("relativePaper") ++ taxId ++ Seq(skip, limit), getReturnMultipleAsSchema(cypher))
       }
-      else if (relativePNG.matcher(cypher).matches()){
+      else if (relativePNG.matcher(cypher).matches()) {
         (Seq("relativePNG") ++ getTaxId(cypher), getReturnMultipleAsSchema(cypher))
       }
-      else if (countProject.matcher(cypher).matches()){
+      else if (countProject.matcher(cypher).matches()) {
         (Seq("countProject") ++ getTaxId(cypher), getReturnSingleAsSchema(cypher))
       }
-      else if (relativeProject.matcher(cypher).matches()){
+      else if (relativeProject.matcher(cypher).matches()) {
         val taxId = getTaxId(cypher)
         val skip = getSkip(cypher)
         val limit = getLimit(cypher)
-        (Seq("relativeProject")  ++ taxId ++ Seq(skip, limit), getReturnMultipleAsSchema(cypher))
+        (Seq("relativeProject") ++ taxId ++ Seq(skip, limit), getReturnMultipleAsSchema(cypher))
       }
       else (Seq.empty[String], Seq.empty[String])
     }
@@ -225,16 +281,18 @@ class BiologyTricks {
     }
     targets
   }
+
   private def getEndYear(str: String): Seq[String] = {
     val p = Pattern.compile("""<=\s*\S*""")
     val res = p.matcher(str)
     val targets = ArrayBuffer[String]()
-    while (res.find()){
+    while (res.find()) {
       val target = res.group()
       targets.append(target.slice(target.length - 4, target.length))
     }
     targets
   }
+
   private def getSkip(str: String): String = {
     val p = Pattern.compile("""skip \S*""")
     val res = p.matcher(str)
@@ -242,6 +300,7 @@ class BiologyTricks {
     val target = res.group()
     target.slice(5, target.length).trim
   }
+
   private def getReturnSchema(str: String): Seq[String] = {
     val p = Pattern.compile("""return \S*""")
     val res = p.matcher(str)
@@ -249,6 +308,7 @@ class BiologyTricks {
     val target = res.group()
     Seq(target.slice(7, target.length).trim)
   }
+
   private def getReturnSingleAsSchema(str: String): Seq[String] = {
     val p = Pattern.compile("""return.*as \S*""")
     val res = p.matcher(str)
@@ -256,6 +316,7 @@ class BiologyTricks {
     val target = res.group()
     Seq(target.split("as").last.trim)
   }
+
   private def getReturnMultipleAsSchema(str: String): Seq[String] = {
     val p = Pattern.compile("""return.*as \S*""")
     val res = p.matcher(str)
@@ -264,9 +325,9 @@ class BiologyTricks {
     val p2 = Pattern.compile("""as \S*""")
     val r2 = p2.matcher(target)
     val schema = ArrayBuffer[String]()
-    while (r2.find()){
+    while (r2.find()) {
       val res = r2.group().split(",")
-      val v =  res.head
+      val v = res.head
       schema.append(v.slice(2, v.length).trim)
     }
     schema
