@@ -6,7 +6,6 @@ import org.grapheco.pandadb.kernel.distribute.{DistributedGraphFacade, Distribut
 import org.grapheco.pandadb.kernel.kv.ByteUtils
 import org.grapheco.pandadb.kernel.store.{PandaNode, PandaRelationship}
 import org.tikv.common.util.ScanOption
-import org.tikv.raw.RawKVClient
 import org.tikv.shade.com.google.protobuf.ByteString
 
 import java.util.regex.Pattern
@@ -101,26 +100,26 @@ class BiologyTricksAPI(api: DistributedGraphFacade) {
       if (pattern.matcher(res(index)._1).matches()) dataArray.append(res(index)._2)
       index += 1
     }
-    val r = dataArray.map(n => (n.props(LynxPropertyKey("title")).value.toString,
-      n.props(LynxPropertyKey("bioproject_id")).value.toString))
+    val r = dataArray.map(n =>
+      Seq(n.props(LynxPropertyKey("title")).value.toString, n.props(LynxPropertyKey("bioproject_id")).value.toString))
 
-    BioDataFrame(schema, r.toIterator.map(f => Seq(f)))
+    BioDataFrame(schema, r.toIterator)
   }
 
   def geneOfTaxonomy(taxId: String, limit: Int, schema: Seq[String]): BioDataFrame = {
     val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue(taxId)))).next()
     val endNodeIds = api.findOutRelations(startNode.id.value, api.getRelationTypeId("taxonomy2gene")).map(f => f.endNodeId.value)
     val resNodes = endNodeIds.grouped(1000).flatMap(group => api.getNodesByIds(group, api.getNodeLabelId("gene").get))
-    val res = resNodes.slice(0, limit).map(f => (f.props(LynxPropertyKey("title")).value, f.props(LynxPropertyKey("gene_id")).value))
-    BioDataFrame(schema, res.map(f => Seq(f)))
+    val res = resNodes.slice(0, limit).map(f => Seq(f.props(LynxPropertyKey("title")).value, f.props(LynxPropertyKey("gene_id")).value))
+    BioDataFrame(schema, res)
   }
 
   def genomeOfTaxonomy(taxId: String, limit: Int, schema: Seq[String]): BioDataFrame = {
     val startNode = api.getNodesByIndex(NodeFilter(Seq(LynxNodeLabel("taxonomy")), Map(LynxPropertyKey("tax_id") -> LynxValue(taxId)))).next()
     val endNodeIds = api.findOutRelations(startNode.id.value, api.getRelationTypeId("taxonomy2genome")).map(f => f.endNodeId.value)
     val resNodes = endNodeIds.grouped(1000).flatMap(group => api.getNodesByIds(group, api.getNodeLabelId("genome").get))
-    val res = resNodes.slice(0, limit).map(f => (f.props(LynxPropertyKey("genome_id")).value, f.props(LynxPropertyKey("aacc")).value))
-    BioDataFrame(schema, res.map(f => Seq(f)))
+    val res = resNodes.slice(0, limit).map(f => Seq(f.props(LynxPropertyKey("genome_id")).value, f.props(LynxPropertyKey("aacc")).value))
+    BioDataFrame(schema, res)
   }
 
   def paperTendency(taxId: String, schema: Seq[String]): BioDataFrame = {
@@ -138,7 +137,7 @@ class BiologyTricksAPI(api: DistributedGraphFacade) {
       }
     })
     val r = yearCountMap.toSeq.sortBy(f => f._1)
-    BioDataFrame(schema, r.toIterator.map(f => Seq(f)))
+    BioDataFrame(schema, r.toIterator.map(f => Seq(f._1, f._2)))
   }
 
   def topKTendency(taxId: String, startYear: Int, endYear: Int, limit: Int, schema: Seq[String]): BioDataFrame = {
@@ -229,7 +228,7 @@ class BiologyTricksAPI(api: DistributedGraphFacade) {
       if (queue.length > limit) queue.dequeue()
     })
     val r = queue.toArray.sortBy(f => f._2).reverse
-    BioDataFrame(schema, r.toIterator.map(f => Seq(f)))
+    BioDataFrame(schema, r.toIterator.map(f => Seq(f._1, f._2)))
   }
 
   def countKey(taxId: String, limit: Int, schema: Seq[String]): BioDataFrame = {
@@ -248,7 +247,7 @@ class BiologyTricksAPI(api: DistributedGraphFacade) {
     })
 
     val a = keywordsArr.groupBy(f => f).map(f => (f._1, f._2.length)).toSeq.sortBy(f => f._2).reverse.slice(0, limit)
-    BioDataFrame(schema, a.toIterator.map(f => Seq(f)))
+    BioDataFrame(schema, a.toIterator.map(f => Seq(f._1, f._2)))
   }
 
   def distributionOfCountryOfPaper(taxId: String, schema: Seq[String]): BioDataFrame = {
@@ -272,7 +271,7 @@ class BiologyTricksAPI(api: DistributedGraphFacade) {
     })
     val country = endNode2.grouped(1000).flatMap(f => api.getNodesByIds(f, labelType)).map(n => n.props(LynxPropertyKey("country")).value.toString)
     val count = country.toSeq.groupBy(f => f).map(f => (f._1, f._2.length))
-    BioDataFrame(schema, count.toIterator.map(f => Seq(f)))
+    BioDataFrame(schema, count.toIterator.map(f => Seq(f._1, f._2)))
   }
 
   def distributionOfCountryOfProject(taxId: String, schema: Seq[String]): BioDataFrame = {
@@ -296,7 +295,7 @@ class BiologyTricksAPI(api: DistributedGraphFacade) {
     val endNode2 = res.map(kv => ByteUtils.getLong(kv.getKey.toByteArray, 13))
     val country = endNode2.grouped(1000).flatMap(f => api.getNodesByIds(f, labelType)).map(n => n.props(LynxPropertyKey("country")).value.toString)
     val count = country.toSeq.groupBy(f => f).map(f => (f._1, f._2.length))
-    BioDataFrame(schema, count.toIterator.map(f => Seq(f)))
+    BioDataFrame(schema, count.toIterator.map(f => Seq(f._1, f._2)))
   }
 
   def relativePaperCount(taxId: String, schema: Seq[String]): BioDataFrame = {
@@ -317,7 +316,7 @@ class BiologyTricksAPI(api: DistributedGraphFacade) {
       (pubmed_id, title, authors, publish_date, keywords)
     })
     res.drop(skip)
-    BioDataFrame(schema, res.slice(0, limit).map(f => Seq(f)))
+    BioDataFrame(schema, res.slice(0, limit).map(f => Seq(f._1, f._2, f._3, f._4, f._5)))
   }
 
   def relativePNG(taxId: String, schema: Seq[String]): BioDataFrame = {
@@ -346,7 +345,7 @@ class BiologyTricksAPI(api: DistributedGraphFacade) {
       val c = n.props(LynxPropertyKey("caption")).value.toString
       (a, b, c)
     })
-    BioDataFrame(schema, pubmed_pdf_png.map(f => Seq(f)))
+    BioDataFrame(schema, pubmed_pdf_png.map(f => Seq(f._1, f._2, f._3)))
   }
 
   def countProject(taxId: String, schema: Seq[String]): BioDataFrame = {
@@ -369,6 +368,6 @@ class BiologyTricksAPI(api: DistributedGraphFacade) {
       (scientific_name, bioproject_id, title, cen)
     })
     res.drop(skip)
-    BioDataFrame(schema, res.map(f => Seq(f)))
+    BioDataFrame(schema, res.map(f => Seq(f._1, f._2, f._3, f._4)))
   }
 }

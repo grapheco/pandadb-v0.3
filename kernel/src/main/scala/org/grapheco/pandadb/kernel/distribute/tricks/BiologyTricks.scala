@@ -36,8 +36,7 @@ class BiologyTricks(api: DistributedGraphFacade) {
   private val relativeProject = Pattern.compile("""match\s*\(.*taxonomy.*\)\s*-\s*\[.*]\s*->\s*\(.*bioproject.*\)\s* return.*scientific_name.*cen skip \S* limit \S*""")
 
 
-  def returnCypherParams(_cypher: String): BioDataFrame = {
-    val cypher = _cypher.toLowerCase.replaceAll("\r", " ").replaceAll("\n", " ")
+  def returnCypherParams(cypher: String): BioDataFrame = {
     val res = parseCypherParams(cypher)
     res._1.head match {
       case "basicInfoOfTaxonomy" => {
@@ -151,7 +150,8 @@ class BiologyTricks(api: DistributedGraphFacade) {
     }
   }
 
-  def parseCypherParams(cypher: String): (Seq[String], Seq[String]) = {
+  def parseCypherParams(_cypher: String): (Seq[String], Seq[String]) = {
+    val cypher = _cypher.toLowerCase.replaceAll("\r", " ").replaceAll("\n", " ")
     val result = {
       if (basicInfoOfTaxonomy.matcher(cypher).matches()) {
         val p = Pattern.compile("""tax_id\s*=\s*\S*""")

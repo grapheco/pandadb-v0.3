@@ -2,10 +2,9 @@ package org.grapheco.pandadb.utils
 
 import org.grapheco.pandadb.kernel.store.{PandaNode, PandaRelationship}
 import org.grapheco.pandadb.net.rpc.values.{BooleanValue, FloatValue, IntegerValue, Label, ListValue, Node, NodeValue, NullValue, Relationship, RelationshipType, RelationshipValue, StringValue, Value}
-import org.grapheco.lynx.{LynxBoolean, LynxDouble, LynxInteger, LynxList, LynxString}
+import org.grapheco.lynx.{LynxBoolean, LynxDouble, LynxInteger, LynxList, LynxString, version}
 
 import scala.collection.mutable.ArrayBuffer
-
 import scala.collection.mutable
 
 class ValueConverter {
@@ -18,6 +17,12 @@ class ValueConverter {
       case lynxDouble: LynxDouble => FloatValue(lynxDouble.value)
       case lynxBoolean: LynxBoolean => BooleanValue(lynxBoolean.value)
       case lynxList: LynxList => converterLynxList(lynxList)
+      case v: String => StringValue(v)
+      case v: Int => IntegerValue(v)
+      case v: Long => IntegerValue(v)
+      case v: Double => FloatValue(v)
+      case v: Boolean => BooleanValue(v)
+      case v: Seq[Any] =>converterNormalList(v)
       case _ => NullValue
     }
   }
@@ -56,5 +61,8 @@ class ValueConverter {
 
   def converterLynxList(lynxList: LynxList): ListValue ={
     ListValue(lynxList.value.map(f => converterValue(f)).toBuffer.asInstanceOf[ArrayBuffer[Value]])
+  }
+  def converterNormalList(list: Seq[Any]): ListValue = {
+    ListValue(list.map(f => converterValue(f)).toBuffer.asInstanceOf[ArrayBuffer[Value]])
   }
 }

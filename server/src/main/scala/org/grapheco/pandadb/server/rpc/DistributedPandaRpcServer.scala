@@ -1,7 +1,6 @@
 package org.grapheco.pandadb.server.rpc
 
 import java.nio.ByteBuffer
-
 import org.grapheco.pandadb.net.rpc.message.{CreateIndexRequest, CreateIndexResponse, CypherRequest, DropIndexRequest, DropIndexResponse, GetIndexedMetaRequest, GetIndexedMetaResponse, GetStatisticsRequest, GetStatisticsResponse, SayHelloRequest, SayHelloResponse}
 import org.grapheco.pandadb.server.common.configuration.Config
 import org.grapheco.pandadb.server.common.modules.LifecycleServerModule
@@ -12,6 +11,8 @@ import net.neoremind.kraps.rpc.netty.{HippoRpcEnv, HippoRpcEnvFactory}
 import net.neoremind.kraps.rpc.{RpcCallContext, RpcEndpoint, RpcEnvServerConfig}
 import org.grapheco.hippo.{ChunkedStream, HippoRpcHandler, ReceiveContext}
 import org.grapheco.pandadb.dbms.DistributedGraphDatabaseManager
+import org.grapheco.pandadb.kernel.distribute.DistributedGraphFacade
+import org.grapheco.pandadb.kernel.distribute.tricks.BiologyTricks
 import org.grapheco.pandadb.net.rpc.utils.DriverValue
 import org.grapheco.pandadb.net.rpc.values.Value
 
@@ -61,6 +62,7 @@ class DistributedPandaEndpoint(override val rpcEnv: HippoRpcEnv) extends RpcEndp
 
 class DistributedPandaStreamHandler(graphFacade: DistributedGraphDatabaseManager) extends HippoRpcHandler with LazyLogging {
   val converter = new ValueConverter
+  val bioTrick = new BiologyTricks(graphFacade.defaultDB.asInstanceOf[DistributedGraphFacade])
 
   override def receiveWithBuffer(extraInput: ByteBuffer, context: ReceiveContext): PartialFunction[Any, Unit] = {
     case SayHelloRequest(msg) =>
@@ -81,34 +83,42 @@ class DistributedPandaStreamHandler(graphFacade: DistributedGraphDatabaseManager
       context.reply(GetIndexedMetaResponse(indexStore.getIndexMeta))
     }
     case CreateIndexRequest(label, props) => {
-      val gf = graphFacade.defaultDB
-      new Thread(){
-        Thread.sleep(100)
-        override def run(): Unit = gf.createIndexOnNode(label, props.toSet)
-      }.start()
-
-      context.reply(CreateIndexResponse(true))
+      this.synchronized{
+        val gf = graphFacade.defaultDB
+        gf.createIndexOnNode(label, props.toSet)
+        context.reply(CreateIndexResponse(true))
+      }
     }
 
     case DropIndexRequest(label, propName) => {
-      val gf = graphFacade.defaultDB
-      new Thread(){
-        Thread.sleep(100)
-        override def run(): Unit = gf.dropIndexOnNode(label, propName)
-      }.start()
-
-      context.reply(DropIndexResponse(true))
+      this.synchronized{
+        val gf = graphFacade.defaultDB
+        gf.dropIndexOnNode(label, propName)
+        context.reply(DropIndexResponse(true))
+      }
     }
   }
 
   override def openChunkedStream(): PartialFunction[Any, ChunkedStream] = {
     case CypherRequest(cypher, params) => {
       try {
-        val result = graphFacade.defaultDB.cypher(cypher, params)
-        val metadata = result.columns().toList
-        val data = result.records()
-        val pandaIterator = new PandaRecordsIterator(metadata, data)
-        ChunkedStream.grouped(100, pandaIterator.toIterable)
+        val flag = bioTrick.parseCypherParams(cypher)
+        if (flag._1.isEmpty){
+          val result = graphFacade.defaultDB.cypher(cypher, params)
+          val metadata = result.columns().toList
+          val data = result.records()
+          val pandaIterator = new PandaRecordsIterator(metadata, data)
+          ChunkedStream.grouped(100, pandaIterator.toIterable)
+        }
+        else {
+          logger.info("===========go tricks===========")
+          val dataFrame = bioTrick.returnCypherParams(cypher)
+          val metadata = dataFrame.rowNames
+          val data = dataFrame.rowData
+          val transData = data.map(f => metadata.zip(f).toMap)
+          val pandaIterator = new PandaRecordsIterator(metadata.toList, transData)
+          ChunkedStream.grouped(100, pandaIterator.toIterable)
+        }
       } catch {
         case e: Exception => {
           logger.error(e.getMessage)
