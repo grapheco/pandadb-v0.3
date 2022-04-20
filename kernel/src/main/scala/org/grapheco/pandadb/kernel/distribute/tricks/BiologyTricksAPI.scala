@@ -9,7 +9,7 @@ import org.tikv.common.util.ScanOption
 import org.tikv.shade.com.google.protobuf.ByteString
 
 import java.util.regex.Pattern
-import scala.collection.mutable
+import scala.collection.{mutable}
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.JavaConverters._
 
@@ -91,17 +91,18 @@ class BiologyTricksAPI(api: DistributedGraphFacade) {
     val endNodeIds = api.findOutRelationsEndNodeIds(startNode.id.value, api.getRelationTypeId("taxonomy2bioproject").get)
     val resNodes = endNodeIds.grouped(1000).flatMap(group => api.getNodesByIds(group, api.getNodeLabelId("bioproject").get))
 
-    val res = resNodes.toSeq.map(node => (node.props(LynxPropertyKey("smdt")).value.toString, node)).sortBy(f => f._1).reverse
+    val queue = new mutable.PriorityQueue[(String, (String, String))]()((a,b)=> -a._1.compare(b._1) ) // 小根堆，每次pop最小
+    resNodes.foreach(node => {
+      val smdt = node.props(LynxPropertyKey("smdt")).value.toString
+      if (pattern.matcher(smdt).matches()){
+        val title = node.props(LynxPropertyKey("title")).value.toString
+        val bioproject_id = node.props(LynxPropertyKey("bioproject_id")).value.toString
+        queue.enqueue((smdt,(title, bioproject_id)))
+        if (queue.size > limit) queue.dequeue()
+      }
+    })
 
-    val dataArray: ArrayBuffer[PandaNode] = ArrayBuffer.empty
-    val dataLength = res.length
-    var index = 0
-    while (dataArray.length <= limit && (index < dataLength)) {
-      if (pattern.matcher(res(index)._1).matches()) dataArray.append(res(index)._2)
-      index += 1
-    }
-    val r = dataArray.map(n =>
-      Seq(n.props(LynxPropertyKey("title")).value.toString, n.props(LynxPropertyKey("bioproject_id")).value.toString))
+    val r = queue.toList.sortBy(f => f._1).reverse.map(f => Seq(f._2._1, f._2._2))
 
     BioDataFrame(schema, r.toIterator)
   }
@@ -182,23 +183,18 @@ class BiologyTricksAPI(api: DistributedGraphFacade) {
     val keywords = resNodes.filter(p => p.props(key).value.toString.nonEmpty).map(p => p.props(key).value.toString.trim.toLowerCase().split(";")).toSeq
     val leftRight = keywords.map(line => {
       val length = line.length
-      val left = line.flatMap(str => {
-        val leftArr = ArrayBuffer[String]()
-        var count = 0
-        while (count < length) {
-          leftArr.append(str)
-          count += 1
+      val left = ArrayBuffer[String]()
+      val right = ArrayBuffer[String]()
+      var outCount = 0
+      while (outCount < length){
+        val target = line(outCount)
+        var innerCount = 0
+        while (innerCount < length){
+          left.append(target)
+          right.append(line(innerCount))
+          innerCount += 1
         }
-        leftArr
-      }).toSeq
-      val right = {
-        var rightArr: Seq[String] = Seq.empty
-        var count = 0
-        while (count < length) {
-          rightArr = rightArr ++ line
-          count += 1
-        }
-        rightArr
+        outCount += 1
       }
       (left, right)
     })
