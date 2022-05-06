@@ -89,4 +89,5 @@ trait DistributedGraphService {
   //origin
   def batchScan(list: util.List[ScanOption]): util.List[util.List[Kvrpcpb.KvPair]]
   // =======================================================================================
+  def fullText(columnNames: Seq[String], text: String): Iterator[Long]
 }

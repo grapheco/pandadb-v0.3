@@ -90,6 +90,17 @@ class PandaDistributedIndexStore(client: RestHighLevelClient,
     IndexValueConverter.transferDoc2IndexNode(res.getId, res.getSourceAsMap.asScala.toMap)
   }
 
+  override def fullTextSearch(columnName: Seq[String], text: String): Iterator[NodeID] = {
+    val request = new SearchRequest(NameMapping.indexName)
+    val builder = new SearchSourceBuilder()
+      .query(
+        QueryBuilders.wildcardQuery(s"${columnName.head}.keyword", s"*$text*")
+      )
+    request.source(builder)
+    val res = client.search(request, RequestOptions.DEFAULT)
+    res.getHits.getHits.map(hit => hit.getId.toLong).iterator
+  }
+
   override def deleteNodeByNodeId(nodeId: String): Unit = {
     val node = getNodeByDocId(nodeId)
     indexTool.deleteDoc(nodeId)

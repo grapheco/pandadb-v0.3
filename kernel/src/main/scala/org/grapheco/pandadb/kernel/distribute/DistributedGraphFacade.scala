@@ -301,4 +301,7 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClientManag
       rel.properties.map(kv => (LynxPropertyKey(relationStoreAPI.getPropertyKeyName(kv._1).getOrElse("unknown")), LynxValue(kv._2))))
   }
 
+  override def fullText(columnNames: Seq[String], text: String): Iterator[Id] = {
+    indexStore.fullTextSearch(columnNames, text)
+  }
 }
