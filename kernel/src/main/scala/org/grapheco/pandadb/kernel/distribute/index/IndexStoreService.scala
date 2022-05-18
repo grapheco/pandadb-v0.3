@@ -33,4 +33,5 @@ trait IndexStoreService {
   def batchDropEncoder(label: String, encoderName: String, nodes: Iterator[PandaNode]): Unit
   def batchDropIndexLabelWithProperty(indexLabel: String, targetPropName: String, nodes: Iterator[PandaNode]): Unit
 
+  def fullTextSearch(columnName: Seq[String], text: String): Iterator[Long]
 }

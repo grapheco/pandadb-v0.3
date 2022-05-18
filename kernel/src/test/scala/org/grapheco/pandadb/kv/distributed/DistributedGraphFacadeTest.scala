@@ -54,7 +54,7 @@ class DistributedGraphFacadeTest {
   def cypherTest(): Unit ={
     api.cypher(
       """
-        |MATCH (t:taxonomy {tax_id:'9606'})-[r:taxonomy2bioproject]->(b:bioproject) RETURN t.scientific_name as scientific_name, b.bioproject_id as bioproject_id, b.title as title, b.cen as cen SKIP 0 LIMIT 10
+        |create index on: taxonomy(scientific_name)
         |""".stripMargin).show()
   }
 

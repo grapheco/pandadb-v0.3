@@ -11,7 +11,11 @@ import org.grapheco.pandadb.kernel.util.PandaDBException.PandaDBException
 import org.apache.http.HttpHost
 import org.elasticsearch.client.{RestClient, RestHighLevelClient}
 import org.grapheco.lynx.{CypherRunner, LynxNodeLabel, LynxPropertyKey, LynxRelationshipType, LynxResult, LynxValue, NodeFilter}
+import org.tikv.common.util.ScanOption
 import org.tikv.common.{TiConfiguration, TiSession}
+import org.tikv.kvproto.Kvrpcpb
+
+import java.util
 
 /**
  * @program: pandadb-v0.3
@@ -198,6 +202,15 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClientManag
 
   override def getNodeById(id: Id, labelName: String): Option[PandaNode] =  nodeStoreAPI.getNodeById(id, getNodeLabelId(labelName)).map(mapNode(_))
 
+  override def getNodesByIds(ids: Seq[Id], labelName: String): Seq[PandaNode] = {
+    nodeStoreAPI.getNodesByIds(getNodeLabelId(labelName).get, ids).map(mapNode).toSeq
+  }
+
+  override def getNodesByIds(ids: Seq[Id], labelId: Int): Seq[PandaNode] = {
+    nodeStoreAPI.getNodesByIds(labelId, ids).map(mapNode).toSeq
+
+  }
+
   override def getNodesByLabel(labelName: String, exact: Boolean): Iterator[PandaNode] = {
     val lid = getNodeLabelId(labelName)
     if (lid.isDefined) nodeStoreAPI.getNodesByLabel(lid.get).map(mapNode)
@@ -266,6 +279,21 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClientManag
   override def findInRelations(toNodeId: Id, edgeType: Option[Int]): Iterator[PandaRelationship] =
     relationStoreAPI.findInRelations(toNodeId, edgeType).map(mapRelation)
 
+  // ====================================== new added ======================================
+  override def countOutRelations(fromNodeId: Id): Long = relationStoreAPI.countOutRelations(fromNodeId)
+
+  override def countOutRelations(fromNodeId: Id, edgeType: Int): Long = relationStoreAPI.countOutRelations(fromNodeId, edgeType)
+
+  override def findOutRelationsEndNodeIds(fromNodeId: Id): Iterator[Id] = relationStoreAPI.findOutRelationsEndNodeIds(fromNodeId)
+
+  override def findOutRelationsEndNodeIds(fromNodeId: Id, edgeType: Int): Iterator[Id] = relationStoreAPI.findOutRelationsEndNodeIds(fromNodeId, edgeType)
+
+  // origin method
+  override def batchScan(ranges: util.List[ScanOption]): util.List[util.List[Kvrpcpb.KvPair]] = {
+    db.batchScan(ranges)
+  }
+  // =======================================================================================
+
   private def mapRelation(rel: StoredRelation): PandaRelationship = {
     PandaRelationship(RelationId(rel.id),
       NodeId(rel.from), NodeId(rel.to),
@@ -273,22 +301,7 @@ class DistributedGraphFacade(kvHosts: String, indexHosts: String, udpClientManag
       rel.properties.map(kv => (LynxPropertyKey(relationStoreAPI.getPropertyKeyName(kv._1).getOrElse("unknown")), LynxValue(kv._2))))
   }
 
-//  override def findToNodeIds(fromNodeId: Id): Iterator[Id] = {
-//    relationStoreAPI.findToNodeIds(fromNodeId)
-//  }
-//  override def findFromNodeIds(toNodeId: Id): Iterator[Id] = {
-//    relationStoreAPI.findFromNodeIds(toNodeId)
-//  }
-//
-//  override def findToNodeIds(fromNodeId: Id, relationType: Int): Iterator[Id] = {
-//    relationStoreAPI.findToNodeIds(fromNodeId, relationType)
-//  }
-//
-//
-//  override def findFromNodeIds(toNodeId: Id, relationType: Int): Iterator[Id] = {
-//    relationStoreAPI.findFromNodeIds(toNodeId, relationType)
-//  }
-//  override def isNodeHasIndex(filter: NodeFilter): Boolean = {
-//    indexStore.isNodeHasIndex(filter)
-//  }
+  override def fullText(columnNames: Seq[String], text: String): Iterator[Id] = {
+    indexStore.fullTextSearch(columnNames, text)
+  }
 }
