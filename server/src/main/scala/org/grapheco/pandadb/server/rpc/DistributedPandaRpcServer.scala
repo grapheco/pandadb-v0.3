@@ -104,6 +104,8 @@ class DistributedPandaStreamHandler(graphFacade: DistributedGraphDatabaseManager
       try {
         val flag = bioTrick.parseCypherParams(cypher)
         if (flag._1.isEmpty){
+//          logger.info(s"===========go normal===========")
+//          logger.info(cypher)
           val result = graphFacade.defaultDB.cypher(cypher, params)
           val metadata = result.columns().toList
           val data = result.records()
@@ -111,7 +113,7 @@ class DistributedPandaStreamHandler(graphFacade: DistributedGraphDatabaseManager
           ChunkedStream.grouped(100, pandaIterator.toIterable)
         }
         else {
-          logger.info("===========go tricks===========")
+//          logger.info(s"===========go tricks: ${flag._1.head}===========")
           val dataFrame = bioTrick.returnCypherParams(cypher)
           val metadata = dataFrame.rowNames
           val data = dataFrame.rowData
