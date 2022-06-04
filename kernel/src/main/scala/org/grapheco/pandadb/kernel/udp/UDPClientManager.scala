@@ -51,7 +51,7 @@ class UDPClientManager(clients: Array[UDPClient]) {
   }
 
   def sendMsg(): Unit ={
-    db.getStatistics.flush()
+    db.getStatistics.flush() // TODO 多节点同时更新元数据，会出现覆盖的情况。因为新增元数据获取ID时是在本地获取的。
     clients.foreach(c => c.sendRefreshMsg())
   }
 
